@@ -90,6 +90,20 @@
     .placeholder-view .pv-ico { font-size: 32px; width: 84px; height: 84px; border-radius: 26px; background: var(--surface); border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; }
     .placeholder-view h2 { font-family: 'Fraunces', serif; font-weight: 500; font-size: 24px; color: var(--ink); margin-bottom: 8px; }
 
+    /* ===== Voyageurs ===== */
+    .travelers-list { display: flex; flex-direction: column; gap: 10px; }
+    .traveler-card { display: flex; align-items: center; gap: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 14px 16px; cursor: pointer; transition: border-color 0.25s, background 0.25s, transform 0.2s var(--ease); animation: rise 0.4s var(--ease) both; }
+    .traveler-card:active { transform: scale(0.99); }
+    .traveler-card:hover { border-color: var(--line-strong); background: var(--surface-hover); }
+    .traveler-dot { width: 38px; height: 38px; border-radius: 12px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-family: 'Fraunces', serif; font-size: 17px; font-weight: 600; color: #06231d; }
+    .traveler-name { flex: 1; font-size: 16px; font-weight: 500; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .traveler-edit-hint { font-size: 18px; color: var(--ink-faint); }
+    .add-traveler-btn { width: 100%; padding: 15px; border: 1px dashed var(--line-strong); background: transparent; color: var(--teal); font-family: inherit; font-size: 15px; font-weight: 600; cursor: pointer; border-radius: var(--radius-sm); margin-top: 14px; transition: background 0.2s, border-color 0.2s; }
+    .add-traveler-btn:hover { background: var(--teal-glow); border-color: var(--teal); }
+    .color-picker { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 4px; }
+    .color-swatch { width: 40px; height: 40px; border-radius: 12px; cursor: pointer; border: 2px solid transparent; transition: transform 0.15s var(--ease), border-color 0.2s; }
+    .color-swatch:active { transform: scale(0.9); }
+    .color-swatch.active { border-color: var(--ink); transform: scale(1.08); }
     .fab { position: fixed; bottom: 112px; right: 22px; width: 60px; height: 60px; border-radius: 20px; background: linear-gradient(145deg, var(--teal), var(--teal-2)); color: #06231d; border: none; font-size: 28px; font-weight: 300; box-shadow: 0 10px 30px -8px rgba(45, 212, 167, 0.55), inset 0 1px 0 rgba(255,255,255,0.3); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 0.2s var(--ease); z-index: 50; }
     .fab:active { transform: scale(0.9) rotate(90deg); }
 
@@ -178,11 +192,11 @@
   </main>
 
   <main class="view" id="view-budget">
-    <div class="placeholder-view">
-      <div class="pv-ico">💰</div>
-      <h2>Le budget arrive</h2>
-      <p>Partage de dépenses façon Tricount — prochaine livraison.</p>
+    <div class="section-label"><span>Voyageurs</span></div>
+    <div id="travelers-list" class="travelers-list">
+      <div class="loading">Chargement…</div>
     </div>
+    <button class="add-traveler-btn" onclick="openTravelerSheet()">+ Ajouter un voyageur</button>
   </main>
 
   <button class="fab" onclick="openSheet()">+</button>
@@ -221,6 +235,40 @@
     <div class="field"><label>Notes</label><textarea id="f-notes" placeholder="Numéro de vol, escales, code d'entrée…"></textarea></div>
     <button class="btn-primary" id="save-btn" onclick="saveStep()">Ajouter l'étape</button>
     <button class="btn-delete" id="delete-btn" onclick="deleteCurrentStep()" style="display:none;">Supprimer cette étape</button>
+  </div>
+
+  <!-- Panneau glissant : ajout / édition d'un voyageur -->
+  <div class="sheet-backdrop" id="traveler-backdrop" onclick="closeTravelerSheet()"></div>
+  <div class="sheet" id="traveler-sheet">
+    <div class="grabber"></div>
+    <div class="sheet-head">
+      <h2 id="traveler-sheet-title">Nouveau voyageur</h2>
+      <button class="sheet-close" onclick="closeTravelerSheet()">✕</button>
+    </div>
+    <div class="field"><label>Prénom</label><input id="t-name" type="text" placeholder="Ex : Camille" autocomplete="off"></div>
+    <div class="field">
+      <label>Couleur</label>
+      <div class="color-picker" id="color-picker"></div>
+    </div>
+    <button class="btn-primary" id="t-save-btn" onclick="saveTraveler()">Ajouter</button>
+    <button class="btn-delete" id="t-delete-btn" onclick="deleteCurrentTraveler()" style="display:none;">Supprimer ce voyageur</button>
+  </div>
+
+  <!-- Panneau glissant : ajout / édition d'un voyageur -->
+  <div class="sheet-backdrop" id="traveler-backdrop" onclick="closeTravelerSheet()"></div>
+  <div class="sheet" id="traveler-sheet">
+    <div class="grabber"></div>
+    <div class="sheet-head">
+      <h2 id="traveler-sheet-title">Nouveau voyageur</h2>
+      <button class="sheet-close" onclick="closeTravelerSheet()">✕</button>
+    </div>
+    <div class="field"><label>Prénom</label><input id="t-name" type="text" placeholder="Ex : Camille" autocomplete="off"></div>
+    <div class="field">
+      <label>Couleur</label>
+      <div class="color-picker" id="color-picker"></div>
+    </div>
+    <button class="btn-primary" id="t-save-btn" onclick="saveTraveler()">Ajouter</button>
+    <button class="btn-delete" id="t-delete-btn" onclick="deleteCurrentTraveler()" style="display:none;">Supprimer ce voyageur</button>
   </div>
 
   <script>
@@ -548,6 +596,7 @@
       document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       if (view === 'map') { setTimeout(() => { initGlobe(); onResize(); }, 80); }
+      if (view === 'budget') { loadTravelers(); }
     }
 
     // ===== Panneau =====
@@ -597,7 +646,110 @@
       return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
     }
 
+    // ============================================================
+    //  VOYAGEURS
+    // ============================================================
+    let allTravelers = [];
+    let editingTravelerId = null;
+    let pickedColor = '#2dd4a7';
+    const TRAVELER_COLORS = ['#2dd4a7', '#e0b87a', '#6ba8ff', '#ff8fa3', '#b388ff', '#ffb74d', '#4dd0e1', '#aed581'];
+
+    async function loadTravelers() {
+      const list = document.getElementById('travelers-list');
+      const { data, error } = await db.from('travelers').select('*').eq('trip_id', TRIP_ID).order('created_at', { ascending: true });
+      if (error) {
+        list.innerHTML = '<div class="empty"><div class="big">⚠️</div><div class="et">Connexion impossible</div>Vérifie la table travelers.</div>';
+        console.error(error); return;
+      }
+      allTravelers = data || [];
+      if (allTravelers.length === 0) {
+        list.innerHTML = '<div class="empty"><div class="big">👥</div><div class="et">Qui part en voyage ?</div>Ajoute les voyageurs pour commencer à partager les dépenses.</div>';
+        return;
+      }
+      list.innerHTML = allTravelers.map(renderTraveler).join('');
+    }
+
+    function renderTraveler(t) {
+      const initial = (t.name || '?').trim().charAt(0).toUpperCase();
+      return '' +
+        '<div class="traveler-card" onclick="openTravelerEdit(\'' + t.id + '\')">' +
+          '<div class="traveler-dot" style="background:' + escapeHtml(t.color) + '">' + escapeHtml(initial) + '</div>' +
+          '<div class="traveler-name">' + escapeHtml(t.name) + '</div>' +
+          '<div class="traveler-edit-hint">›</div>' +
+        '</div>';
+    }
+
+    function buildColorPicker() {
+      const picker = document.getElementById('color-picker');
+      picker.innerHTML = TRAVELER_COLORS.map(c =>
+        '<div class="color-swatch' + (c === pickedColor ? ' active' : '') + '" style="background:' + c + '" onclick="pickColor(\'' + c + '\')"></div>'
+      ).join('');
+    }
+    function pickColor(c) {
+      pickedColor = c;
+      buildColorPicker();
+    }
+
+    function openTravelerSheet() {        // mode AJOUT
+      editingTravelerId = null;
+      pickedColor = TRAVELER_COLORS[allTravelers.length % TRAVELER_COLORS.length]; // couleur différente par défaut
+      document.getElementById('t-name').value = '';
+      document.getElementById('traveler-sheet-title').textContent = 'Nouveau voyageur';
+      document.getElementById('t-save-btn').textContent = 'Ajouter';
+      document.getElementById('t-delete-btn').style.display = 'none';
+      buildColorPicker();
+      document.getElementById('traveler-backdrop').classList.add('open');
+      document.getElementById('traveler-sheet').classList.add('open');
+    }
+
+    function openTravelerEdit(id) {       // mode ÉDITION
+      const t = allTravelers.find(x => x.id === id);
+      if (!t) return;
+      editingTravelerId = id;
+      pickedColor = t.color || '#2dd4a7';
+      document.getElementById('t-name').value = t.name || '';
+      document.getElementById('traveler-sheet-title').textContent = 'Modifier le voyageur';
+      document.getElementById('t-save-btn').textContent = 'Enregistrer';
+      document.getElementById('t-delete-btn').style.display = 'block';
+      buildColorPicker();
+      document.getElementById('traveler-backdrop').classList.add('open');
+      document.getElementById('traveler-sheet').classList.add('open');
+    }
+
+    function closeTravelerSheet() {
+      document.getElementById('traveler-backdrop').classList.remove('open');
+      document.getElementById('traveler-sheet').classList.remove('open');
+    }
+
+    async function saveTraveler() {
+      const btn = document.getElementById('t-save-btn');
+      const name = document.getElementById('t-name').value.trim();
+      if (!name) { alert('Donne un prénom au voyageur.'); return; }
+      btn.disabled = true; btn.textContent = 'Enregistrement…';
+
+      const payload = { trip_id: TRIP_ID, name, color: pickedColor };
+      let error;
+      if (editingTravelerId) {
+        ({ error } = await db.from('travelers').update(payload).eq('id', editingTravelerId));
+      } else {
+        ({ error } = await db.from('travelers').insert(payload));
+      }
+
+      btn.disabled = false; btn.textContent = editingTravelerId ? 'Enregistrer' : 'Ajouter';
+      if (error) { alert('Erreur : ' + error.message); console.error(error); return; }
+      closeTravelerSheet(); loadTravelers();
+    }
+
+    async function deleteCurrentTraveler() {
+      if (!editingTravelerId) return;
+      if (!confirm('Supprimer ce voyageur ? Ses dépenses et parts seront aussi supprimées.')) return;
+      const { error } = await db.from('travelers').delete().eq('id', editingTravelerId);
+      if (error) { alert('Erreur : ' + error.message); return; }
+      closeTravelerSheet(); loadTravelers();
+    }
+
     loadSteps();
+    loadTravelers();
   </script>
 </body>
 </html>

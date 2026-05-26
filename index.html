@@ -3,484 +3,365 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Mon Voyage</title>
+  <title>Voyage</title>
 
-  <!-- Polices : Fraunces (titres, caractère "carnet de voyage") + Outfit (texte, moderne) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-  <!-- Connexion à Supabase (la base de données en ligne) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
     :root {
-      /* ===== Palette teal "forêt / amazonie" ===== */
-      --bg: #f4f6f5;            /* fond blanc cassé légèrement vert */
-      --surface: #ffffff;       /* fond des cards */
-      --ink: #15302b;           /* texte principal, vert très sombre */
-      --ink-soft: #5a726c;      /* texte secondaire */
-      --teal: #0d8a72;          /* couleur d'accent principale */
-      --teal-deep: #0a5d4d;     /* teal foncé */
-      --teal-light: #e3f2ee;    /* teal très clair pour fonds */
-      --line: #e2e8e5;          /* lignes / bordures */
-      --shadow: 0 4px 24px -8px rgba(13, 138, 114, 0.18);
-      --shadow-soft: 0 2px 12px -6px rgba(21, 48, 43, 0.12);
-      --radius: 20px;
-      --radius-sm: 14px;
+      --bg: #0a1614;
+      --bg-2: #0f1f1c;
+      --surface: rgba(255,255,255,0.04);
+      --surface-solid: #162824;
+      --surface-hover: rgba(255,255,255,0.07);
+      --ink: #f0f5f3;
+      --ink-soft: #8aa39c;
+      --ink-faint: #5a726c;
+      --teal: #2dd4a7;
+      --teal-2: #14b88a;
+      --teal-deep: #0d8a72;
+      --teal-glow: rgba(45, 212, 167, 0.15);
+      --gold: #e0b87a;
+      --line: rgba(255,255,255,0.08);
+      --line-strong: rgba(255,255,255,0.14);
+      --radius: 22px;
+      --radius-sm: 16px;
+      --radius-xs: 12px;
+      --ease: cubic-bezier(0.32, 0.72, 0, 1);
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html { scroll-behavior: smooth; }
 
     body {
-      font-family: 'Outfit', sans-serif;
+      font-family: 'Plus Jakarta Sans', sans-serif;
       background: var(--bg);
       color: var(--ink);
       line-height: 1.5;
-      /* espace en bas pour la barre de navigation */
-      padding-bottom: 90px;
+      padding-bottom: 96px;
       min-height: 100vh;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      position: relative;
     }
 
-    /* ===== En-tête ===== */
-    header {
-      padding: 28px 22px 20px;
-      background: linear-gradient(160deg, var(--teal-deep) 0%, var(--teal) 100%);
-      color: #fff;
-      border-radius: 0 0 28px 28px;
-      box-shadow: var(--shadow);
+    body::before {
+      content: '';
+      position: fixed;
+      top: -200px; left: 50%;
+      transform: translateX(-50%);
+      width: 600px; height: 500px;
+      background: radial-gradient(circle, var(--teal-glow) 0%, transparent 65%);
+      pointer-events: none;
+      z-index: 0;
     }
-    header .eyebrow {
-      font-size: 13px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      opacity: 0.8;
-      font-weight: 500;
+
+    .view { display: none; animation: fade 0.45s var(--ease) both; }
+    .view.active { display: block; }
+    @keyframes fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+    header { padding: 54px 24px 22px; position: relative; z-index: 1; }
+    .eyebrow {
+      font-size: 12px; letter-spacing: 0.22em; text-transform: uppercase;
+      color: var(--teal); font-weight: 600; margin-bottom: 10px;
+      display: flex; align-items: center; gap: 8px;
     }
+    .eyebrow::before { content: ''; width: 22px; height: 1px; background: var(--teal); display: inline-block; }
     header h1 {
-      font-family: 'Fraunces', serif;
-      font-weight: 500;
-      font-size: 30px;
-      margin-top: 4px;
-      letter-spacing: -0.01em;
+      font-family: 'Fraunces', serif; font-weight: 500; font-size: 40px;
+      line-height: 1.05; letter-spacing: -0.02em;
     }
-    header .sub {
-      margin-top: 6px;
-      font-size: 14px;
-      opacity: 0.85;
+    header h1 .accent { font-style: italic; color: var(--teal); }
+    .header-stats { display: flex; gap: 26px; margin-top: 22px; }
+    .stat .num { font-family: 'Fraunces', serif; font-size: 26px; font-weight: 500; line-height: 1; }
+    .stat .lbl { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-soft); margin-top: 5px; }
+    .stat .num .unit { font-size: 15px; color: var(--ink-soft); font-family: 'Plus Jakarta Sans'; }
+
+    main { padding: 8px 18px 22px; max-width: 680px; margin: 0 auto; position: relative; z-index: 1; }
+
+    .section-label {
+      font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase;
+      color: var(--ink-faint); font-weight: 600;
+      margin: 22px 6px 16px; display: flex; align-items: center; justify-content: space-between;
     }
 
-    /* ===== Contenu ===== */
-    main { padding: 22px; max-width: 640px; margin: 0 auto; }
-
-    .section-title {
-      font-family: 'Fraunces', serif;
-      font-size: 20px;
-      font-weight: 500;
-      margin-bottom: 14px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
+    .timeline { position: relative; padding-left: 8px; }
+    .timeline::before {
+      content: ''; position: absolute; left: 27px; top: 18px; bottom: 30px;
+      width: 2px; background: linear-gradient(var(--teal-deep), var(--line));
     }
 
-    /* ===== Liste des étapes ===== */
-    #steps-list { display: flex; flex-direction: column; gap: 12px; }
+    .step-card { position: relative; display: flex; gap: 16px; padding: 4px 4px 22px; animation: rise 0.5s var(--ease) both; }
+    @keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
 
-    .step-card {
-      background: var(--surface);
-      border-radius: var(--radius);
-      padding: 16px 18px;
-      box-shadow: var(--shadow-soft);
-      display: flex;
-      gap: 14px;
-      align-items: flex-start;
-      animation: rise 0.4s ease both;
-      border: 1px solid var(--line);
-    }
-    @keyframes rise {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
+    .step-node {
+      flex-shrink: 0; width: 40px; height: 40px; border-radius: 13px;
+      background: var(--surface-solid); border: 1px solid var(--line-strong);
+      display: flex; align-items: center; justify-content: center; font-size: 19px;
+      position: relative; z-index: 2; box-shadow: 0 0 0 5px var(--bg);
     }
 
-    .step-icon {
-      width: 44px; height: 44px;
-      border-radius: 12px;
-      background: var(--teal-light);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 22px;
-      flex-shrink: 0;
+    .step-content {
+      flex: 1; min-width: 0; background: var(--surface); border: 1px solid var(--line);
+      border-radius: var(--radius); padding: 16px 18px; backdrop-filter: blur(12px);
+      transition: transform 0.25s var(--ease), border-color 0.25s, background 0.25s; cursor: default;
     }
-    .step-body { flex: 1; min-width: 0; }
-    .step-type {
-      font-size: 11px;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: var(--teal);
-      font-weight: 600;
-    }
-    .step-title {
-      font-size: 17px;
-      font-weight: 500;
-      margin: 1px 0 3px;
-    }
-    .step-meta {
-      font-size: 13px;
-      color: var(--ink-soft);
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px 12px;
-    }
-    .step-budget {
-      font-weight: 600;
-      color: var(--ink);
-      white-space: nowrap;
-    }
+    .step-content:active { transform: scale(0.99); }
+    .step-content:hover { border-color: var(--line-strong); background: var(--surface-hover); }
+
+    .step-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+    .step-type { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--teal); font-weight: 700; }
+    .step-title { font-family: 'Fraunces', serif; font-size: 19px; font-weight: 500; line-height: 1.2; margin: 3px 0 8px; letter-spacing: -0.01em; }
+    .step-meta { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--ink-soft); }
+    .step-meta a { color: var(--teal); text-decoration: none; }
+    .step-meta .nights { background: var(--teal-glow); color: var(--teal); padding: 2px 9px; border-radius: 99px; font-weight: 600; font-size: 12px; }
+    .step-budget { font-family: 'Fraunces', serif; font-weight: 600; color: var(--gold); white-space: nowrap; font-size: 15px; }
     .step-delete {
-      background: none; border: none;
-      color: var(--ink-soft);
-      font-size: 18px;
-      cursor: pointer;
-      padding: 4px;
-      opacity: 0.5;
-      transition: opacity 0.2s, color 0.2s;
+      background: none; border: none; color: var(--ink-faint); font-size: 16px;
+      cursor: pointer; padding: 2px 4px; line-height: 1; opacity: 0; transition: opacity 0.2s, color 0.2s;
     }
-    .step-delete:hover { opacity: 1; color: #c0392b; }
+    .step-content:hover .step-delete { opacity: 0.6; }
+    .step-delete:hover { color: #ff6b6b; opacity: 1 !important; }
 
-    .empty {
-      text-align: center;
-      padding: 50px 20px;
-      color: var(--ink-soft);
+    .empty { text-align: center; padding: 70px 24px; color: var(--ink-soft); }
+    .empty .big {
+      font-size: 30px; margin-bottom: 18px; width: 76px; height: 76px; border-radius: 24px;
+      background: var(--surface); border: 1px solid var(--line);
+      display: flex; align-items: center; justify-content: center; margin: 0 auto 18px;
     }
-    .empty .big { font-size: 40px; margin-bottom: 10px; }
+    .empty .et { font-family: 'Fraunces', serif; font-size: 20px; color: var(--ink); margin-bottom: 6px; }
+    .loading { text-align: center; padding: 60px; color: var(--ink-faint); }
 
-    .loading { text-align: center; padding: 40px; color: var(--ink-soft); }
+    .placeholder-view { padding: 80px 30px; text-align: center; color: var(--ink-soft); }
+    .placeholder-view .pv-ico {
+      font-size: 32px; width: 84px; height: 84px; border-radius: 26px;
+      background: var(--surface); border: 1px solid var(--line);
+      display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;
+    }
+    .placeholder-view h2 { font-family: 'Fraunces', serif; font-weight: 500; font-size: 24px; color: var(--ink); margin-bottom: 8px; }
 
-    /* ===== Bouton flottant "+" ===== */
     .fab {
-      position: fixed;
-      bottom: 104px;
-      right: 22px;
-      width: 58px; height: 58px;
-      border-radius: 50%;
-      background: var(--teal);
-      color: #fff;
-      border: none;
-      font-size: 30px;
-      box-shadow: 0 8px 24px -6px rgba(13, 138, 114, 0.5);
-      cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      transition: transform 0.15s;
-      z-index: 50;
+      position: fixed; bottom: 112px; right: 22px; width: 60px; height: 60px; border-radius: 20px;
+      background: linear-gradient(145deg, var(--teal), var(--teal-2)); color: #06231d;
+      border: none; font-size: 28px; font-weight: 300;
+      box-shadow: 0 10px 30px -8px rgba(45, 212, 167, 0.55), inset 0 1px 0 rgba(255,255,255,0.3);
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: transform 0.2s var(--ease); z-index: 50;
     }
-    .fab:active { transform: scale(0.92); }
+    .fab:active { transform: scale(0.9) rotate(90deg); }
 
-    /* ===== Barre de navigation du bas ===== */
     .nav {
-      position: fixed;
-      bottom: 0; left: 0; right: 0;
-      background: var(--surface);
-      border-top: 1px solid var(--line);
-      display: flex;
-      justify-content: space-around;
-      padding: 10px 0 14px;
-      box-shadow: 0 -4px 20px -10px rgba(21, 48, 43, 0.15);
-      z-index: 40;
+      position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+      display: flex; gap: 4px; background: rgba(20, 40, 36, 0.7);
+      backdrop-filter: blur(20px) saturate(160%); border: 1px solid var(--line-strong);
+      padding: 7px; border-radius: 22px; box-shadow: 0 12px 40px -10px rgba(0,0,0,0.6); z-index: 40;
     }
     .nav button {
-      background: none; border: none;
-      display: flex; flex-direction: column; align-items: center;
-      gap: 3px;
-      font-size: 11px;
-      color: var(--ink-soft);
-      cursor: pointer;
-      font-family: inherit;
-      transition: color 0.2s;
+      background: none; border: none; cursor: pointer; font-family: inherit;
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      padding: 9px 20px; border-radius: 15px; color: var(--ink-soft);
+      font-size: 11px; font-weight: 500; transition: all 0.3s var(--ease);
     }
-    .nav button .ico { font-size: 20px; }
-    .nav button.active { color: var(--teal); font-weight: 600; }
+    .nav button .ico { font-size: 19px; transition: transform 0.3s var(--ease); }
+    .nav button.active { background: var(--teal-glow); color: var(--teal); }
+    .nav button.active .ico { transform: translateY(-1px) scale(1.05); }
 
-    /* ===== Panneau glissant (bottom sheet) au lieu de pop-up ===== */
     .sheet-backdrop {
-      position: fixed; inset: 0;
-      background: rgba(21, 48, 43, 0.4);
-      backdrop-filter: blur(2px);
-      opacity: 0; pointer-events: none;
-      transition: opacity 0.3s;
-      z-index: 60;
+      position: fixed; inset: 0; background: rgba(4, 12, 10, 0.6);
+      backdrop-filter: blur(4px); opacity: 0; pointer-events: none;
+      transition: opacity 0.4s var(--ease); z-index: 60;
     }
     .sheet-backdrop.open { opacity: 1; pointer-events: auto; }
-
     .sheet {
-      position: fixed;
-      bottom: 0; left: 0; right: 0;
-      background: var(--surface);
-      border-radius: 28px 28px 0 0;
-      padding: 8px 22px 30px;
-      transform: translateY(100%);
-      transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
-      z-index: 61;
-      max-width: 640px;
-      margin: 0 auto;
-      max-height: 90vh;
-      overflow-y: auto;
+      position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg-2);
+      border-top: 1px solid var(--line-strong); border-radius: 30px 30px 0 0;
+      padding: 10px 24px 34px; transform: translateY(100%);
+      transition: transform 0.45s var(--ease); z-index: 61;
+      max-width: 680px; margin: 0 auto; max-height: 92vh; overflow-y: auto;
+      box-shadow: 0 -20px 60px -20px rgba(0,0,0,0.7);
     }
     .sheet.open { transform: translateY(0); }
-    .sheet .grabber {
-      width: 40px; height: 4px;
-      background: var(--line);
-      border-radius: 99px;
-      margin: 8px auto 18px;
-    }
-    .sheet h2 {
-      font-family: 'Fraunces', serif;
-      font-weight: 500;
-      font-size: 22px;
-      margin-bottom: 18px;
-    }
+    .grabber { width: 42px; height: 4px; background: var(--line-strong); border-radius: 99px; margin: 6px auto 22px; }
+    .sheet h2 { font-family: 'Fraunces', serif; font-weight: 500; font-size: 26px; margin-bottom: 22px; letter-spacing: -0.01em; }
 
-    /* ===== Champs de formulaire ===== */
-    .field { margin-bottom: 15px; }
-    .field label {
-      display: block;
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--ink-soft);
-      margin-bottom: 6px;
-    }
+    .field { margin-bottom: 16px; }
+    .field label { display: block; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; color: var(--ink-soft); margin-bottom: 7px; text-transform: uppercase; }
     .field input, .field select, .field textarea {
-      width: 100%;
-      padding: 13px 15px;
-      border: 1px solid var(--line);
-      border-radius: var(--radius-sm);
-      font-family: inherit;
-      font-size: 15px;
-      color: var(--ink);
-      background: var(--bg);
-      transition: border-color 0.2s, background 0.2s;
+      width: 100%; padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--radius-sm);
+      font-family: inherit; font-size: 15px; color: var(--ink); background: var(--surface);
+      transition: border-color 0.25s, background 0.25s, box-shadow 0.25s;
     }
+    .field input::placeholder, .field textarea::placeholder { color: var(--ink-faint); }
     .field input:focus, .field select:focus, .field textarea:focus {
-      outline: none;
-      border-color: var(--teal);
-      background: #fff;
+      outline: none; border-color: var(--teal); background: var(--bg); box-shadow: 0 0 0 4px var(--teal-glow);
     }
-    .field textarea { resize: vertical; min-height: 60px; }
+    .field textarea { resize: vertical; min-height: 64px; }
     .row { display: flex; gap: 12px; }
     .row .field { flex: 1; }
 
-    .type-picker { display: flex; gap: 8px; margin-bottom: 18px; }
+    .type-picker { display: flex; gap: 9px; margin-bottom: 22px; }
     .type-picker button {
-      flex: 1;
-      padding: 14px 6px;
-      border: 1px solid var(--line);
-      background: var(--bg);
-      border-radius: var(--radius-sm);
-      cursor: pointer;
-      font-family: inherit;
-      font-size: 12px;
-      color: var(--ink-soft);
-      display: flex; flex-direction: column; align-items: center; gap: 5px;
-      transition: all 0.2s;
+      flex: 1; padding: 16px 6px; border: 1px solid var(--line); background: var(--surface);
+      border-radius: var(--radius-sm); cursor: pointer; font-family: inherit; font-size: 12px;
+      font-weight: 500; color: var(--ink-soft); display: flex; flex-direction: column;
+      align-items: center; gap: 7px; transition: all 0.25s var(--ease);
     }
-    .type-picker button .ti { font-size: 22px; }
-    .type-picker button.active {
-      border-color: var(--teal);
-      background: var(--teal-light);
-      color: var(--teal-deep);
-      font-weight: 600;
-    }
+    .type-picker button .ti { font-size: 23px; }
+    .type-picker button.active { border-color: var(--teal); background: var(--teal-glow); color: var(--teal); font-weight: 600; transform: translateY(-2px); }
 
     .btn-primary {
-      width: 100%;
-      padding: 16px;
-      background: var(--teal);
-      color: #fff;
-      border: none;
-      border-radius: var(--radius-sm);
-      font-family: inherit;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-      margin-top: 6px;
-      transition: background 0.2s, transform 0.1s;
+      width: 100%; padding: 17px; border: none; border-radius: var(--radius-sm);
+      background: linear-gradient(145deg, var(--teal), var(--teal-2)); color: #06231d;
+      font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer; margin-top: 8px;
+      transition: transform 0.15s var(--ease), box-shadow 0.25s;
+      box-shadow: 0 8px 24px -8px rgba(45, 212, 167, 0.5);
     }
     .btn-primary:active { transform: scale(0.98); }
-    .btn-primary:disabled { opacity: 0.6; cursor: default; }
+    .btn-primary:disabled { opacity: 0.55; cursor: default; }
   </style>
 </head>
 <body>
 
   <header>
-    <div class="eyebrow">Mon carnet de route</div>
-    <h1 id="trip-name">Mon Voyage</h1>
-    <div class="sub" id="trip-sub">Chargement…</div>
+    <div class="eyebrow">Carnet de route</div>
+    <h1>Mon <span class="accent">Voyage</span></h1>
+    <div class="header-stats">
+      <div class="stat"><div class="num" id="stat-steps">0</div><div class="lbl">Étapes</div></div>
+      <div class="stat"><div class="num" id="stat-nights">0</div><div class="lbl">Nuits</div></div>
+      <div class="stat"><div class="num" id="stat-budget">0<span class="unit"> €</span></div><div class="lbl">Budget</div></div>
+    </div>
   </header>
 
-  <main>
-    <div class="section-title">🗺️ Itinéraire</div>
-    <div id="steps-list">
+  <main class="view active" id="view-trip">
+    <div class="section-label"><span>Itinéraire</span></div>
+    <div id="steps-list" class="timeline">
       <div class="loading">Chargement de tes étapes…</div>
     </div>
   </main>
 
-  <!-- Bouton flottant pour ajouter une étape -->
+  <main class="view" id="view-map">
+    <div class="placeholder-view">
+      <div class="pv-ico">📍</div>
+      <h2>La carte arrive</h2>
+      <p>On la branchera juste après — tes étapes s'afficheront ici avec leur position exacte.</p>
+    </div>
+  </main>
+
+  <main class="view" id="view-budget">
+    <div class="placeholder-view">
+      <div class="pv-ico">💰</div>
+      <h2>Le budget arrive</h2>
+      <p>Le détail des dépenses par étape et par catégorie sera affiché ici.</p>
+    </div>
+  </main>
+
   <button class="fab" onclick="openSheet()">+</button>
 
-  <!-- Barre de navigation (les autres onglets viendront ensuite) -->
   <nav class="nav">
-    <button class="active"><span class="ico">🗺️</span>Itinéraire</button>
-    <button onclick="alert('La carte arrive à la prochaine étape !')"><span class="ico">📍</span>Carte</button>
-    <button onclick="alert('Le budget arrive bientôt !')"><span class="ico">💰</span>Budget</button>
+    <button class="active" data-view="trip" onclick="switchView('trip', this)"><span class="ico">🧭</span>Itinéraire</button>
+    <button data-view="map" onclick="switchView('map', this)"><span class="ico">📍</span>Carte</button>
+    <button data-view="budget" onclick="switchView('budget', this)"><span class="ico">💰</span>Budget</button>
   </nav>
 
-  <!-- Panneau glissant pour ajouter une étape -->
   <div class="sheet-backdrop" id="backdrop" onclick="closeSheet()"></div>
   <div class="sheet" id="sheet">
     <div class="grabber"></div>
     <h2>Nouvelle étape</h2>
-
     <div class="type-picker" id="type-picker">
       <button data-type="transport" class="active"><span class="ti">✈️</span>Transport</button>
       <button data-type="logement"><span class="ti">🏠</span>Logement</button>
       <button data-type="activite"><span class="ti">🍽️</span>Activité</button>
     </div>
-
-    <div class="field">
-      <label>Titre</label>
-      <input id="f-title" type="text" placeholder="Ex : Vol Paris → Séoul">
-    </div>
-
-    <div class="field">
-      <label>Lieu</label>
-      <input id="f-location" type="text" placeholder="Ex : Séoul, Corée du Sud">
-    </div>
-
+    <div class="field"><label>Titre</label><input id="f-title" type="text" placeholder="Ex : Vol Paris → Séoul"></div>
+    <div class="field"><label>Lieu</label><input id="f-location" type="text" placeholder="Ex : Séoul, Corée du Sud"></div>
     <div class="row">
-      <div class="field">
-        <label>Du</label>
-        <input id="f-start" type="date">
-      </div>
-      <div class="field">
-        <label>Au</label>
-        <input id="f-end" type="date">
-      </div>
+      <div class="field"><label>Du</label><input id="f-start" type="date"></div>
+      <div class="field"><label>Au</label><input id="f-end" type="date"></div>
     </div>
-
-    <div class="field">
-      <label>Budget (€)</label>
-      <input id="f-budget" type="number" placeholder="0" inputmode="decimal">
-    </div>
-
-    <div class="field">
-      <label>Lien (Airbnb, billet, site…)</label>
-      <input id="f-link" type="url" placeholder="https://…">
-    </div>
-
-    <div class="field">
-      <label>Notes</label>
-      <textarea id="f-notes" placeholder="Numéro de vol, escales, code d'entrée…"></textarea>
-    </div>
-
+    <div class="field"><label>Budget (€)</label><input id="f-budget" type="number" placeholder="0" inputmode="decimal"></div>
+    <div class="field"><label>Lien</label><input id="f-link" type="url" placeholder="https://…"></div>
+    <div class="field"><label>Notes</label><textarea id="f-notes" placeholder="Numéro de vol, escales, code d'entrée…"></textarea></div>
     <button class="btn-primary" id="save-btn" onclick="saveStep()">Ajouter l'étape</button>
   </div>
 
   <script>
-    // ============================================================
-    //  CONFIGURATION — connexion à ta base Supabase
-    // ============================================================
     const SUPABASE_URL = 'https://azbpxkhqpueryhaqorcv.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF6YnB4a2hxcHVlcnloYXFvcmN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk3NjUwNDYsImV4cCI6MjA5NTM0MTA0Nn0.a-mEC1xAzPs_JdQS_q4uSI1uio7mXA3GRCHERQP4Aic';
-
-    // Identifiant du voyage : toi et ton compagnon devez avoir le même.
-    // Plus tard on fera un vrai système "créer / rejoindre un voyage".
     const TRIP_ID = 'mon-voyage';
 
-    // Création du client Supabase
     const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // ============================================================
-    //  ÉTAT
-    // ============================================================
     let selectedType = 'transport';
-
     const TYPE_META = {
       transport: { icon: '✈️', label: 'Transport' },
       logement:  { icon: '🏠', label: 'Logement' },
       activite:  { icon: '🍽️', label: 'Activité' },
     };
 
-    // ============================================================
-    //  CHARGER ET AFFICHER LES ÉTAPES
-    // ============================================================
     async function loadSteps() {
       const list = document.getElementById('steps-list');
-      const { data, error } = await db
-        .from('steps')
-        .select('*')
-        .eq('trip_id', TRIP_ID)
-        .order('start_date', { ascending: true });
+      const { data, error } = await db.from('steps').select('*')
+        .eq('trip_id', TRIP_ID).order('start_date', { ascending: true });
 
       if (error) {
-        list.innerHTML = '<div class="empty"><div class="big">⚠️</div>Erreur de connexion à la base.<br>Vérifie tes clés.</div>';
-        console.error(error);
-        return;
+        list.innerHTML = '<div class="empty"><div class="big">⚠️</div><div class="et">Connexion impossible</div>Vérifie tes clés Supabase.</div>';
+        console.error(error); return;
       }
-
       if (!data || data.length === 0) {
-        list.innerHTML = '<div class="empty"><div class="big">🌱</div>Aucune étape pour l\'instant.<br>Appuie sur + pour commencer ton voyage !</div>';
-        document.getElementById('trip-sub').textContent = '0 étape';
-        return;
+        list.innerHTML = '<div class="empty"><div class="big">🌱</div><div class="et">Ton voyage commence ici</div>Appuie sur + pour ajouter ta première étape.</div>';
+        updateStats([]); return;
       }
-
-      document.getElementById('trip-sub').textContent =
-        data.length + (data.length > 1 ? ' étapes' : ' étape');
-
+      updateStats(data);
       list.innerHTML = data.map(renderStep).join('');
     }
 
-    function renderStep(step) {
-      const meta = TYPE_META[step.type] || { icon: '📌' };
-      const dates = formatDates(step.start_date, step.end_date);
-      const budget = step.budget > 0
-        ? `<span class="step-budget">${Number(step.budget).toLocaleString('fr-FR')} €</span>`
-        : '';
-      const place = step.location_name
-        ? `<span>📍 ${escapeHtml(step.location_name)}</span>` : '';
-      const link = step.link
-        ? `<a href="${escapeHtml(step.link)}" target="_blank" style="color:var(--teal);text-decoration:none;">🔗 lien</a>` : '';
-
-      return `
-        <div class="step-card">
-          <div class="step-icon">${meta.icon}</div>
-          <div class="step-body">
-            <div class="step-type">${meta.label || step.type}</div>
-            <div class="step-title">${escapeHtml(step.title)}</div>
-            <div class="step-meta">
-              ${dates ? `<span>🗓️ ${dates}</span>` : ''}
-              ${place}
-              ${budget}
-              ${link}
-            </div>
-          </div>
-          <button class="step-delete" onclick="deleteStep('${step.id}')">✕</button>
-        </div>`;
+    function updateStats(data) {
+      const totalBudget = data.reduce((s, x) => s + (Number(x.budget) || 0), 0);
+      let totalNights = 0;
+      data.forEach(x => { if (x.type === 'logement') totalNights += nights(x.start_date, x.end_date); });
+      document.getElementById('stat-steps').textContent = data.length;
+      document.getElementById('stat-nights').textContent = totalNights;
+      document.getElementById('stat-budget').innerHTML = totalBudget.toLocaleString('fr-FR') + '<span class="unit"> €</span>';
     }
 
-    // ============================================================
-    //  AJOUTER UNE ÉTAPE
-    // ============================================================
+    function renderStep(step) {
+      const meta = TYPE_META[step.type] || { icon: '📌', label: step.type };
+      const dates = formatDates(step.start_date, step.end_date);
+      const n = step.type === 'logement' ? nights(step.start_date, step.end_date) : 0;
+      const budget = step.budget > 0 ? '<span class="step-budget">' + Number(step.budget).toLocaleString('fr-FR') + ' €</span>' : '';
+      return '' +
+        '<div class="step-card">' +
+          '<div class="step-node">' + meta.icon + '</div>' +
+          '<div class="step-content">' +
+            '<div class="step-head">' +
+              '<div>' +
+                '<div class="step-type">' + meta.label + '</div>' +
+                '<div class="step-title">' + escapeHtml(step.title) + '</div>' +
+              '</div>' +
+              '<button class="step-delete" onclick="deleteStep(\'' + step.id + '\')">✕</button>' +
+            '</div>' +
+            '<div class="step-meta">' +
+              (dates ? '<span>🗓️ ' + dates + '</span>' : '') +
+              (n > 0 ? '<span class="nights">' + n + ' ' + (n>1?'nuits':'nuit') + '</span>' : '') +
+              (step.location_name ? '<span>📍 ' + escapeHtml(step.location_name) + '</span>' : '') +
+              budget +
+              (step.link ? '<a href="' + escapeHtml(step.link) + '" target="_blank">🔗 lien</a>' : '') +
+            '</div>' +
+          '</div>' +
+        '</div>';
+    }
+
     async function saveStep() {
       const btn = document.getElementById('save-btn');
       const title = document.getElementById('f-title').value.trim();
-
       if (!title) { alert('Donne au moins un titre à ton étape.'); return; }
-
-      btn.disabled = true;
-      btn.textContent = 'Enregistrement…';
-
+      btn.disabled = true; btn.textContent = 'Enregistrement…';
       const newStep = {
-        trip_id: TRIP_ID,
-        type: selectedType,
-        title: title,
+        trip_id: TRIP_ID, type: selectedType, title,
         location_name: document.getElementById('f-location').value.trim() || null,
         start_date: document.getElementById('f-start').value || null,
         end_date: document.getElementById('f-end').value || null,
@@ -488,21 +369,10 @@
         link: document.getElementById('f-link').value.trim() || null,
         notes: document.getElementById('f-notes').value.trim() || null,
       };
-
       const { error } = await db.from('steps').insert(newStep);
-
-      btn.disabled = false;
-      btn.textContent = "Ajouter l'étape";
-
-      if (error) {
-        alert('Erreur lors de l\'enregistrement : ' + error.message);
-        console.error(error);
-        return;
-      }
-
-      closeSheet();
-      resetForm();
-      loadSteps();
+      btn.disabled = false; btn.textContent = "Ajouter l'étape";
+      if (error) { alert('Erreur : ' + error.message); console.error(error); return; }
+      closeSheet(); resetForm(); loadSteps();
     }
 
     async function deleteStep(id) {
@@ -512,9 +382,13 @@
       loadSteps();
     }
 
-    // ============================================================
-    //  PANNEAU GLISSANT
-    // ============================================================
+    function switchView(view, btn) {
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      document.getElementById('view-' + view).classList.add('active');
+      document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
+
     function openSheet() {
       document.getElementById('backdrop').classList.add('open');
       document.getElementById('sheet').classList.add('open');
@@ -524,40 +398,31 @@
       document.getElementById('sheet').classList.remove('open');
     }
     function resetForm() {
-      ['f-title','f-location','f-start','f-end','f-budget','f-link','f-notes']
-        .forEach(id => document.getElementById(id).value = '');
+      ['f-title','f-location','f-start','f-end','f-budget','f-link','f-notes'].forEach(id => document.getElementById(id).value = '');
     }
-
-    // Sélecteur de type
     document.getElementById('type-picker').addEventListener('click', (e) => {
-      const btn = e.target.closest('button');
-      if (!btn) return;
+      const btn = e.target.closest('button'); if (!btn) return;
       document.querySelectorAll('#type-picker button').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      selectedType = btn.dataset.type;
+      btn.classList.add('active'); selectedType = btn.dataset.type;
     });
 
-    // ============================================================
-    //  UTILITAIRES
-    // ============================================================
+    function nights(start, end) {
+      if (!start || !end) return 0;
+      const d = (new Date(end) - new Date(start)) / 86400000;
+      return d > 0 ? Math.round(d) : 0;
+    }
     function formatDates(start, end) {
       if (!start) return '';
       const opts = { day: 'numeric', month: 'short' };
       const s = new Date(start).toLocaleDateString('fr-FR', opts);
       if (!end || end === start) return s;
-      const e = new Date(end).toLocaleDateString('fr-FR', opts);
-      return `${s} → ${e}`;
+      return s + ' → ' + new Date(end).toLocaleDateString('fr-FR', opts);
     }
     function escapeHtml(str) {
       if (!str) return '';
-      return str.replace(/[&<>"']/g, m => ({
-        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
-      }[m]));
+      return str.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
     }
 
-    // ============================================================
-    //  DÉMARRAGE
-    // ============================================================
     loadSteps();
   </script>
 </body>

@@ -1,0 +1,1946 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0D1A15" />
+  <title>Carnet — Mon Voyage</title>
+
+  <!-- ── Fonts ─────────────────────────────────────────────── -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <!-- ── Libs ──────────────────────────────────────────────── -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+  <style>
+    /* =================================================================
+       DESIGN TOKENS — dark premium, vert sapin + sand
+       ================================================================= */
+    :root {
+      /* Surfaces */
+      --bg:          #0B1612;            /* fond principal */
+      --bg-2:        #0F1C17;            /* fond secondaire (sidebar) */
+      --surface:     #16241E;            /* cards */
+      --surface-2:   #1C2F27;            /* cards hover */
+      --surface-3:   #243A31;            /* inputs / pills */
+
+      /* Lignes */
+      --line:        rgba(255, 255, 255, 0.055);
+      --line-2:      rgba(255, 255, 255, 0.11);
+      --line-3:      rgba(255, 255, 255, 0.18);
+
+      /* Texte */
+      --ink:         #F2EBD9;            /* texte principal */
+      --ink-2:       #D6CDB8;            /* texte secondaire */
+      --soft:        #93A09A;            /* labels */
+      --muted:       #5F6F68;            /* placeholders */
+
+      /* Accent CTA — sand/beige */
+      --sand:        #E8B57E;
+      --sand-2:      #D49E63;
+      --sand-soft:   rgba(232, 181, 126, 0.12);
+      --sand-ink:    #2A1D0E;            /* texte sur sand */
+
+      /* Couleurs sémantiques par type */
+      --c-transport: #E8B57E;
+      --c-logement:  #6FB39A;
+      --c-activite:  #C97C5C;
+
+      /* Verts d'ambiance */
+      --green:       #4F8C75;
+      --green-soft:  rgba(111, 179, 154, 0.14);
+
+      /* Danger */
+      --danger:      #D87262;
+
+      /* Effets */
+      --shadow-sm:   0 2px 6px rgba(0,0,0,0.30);
+      --shadow:      0 12px 32px -12px rgba(0,0,0,0.55);
+      --shadow-lg:   0 30px 60px -20px rgba(0,0,0,0.65);
+      --glow-sand:   0 8px 26px -10px rgba(232,181,126,0.55);
+
+      /* Radius */
+      --r-xs: 10px;
+      --r-sm: 14px;
+      --r:    22px;
+      --r-lg: 28px;
+      --r-pill: 99px;
+
+      /* Spacing */
+      --sp-1: 6px;  --sp-2: 10px;  --sp-3: 14px;
+      --sp-4: 18px; --sp-5: 24px;  --sp-6: 32px;
+
+      /* Type sizes */
+      --fs-12: 12px; --fs-13: 13px; --fs-14: 14px;
+      --fs-16: 16px; --fs-18: 18px; --fs-22: 22px;
+      --fs-28: 28px; --fs-36: 36px; --fs-56: 56px;
+
+      /* Easing */
+      --ease: cubic-bezier(0.32, 0.72, 0, 1);
+    }
+
+    /* =================================================================
+       RESET
+       ================================================================= */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    html, body { background: var(--bg); color: var(--ink); }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: var(--fs-14);
+      line-height: 1.5;
+      font-weight: 400;
+      letter-spacing: -0.005em;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+      overflow-x: hidden;
+      /* dot-grid subtil pour rappeler l'aesthetic des refs */
+      background-image:
+        radial-gradient(circle at 50% 50%, rgba(232,181,126,0.025), transparent 60%),
+        radial-gradient(rgba(255,255,255,0.025) 1px, transparent 1px);
+      background-size: auto, 22px 22px;
+      background-position: 0 0, 0 0;
+      background-attachment: fixed, fixed;
+    }
+    .h-display { font-family: 'Poppins', sans-serif; font-weight: 600; letter-spacing: -0.025em; }
+    .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+    button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+    a { color: inherit; text-decoration: none; }
+    input, select, textarea { font-family: inherit; color: inherit; }
+    ::selection { background: var(--sand); color: var(--sand-ink); }
+    ::-webkit-scrollbar { width: 10px; height: 10px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 99px; border: 2px solid var(--bg); }
+    ::-webkit-scrollbar-thumb:hover { background: var(--line-3); }
+
+    /* =================================================================
+       APP SHELL — sidebar + main
+       ================================================================= */
+    .app { display: grid; min-height: 100vh; grid-template-columns: 264px 1fr; }
+
+    /* ─── Sidebar ──────────────────────────────────────────── */
+    .sidebar {
+      background: var(--bg-2);
+      border-right: 1px solid var(--line);
+      padding: 26px 18px 22px;
+      display: flex; flex-direction: column;
+      position: sticky; top: 0; height: 100vh;
+    }
+    .brand { display: flex; align-items: center; gap: 11px; margin-bottom: 30px; padding-left: 6px; }
+    .brand-mark {
+      width: 38px; height: 38px; border-radius: 12px;
+      background: linear-gradient(135deg, var(--sand), var(--sand-2));
+      color: var(--sand-ink);
+      display: grid; place-items: center;
+      box-shadow: var(--glow-sand);
+    }
+    .brand-mark svg { width: 19px; height: 19px; }
+    .brand-name { font-family: 'Poppins', sans-serif; font-size: 16px; font-weight: 600; color: var(--ink); letter-spacing: -0.01em; }
+    .brand-sub { font-size: 11px; color: var(--soft); margin-top: 1px; }
+
+    .nav-section {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: var(--muted);
+      padding: 0 12px;
+      margin: 22px 0 10px;
+      font-weight: 600;
+    }
+    .nav-item {
+      display: flex; align-items: center; gap: 12px;
+      width: 100%;
+      padding: 11px 12px;
+      border-radius: 12px;
+      color: var(--ink-2);
+      font-size: 14px; font-weight: 500;
+      transition: background 0.2s, color 0.2s;
+      text-align: left;
+    }
+    .nav-item svg { width: 17px; height: 17px; opacity: 0.65; flex-shrink: 0; }
+    .nav-item:hover { background: rgba(255,255,255,0.04); color: var(--ink); }
+    .nav-item.active {
+      background: linear-gradient(135deg, var(--sand), var(--sand-2));
+      color: var(--sand-ink);
+      box-shadow: var(--glow-sand);
+    }
+    .nav-item.active svg { opacity: 1; }
+    .nav-item .count {
+      margin-left: auto;
+      font-size: 11px;
+      color: var(--soft);
+      font-family: 'JetBrains Mono', monospace;
+      background: rgba(255,255,255,0.05);
+      padding: 2px 8px;
+      border-radius: 99px;
+    }
+    .nav-item.active .count { background: rgba(42,29,14,0.18); color: var(--sand-ink); }
+
+    .trip-switcher {
+      margin-top: auto;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--r-sm);
+      background: var(--surface);
+      display: flex; align-items: center; gap: 12px;
+      transition: border-color 0.2s, background 0.2s;
+      cursor: pointer;
+    }
+    .trip-switcher:hover { border-color: var(--line-2); background: var(--surface-2); }
+    .trip-flag {
+      width: 38px; height: 38px; border-radius: 11px;
+      background: var(--green-soft);
+      color: var(--green);
+      flex-shrink: 0;
+      display: grid; place-items: center;
+      font-family: 'Poppins', sans-serif; font-weight: 600; font-size: 16px;
+    }
+    .trip-info { min-width: 0; flex: 1; }
+    .trip-info-name { font-size: 13.5px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .trip-info-date { font-size: 11.5px; color: var(--soft); margin-top: 2px; font-family: 'JetBrains Mono', monospace; }
+
+    /* =================================================================
+       MAIN — topbar, hero, sections
+       ================================================================= */
+    .main { padding: 30px 48px 80px; max-width: 1340px; overflow: hidden; }
+
+    /* ─── Topbar ────────────────────────────────────────────── */
+    .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 26px; gap: 16px; flex-wrap: wrap; }
+    .crumbs { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--soft); }
+    .crumbs .sep { opacity: 0.4; }
+    .crumbs .here { color: var(--ink); font-weight: 500; }
+    .topbar-actions { display: flex; align-items: center; gap: 10px; }
+    .icon-btn {
+      width: 38px; height: 38px; border-radius: 12px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      display: grid; place-items: center;
+      color: var(--ink-2);
+      transition: background 0.2s, border-color 0.2s, color 0.2s;
+    }
+    .icon-btn:hover { background: var(--surface-2); border-color: var(--line-2); color: var(--ink); }
+    .icon-btn svg { width: 16px; height: 16px; }
+
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 11px 18px 11px 14px;
+      background: linear-gradient(135deg, var(--sand), var(--sand-2));
+      color: var(--sand-ink);
+      border-radius: 12px;
+      font-size: 13.5px; font-weight: 600;
+      letter-spacing: -0.005em;
+      box-shadow: var(--glow-sand);
+      transition: transform 0.15s var(--ease), box-shadow 0.2s, filter 0.2s;
+    }
+    .btn-primary:hover { filter: brightness(1.05); box-shadow: 0 10px 30px -8px rgba(232,181,126,0.65); }
+    .btn-primary:active { transform: scale(0.97); }
+    .btn-primary:disabled { opacity: 0.55; cursor: default; }
+    .btn-primary .plus { font-size: 17px; line-height: 1; }
+
+    /* ─── Hero ──────────────────────────────────────────────── */
+    .hero {
+      position: relative;
+      margin-bottom: 38px;
+      padding: 32px 36px;
+      background: linear-gradient(135deg, var(--surface) 0%, var(--bg-2) 100%);
+      border: 1px solid var(--line);
+      border-radius: var(--r-lg);
+      overflow: hidden;
+    }
+    .hero::before {
+      content: ''; position: absolute; inset: 0;
+      background:
+        radial-gradient(circle at 92% 8%, var(--green-soft), transparent 45%),
+        radial-gradient(circle at 0% 100%, var(--sand-soft), transparent 50%);
+      pointer-events: none;
+    }
+    .hero > * { position: relative; }
+    .eyebrow {
+      display: inline-flex; align-items: center; gap: 10px;
+      font-size: 11px; text-transform: uppercase; letter-spacing: 0.22em;
+      color: var(--sand); font-weight: 600; margin-bottom: 14px;
+    }
+    .eyebrow::before { content: ''; width: 22px; height: 1px; background: var(--sand); }
+    .hero-title {
+      font-size: clamp(40px, 6vw, 64px);
+      line-height: 1.02;
+      margin-bottom: 22px;
+      color: var(--ink);
+    }
+    .hero-title em { font-style: normal; color: var(--sand); }
+    .hero-row { display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 24px; }
+    .hero-meta { display: flex; gap: 36px; flex-wrap: wrap; }
+    .stat .stat-num {
+      font-family: 'Poppins', sans-serif;
+      font-weight: 600;
+      font-size: 38px;
+      line-height: 1;
+      color: var(--ink);
+      letter-spacing: -0.02em;
+    }
+    .stat .stat-num .unit { font-size: 18px; color: var(--soft); margin-left: 3px; font-weight: 500; }
+    .stat .stat-lbl {
+      font-size: 11px; text-transform: uppercase; letter-spacing: 0.16em;
+      color: var(--soft); margin-top: 7px; font-weight: 600;
+    }
+
+    /* ─── Section header ────────────────────────────────────── */
+    .section { margin-bottom: 40px; }
+    .section-head { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 22px; gap: 18px; flex-wrap: wrap; }
+    .section-title {
+      font-family: 'Poppins', sans-serif;
+      font-weight: 600;
+      font-size: 26px;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+    }
+    .section-title em { font-style: normal; color: var(--sand); }
+    .section-sub { font-size: 13px; color: var(--soft); margin-top: 4px; }
+
+    /* =================================================================
+       CONTENT GRID — timeline + rail
+       ================================================================= */
+    .content-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+      gap: 28px;
+      align-items: start;
+    }
+    @media (max-width: 1100px) { .content-grid { grid-template-columns: 1fr; } }
+
+    /* =================================================================
+       TIMELINE — day groups + step cards
+       ================================================================= */
+    .day-group { margin-bottom: 28px; }
+    .day-head { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; padding-left: 4px; }
+    .day-pill {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 7px 14px 7px 12px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--r-pill);
+      font-size: 12px; letter-spacing: 0.04em;
+      color: var(--ink-2);
+      font-weight: 500;
+    }
+    .day-pill .day-num {
+      font-family: 'Poppins', sans-serif;
+      font-weight: 600;
+      color: var(--sand);
+      font-size: 12.5px;
+    }
+    .day-pill .day-date { color: var(--ink); font-weight: 600; }
+    .day-line { flex: 1; height: 1px; background: var(--line); }
+
+    .steps { position: relative; padding-left: 52px; }
+    .steps::before {
+      content: '';
+      position: absolute;
+      left: 19px; top: 22px; bottom: 22px;
+      width: 1px;
+      background: linear-gradient(to bottom, transparent, var(--line-2) 8%, var(--line-2) 92%, transparent);
+    }
+
+    .step {
+      position: relative;
+      margin-bottom: 12px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--r);
+      transition: border-color 0.25s, transform 0.2s var(--ease), background 0.2s, box-shadow 0.25s;
+      cursor: pointer;
+      animation: rise 0.45s var(--ease) both;
+    }
+    .step:hover {
+      border-color: var(--line-2);
+      background: var(--surface-2);
+      box-shadow: var(--shadow);
+      transform: translateY(-1px);
+    }
+    .step:active { transform: translateY(0) scale(0.998); }
+    @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    .step-node {
+      position: absolute; left: -52px; top: 20px;
+      width: 40px; height: 40px; border-radius: 50%;
+      background: var(--surface);
+      border: 1px solid var(--line-2);
+      display: grid; place-items: center; z-index: 2;
+      color: var(--ink-2);
+      transition: transform 0.2s var(--ease);
+    }
+    .step:hover .step-node { transform: scale(1.06); }
+    .step-node svg { width: 17px; height: 17px; }
+    .step[data-type="transport"] .step-node { background: linear-gradient(135deg, var(--sand), var(--sand-2)); border-color: var(--sand-2); color: var(--sand-ink); box-shadow: 0 6px 18px -6px rgba(232,181,126,0.5); }
+    .step[data-type="logement"]  .step-node { background: var(--green-soft); border-color: var(--c-logement); color: var(--c-logement); }
+    .step[data-type="activite"]  .step-node { background: rgba(201,124,92,0.18); border-color: var(--c-activite); color: var(--c-activite); }
+
+    .step-body { display: grid; grid-template-columns: 1fr auto; gap: 20px; padding: 18px 22px; align-items: start; }
+    .step-main { min-width: 0; }
+    .step-type {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.14em;
+      color: var(--soft); font-weight: 600; margin-bottom: 6px;
+    }
+    .step-type .dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; opacity: 0.7; }
+    .step[data-type="transport"] .step-type { color: var(--c-transport); }
+    .step[data-type="logement"]  .step-type { color: var(--c-logement); }
+    .step[data-type="activite"]  .step-type { color: var(--c-activite); }
+
+    .step-title {
+      font-family: 'Poppins', sans-serif;
+      font-weight: 600;
+      font-size: 19px;
+      line-height: 1.2;
+      letter-spacing: -0.015em;
+      color: var(--ink);
+      margin-bottom: 10px;
+      word-break: break-word;
+    }
+    .step-meta { display: flex; flex-wrap: wrap; gap: 8px 14px; font-size: 12.5px; color: var(--soft); align-items: center; }
+    .step-meta .m { display: inline-flex; align-items: center; gap: 6px; }
+    .step-meta .m svg { width: 13px; height: 13px; opacity: 0.7; }
+    .step-meta .nights {
+      display: inline-flex; padding: 3px 9px; border-radius: var(--r-pill);
+      background: var(--green-soft); color: var(--c-logement);
+      font-weight: 600; font-size: 11.5px;
+    }
+    .step-meta a { color: var(--sand); font-weight: 500; display: inline-flex; gap: 5px; align-items: center; }
+    .step-meta a:hover { text-decoration: underline; }
+
+    .step-budget {
+      font-family: 'Poppins', sans-serif;
+      font-weight: 600;
+      font-size: 22px;
+      line-height: 1;
+      color: var(--sand);
+      letter-spacing: -0.01em;
+      text-align: right;
+      white-space: nowrap;
+      padding-top: 16px;
+    }
+    .step-budget .cur { font-size: 13px; color: var(--soft); margin-left: 2px; font-weight: 500; }
+
+    .step-notes {
+      margin: 0 22px; padding: 12px 0 16px;
+      border-top: 1px dashed var(--line-2);
+      font-size: 13px; color: var(--ink-2); line-height: 1.6;
+      white-space: pre-wrap; word-break: break-word;
+    }
+
+    /* =================================================================
+       EMPTY / LOADING
+       ================================================================= */
+    .empty, .loading {
+      text-align: center; padding: 70px 28px; color: var(--soft);
+      background: var(--surface);
+      border: 1px dashed var(--line-2);
+      border-radius: var(--r);
+    }
+    .empty .big {
+      width: 62px; height: 62px; border-radius: 20px;
+      background: var(--surface-2);
+      border: 1px solid var(--line-2);
+      display: grid; place-items: center;
+      margin: 0 auto 16px; color: var(--sand);
+    }
+    .empty .big svg { width: 26px; height: 26px; }
+    .empty .et {
+      font-family: 'Poppins', sans-serif; font-weight: 600;
+      font-size: 22px; color: var(--ink); margin-bottom: 6px; letter-spacing: -0.01em;
+    }
+    .empty b { color: var(--sand); font-weight: 600; }
+
+    /* =================================================================
+       RAIL — cards latérales
+       ================================================================= */
+    .rail { display: flex; flex-direction: column; gap: 16px; position: sticky; top: 24px; }
+    @media (max-width: 1100px) { .rail { position: static; } }
+
+    .rail-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--r);
+      padding: 22px 22px;
+      transition: border-color 0.2s;
+    }
+    .rail-card:hover { border-color: var(--line-2); }
+    .rail-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; gap: 10px; }
+    .rail-head h3 {
+      font-family: 'Poppins', sans-serif; font-weight: 600;
+      font-size: 16px; color: var(--ink); letter-spacing: -0.01em;
+    }
+    .rail-head .link { font-size: 12px; color: var(--soft); transition: color 0.2s; }
+    .rail-head .link:hover { color: var(--sand); }
+
+    /* Next-up */
+    .next-up { display: flex; gap: 14px; align-items: center; }
+    .next-icon {
+      width: 52px; height: 52px; border-radius: 16px;
+      background: linear-gradient(135deg, var(--sand), var(--sand-2));
+      color: var(--sand-ink);
+      display: grid; place-items: center; flex-shrink: 0;
+      box-shadow: var(--glow-sand);
+    }
+    .next-icon svg { width: 22px; height: 22px; }
+    .next-info-type { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--soft); font-weight: 600; margin-bottom: 4px; }
+    .next-info-title {
+      font-family: 'Poppins', sans-serif; font-weight: 600;
+      font-size: 17px; line-height: 1.2; letter-spacing: -0.01em; color: var(--ink);
+    }
+    .next-countdown {
+      margin-top: 16px; padding-top: 14px;
+      border-top: 1px solid var(--line);
+      display: flex; gap: 10px;
+    }
+    .countdown-cell {
+      text-align: center; flex: 1;
+      background: var(--bg-2);
+      border-radius: 12px;
+      padding: 10px 4px;
+    }
+    .countdown-num {
+      font-family: 'Poppins', sans-serif; font-weight: 600;
+      font-size: 22px; line-height: 1; color: var(--ink);
+    }
+    .countdown-lbl { font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--soft); margin-top: 5px; font-weight: 600; }
+
+    /* Budget */
+    .budget-summary { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 14px; }
+    .budget-summary .v {
+      font-family: 'Poppins', sans-serif; font-weight: 600;
+      font-size: 30px; line-height: 1; color: var(--sand); letter-spacing: -0.02em;
+    }
+    .budget-summary .v .cur { font-size: 15px; color: var(--soft); margin-left: 3px; font-weight: 500; }
+    .budget-summary .lbl { font-size: 11px; text-transform: uppercase; letter-spacing: 0.16em; color: var(--soft); font-weight: 600; }
+    .budget-bar { height: 8px; border-radius: var(--r-pill); background: var(--bg-2); overflow: hidden; display: flex; }
+    .budget-bar span { height: 100%; transition: width 0.4s var(--ease); }
+    .budget-legend { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; margin-top: 16px; font-size: 12.5px; }
+    .budget-legend .l { display: flex; align-items: center; gap: 8px; color: var(--soft); }
+    .budget-legend .l .sw { width: 9px; height: 9px; border-radius: 3px; flex-shrink: 0; }
+    .budget-legend .l b { color: var(--ink); font-weight: 600; font-family: 'JetBrains Mono', monospace; margin-left: auto; font-size: 12px; }
+
+    /* Travelers rows */
+    .traveler-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+    .traveler-row:last-child { border-bottom: none; padding-bottom: 0; }
+    .traveler-row:first-of-type { padding-top: 0; }
+    .traveler-dot {
+      width: 32px; height: 32px; border-radius: 50%;
+      display: grid; place-items: center;
+      font-weight: 600; font-size: 13px; color: #fff;
+      flex-shrink: 0;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+    .traveler-name { flex: 1; font-size: 13.5px; font-weight: 500; color: var(--ink); }
+    .traveler-row .more { font-size: 11px; color: var(--soft); font-family: 'JetBrains Mono', monospace; }
+
+    /* =================================================================
+       VIEWS
+       ================================================================= */
+    .view { display: none; }
+    .view.active { display: block; animation: fade 0.4s var(--ease) both; }
+    @keyframes fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* =================================================================
+       GLOBE 3D
+       ================================================================= */
+    .globe-wrap {
+      position: relative;
+      background:
+        radial-gradient(circle at 30% 25%, #1A3329 0%, #0B1612 70%);
+      border: 1px solid var(--line);
+      border-radius: var(--r-lg);
+      overflow: hidden;
+      height: calc(100vh - 280px);
+      min-height: 480px;
+    }
+    #globe-canvas { width: 100%; height: 100%; display: block; cursor: grab; }
+    #globe-canvas:active { cursor: grabbing; }
+
+    .globe-hint {
+      position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+      background: rgba(11,22,18,0.78);
+      color: var(--ink-2);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--line-2);
+      padding: 9px 16px; border-radius: var(--r-pill);
+      font-size: 11.5px; letter-spacing: 0.04em; font-weight: 500;
+      white-space: nowrap; max-width: 92%; overflow: hidden; text-overflow: ellipsis;
+    }
+    .globe-empty {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center; padding: 30px; pointer-events: none; color: var(--soft);
+    }
+    .globe-empty .big {
+      width: 70px; height: 70px; border-radius: 22px;
+      background: var(--surface);
+      border: 1px solid var(--line-2);
+      display: grid; place-items: center;
+      margin: 0 auto 16px;
+    }
+    .globe-empty .big svg { width: 28px; height: 28px; color: var(--sand); }
+    .globe-empty .et { font-family: 'Poppins', sans-serif; font-weight: 600; font-size: 22px; color: var(--ink); margin-bottom: 6px; }
+
+    .map-tooltip {
+      position: absolute; pointer-events: none;
+      background: var(--surface);
+      border: 1px solid var(--line-2);
+      padding: 10px 14px; border-radius: 12px;
+      font-size: 12.5px; color: var(--ink); font-weight: 500;
+      opacity: 0; transition: opacity 0.2s;
+      transform: translate(-50%, calc(-100% - 16px));
+      box-shadow: var(--shadow);
+      z-index: 5; white-space: nowrap;
+    }
+    .map-tooltip .tt-type {
+      font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em;
+      color: var(--sand); font-weight: 600; margin-bottom: 3px;
+    }
+
+    /* =================================================================
+       VOYAGEURS
+       ================================================================= */
+    .traveler-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+    .traveler-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--r);
+      padding: 22px;
+      transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s var(--ease), background 0.2s;
+      cursor: pointer;
+      animation: rise 0.4s var(--ease) both;
+    }
+    .traveler-card:hover { border-color: var(--line-2); background: var(--surface-2); box-shadow: var(--shadow); transform: translateY(-2px); }
+    .traveler-card:active { transform: translateY(0) scale(0.99); }
+    .traveler-card .tc-avatar {
+      width: 52px; height: 52px; border-radius: 16px;
+      color: #fff; display: grid; place-items: center;
+      font-family: 'Poppins', sans-serif; font-weight: 600;
+      font-size: 24px; margin-bottom: 16px;
+      box-shadow: 0 6px 16px -4px rgba(0,0,0,0.4);
+    }
+    .traveler-card .tc-name {
+      font-family: 'Poppins', sans-serif; font-weight: 600;
+      font-size: 17px; color: var(--ink); margin-bottom: 14px;
+    }
+    .traveler-card .tc-stat-row {
+      display: flex; justify-content: space-between;
+      padding-top: 14px; border-top: 1px solid var(--line);
+      font-size: 12px; color: var(--soft);
+    }
+    .traveler-card .tc-stat-row b { color: var(--ink); font-weight: 600; }
+    .add-card {
+      border: 1px dashed var(--line-2);
+      background: transparent;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      min-height: 180px; color: var(--soft); font-size: 13.5px; font-weight: 500; gap: 10px;
+      transition: border-color 0.2s, color 0.2s, background 0.2s;
+    }
+    .add-card:hover { border-color: var(--sand); color: var(--sand); background: var(--sand-soft); }
+    .add-card .plus-circle {
+      width: 40px; height: 40px; border-radius: 50%;
+      border: 1px solid currentColor; display: grid; place-items: center;
+      font-size: 20px; line-height: 1;
+    }
+
+    /* =================================================================
+       FAB + MOBILE NAV (caché desktop)
+       ================================================================= */
+    .fab, .mobile-nav, .mobile-header { display: none; }
+
+    /* =================================================================
+       RESPONSIVE — mobile
+       ================================================================= */
+    @media (max-width: 860px) {
+      .app { grid-template-columns: 1fr; }
+      .sidebar { display: none; }
+      .main { padding: 0 0 120px; }
+      .topbar { display: none; }
+
+      .mobile-header { display: flex; flex-direction: column; padding: 18px 18px 12px; }
+      .mobile-top { display: flex; justify-content: space-between; align-items: center; }
+      .mobile-brand { display: flex; align-items: center; gap: 10px; }
+      .mobile-brand .brand-mark { width: 34px; height: 34px; }
+      .mobile-brand-text { display: flex; flex-direction: column; line-height: 1.1; }
+      .mobile-brand-name { font-family: 'Poppins', sans-serif; font-size: 14px; font-weight: 600; color: var(--ink); }
+      .mobile-brand-sub { font-size: 10.5px; color: var(--soft); }
+
+      .hero { margin: 0 18px 24px; padding: 24px 22px; border-radius: var(--r); }
+      .hero-title { font-size: 38px; margin-bottom: 18px; }
+      .hero-row { gap: 18px; }
+      .hero-meta { gap: 22px; }
+      .stat .stat-num { font-size: 28px; }
+      .stat .stat-num .unit { font-size: 14px; }
+      .stat .stat-lbl { font-size: 10px; }
+
+      .section { margin-bottom: 28px; padding: 0 18px; }
+      .section-title { font-size: 22px; }
+
+      .step-title { font-size: 17px; }
+      .step-budget { font-size: 19px; padding-top: 14px; }
+      .step-body { padding: 14px 16px; gap: 12px; }
+      .step-node { width: 34px; height: 34px; left: -46px; top: 14px; }
+      .step-node svg { width: 14px; height: 14px; }
+      .steps { padding-left: 46px; }
+      .steps::before { left: 16px; }
+      .step-notes { margin: 0 16px; }
+
+      .rail { display: none; }
+
+      .globe-wrap {
+        border-radius: var(--r); margin: 0 18px;
+        height: calc(100vh - 320px); min-height: 380px;
+      }
+
+      .fab {
+        display: grid; place-items: center;
+        position: fixed; bottom: 92px; right: 18px;
+        width: 56px; height: 56px; border-radius: 18px;
+        background: linear-gradient(135deg, var(--sand), var(--sand-2));
+        color: var(--sand-ink);
+        box-shadow: 0 14px 36px -8px rgba(232,181,126,0.55), 0 4px 14px rgba(0,0,0,0.4);
+        z-index: 30;
+        transition: transform 0.2s var(--ease);
+      }
+      .fab:active { transform: scale(0.92) rotate(90deg); }
+      .fab svg { width: 24px; height: 24px; }
+
+      .mobile-nav {
+        display: flex; position: fixed;
+        bottom: 16px; left: 50%; transform: translateX(-50%);
+        background: rgba(15,28,23,0.85);
+        backdrop-filter: blur(24px) saturate(140%);
+        border: 1px solid var(--line-2);
+        padding: 7px; border-radius: 20px;
+        box-shadow: 0 14px 36px -10px rgba(0,0,0,0.5);
+        z-index: 30; gap: 3px;
+      }
+      .mobile-nav button {
+        display: flex; flex-direction: column;
+        align-items: center; gap: 4px;
+        padding: 8px 18px; border-radius: 14px;
+        color: var(--soft); font-size: 10.5px; font-weight: 600;
+        transition: background 0.2s, color 0.2s;
+      }
+      .mobile-nav button svg { width: 18px; height: 18px; }
+      .mobile-nav button.active {
+        background: linear-gradient(135deg, var(--sand), var(--sand-2));
+        color: var(--sand-ink);
+      }
+    }
+
+    /* =================================================================
+       SHEET / MODAL
+       ================================================================= */
+    .sheet-backdrop {
+      position: fixed; inset: 0;
+      background: rgba(5,10,8,0.6);
+      backdrop-filter: blur(6px);
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.35s var(--ease);
+      z-index: 80;
+    }
+    .sheet-backdrop.open { opacity: 1; pointer-events: auto; }
+    .sheet {
+      position: fixed; z-index: 81;
+      background: var(--bg-2);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow-lg);
+      transition: transform 0.4s var(--ease), opacity 0.25s;
+      /* mobile : bottom sheet */
+      left: 0; right: 0; bottom: 0;
+      transform: translateY(100%);
+      border-radius: var(--r-lg) var(--r-lg) 0 0;
+      max-height: 92vh; overflow-y: auto;
+    }
+    .sheet.open { transform: translateY(0); }
+    @media (min-width: 861px) {
+      .sheet {
+        top: 50%; left: 50%; right: auto; bottom: auto;
+        width: 560px; max-width: calc(100vw - 40px);
+        transform: translate(-50%, -48%) scale(0.97);
+        opacity: 0; pointer-events: none;
+        border-radius: var(--r-lg);
+        max-height: calc(100vh - 60px);
+      }
+      .sheet.open { transform: translate(-50%, -50%) scale(1); opacity: 1; pointer-events: auto; }
+    }
+    .grabber {
+      width: 42px; height: 4px;
+      background: var(--line-3);
+      border-radius: 99px; margin: 12px auto 4px;
+    }
+    @media (min-width: 861px) { .grabber { display: none; } }
+    .sheet-inner { padding: 20px 28px 30px; }
+    @media (min-width: 861px) { .sheet-inner { padding: 30px 32px; } }
+    .sheet-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; gap: 14px; }
+    .sheet-head h2 {
+      font-family: 'Poppins', sans-serif; font-weight: 600;
+      font-size: 26px; line-height: 1.1; letter-spacing: -0.02em; color: var(--ink);
+    }
+    .sheet-head .sub { font-size: 13px; color: var(--soft); margin-top: 4px; }
+    .sheet-close {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      display: grid; place-items: center;
+      color: var(--ink-2); flex-shrink: 0;
+      transition: background 0.2s, color 0.2s;
+    }
+    .sheet-close:hover { background: var(--surface-2); color: var(--ink); }
+    .sheet-close svg { width: 14px; height: 14px; }
+
+    /* ─── Type picker ───────────────────────────────────────── */
+    .type-picker { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 22px; }
+    .type-picker button {
+      padding: 16px 8px;
+      border-radius: var(--r-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+      font-size: 12.5px; font-weight: 600; color: var(--soft);
+      transition: all 0.2s var(--ease);
+    }
+    .type-picker button svg { width: 20px; height: 20px; }
+    .type-picker button:hover { border-color: var(--line-2); color: var(--ink-2); }
+    .type-picker button.active {
+      border-color: var(--sand);
+      background: var(--sand-soft);
+      color: var(--sand);
+      box-shadow: 0 0 0 1px var(--sand) inset;
+    }
+
+    /* ─── Fields ─────────────────────────────────────────────── */
+    .field { margin-bottom: 16px; position: relative; }
+    .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .field label {
+      display: block; font-size: 11px; text-transform: uppercase;
+      letter-spacing: 0.14em; color: var(--soft);
+      margin-bottom: 7px; font-weight: 600;
+    }
+    .field input, .field select, .field textarea {
+      width: 100%;
+      padding: 13px 14px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      border-radius: 12px;
+      font-size: 14px;
+      color: var(--ink);
+      transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+    }
+    .field input::placeholder, .field textarea::placeholder { color: var(--muted); }
+    .field input:focus, .field textarea:focus, .field select:focus {
+      outline: none;
+      border-color: var(--sand);
+      background: var(--bg-2);
+      box-shadow: 0 0 0 3px var(--sand-soft);
+    }
+    .field input[type="date"] { color-scheme: dark; }
+    .field textarea { min-height: 90px; resize: vertical; line-height: 1.5; }
+
+    /* ─── Suggestions Nominatim ──────────────────────────────── */
+    .suggestions {
+      position: absolute; top: 100%; left: 0; right: 0;
+      background: var(--surface);
+      border: 1px solid var(--line-2);
+      border-radius: 14px;
+      margin-top: 6px;
+      overflow: hidden;
+      z-index: 5;
+      max-height: 240px;
+      overflow-y: auto;
+      display: none;
+      box-shadow: var(--shadow);
+    }
+    .suggestions.open { display: block; }
+    .suggestion {
+      padding: 11px 14px; font-size: 13px;
+      cursor: pointer;
+      border-bottom: 1px solid var(--line);
+      transition: background 0.15s;
+      display: flex; gap: 10px; align-items: center;
+    }
+    .suggestion:last-child { border-bottom: none; }
+    .suggestion:hover { background: var(--surface-2); }
+    .suggestion .s-ico { color: var(--sand); flex-shrink: 0; display: grid; place-items: center; }
+    .suggestion .s-ico svg { width: 14px; height: 14px; }
+    .suggestion .s-text { color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .loc-status { font-size: 12px; margin-top: 8px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+    .loc-status.ok { color: var(--c-logement); font-weight: 500; }
+
+    /* ─── Color picker (voyageur) ────────────────────────────── */
+    .color-picker { display: flex; flex-wrap: wrap; gap: 10px; }
+    .color-swatch {
+      width: 40px; height: 40px; border-radius: 13px;
+      cursor: pointer; border: 2px solid transparent;
+      transition: transform 0.15s var(--ease), border-color 0.2s;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+    }
+    .color-swatch:hover { transform: scale(1.08); }
+    .color-swatch.active {
+      border-color: var(--ink);
+      transform: scale(1.1);
+      box-shadow: 0 0 0 3px var(--bg-2), 0 0 0 5px var(--sand);
+    }
+
+    /* ─── Sheet actions ──────────────────────────────────────── */
+    .sheet-actions { display: flex; gap: 10px; margin-top: 26px; }
+    .sheet-actions .btn-primary { flex: 1; justify-content: center; padding: 14px; font-size: 14px; }
+    .sheet-actions .btn-ghost {
+      padding: 14px 20px;
+      border: 1px solid var(--line-2);
+      border-radius: 12px;
+      font-size: 13.5px; font-weight: 500;
+      color: var(--ink-2);
+      background: var(--surface);
+      transition: background 0.2s, color 0.2s;
+    }
+    .sheet-actions .btn-ghost:hover { background: var(--surface-2); color: var(--ink); }
+    .btn-delete {
+      width: 100%; margin-top: 12px; padding: 13px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      color: var(--danger);
+      font-size: 13.5px; font-weight: 500;
+      background: transparent;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .btn-delete:hover { background: rgba(216,114,98,0.08); border-color: rgba(216,114,98,0.3); }
+  </style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ╔══════════════════════════════════════════════════════════╗
+       ║  SIDEBAR                                                  ║
+       ╚══════════════════════════════════════════════════════════╝ -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 13.5 13 6V2.5L11 4l-2-1.5v3.5L1 13.5l1 1.5 7-2 1 4-2 1.5v1l3-1 3 1v-1l-2-1.5 1-4 7 2z" stroke-linejoin="round"/></svg>
+      </div>
+      <div>
+        <div class="brand-name">Carnet</div>
+        <div class="brand-sub">Travel planner</div>
+      </div>
+    </div>
+
+    <div class="nav-section">Voyage</div>
+    <button class="nav-item active" data-view="trip">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19h16M6 7l6-3 6 3v10H6z" stroke-linejoin="round"/><circle cx="12" cy="12" r="2"/></svg>
+      Itinéraire
+      <span class="count" id="nav-count-steps">—</span>
+    </button>
+    <button class="nav-item" data-view="map">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 20l-6-3V4l6 3m0 13l6-3m-6 3V7m6 10l6 3V7l-6-3m0 13V4" stroke-linejoin="round"/></svg>
+      Carte
+    </button>
+    <button class="nav-item" data-view="travelers">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="9" r="3"/><circle cx="17" cy="10" r="2.5"/><path d="M3 19c0-3 3-5 6-5s6 2 6 5M14.5 19c.5-2 2.5-3 4.5-3s3.5 1 4 3" stroke-linecap="round"/></svg>
+      Voyageurs
+      <span class="count" id="nav-count-travelers">—</span>
+    </button>
+
+    <div class="trip-switcher">
+      <div class="trip-flag">M</div>
+      <div class="trip-info">
+        <div class="trip-info-name">Mon Voyage</div>
+        <div class="trip-info-date" id="trip-date-range">—</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ╔══════════════════════════════════════════════════════════╗
+       ║  MAIN                                                     ║
+       ╚══════════════════════════════════════════════════════════╝ -->
+  <main class="main">
+
+    <!-- Mobile header -->
+    <div class="mobile-header">
+      <div class="mobile-top">
+        <div class="mobile-brand">
+          <div class="brand-mark">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 13.5 13 6V2.5L11 4l-2-1.5v3.5L1 13.5l1 1.5 7-2 1 4-2 1.5v1l3-1 3 1v-1l-2-1.5 1-4 7 2z" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="mobile-brand-text">
+            <span class="mobile-brand-name">Carnet</span>
+            <span class="mobile-brand-sub">Mon Voyage</span>
+          </div>
+        </div>
+        <button class="icon-btn" onclick="openSheet()" aria-label="Ajouter">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Topbar desktop -->
+    <div class="topbar">
+      <div class="crumbs">
+        <span>Voyages</span>
+        <span class="sep">/</span>
+        <span class="here">Mon Voyage</span>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn-primary" onclick="openSheet()">
+          <span class="plus">+</span> Nouvelle étape
+        </button>
+      </div>
+    </div>
+
+    <!-- Hero -->
+    <header class="hero">
+      <div class="eyebrow">Carnet de route</div>
+      <h1 class="hero-title h-display">Mon <em>Voyage</em></h1>
+      <div class="hero-row">
+        <div class="hero-meta">
+          <div class="stat"><div class="stat-num" id="stat-steps">0</div><div class="stat-lbl">Étapes</div></div>
+          <div class="stat"><div class="stat-num" id="stat-nights">0</div><div class="stat-lbl">Nuits</div></div>
+          <div class="stat"><div class="stat-num" id="stat-budget">0<span class="unit"> €</span></div><div class="stat-lbl">Budget</div></div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ────── Vue Itinéraire ────── -->
+    <div class="view active" id="view-trip">
+      <div class="section">
+        <div class="section-head">
+          <div>
+            <h2 class="section-title h-display">L'<em>itinéraire</em></h2>
+            <div class="section-sub" id="trip-summary">Vol, logement, activités — toutes tes étapes ici</div>
+          </div>
+        </div>
+
+        <div class="content-grid">
+          <div id="steps-list">
+            <div class="loading">Chargement de tes étapes…</div>
+          </div>
+
+          <aside class="rail" id="trip-rail" style="display:none;">
+            <div class="rail-card" id="rail-next" style="display:none;">
+              <div class="rail-head">
+                <h3>Prochaine étape</h3>
+                <span class="link" id="next-countdown-pill"></span>
+              </div>
+              <div class="next-up">
+                <div class="next-icon" id="next-icon"></div>
+                <div>
+                  <div class="next-info-type" id="next-type">—</div>
+                  <div class="next-info-title" id="next-title">—</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="rail-card" id="rail-budget" style="display:none;">
+              <div class="rail-head"><h3>Budget</h3></div>
+              <div class="budget-summary">
+                <div class="v" id="rail-budget-total">0<span class="cur"> €</span></div>
+                <div class="lbl">Total</div>
+              </div>
+              <div class="budget-bar" id="budget-bar"></div>
+              <div class="budget-legend" id="budget-legend"></div>
+            </div>
+
+            <div class="rail-card" id="rail-travelers" style="display:none;">
+              <div class="rail-head">
+                <h3>Voyageurs</h3>
+                <button class="link" onclick="switchView('travelers')">Voir tous →</button>
+              </div>
+              <div id="rail-traveler-list"></div>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </div>
+
+    <!-- ────── Vue Carte ────── -->
+    <div class="view" id="view-map">
+      <div class="section">
+        <div class="section-head">
+          <div>
+            <h2 class="section-title h-display">La <em>route</em></h2>
+            <div class="section-sub">Glisse pour tourner · pince pour zoomer · survole un point pour voir l'étape</div>
+          </div>
+        </div>
+        <div class="globe-wrap">
+          <canvas id="globe-canvas"></canvas>
+          <div class="map-tooltip" id="map-tooltip"></div>
+          <div class="globe-empty" id="globe-empty" style="display:none;">
+            <div class="big">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" stroke-linecap="round"/></svg>
+            </div>
+            <div class="et">Aucun lieu à afficher</div>
+            <div>Ajoute des étapes avec un lieu pour les voir apparaître ici.</div>
+          </div>
+          <div class="globe-hint">🌍 Glisse pour tourner · pince pour zoomer</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ────── Vue Voyageurs ────── -->
+    <div class="view" id="view-travelers">
+      <div class="section">
+        <div class="section-head">
+          <div>
+            <h2 class="section-title h-display">Les <em>voyageurs</em></h2>
+            <div class="section-sub" id="travelers-summary">Qui part en voyage ?</div>
+          </div>
+        </div>
+        <div class="traveler-grid" id="travelers-list">
+          <div class="loading">Chargement…</div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ╔══════════════════════════════════════════════════════════╗
+     ║  FAB + Mobile bottom-nav                                  ║
+     ╚══════════════════════════════════════════════════════════╝ -->
+<button class="fab" onclick="openSheet()" aria-label="Ajouter une étape">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg>
+</button>
+
+<nav class="mobile-nav">
+  <button class="active" data-view="trip">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19h16M6 7l6-3 6 3v10H6z" stroke-linejoin="round"/><circle cx="12" cy="12" r="2"/></svg>
+    Itinéraire
+  </button>
+  <button data-view="map">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 20l-6-3V4l6 3m0 13l6-3m-6 3V7m6 10l6 3V7l-6-3m0 13V4" stroke-linejoin="round"/></svg>
+    Carte
+  </button>
+  <button data-view="travelers">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="9" r="3"/><circle cx="17" cy="10" r="2.5"/><path d="M3 19c0-3 3-5 6-5s6 2 6 5M14.5 19c.5-2 2.5-3 4.5-3s3.5 1 4 3" stroke-linecap="round"/></svg>
+    Voyageurs
+  </button>
+</nav>
+
+<!-- ╔══════════════════════════════════════════════════════════╗
+     ║  SHEET : Étape                                            ║
+     ╚══════════════════════════════════════════════════════════╝ -->
+<div class="sheet-backdrop" id="backdrop" onclick="closeSheet()"></div>
+<div class="sheet" id="sheet" role="dialog" aria-label="Étape">
+  <div class="grabber"></div>
+  <div class="sheet-inner">
+    <div class="sheet-head">
+      <div>
+        <h2 id="sheet-title">Nouvelle étape</h2>
+        <div class="sub">Ajoute un vol, un logement ou une activité</div>
+      </div>
+      <button class="sheet-close" onclick="closeSheet()" aria-label="Fermer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+
+    <div class="type-picker" id="type-picker">
+      <button data-type="transport" class="active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 13.5 13 6V2.5L11 4l-2-1.5v3.5L1 13.5l1 1.5 7-2 1 4-2 1.5v1l3-1 3 1v-1l-2-1.5 1-4 7 2z" stroke-linejoin="round"/></svg>
+        Transport
+      </button>
+      <button data-type="logement">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 21V8l9-5 9 5v13M9 21v-7h6v7" stroke-linejoin="round"/></svg>
+        Logement
+      </button>
+      <button data-type="activite">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12h2l2-7h10l2 7h2M5 12v8h14v-8M8 16h8" stroke-linejoin="round" stroke-linecap="round"/></svg>
+        Activité
+      </button>
+    </div>
+
+    <div class="field"><label>Titre</label><input id="f-title" type="text" placeholder="Ex : Vol Paris → Séoul" /></div>
+    <div class="field">
+      <label>Lieu</label>
+      <input id="f-location" type="text" placeholder="Cherche une ville, une adresse, un lieu…" autocomplete="off" />
+      <div class="suggestions" id="suggestions"></div>
+      <div class="loc-status" id="loc-status"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Du</label><input id="f-start" type="date" /></div>
+      <div class="field"><label>Au</label><input id="f-end" type="date" /></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Budget (€)</label><input id="f-budget" type="number" placeholder="0" inputmode="decimal" /></div>
+      <div class="field"><label>Lien</label><input id="f-link" type="url" placeholder="https://…" /></div>
+    </div>
+    <div class="field"><label>Notes</label><textarea id="f-notes" placeholder="Numéro de vol, escales, code d'entrée…"></textarea></div>
+
+    <div class="sheet-actions">
+      <button class="btn-ghost" onclick="closeSheet()">Annuler</button>
+      <button class="btn-primary" id="save-btn" onclick="saveStep()">
+        <span class="plus">+</span> Ajouter l'étape
+      </button>
+    </div>
+    <button class="btn-delete" id="delete-btn" onclick="deleteCurrentStep()" style="display:none;">Supprimer cette étape</button>
+  </div>
+</div>
+
+<!-- ╔══════════════════════════════════════════════════════════╗
+     ║  SHEET : Voyageur                                         ║
+     ╚══════════════════════════════════════════════════════════╝ -->
+<div class="sheet-backdrop" id="traveler-backdrop" onclick="closeTravelerSheet()"></div>
+<div class="sheet" id="traveler-sheet" role="dialog" aria-label="Voyageur">
+  <div class="grabber"></div>
+  <div class="sheet-inner">
+    <div class="sheet-head">
+      <div>
+        <h2 id="traveler-sheet-title">Nouveau voyageur</h2>
+        <div class="sub">Pour partager les dépenses du voyage</div>
+      </div>
+      <button class="sheet-close" onclick="closeTravelerSheet()" aria-label="Fermer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div class="field"><label>Prénom</label><input id="t-name" type="text" placeholder="Ex : Camille" autocomplete="off" /></div>
+    <div class="field">
+      <label>Couleur</label>
+      <div class="color-picker" id="color-picker"></div>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn-ghost" onclick="closeTravelerSheet()">Annuler</button>
+      <button class="btn-primary" id="t-save-btn" onclick="saveTraveler()">
+        <span class="plus">+</span> Ajouter
+      </button>
+    </div>
+    <button class="btn-delete" id="t-delete-btn" onclick="deleteCurrentTraveler()" style="display:none;">Supprimer ce voyageur</button>
+  </div>
+</div>
+
+<script>
+/* =================================================================
+   SUPABASE — config (constantes identiques à ta version actuelle)
+   ================================================================= */
+const SUPABASE_URL = 'https://azbpxkhqpueryhaqorcv.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF6YnB4a2hxcHVlcnloYXFvcmN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk3NjUwNDYsImV4cCI6MjA5NTM0MTA0Nn0.a-mEC1xAzPs_JdQS_q4uSI1uio7mXA3GRCHERQP4Aic';
+const TRIP_ID      = 'mon-voyage';
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+/* =================================================================
+   ICONS & TYPE META — un seul endroit pour les couleurs par type
+   ================================================================= */
+const ICON_PLANE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 13.5 13 6V2.5L11 4l-2-1.5v3.5L1 13.5l1 1.5 7-2 1 4-2 1.5v1l3-1 3 1v-1l-2-1.5 1-4 7 2z" stroke-linejoin="round"/></svg>';
+const ICON_HOUSE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 21V8l9-5 9 5v13M9 21v-7h6v7" stroke-linejoin="round"/></svg>';
+const ICON_PLATE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12h2l2-7h10l2 7h2M5 12v8h14v-8M8 16h8" stroke-linejoin="round" stroke-linecap="round"/></svg>';
+const ICON_PIN   = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>';
+const ICON_CAL   = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4" stroke-linecap="round"/></svg>';
+const ICON_LINK  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const ICON_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12l5 5L20 7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+const TYPE_META = {
+  transport: { label: 'Transport', icon: ICON_PLANE, color: '#E8B57E' },
+  logement:  { label: 'Logement',  icon: ICON_HOUSE, color: '#6FB39A' },
+  activite:  { label: 'Activité',  icon: ICON_PLATE, color: '#C97C5C' },
+};
+
+/* =================================================================
+   STATE GLOBAL
+   ================================================================= */
+let allSteps        = [];
+let allTravelers    = [];
+let editingId       = null;
+let editingTravelerId = null;
+let selectedType    = 'transport';
+let pickedLat       = null;
+let pickedLon       = null;
+let pickedColor     = '#E8B57E';
+
+const TRAVELER_COLORS = ['#E8B57E', '#6FB39A', '#C97C5C', '#7B9BD4', '#C49AD8', '#E8C547', '#7AB5A8', '#D67E92'];
+
+/* =================================================================
+   UTILS — dates, format, échappement HTML
+   ================================================================= */
+function nights(start, end) {
+  if (!start || !end) return 0;
+  const d = (new Date(end) - new Date(start)) / 86400000;
+  return d > 0 ? Math.round(d) : 0;
+}
+function formatDates(start, end) {
+  if (!start) return '';
+  const opts = { day: 'numeric', month: 'short' };
+  const s = new Date(start).toLocaleDateString('fr-FR', opts);
+  if (!end || end === start) return s;
+  return s + ' → ' + new Date(end).toLocaleDateString('fr-FR', opts);
+}
+function fullDayLabel(d) {
+  const opts = { weekday: 'short', day: 'numeric', month: 'short' };
+  return new Date(d).toLocaleDateString('fr-FR', opts).replace(/\./g, '');
+}
+function escapeHtml(str) {
+  if (str == null) return '';
+  return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+function fmtMoney(n) { return Number(n || 0).toLocaleString('fr-FR'); }
+
+/* =================================================================
+   STEPS — chargement + rendu timeline
+   ================================================================= */
+async function loadSteps() {
+  const list = document.getElementById('steps-list');
+  const { data, error } = await db.from('steps')
+    .select('*').eq('trip_id', TRIP_ID).order('start_date', { ascending: true });
+
+  if (error) {
+    list.innerHTML = `<div class="empty"><div class="big">!</div><div class="et">Connexion impossible</div>Vérifie tes clés Supabase.</div>`;
+    console.error(error); return;
+  }
+
+  allSteps = data || [];
+  document.getElementById('nav-count-steps').textContent = allSteps.length;
+  updateStats(allSteps);
+  updateRail();
+  refreshGlobe();
+
+  if (allSteps.length === 0) {
+    list.innerHTML = `
+      <div class="empty">
+        <div class="big">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3v18M3 12h18" stroke-linecap="round"/></svg>
+        </div>
+        <div class="et">Ton voyage commence ici</div>
+        Appuie sur <b>+ Nouvelle étape</b> pour ajouter ta première étape.
+      </div>`;
+    return;
+  }
+
+  // Group by day
+  const groups = {};
+  allSteps.forEach(s => {
+    const key = s.start_date ? s.start_date.substring(0, 10) : '_';
+    (groups[key] = groups[key] || []).push(s);
+  });
+  const keys = Object.keys(groups).sort();
+  list.innerHTML = keys.map((k, i) => renderDayGroup(k, groups[k], i)).join('');
+}
+
+function renderDayGroup(dateKey, steps, idx) {
+  const label = dateKey === '_' ? 'Sans date' : fullDayLabel(dateKey);
+  const dayNum = dateKey !== '_' ? `<span class="day-num">J${idx + 1}</span>` : '';
+  return `
+    <div class="day-group">
+      <div class="day-head">
+        <div class="day-pill">${dayNum}<span class="day-date">${escapeHtml(label)}</span></div>
+        <div class="day-line"></div>
+      </div>
+      <div class="steps">${steps.map(renderStep).join('')}</div>
+    </div>`;
+}
+
+function renderStep(step) {
+  const meta = TYPE_META[step.type] || { label: step.type, icon: ICON_PIN };
+  const dates = formatDates(step.start_date, step.end_date);
+  const n = step.type === 'logement' ? nights(step.start_date, step.end_date) : 0;
+  const budget = step.budget > 0
+    ? `<div class="step-budget">${fmtMoney(step.budget)}<span class="cur"> €</span></div>` : '';
+  const notesBlock = step.notes
+    ? `<div class="step-notes">${escapeHtml(step.notes)}</div>` : '';
+  return `
+    <div class="step" data-type="${step.type}" onclick="openEdit('${step.id}')">
+      <div class="step-node">${meta.icon}</div>
+      <div class="step-body">
+        <div class="step-main">
+          <div class="step-type"><span class="dot"></span>${meta.label}</div>
+          <div class="step-title">${escapeHtml(step.title)}</div>
+          <div class="step-meta">
+            ${dates ? `<span class="m">${ICON_CAL}${escapeHtml(dates)}</span>` : ''}
+            ${n > 0 ? `<span class="nights">${n} ${n > 1 ? 'nuits' : 'nuit'}</span>` : ''}
+            ${step.location_name ? `<span class="m">${ICON_PIN}${escapeHtml(step.location_name)}</span>` : ''}
+            ${step.link ? `<a href="${escapeHtml(step.link)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${ICON_LINK}lien</a>` : ''}
+          </div>
+        </div>
+        ${budget}
+      </div>
+      ${notesBlock}
+    </div>`;
+}
+
+function updateStats(data) {
+  const totalBudget = data.reduce((s, x) => s + (Number(x.budget) || 0), 0);
+  let totalNights = 0;
+  data.forEach(x => { if (x.type === 'logement') totalNights += nights(x.start_date, x.end_date); });
+  document.getElementById('stat-steps').textContent = data.length;
+  document.getElementById('stat-nights').textContent = totalNights;
+  document.getElementById('stat-budget').innerHTML = fmtMoney(totalBudget) + '<span class="unit"> €</span>';
+
+  // Range sous la sidebar
+  const dated    = data.filter(s => s.start_date).map(s => s.start_date);
+  const endDated = data.filter(s => s.end_date).map(s => s.end_date);
+  const range = document.getElementById('trip-date-range');
+  if (dated.length) {
+    const min = dated.slice().sort()[0];
+    const max = (endDated.length ? endDated.slice().sort() : dated.slice().sort()).pop();
+    range.textContent = formatDates(min, max);
+  } else {
+    range.textContent = 'Aucune date';
+  }
+}
+
+/* =================================================================
+   RAIL — prochaine étape + budget + voyageurs
+   ================================================================= */
+function updateRail() {
+  const rail = document.getElementById('trip-rail');
+  if (allSteps.length === 0 && allTravelers.length === 0) { rail.style.display = 'none'; return; }
+  rail.style.display = 'flex';
+
+  // ─── Prochaine étape
+  const now = new Date(); now.setHours(0,0,0,0);
+  const upcoming = allSteps
+    .filter(s => s.start_date && new Date(s.start_date) >= now)
+    .sort((a,b) => new Date(a.start_date) - new Date(b.start_date))[0];
+  const nextCard = document.getElementById('rail-next');
+  if (upcoming) {
+    nextCard.style.display = 'block';
+    const meta = TYPE_META[upcoming.type] || TYPE_META.transport;
+    document.getElementById('next-icon').innerHTML = meta.icon;
+    document.getElementById('next-icon').style.background =
+      `linear-gradient(135deg, ${meta.color}, ${meta.color}CC)`;
+    document.getElementById('next-icon').style.color = upcoming.type === 'logement' ? '#0F1C17' : '#2A1D0E';
+    document.getElementById('next-type').textContent = meta.label + ' · ' + formatDates(upcoming.start_date, upcoming.end_date);
+    document.getElementById('next-title').textContent = upcoming.title;
+    const days = Math.round((new Date(upcoming.start_date) - now) / 86400000);
+    const pill = document.getElementById('next-countdown-pill');
+    pill.textContent = days === 0 ? "Aujourd'hui" : (days === 1 ? 'Demain' : 'Dans ' + days + ' jours');
+    pill.style.color = 'var(--sand)';
+    pill.style.fontWeight = '600';
+  } else { nextCard.style.display = 'none'; }
+
+  // ─── Budget breakdown
+  const byType = { transport: 0, logement: 0, activite: 0 };
+  let total = 0;
+  allSteps.forEach(s => {
+    const b = Number(s.budget) || 0;
+    if (byType[s.type] != null) byType[s.type] += b;
+    total += b;
+  });
+  const budgetCard = document.getElementById('rail-budget');
+  if (total > 0) {
+    budgetCard.style.display = 'block';
+    document.getElementById('rail-budget-total').innerHTML = fmtMoney(total) + '<span class="cur"> €</span>';
+    const bar = document.getElementById('budget-bar');
+    const lg  = document.getElementById('budget-legend');
+    bar.innerHTML = ''; lg.innerHTML = '';
+    Object.keys(byType).forEach(t => {
+      if (byType[t] <= 0) return;
+      const w = (byType[t] / total * 100).toFixed(1);
+      const span = document.createElement('span');
+      span.style.width = w + '%';
+      span.style.background = TYPE_META[t].color;
+      bar.appendChild(span);
+      lg.insertAdjacentHTML('beforeend',
+        `<div class="l"><span class="sw" style="background:${TYPE_META[t].color}"></span>${TYPE_META[t].label}<b>${fmtMoney(byType[t])} €</b></div>`);
+    });
+  } else { budgetCard.style.display = 'none'; }
+
+  // ─── Travelers preview
+  const travelersCard = document.getElementById('rail-travelers');
+  if (allTravelers.length > 0) {
+    travelersCard.style.display = 'block';
+    const shown = allTravelers.slice(0, 4);
+    const extra = allTravelers.length - shown.length;
+    let html = shown.map(t =>
+      `<div class="traveler-row">
+        <div class="traveler-dot" style="background:${escapeHtml(t.color || '#E8B57E')}">${escapeHtml((t.name || '?').charAt(0).toUpperCase())}</div>
+        <div class="traveler-name">${escapeHtml(t.name)}</div>
+      </div>`).join('');
+    if (extra > 0) html += `<div class="traveler-row"><div class="more">+ ${extra} autres</div></div>`;
+    document.getElementById('rail-traveler-list').innerHTML = html;
+  } else { travelersCard.style.display = 'none'; }
+}
+
+/* =================================================================
+   PLACE SEARCH (Nominatim / OSM)
+   ================================================================= */
+let searchTimer = null;
+const locInput  = document.getElementById('f-location');
+const suggBox   = document.getElementById('suggestions');
+const locStatus = document.getElementById('loc-status');
+
+locInput.addEventListener('input', () => {
+  pickedLat = null; pickedLon = null;
+  locStatus.textContent = ''; locStatus.className = 'loc-status';
+  const q = locInput.value.trim();
+  clearTimeout(searchTimer);
+  if (q.length < 3) { suggBox.classList.remove('open'); return; }
+  searchTimer = setTimeout(() => searchPlace(q), 350);
+});
+
+async function searchPlace(q) {
+  try {
+    const url = 'https://nominatim.openstreetmap.org/search?format=json&limit=5&accept-language=fr&q=' + encodeURIComponent(q);
+    const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    const results = await res.json();
+    if (!results || results.length === 0) { suggBox.classList.remove('open'); return; }
+    suggBox.innerHTML = results.map(r =>
+      `<div class="suggestion" onclick='pickPlace(${r.lat},${r.lon},${JSON.stringify(r.display_name)})'>
+        <span class="s-ico">${ICON_PIN}</span>
+        <span class="s-text">${escapeHtml(r.display_name)}</span>
+      </div>`).join('');
+    suggBox.classList.add('open');
+  } catch (e) { console.error(e); }
+}
+function pickPlace(lat, lon, name) {
+  pickedLat = parseFloat(lat); pickedLon = parseFloat(lon);
+  locInput.value = name;
+  suggBox.classList.remove('open');
+  locStatus.innerHTML = ICON_CHECK + '<span>Position enregistrée</span>';
+  locStatus.className = 'loc-status ok';
+}
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('#f-location') && !e.target.closest('#suggestions')) suggBox.classList.remove('open');
+});
+
+/* =================================================================
+   SHEET — étape : ouverture / édition / sauvegarde / suppression
+   ================================================================= */
+function openSheet() {
+  resetForm();
+  editingId = null;
+  document.getElementById('sheet-title').textContent = 'Nouvelle étape';
+  document.getElementById('save-btn').innerHTML = '<span class="plus">+</span> Ajouter l\'étape';
+  document.getElementById('delete-btn').style.display = 'none';
+  openSheetRaw();
+}
+function openSheetRaw() {
+  document.getElementById('backdrop').classList.add('open');
+  document.getElementById('sheet').classList.add('open');
+  setTimeout(() => document.getElementById('f-title').focus(), 220);
+}
+function closeSheet() {
+  document.getElementById('backdrop').classList.remove('open');
+  document.getElementById('sheet').classList.remove('open');
+}
+function resetForm() {
+  ['f-title','f-location','f-start','f-end','f-budget','f-link','f-notes']
+    .forEach(id => document.getElementById(id).value = '');
+  pickedLat = null; pickedLon = null;
+  locStatus.textContent = ''; locStatus.className = 'loc-status';
+  suggBox.classList.remove('open');
+  selectedType = 'transport';
+  document.querySelectorAll('#type-picker button').forEach(b =>
+    b.classList.toggle('active', b.dataset.type === 'transport'));
+}
+document.getElementById('type-picker').addEventListener('click', (e) => {
+  const btn = e.target.closest('button'); if (!btn) return;
+  document.querySelectorAll('#type-picker button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  selectedType = btn.dataset.type;
+});
+
+function openEdit(id) {
+  const step = allSteps.find(s => s.id === id);
+  if (!step) return;
+  editingId = id;
+  selectedType = step.type;
+  document.querySelectorAll('#type-picker button').forEach(b =>
+    b.classList.toggle('active', b.dataset.type === step.type));
+  document.getElementById('f-title').value  = step.title || '';
+  locInput.value                            = step.location_name || '';
+  document.getElementById('f-start').value  = step.start_date ? step.start_date.substring(0,10) : '';
+  document.getElementById('f-end').value    = step.end_date   ? step.end_date.substring(0,10)   : '';
+  document.getElementById('f-budget').value = step.budget || '';
+  document.getElementById('f-link').value   = step.link || '';
+  document.getElementById('f-notes').value  = step.notes || '';
+  pickedLat = step.latitude; pickedLon = step.longitude;
+  if (step.latitude != null) {
+    locStatus.innerHTML = ICON_CHECK + '<span>Position enregistrée</span>';
+    locStatus.className = 'loc-status ok';
+  } else {
+    locStatus.textContent = ''; locStatus.className = 'loc-status';
+  }
+  document.getElementById('sheet-title').textContent = "Modifier l'étape";
+  document.getElementById('save-btn').innerHTML = '<span class="plus">✓</span> Enregistrer';
+  document.getElementById('delete-btn').style.display = 'block';
+  openSheetRaw();
+}
+
+async function saveStep() {
+  const btn   = document.getElementById('save-btn');
+  const title = document.getElementById('f-title').value.trim();
+  if (!title) { alert('Donne au moins un titre à ton étape.'); return; }
+  btn.disabled = true;
+  const originalLabel = btn.innerHTML;
+  btn.textContent = 'Enregistrement…';
+
+  const payload = {
+    trip_id:       TRIP_ID,
+    type:          selectedType,
+    title,
+    location_name: locInput.value.trim() || null,
+    start_date:    document.getElementById('f-start').value || null,
+    end_date:      document.getElementById('f-end').value   || null,
+    budget:        parseFloat(document.getElementById('f-budget').value) || 0,
+    link:          document.getElementById('f-link').value.trim()   || null,
+    notes:         document.getElementById('f-notes').value.trim()  || null,
+  };
+  if (pickedLat != null && pickedLon != null) {
+    payload.latitude  = pickedLat;
+    payload.longitude = pickedLon;
+  }
+
+  let error;
+  if (editingId) ({ error } = await db.from('steps').update(payload).eq('id', editingId));
+  else           ({ error } = await db.from('steps').insert(payload));
+
+  btn.disabled = false;
+  btn.innerHTML = originalLabel;
+  if (error) { alert('Erreur : ' + error.message); console.error(error); return; }
+  closeSheet(); resetForm(); loadSteps();
+}
+
+async function deleteCurrentStep() {
+  if (!editingId) return;
+  if (!confirm('Supprimer cette étape ?')) return;
+  const { error } = await db.from('steps').delete().eq('id', editingId);
+  if (error) { alert('Erreur : ' + error.message); return; }
+  closeSheet(); resetForm(); loadSteps();
+}
+
+/* =================================================================
+   VOYAGEURS — chargement + sheet + CRUD
+   ================================================================= */
+async function loadTravelers() {
+  const list = document.getElementById('travelers-list');
+  const { data, error } = await db.from('travelers')
+    .select('*').eq('trip_id', TRIP_ID).order('created_at', { ascending: true });
+
+  if (error) {
+    list.innerHTML = `<div class="empty"><div class="big">!</div><div class="et">Connexion impossible</div>Vérifie la table travelers.</div>`;
+    console.error(error); return;
+  }
+
+  allTravelers = data || [];
+  document.getElementById('nav-count-travelers').textContent = allTravelers.length;
+  document.getElementById('travelers-summary').textContent =
+    allTravelers.length === 0 ? 'Qui part en voyage ?'
+    : (allTravelers.length === 1 ? '1 voyageur' : allTravelers.length + ' voyageurs');
+  updateRail();
+
+  const addCard = `
+    <button class="traveler-card add-card" onclick="openTravelerSheet()">
+      <div class="plus-circle">+</div>
+      <span>Ajouter un voyageur</span>
+    </button>`;
+
+  if (allTravelers.length === 0) {
+    list.innerHTML = `
+      <div class="empty" style="grid-column: 1 / -1;">
+        <div class="big">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="9" cy="9" r="3"/><circle cx="17" cy="10" r="2.5"/><path d="M3 19c0-3 3-5 6-5s6 2 6 5M14.5 19c.5-2 2.5-3 4.5-3s3.5 1 4 3" stroke-linecap="round"/></svg>
+        </div>
+        <div class="et">Qui part en voyage ?</div>
+        Ajoute les voyageurs pour commencer à partager les dépenses.
+      </div>` + addCard;
+    return;
+  }
+  list.innerHTML = allTravelers.map(renderTraveler).join('') + addCard;
+}
+
+function renderTraveler(t) {
+  const initial = (t.name || '?').trim().charAt(0).toUpperCase();
+  return `
+    <div class="traveler-card" onclick="openTravelerEdit('${t.id}')">
+      <div class="tc-avatar" style="background:${escapeHtml(t.color || '#E8B57E')}">${escapeHtml(initial)}</div>
+      <div class="tc-name">${escapeHtml(t.name)}</div>
+      <div class="tc-stat-row"><span>Voyageur</span><b>—</b></div>
+    </div>`;
+}
+
+function buildColorPicker() {
+  const picker = document.getElementById('color-picker');
+  picker.innerHTML = TRAVELER_COLORS.map(c =>
+    `<div class="color-swatch${c === pickedColor ? ' active' : ''}" style="background:${c}" onclick="pickColor('${c}')"></div>`
+  ).join('');
+}
+function pickColor(c) { pickedColor = c; buildColorPicker(); }
+
+function openTravelerSheet() {
+  editingTravelerId = null;
+  pickedColor = TRAVELER_COLORS[allTravelers.length % TRAVELER_COLORS.length];
+  document.getElementById('t-name').value = '';
+  document.getElementById('traveler-sheet-title').textContent = 'Nouveau voyageur';
+  document.getElementById('t-save-btn').innerHTML = '<span class="plus">+</span> Ajouter';
+  document.getElementById('t-delete-btn').style.display = 'none';
+  buildColorPicker();
+  document.getElementById('traveler-backdrop').classList.add('open');
+  document.getElementById('traveler-sheet').classList.add('open');
+  setTimeout(() => document.getElementById('t-name').focus(), 220);
+}
+function openTravelerEdit(id) {
+  const t = allTravelers.find(x => x.id === id); if (!t) return;
+  editingTravelerId = id;
+  pickedColor = t.color || '#E8B57E';
+  document.getElementById('t-name').value = t.name || '';
+  document.getElementById('traveler-sheet-title').textContent = 'Modifier le voyageur';
+  document.getElementById('t-save-btn').innerHTML = '<span class="plus">✓</span> Enregistrer';
+  document.getElementById('t-delete-btn').style.display = 'block';
+  buildColorPicker();
+  document.getElementById('traveler-backdrop').classList.add('open');
+  document.getElementById('traveler-sheet').classList.add('open');
+}
+function closeTravelerSheet() {
+  document.getElementById('traveler-backdrop').classList.remove('open');
+  document.getElementById('traveler-sheet').classList.remove('open');
+}
+async function saveTraveler() {
+  const btn  = document.getElementById('t-save-btn');
+  const name = document.getElementById('t-name').value.trim();
+  if (!name) { alert('Donne un prénom au voyageur.'); return; }
+  btn.disabled = true;
+  const orig = btn.innerHTML;
+  btn.textContent = 'Enregistrement…';
+  const payload = { trip_id: TRIP_ID, name, color: pickedColor };
+  let error;
+  if (editingTravelerId) ({ error } = await db.from('travelers').update(payload).eq('id', editingTravelerId));
+  else                   ({ error } = await db.from('travelers').insert(payload));
+  btn.disabled = false; btn.innerHTML = orig;
+  if (error) { alert('Erreur : ' + error.message); console.error(error); return; }
+  closeTravelerSheet(); loadTravelers();
+}
+async function deleteCurrentTraveler() {
+  if (!editingTravelerId) return;
+  if (!confirm('Supprimer ce voyageur ? Ses dépenses et parts seront aussi supprimées.')) return;
+  const { error } = await db.from('travelers').delete().eq('id', editingTravelerId);
+  if (error) { alert('Erreur : ' + error.message); return; }
+  closeTravelerSheet(); loadTravelers();
+}
+
+/* =================================================================
+   VIEW SWITCHING — itinéraire / carte / voyageurs
+   ================================================================= */
+function switchView(view) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  const el = document.getElementById('view-' + view);
+  if (el) el.classList.add('active');
+  document.querySelectorAll('.nav-item[data-view]').forEach(n =>
+    n.classList.toggle('active', n.dataset.view === view));
+  document.querySelectorAll('.mobile-nav button[data-view]').forEach(n =>
+    n.classList.toggle('active', n.dataset.view === view));
+  try { history.replaceState(null, '', '#' + view); } catch(e) {}
+  window.scrollTo({ top: 0, behavior: 'instant' });
+  if (view === 'map')       { setTimeout(() => { initGlobe(); onResize(); }, 80); }
+  if (view === 'travelers') { loadTravelers(); }
+}
+document.querySelectorAll('.nav-item[data-view]').forEach(b =>
+  b.addEventListener('click', () => switchView(b.dataset.view)));
+document.querySelectorAll('.mobile-nav button[data-view]').forEach(b =>
+  b.addEventListener('click', () => switchView(b.dataset.view)));
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') { closeSheet(); closeTravelerSheet(); }
+});
+
+/* =================================================================
+   GLOBE 3D — three.js : init / markers / arcs / interactions
+   ================================================================= */
+let scene, camera, renderer, globeGroup, earthMesh, raycaster, markersGroup;
+let isDragging = false, prevX = 0, prevY = 0;
+let rotV = 0.0008, autoRotate = true;
+let camDist = 3.2, globeReady = false;
+const EARTH_TEX = 'https://unpkg.com/three-globe@2.31.0/example/img/earth-blue-marble.jpg';
+
+function initGlobe() {
+  if (globeReady) return;
+  const canvas = document.getElementById('globe-canvas');
+  const wrap   = canvas.parentElement;
+  const w = wrap.clientWidth  || window.innerWidth;
+  const h = wrap.clientHeight || (window.innerHeight - 280);
+
+  scene  = new THREE.Scene();
+  camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 100);
+  camera.position.z = camDist;
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setSize(w, h);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+  globeGroup = new THREE.Group();
+  scene.add(globeGroup);
+
+  // ─── Earth sphere
+  const geo    = new THREE.SphereGeometry(1, 64, 64);
+  const loader = new THREE.TextureLoader(); loader.crossOrigin = 'anonymous';
+  const mat    = new THREE.MeshPhongMaterial({ color: 0x2C4A3D, shininess: 8, emissive: 0x0A1612, emissiveIntensity: 0.4 });
+  earthMesh    = new THREE.Mesh(geo, mat);
+  globeGroup.add(earthMesh);
+  loader.load(EARTH_TEX, (tex) => {
+    mat.map = tex;
+    mat.color.set(0xCCCCCC);
+    mat.emissiveIntensity = 0.08;
+    mat.needsUpdate = true;
+  });
+
+  // ─── Atmosphere glow (sand-tinted to match accent)
+  const haloGeo = new THREE.SphereGeometry(1.18, 64, 64);
+  const haloMat = new THREE.ShaderMaterial({
+    transparent: true, side: THREE.BackSide,
+    vertexShader:   'varying vec3 vN; void main(){ vN = normalize(normalMatrix * normal); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
+    fragmentShader: 'varying vec3 vN; void main(){ float i = pow(0.7 - dot(vN, vec3(0,0,1.0)), 2.4); gl_FragColor = vec4(0.91, 0.71, 0.49, 1.0) * i * 0.6; }'
+  });
+  globeGroup.add(new THREE.Mesh(haloGeo, haloMat));
+
+  // ─── Lights
+  scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+  const dir = new THREE.DirectionalLight(0xffffff, 0.85);
+  dir.position.set(5, 3, 5);
+  scene.add(dir);
+
+  markersGroup = new THREE.Group(); globeGroup.add(markersGroup);
+  raycaster = new THREE.Raycaster();
+
+  // ─── Interactions
+  canvas.addEventListener('mousedown', onDown);
+  canvas.addEventListener('mousemove', onMove);
+  window.addEventListener('mouseup', onUp);
+  canvas.addEventListener('wheel', onWheel, { passive: false });
+  canvas.addEventListener('touchstart', onTouchStart, { passive: false });
+  canvas.addEventListener('touchmove',  onTouchMove,  { passive: false });
+  canvas.addEventListener('touchend',   onUp);
+  window.addEventListener('resize', onResize);
+
+  globeReady = true;
+  animate();
+  refreshGlobe();
+}
+
+function latLonToVec3(lat, lon, r) {
+  const phi   = (90 - lat) * Math.PI / 180;
+  const theta = (lon + 180) * Math.PI / 180;
+  return new THREE.Vector3(
+    -r * Math.sin(phi) * Math.cos(theta),
+     r * Math.cos(phi),
+     r * Math.sin(phi) * Math.sin(theta)
+  );
+}
+
+function refreshGlobe() {
+  if (!globeReady || !markersGroup) return;
+  while (markersGroup.children.length) markersGroup.remove(markersGroup.children[0]);
+  const pts = allSteps.filter(s => s.latitude != null && s.longitude != null);
+  const emptyEl = document.getElementById('globe-empty');
+  if (emptyEl) emptyEl.style.display = pts.length ? 'none' : 'flex';
+  if (pts.length === 0) return;
+
+  const vecs = [];
+  pts.forEach(s => {
+    const v = latLonToVec3(Number(s.latitude), Number(s.longitude), 1.02);
+    vecs.push(v);
+    const colorHex = TYPE_META[s.type] ? TYPE_META[s.type].color : '#E8B57E';
+    const color = new THREE.Color(colorHex);
+    const dot = new THREE.Mesh(
+      new THREE.SphereGeometry(0.024, 16, 16),
+      new THREE.MeshBasicMaterial({ color })
+    );
+    dot.position.copy(v); dot.userData = s; markersGroup.add(dot);
+    const ring = new THREE.Mesh(
+      new THREE.SphereGeometry(0.045, 16, 16),
+      new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.22 })
+    );
+    ring.position.copy(v); markersGroup.add(ring);
+  });
+  // ─── Arcs entre étapes successives
+  for (let i = 0; i < vecs.length - 1; i++) {
+    const start = vecs[i], end = vecs[i + 1];
+    const mid = start.clone().add(end).multiplyScalar(0.5)
+                    .normalize().multiplyScalar(1.02 + start.distanceTo(end) * 0.28);
+    const curve = new THREE.QuadraticBezierCurve3(start, mid, end);
+    const g = new THREE.BufferGeometry().setFromPoints(curve.getPoints(40));
+    markersGroup.add(new THREE.Line(g, new THREE.LineBasicMaterial({
+      color: 0xE8B57E, transparent: true, opacity: 0.7
+    })));
+  }
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+  if (autoRotate && !isDragging) globeGroup.rotation.y += rotV;
+  renderer.render(scene, camera);
+}
+function onDown(e) { isDragging = true; autoRotate = false; prevX = e.clientX; prevY = e.clientY; }
+function onMove(e) {
+  if (isDragging) {
+    globeGroup.rotation.y += (e.clientX - prevX) * 0.005;
+    globeGroup.rotation.x = Math.max(-1.2, Math.min(1.2, globeGroup.rotation.x + (e.clientY - prevY) * 0.005));
+    prevX = e.clientX; prevY = e.clientY;
+  } else checkHover(e.clientX, e.clientY);
+}
+function onUp() { isDragging = false; }
+function onWheel(e) {
+  e.preventDefault();
+  camDist = Math.max(1.6, Math.min(6, camDist + e.deltaY * 0.002));
+  camera.position.z = camDist;
+}
+let pinchStart = 0;
+function onTouchStart(e) {
+  if (e.touches.length === 1) {
+    isDragging = true; autoRotate = false;
+    prevX = e.touches[0].clientX; prevY = e.touches[0].clientY;
+  } else if (e.touches.length === 2) {
+    pinchStart = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY
+    );
+  }
+}
+function onTouchMove(e) {
+  e.preventDefault();
+  if (e.touches.length === 1 && isDragging) {
+    globeGroup.rotation.y += (e.touches[0].clientX - prevX) * 0.005;
+    globeGroup.rotation.x = Math.max(-1.2, Math.min(1.2, globeGroup.rotation.x + (e.touches[0].clientY - prevY) * 0.005));
+    prevX = e.touches[0].clientX; prevY = e.touches[0].clientY;
+  } else if (e.touches.length === 2) {
+    const d = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY
+    );
+    camDist = Math.max(1.6, Math.min(6, camDist - (d - pinchStart) * 0.01));
+    camera.position.z = camDist;
+    pinchStart = d;
+  }
+}
+function checkHover(clientX, clientY) {
+  const canvas = document.getElementById('globe-canvas');
+  const rect = canvas.getBoundingClientRect();
+  const mouse = new THREE.Vector2(
+    ((clientX - rect.left) / rect.width)  * 2 - 1,
+   -((clientY - rect.top)  / rect.height) * 2 + 1
+  );
+  raycaster.setFromCamera(mouse, camera);
+  const hits = raycaster.intersectObjects(
+    markersGroup.children.filter(c => c.userData && c.userData.title)
+  );
+  const tip = document.getElementById('map-tooltip');
+  if (hits.length) {
+    const s = hits[0].object.userData;
+    tip.innerHTML = `<div class="tt-type">${(TYPE_META[s.type] ? TYPE_META[s.type].label : s.type)}</div>${escapeHtml(s.title)}`;
+    tip.style.left = (clientX - rect.left) + 'px';
+    tip.style.top  = (clientY - rect.top)  + 'px';
+    tip.style.opacity = '1';
+    canvas.style.cursor = 'pointer';
+  } else {
+    tip.style.opacity = '0';
+    canvas.style.cursor = 'grab';
+  }
+}
+function onResize() {
+  if (!globeReady) return;
+  const wrap = document.getElementById('globe-canvas').parentElement;
+  const w = wrap.clientWidth, h = wrap.clientHeight;
+  camera.aspect = w / h; camera.updateProjectionMatrix();
+  renderer.setSize(w, h);
+}
+
+/* =================================================================
+   BOOT
+   ================================================================= */
+const initialView = (location.hash || '').replace('#','').trim();
+if (initialView && document.getElementById('view-' + initialView)) switchView(initialView);
+
+loadSteps();
+loadTravelers();
+</script>
+
+</body>
+</html>

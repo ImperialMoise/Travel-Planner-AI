@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Mon Voyage</title>
+
+  <!-- Polices : Fraunces (titres, caractère "carnet de voyage") + Outfit (texte, moderne) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+  <!-- Connexion à Supabase (la base de données en ligne) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    :root {
+      /* ===== Palette teal "forêt / amazonie" ===== */
+      --bg: #f4f6f5;            /* fond blanc cassé légèrement vert */
+      --surface: #ffffff;       /* fond des cards */
+      --ink: #15302b;           /* texte principal, vert très sombre */
+      --ink-soft: #5a726c;      /* texte secondaire */
+      --teal: #0d8a72;          /* couleur d'accent principale */
+      --teal-deep: #0a5d4d;     /* teal foncé */
+      --teal-light: #e3f2ee;    /* teal très clair pour fonds */
+      --line: #e2e8e5;          /* lignes / bordures */
+      --shadow: 0 4px 24px -8px rgba(13, 138, 114, 0.18);
+      --shadow-soft: 0 2px 12px -6px rgba(21, 48, 43, 0.12);
+      --radius: 20px;
+      --radius-sm: 14px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.5;
+      /* espace en bas pour la barre de navigation */
+      padding-bottom: 90px;
+      min-height: 100vh;
+    }
+
+    /* ===== En-tête ===== */
+    header {
+      padding: 28px 22px 20px;
+      background: linear-gradient(160deg, var(--teal-deep) 0%, var(--teal) 100%);
+      color: #fff;
+      border-radius: 0 0 28px 28px;
+      box-shadow: var(--shadow);
+    }
+    header .eyebrow {
+      font-size: 13px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      opacity: 0.8;
+      font-weight: 500;
+    }
+    header h1 {
+      font-family: 'Fraunces', serif;
+      font-weight: 500;
+      font-size: 30px;
+      margin-top: 4px;
+      letter-spacing: -0.01em;
+    }
+    header .sub {
+      margin-top: 6px;
+      font-size: 14px;
+      opacity: 0.85;
+    }
+
+    /* ===== Contenu ===== */
+    main { padding: 22px; max-width: 640px; margin: 0 auto; }
+
+    .section-title {
+      font-family: 'Fraunces', serif;
+      font-size: 20px;
+      font-weight: 500;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* ===== Liste des étapes ===== */
+    #steps-list { display: flex; flex-direction: column; gap: 12px; }
+
+    .step-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 16px 18px;
+      box-shadow: var(--shadow-soft);
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      animation: rise 0.4s ease both;
+      border: 1px solid var(--line);
+    }
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .step-icon {
+      width: 44px; height: 44px;
+      border-radius: 12px;
+      background: var(--teal-light);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+      flex-shrink: 0;
+    }
+    .step-body { flex: 1; min-width: 0; }
+    .step-type {
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--teal);
+      font-weight: 600;
+    }
+    .step-title {
+      font-size: 17px;
+      font-weight: 500;
+      margin: 1px 0 3px;
+    }
+    .step-meta {
+      font-size: 13px;
+      color: var(--ink-soft);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px 12px;
+    }
+    .step-budget {
+      font-weight: 600;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+    .step-delete {
+      background: none; border: none;
+      color: var(--ink-soft);
+      font-size: 18px;
+      cursor: pointer;
+      padding: 4px;
+      opacity: 0.5;
+      transition: opacity 0.2s, color 0.2s;
+    }
+    .step-delete:hover { opacity: 1; color: #c0392b; }
+
+    .empty {
+      text-align: center;
+      padding: 50px 20px;
+      color: var(--ink-soft);
+    }
+    .empty .big { font-size: 40px; margin-bottom: 10px; }
+
+    .loading { text-align: center; padding: 40px; color: var(--ink-soft); }
+
+    /* ===== Bouton flottant "+" ===== */
+    .fab {
+      position: fixed;
+      bottom: 104px;
+      right: 22px;
+      width: 58px; height: 58px;
+      border-radius: 50%;
+      background: var(--teal);
+      color: #fff;
+      border: none;
+      font-size: 30px;
+      box-shadow: 0 8px 24px -6px rgba(13, 138, 114, 0.5);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: transform 0.15s;
+      z-index: 50;
+    }
+    .fab:active { transform: scale(0.92); }
+
+    /* ===== Barre de navigation du bas ===== */
+    .nav {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: var(--surface);
+      border-top: 1px solid var(--line);
+      display: flex;
+      justify-content: space-around;
+      padding: 10px 0 14px;
+      box-shadow: 0 -4px 20px -10px rgba(21, 48, 43, 0.15);
+      z-index: 40;
+    }
+    .nav button {
+      background: none; border: none;
+      display: flex; flex-direction: column; align-items: center;
+      gap: 3px;
+      font-size: 11px;
+      color: var(--ink-soft);
+      cursor: pointer;
+      font-family: inherit;
+      transition: color 0.2s;
+    }
+    .nav button .ico { font-size: 20px; }
+    .nav button.active { color: var(--teal); font-weight: 600; }
+
+    /* ===== Panneau glissant (bottom sheet) au lieu de pop-up ===== */
+    .sheet-backdrop {
+      position: fixed; inset: 0;
+      background: rgba(21, 48, 43, 0.4);
+      backdrop-filter: blur(2px);
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.3s;
+      z-index: 60;
+    }
+    .sheet-backdrop.open { opacity: 1; pointer-events: auto; }
+
+    .sheet {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: var(--surface);
+      border-radius: 28px 28px 0 0;
+      padding: 8px 22px 30px;
+      transform: translateY(100%);
+      transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+      z-index: 61;
+      max-width: 640px;
+      margin: 0 auto;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .sheet.open { transform: translateY(0); }
+    .sheet .grabber {
+      width: 40px; height: 4px;
+      background: var(--line);
+      border-radius: 99px;
+      margin: 8px auto 18px;
+    }
+    .sheet h2 {
+      font-family: 'Fraunces', serif;
+      font-weight: 500;
+      font-size: 22px;
+      margin-bottom: 18px;
+    }
+
+    /* ===== Champs de formulaire ===== */
+    .field { margin-bottom: 15px; }
+    .field label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--ink-soft);
+      margin-bottom: 6px;
+    }
+    .field input, .field select, .field textarea {
+      width: 100%;
+      padding: 13px 15px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      font-family: inherit;
+      font-size: 15px;
+      color: var(--ink);
+      background: var(--bg);
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .field input:focus, .field select:focus, .field textarea:focus {
+      outline: none;
+      border-color: var(--teal);
+      background: #fff;
+    }
+    .field textarea { resize: vertical; min-height: 60px; }
+    .row { display: flex; gap: 12px; }
+    .row .field { flex: 1; }
+
+    .type-picker { display: flex; gap: 8px; margin-bottom: 18px; }
+    .type-picker button {
+      flex: 1;
+      padding: 14px 6px;
+      border: 1px solid var(--line);
+      background: var(--bg);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 12px;
+      color: var(--ink-soft);
+      display: flex; flex-direction: column; align-items: center; gap: 5px;
+      transition: all 0.2s;
+    }
+    .type-picker button .ti { font-size: 22px; }
+    .type-picker button.active {
+      border-color: var(--teal);
+      background: var(--teal-light);
+      color: var(--teal-deep);
+      font-weight: 600;
+    }
+
+    .btn-primary {
+      width: 100%;
+      padding: 16px;
+      background: var(--teal);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 6px;
+      transition: background 0.2s, transform 0.1s;
+    }
+    .btn-primary:active { transform: scale(0.98); }
+    .btn-primary:disabled { opacity: 0.6; cursor: default; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="eyebrow">Mon carnet de route</div>
+    <h1 id="trip-name">Mon Voyage</h1>
+    <div class="sub" id="trip-sub">Chargement…</div>
+  </header>
+
+  <main>
+    <div class="section-title">🗺️ Itinéraire</div>
+    <div id="steps-list">
+      <div class="loading">Chargement de tes étapes…</div>
+    </div>
+  </main>
+
+  <!-- Bouton flottant pour ajouter une étape -->
+  <button class="fab" onclick="openSheet()">+</button>
+
+  <!-- Barre de navigation (les autres onglets viendront ensuite) -->
+  <nav class="nav">
+    <button class="active"><span class="ico">🗺️</span>Itinéraire</button>
+    <button onclick="alert('La carte arrive à la prochaine étape !')"><span class="ico">📍</span>Carte</button>
+    <button onclick="alert('Le budget arrive bientôt !')"><span class="ico">💰</span>Budget</button>
+  </nav>
+
+  <!-- Panneau glissant pour ajouter une étape -->
+  <div class="sheet-backdrop" id="backdrop" onclick="closeSheet()"></div>
+  <div class="sheet" id="sheet">
+    <div class="grabber"></div>
+    <h2>Nouvelle étape</h2>
+
+    <div class="type-picker" id="type-picker">
+      <button data-type="transport" class="active"><span class="ti">✈️</span>Transport</button>
+      <button data-type="logement"><span class="ti">🏠</span>Logement</button>
+      <button data-type="activite"><span class="ti">🍽️</span>Activité</button>
+    </div>
+
+    <div class="field">
+      <label>Titre</label>
+      <input id="f-title" type="text" placeholder="Ex : Vol Paris → Séoul">
+    </div>
+
+    <div class="field">
+      <label>Lieu</label>
+      <input id="f-location" type="text" placeholder="Ex : Séoul, Corée du Sud">
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label>Du</label>
+        <input id="f-start" type="date">
+      </div>
+      <div class="field">
+        <label>Au</label>
+        <input id="f-end" type="date">
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Budget (€)</label>
+      <input id="f-budget" type="number" placeholder="0" inputmode="decimal">
+    </div>
+
+    <div class="field">
+      <label>Lien (Airbnb, billet, site…)</label>
+      <input id="f-link" type="url" placeholder="https://…">
+    </div>
+
+    <div class="field">
+      <label>Notes</label>
+      <textarea id="f-notes" placeholder="Numéro de vol, escales, code d'entrée…"></textarea>
+    </div>
+
+    <button class="btn-primary" id="save-btn" onclick="saveStep()">Ajouter l'étape</button>
+  </div>
+
+  <script>
+    // ============================================================
+    //  CONFIGURATION — connexion à ta base Supabase
+    // ============================================================
+    const SUPABASE_URL = 'https://azbpxkhqpueryhaqorcv.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF6YnB4a2hxcHVlcnloYXFvcmN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk3NjUwNDYsImV4cCI6MjA5NTM0MTA0Nn0.a-mEC1xAzPs_JdQS_q4uSI1uio7mXA3GRCHERQP4Aic';
+
+    // Identifiant du voyage : toi et ton compagnon devez avoir le même.
+    // Plus tard on fera un vrai système "créer / rejoindre un voyage".
+    const TRIP_ID = 'mon-voyage';
+
+    // Création du client Supabase
+    const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // ============================================================
+    //  ÉTAT
+    // ============================================================
+    let selectedType = 'transport';
+
+    const TYPE_META = {
+      transport: { icon: '✈️', label: 'Transport' },
+      logement:  { icon: '🏠', label: 'Logement' },
+      activite:  { icon: '🍽️', label: 'Activité' },
+    };
+
+    // ============================================================
+    //  CHARGER ET AFFICHER LES ÉTAPES
+    // ============================================================
+    async function loadSteps() {
+      const list = document.getElementById('steps-list');
+      const { data, error } = await db
+        .from('steps')
+        .select('*')
+        .eq('trip_id', TRIP_ID)
+        .order('start_date', { ascending: true });
+
+      if (error) {
+        list.innerHTML = '<div class="empty"><div class="big">⚠️</div>Erreur de connexion à la base.<br>Vérifie tes clés.</div>';
+        console.error(error);
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        list.innerHTML = '<div class="empty"><div class="big">🌱</div>Aucune étape pour l\'instant.<br>Appuie sur + pour commencer ton voyage !</div>';
+        document.getElementById('trip-sub').textContent = '0 étape';
+        return;
+      }
+
+      document.getElementById('trip-sub').textContent =
+        data.length + (data.length > 1 ? ' étapes' : ' étape');
+
+      list.innerHTML = data.map(renderStep).join('');
+    }
+
+    function renderStep(step) {
+      const meta = TYPE_META[step.type] || { icon: '📌' };
+      const dates = formatDates(step.start_date, step.end_date);
+      const budget = step.budget > 0
+        ? `<span class="step-budget">${Number(step.budget).toLocaleString('fr-FR')} €</span>`
+        : '';
+      const place = step.location_name
+        ? `<span>📍 ${escapeHtml(step.location_name)}</span>` : '';
+      const link = step.link
+        ? `<a href="${escapeHtml(step.link)}" target="_blank" style="color:var(--teal);text-decoration:none;">🔗 lien</a>` : '';
+
+      return `
+        <div class="step-card">
+          <div class="step-icon">${meta.icon}</div>
+          <div class="step-body">
+            <div class="step-type">${meta.label || step.type}</div>
+            <div class="step-title">${escapeHtml(step.title)}</div>
+            <div class="step-meta">
+              ${dates ? `<span>🗓️ ${dates}</span>` : ''}
+              ${place}
+              ${budget}
+              ${link}
+            </div>
+          </div>
+          <button class="step-delete" onclick="deleteStep('${step.id}')">✕</button>
+        </div>`;
+    }
+
+    // ============================================================
+    //  AJOUTER UNE ÉTAPE
+    // ============================================================
+    async function saveStep() {
+      const btn = document.getElementById('save-btn');
+      const title = document.getElementById('f-title').value.trim();
+
+      if (!title) { alert('Donne au moins un titre à ton étape.'); return; }
+
+      btn.disabled = true;
+      btn.textContent = 'Enregistrement…';
+
+      const newStep = {
+        trip_id: TRIP_ID,
+        type: selectedType,
+        title: title,
+        location_name: document.getElementById('f-location').value.trim() || null,
+        start_date: document.getElementById('f-start').value || null,
+        end_date: document.getElementById('f-end').value || null,
+        budget: parseFloat(document.getElementById('f-budget').value) || 0,
+        link: document.getElementById('f-link').value.trim() || null,
+        notes: document.getElementById('f-notes').value.trim() || null,
+      };
+
+      const { error } = await db.from('steps').insert(newStep);
+
+      btn.disabled = false;
+      btn.textContent = "Ajouter l'étape";
+
+      if (error) {
+        alert('Erreur lors de l\'enregistrement : ' + error.message);
+        console.error(error);
+        return;
+      }
+
+      closeSheet();
+      resetForm();
+      loadSteps();
+    }
+
+    async function deleteStep(id) {
+      if (!confirm('Supprimer cette étape ?')) return;
+      const { error } = await db.from('steps').delete().eq('id', id);
+      if (error) { alert('Erreur : ' + error.message); return; }
+      loadSteps();
+    }
+
+    // ============================================================
+    //  PANNEAU GLISSANT
+    // ============================================================
+    function openSheet() {
+      document.getElementById('backdrop').classList.add('open');
+      document.getElementById('sheet').classList.add('open');
+    }
+    function closeSheet() {
+      document.getElementById('backdrop').classList.remove('open');
+      document.getElementById('sheet').classList.remove('open');
+    }
+    function resetForm() {
+      ['f-title','f-location','f-start','f-end','f-budget','f-link','f-notes']
+        .forEach(id => document.getElementById(id).value = '');
+    }
+
+    // Sélecteur de type
+    document.getElementById('type-picker').addEventListener('click', (e) => {
+      const btn = e.target.closest('button');
+      if (!btn) return;
+      document.querySelectorAll('#type-picker button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selectedType = btn.dataset.type;
+    });
+
+    // ============================================================
+    //  UTILITAIRES
+    // ============================================================
+    function formatDates(start, end) {
+      if (!start) return '';
+      const opts = { day: 'numeric', month: 'short' };
+      const s = new Date(start).toLocaleDateString('fr-FR', opts);
+      if (!end || end === start) return s;
+      const e = new Date(end).toLocaleDateString('fr-FR', opts);
+      return `${s} → ${e}`;
+    }
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/[&<>"']/g, m => ({
+        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+      }[m]));
+    }
+
+    // ============================================================
+    //  DÉMARRAGE
+    // ============================================================
+    loadSteps();
+  </script>
+</body>
+</html>

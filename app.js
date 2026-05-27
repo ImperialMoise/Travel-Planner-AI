@@ -639,11 +639,28 @@ function removeEscale(i){_escales.splice(i,1);renderEscales()}
 function renderEscales(){
   const c=document.getElementById('s-escales');
   if(!c)return;
-  c.innerHTML=_escales.map((e,i)=>`<div class="escale-row">
-    <input type="text" placeholder="Lieu de l'escale" value="${esc(e.lieu)}" oninput="_escales[${i}].lieu=this.value" style="flex:2"/>
-    <input type="text" placeholder="Durée" value="${esc(e.duree)}" oninput="_escales[${i}].duree=this.value" style="flex:1"/>
+  c.innerHTML=_escales.map((e,i)=>`<div class="escale-row" style="align-items:flex-start;gap:.4rem">
+    <div class="autocomplete-wrap" style="flex:2">
+      <input id="escale-lieu-${i}" type="text" placeholder="Lieu de l'escale" value="${esc(e.lieu)}"
+        oninput="_escales[${i}].lieu=this.value;acInput(this,'escale-list-${i}')"
+        onkeydown="acKeydown(event,'escale-list-${i}')"/>
+      <div class="autocomplete-list" id="escale-list-${i}"></div>
+    </div>
+    <input type="time" value="${esc(e.arrivee||'')}" title="Heure d'arrivée à l'escale"
+      oninput="_escales[${i}].arrivee=this.value;_calcEscaleDuree(${i})" style="flex:1"/>
+    <input type="time" value="${esc(e.depart||'')}" title="Heure de départ de l'escale"
+      oninput="_escales[${i}].depart=this.value;_calcEscaleDuree(${i})" style="flex:1"/>
+    <span class="escale-dur-badge" id="escale-dur-${i}">${e.duree?esc(e.duree):''}</span>
     <button class="escale-del" onclick="removeEscale(${i})">×</button>
   </div>`).join('');
+}
+
+function _calcEscaleDuree(i){
+  const e=_escales[i];
+  const d=calcDuree(e.arrivee,e.depart,false);
+  e.duree=d;
+  const badge=document.getElementById(`escale-dur-${i}`);
+  if(badge)badge.textContent=d||'';
 }
 
 function _payerRow(idPrix,idPayer,idChk){

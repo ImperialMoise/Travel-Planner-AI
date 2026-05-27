@@ -1115,9 +1115,6 @@ function focusOnMap(di,si){
   },350);
 }
 
-/* ══ Rendu carte de jour ══ */
-function toggleDay(di){const c=document.querySelector(`[data-day="${di}"]`);if(c)c.classList.toggle('expanded')}
-
 /* ══ Statut du jour ══ */
 function getTripDayStatus(di){
   if(!state.trip||!state.trip.startDate)return'future';
@@ -1137,60 +1134,76 @@ function getDaysUntil(di){
   return Math.round((dayDate-today)/86400000);
 }
 
+/* ══ État vue itinéraire ══ */
+let _activeDay=0;
+let _itinExpanded=false;
+function setActiveDay(di){_activeDay=di;renderItinerary();if(!_itinExpanded){const g=document.getElementById('days-grid');if(g)g.scrollIntoView({behavior:'smooth',block:'nearest'})}}
+function toggleItinExpand(){_itinExpanded=!_itinExpanded;renderItinerary()}
+
+/* ══ Rendu carte de jour ══ */
+function toggleDay(di){const c=document.querySelector(`[data-day="${di}"]`);if(c)c.classList.toggle('expanded')}
+
 function renderDayCard(day,di){
 const stepsHtml=day.steps.map((step,si)=>{
   const key=`${di}-${si}`;
   const transportLabel=step.transport?step.transport.charAt(0).toUpperCase()+step.transport.slice(1):'';
-  return `<div class="step-item">
-  <div class="step-time">${esc(step.time)}</div>
-  <div class="step-content">
-    <input class="step-label" type="text" value="${esc(step.label)}" oninput="syncStepLabel(${di},${si},this.value)" placeholder="Titre de l'étape"/>
-    <div class="step-lieu-row">
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--faint);flex-shrink:0"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
-      <input class="step-lieu" type="text" value="${esc(step.lieu||'')}" oninput="syncStepLieu(${di},${si},this.value)" placeholder="Lieu…"/>
-      <button class="step-map-btn" id="map-btn-${key}" onclick="focusOnMap(${di},${si})" title="Voir sur la carte" style="${step.lieu&&step.lieu.trim()?'':'display:none'}">📍</button>
+  return `<div class="tl-step">
+    <div class="tl-marker"><div class="tl-dot"></div></div>
+    <div class="tl-card">
+      <div class="tl-card-head">
+        <span class="tl-time">${esc(step.time)}</span>
+        <div class="tl-step-actions">
+          <button class="tl-act" onclick="openEditStepModal(${di},${si})" title="Modifier"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+          <button class="tl-act tl-act-del" onclick="deleteStep(${di},${si})" title="Supprimer"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+      </div>
+      <input class="step-label tl-label" type="text" value="${esc(step.label)}" oninput="syncStepLabel(${di},${si},this.value)" placeholder="Titre de l'étape"/>
+      <div class="step-lieu-row tl-lieu-row">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--faint);flex-shrink:0"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+        <input class="step-lieu" type="text" value="${esc(step.lieu||'')}" oninput="syncStepLieu(${di},${si},this.value)" placeholder="Lieu…"/>
+        <button class="step-map-btn" id="map-btn-${key}" onclick="focusOnMap(${di},${si})" title="Voir sur la carte" style="${step.lieu&&step.lieu.trim()?'':'display:none'}">📍</button>
+      </div>
+      <div class="tl-tags">
+        ${transportLabel?`<span class="tl-tag tl-tag-transport">🚗 ${esc(transportLabel)}</span>`:''}
+        ${step.link?`<a href="${esc(step.link)}" target="_blank" rel="noopener noreferrer" class="tl-tag tl-tag-link"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>Lien</a>`:''}
+      </div>
+      <textarea class="step-note tl-note" placeholder="Note…" rows="1" oninput="syncStepNote(${di},${si},this.value)">${esc(step.note||'')}</textarea>
     </div>
-    ${transportLabel?`<div class="step-transport-badge">${esc(transportLabel)}</div>`:''}
-    ${step.link?`<a href="${esc(step.link)}" target="_blank" rel="noopener noreferrer" class="step-link-display"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>Ouvrir le lien</a>`:''}
-    <textarea class="step-note" placeholder="Note…" rows="2" oninput="syncStepNote(${di},${si},this.value)">${esc(step.note||'')}</textarea>
-  </div>
-  <div class="step-actions">
-    <button class="step-edit-btn" onclick="openEditStepModal(${di},${si})" title="Modifier" aria-label="Modifier"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-    <button class="step-del" onclick="deleteStep(${di},${si})" title="Supprimer" aria-label="Supprimer"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-  </div>
-</div>`;
+  </div>`;
 }).join('');
 
 const subtitle=`${day.steps.length} étape${day.steps.length!==1?'s':''}`;
 const status=getTripDayStatus(di);
-const daysUntil=getDaysUntil(di);
-const todayBadge=status==='today'?`<div class="day-today-badge">🗓 Aujourd'hui</div>`:'';
+const statusLabel=status==='today'?'Aujourd\u2019hui':status==='past'?'Passé':'À venir';
 const pastClass=status==='past'?' day-past':status==='today'?' day-today':'';
-return `<div class="day-card${pastClass}" data-day="${di}">
-  ${todayBadge}
-  <div class="day-header" onclick="toggleDay(${di})">
-    <div class="day-banner">
-      <div class="day-banner-num">${di+1}</div>
-      <div class="day-banner-label">Jour</div>
-      ${day.dateLabel?`<div class="day-banner-date">${day.dateLabel}</div>`:''}
-      <div class="day-banner-status">${status==='today'?'🔥':status==='past'?'✓':''}</div>
+const hasNote=!!(day.note&&day.note.trim());
+return `<div class="day-card itin-daycard${pastClass} expanded" data-day="${di}">
+  <div class="itin-day-head">
+    <div class="itin-day-badge itin-day-badge-${status}">
+      <span class="itin-day-badge-num">${di+1}</span>
+      <span class="itin-day-badge-jour">Jour</span>
     </div>
-    <div class="day-header-inner">
-      <div class="day-info">
-        <input class="day-name-input" type="text" value="${esc(day.title)}" placeholder="Nommer la journée…" onclick="event.stopPropagation()" oninput="syncDayName(${di},this.value)"/>
-        <div class="day-subtitle">${subtitle}</div>
+    <div class="itin-day-headinfo">
+      <input class="day-name-input itin-day-name" type="text" value="${esc(day.title)}" placeholder="Nommer la journée…" oninput="syncDayName(${di},this.value)"/>
+      <div class="itin-day-meta">
+        <span class="itin-day-status itin-day-status-${status}">${statusLabel}</span>
+        ${day.dateLabel?`<span class="itin-day-date">${esc(day.dateLabel)}</span>`:''}
+        <span class="itin-day-dot">·</span><span>${subtitle}</span>
       </div>
-      <svg class="day-chevron" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
     </div>
   </div>
-  <div class="day-body">
-    <div class="day-meta-blocks"><div class="meta-blocks-row"></div></div>
-    ${day.steps.length?`<div class="steps-list">${stepsHtml}</div>`:''}
-    <button class="add-step-btn" onclick="openAddStepModal(${di})"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Ajouter une étape</button>
-    <div class="day-note-section">
-      <div class="day-note-label">Note du jour</div>
-      <textarea class="day-note-textarea" placeholder="Informations générales…" rows="2" oninput="syncDayNote(${di},this.value)">${esc(day.note||'')}</textarea>
-    </div>
+
+  <div class="itin-day-body">
+    ${day.steps.length
+      ?`<div class="tl-list">${stepsHtml}</div>`
+      :`<div class="itin-day-empty"><div class="itin-day-empty-emoji">🗺️</div><div class="itin-day-empty-t">Journée libre</div><div class="itin-day-empty-s">Ajoute une première étape pour planifier ce jour.</div></div>`}
+
+    <button class="add-step-btn itin-add-step" onclick="openAddStepModal(${di})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Ajouter une étape</button>
+
+    <details class="itin-day-note" ${hasNote?'open':''}>
+      <summary class="itin-day-note-sum">📝 Note du jour${hasNote?'':' <span class="itin-day-note-hint">(optionnel)</span>'}</summary>
+      <textarea class="day-note-textarea itin-day-note-ta" placeholder="Informations générales…" rows="2" oninput="syncDayNote(${di},this.value)">${esc(day.note||'')}</textarea>
+    </details>
   </div>
 </div>`;
 }
@@ -1239,31 +1252,64 @@ function renderItinerary(){
 }
   const t=state.trip;
   const total=t.days.reduce((a,d)=>a+d.steps.length,0);
-  c.innerHTML=`<div class="itinerary-header">
-    <div class="trip-title-group">
-      <div class="trip-name" contenteditable="true" spellcheck="false" onblur="syncTripName(this.textContent.trim())" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}">${esc(t.name)}</div>
-      <div class="trip-meta">${t.days.length} jours · ${total} étape${total!==1?'s':''}</div>
+  const filledDays=t.days.filter(d=>d.steps.length>0).length;
+  const pct=t.days.length?Math.round(filledDays/t.days.length*100):0;
+  if(typeof _activeDay!=='number'||_activeDay<0||_activeDay>=t.days.length){
+    const todayIdx=t.days.findIndex((d,i)=>getTripDayStatus(i)==='today');
+    _activeDay=todayIdx>=0?todayIdx:0;
+  }
+  const datesLabel=t.startDate?(()=>{
+    const s=new Date(t.startDate);const e=new Date(s);e.setDate(e.getDate()+t.days.length-1);
+    const f=d=>d.toLocaleDateString('fr-FR',{day:'numeric',month:'short'});
+    return `${f(s)} – ${f(e)}`;
+  })():`${t.days.length} jours`;
+
+  c.innerHTML=`
+  <div class="itin-cockpit">
+    <div class="itin-cockpit-top">
+      <div class="itin-cockpit-id">
+        <div class="itin-kicker">Itinéraire</div>
+        <div class="trip-name" contenteditable="true" spellcheck="false" onblur="syncTripName(this.textContent.trim())" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}">${esc(t.name)}</div>
+        <div class="itin-cockpit-sub">${esc(datesLabel)} · ${t.days.length} jours · ${total} étape${total!==1?'s':''}${t.startDate?` · <button class="itin-edit-dates" onclick="openEditDates()">✏️ Modifier les dates</button>`:''}</div>
+      </div>
+      <div class="itin-cockpit-actions">
+        <button class="itin-act" onclick="exportJSON()" title="Export JSON"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
+        <button class="itin-act" onclick="generateShareLink()" title="Partager"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></button>
+        <button class="itin-act itin-act-danger" onclick="openModal('modal-reset')" title="Supprimer le voyage"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6M10 11v6M14 11v6M9 6V4h6v2"/></svg></button>
+        <button class="itin-act itin-act-primary" onclick="openNewTripModal()" title="Nouveau voyage"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+      </div>
     </div>
-    <div class="trip-meta">${t.startDate?`<button onclick="openEditDates()" style="background:none;border:none;color:var(--muted);font-size:.75rem;cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:2px">✏️ Modifier les dates</button>`:``}</div>
-    </div>
-    <div class="itinerary-actions">
-      <button class="btn-danger" onclick="openModal('modal-reset')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6M10 11v6M14 11v6M9 6V4h6v2"/></svg>Supprimer</button>
-      <button class="btn-ghost" onclick="exportJSON()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export JSON</button>
-     <button class="btn-ghost" onclick="generateShareLink()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>Partager</button>
-      <button class="btn-primary" onclick="openNewTripModal()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nouveau</button>
+    <div class="itin-progress">
+      <div class="itin-progress-bar"><div class="itin-progress-fill" style="width:${pct}%"></div></div>
+      <div class="itin-progress-label">${filledDays}/${t.days.length} jours planifiés · ${pct}%</div>
     </div>
   </div>
-  <div id="days-grid">
-    <div class="trip-frise">${t.days.map((day,di)=>{
+
+  <div class="itin-rail">
+    ${t.days.map((day,di)=>{
       const status=getTripDayStatus(di);
-      const daysUntil=getDaysUntil(di);
-      const label=status==='today'?'🔥':status==='past'?'✓':`J${di+1}`;
-      const tooltip=status==='today'?"Aujourd'hui":status==='past'?'Passé':(daysUntil===1?'Demain':`Dans ${daysUntil}j`);
-      return`<div class="frise-node frise-${status}" onclick="document.querySelector('[data-day=&quot;${di}&quot;]').scrollIntoView({behavior:'smooth',block:'start'})" title="${tooltip}"><div class="frise-dot">${label}</div><div class="frise-line"></div></div>`;
-    }).join('')}</div>
-    ${t.days.map((d,i)=>renderDayCard(d,i)).join('')}
- </div>`;
+      const active=di===_activeDay;
+      const cnt=day.steps.length;
+      const icon=status==='today'?'🔥':status==='past'?'✓':'';
+      return `<button class="itin-pill itin-pill-${status}${active?' is-active':''}${cnt===0?' is-empty':''}" onclick="setActiveDay(${di})">
+        <span class="itin-pill-num">J${di+1}${icon?` <span class="itin-pill-icon">${icon}</span>`:''}</span>
+        <span class="itin-pill-date">${day.dateLabel?esc(day.dateLabel):''}</span>
+        <span class="itin-pill-count">${cnt?`${cnt} étape${cnt>1?'s':''}`:'vide'}</span>
+      </button>`;
+    }).join('')}
+  </div>
+
+  <div class="itin-toolbar">
+    <button class="itin-toggle ${_itinExpanded?'is-on':''}" onclick="toggleItinExpand()">${_itinExpanded?'▾ Vue jour par jour':'▸ Tout afficher'}</button>
+  </div>
+
+  <div id="days-grid" class="${_itinExpanded?'itin-all':'itin-single'}">
+    ${_itinExpanded
+      ? t.days.map((d,i)=>renderDayCard(d,i)).join('')
+      : renderDayCard(t.days[_activeDay],_activeDay)}
+  </div>`;
 }
+
 
 /* ══ Modales ══ */
 function openNewTripModal(){

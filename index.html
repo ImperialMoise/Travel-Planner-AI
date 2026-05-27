@@ -2764,6 +2764,104 @@
 .bdg-tr-amt{font-weight:800;color:var(--accent);margin-left:auto}
 @media(max-width:640px){.bdg-hero-people{max-width:100%;justify-content:flex-start}.bdg-hero{padding:1.1rem 1.2rem}}
 
+
+/* ===== Itinéraire redesign ===== */
+#view-itinerary .itinerary-header,#view-itinerary .trip-frise{display:none}
+.itin-cockpit{background:linear-gradient(135deg,var(--accent-soft),transparent 70%);border:1px solid var(--border);border-radius:var(--r2);padding:1.4rem 1.5rem;margin-bottom:1rem}
+.itin-cockpit-top{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;flex-wrap:wrap}
+.itin-kicker{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--accent);margin-bottom:.35rem}
+.itin-cockpit .trip-name{font-family:var(--display);font-size:clamp(1.8rem,4.5vw,2.6rem);line-height:1.05;color:var(--text);outline:none;margin-bottom:.4rem}
+.itin-cockpit-sub{font-size:.85rem;color:var(--muted)}
+.itin-edit-dates{background:none;border:none;color:var(--accent);font-size:.82rem;cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:2px}
+.itin-cockpit-actions{display:flex;gap:.4rem;flex-shrink:0}
+.itin-act{width:38px;height:38px;display:inline-flex;align-items:center;justify-content:center;border-radius:12px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;transition:all .15s}
+.itin-act:hover{transform:translateY(-1px);border-color:var(--accent)}
+.itin-act-danger:hover{border-color:#ff7043;color:#ff7043}
+.itin-act-primary{background:linear-gradient(180deg,var(--accent-hover),var(--accent));color:var(--accent-contrast);border-color:transparent}
+.itin-progress{margin-top:1.1rem}
+.itin-progress-bar{height:8px;background:var(--surface2);border-radius:999px;overflow:hidden}
+.itin-progress-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--accent),var(--accent-hover));transition:width .5s ease}
+.itin-progress-label{font-size:.76rem;color:var(--muted);margin-top:.4rem;font-weight:600}
+.itin-rail{display:flex;gap:.5rem;overflow-x:auto;padding:.25rem .25rem .6rem;margin-bottom:.4rem;scrollbar-width:thin}
+.itin-rail::-webkit-scrollbar{height:6px}
+.itin-rail::-webkit-scrollbar-thumb{background:var(--border);border-radius:999px}
+.itin-pill{flex:0 0 auto;min-width:92px;display:flex;flex-direction:column;gap:.2rem;align-items:flex-start;padding:.6rem .8rem;border-radius:14px;border:1px solid var(--border);background:var(--surface2);cursor:pointer;transition:all .15s;text-align:left}
+.itin-pill:hover{transform:translateY(-2px);border-color:var(--accent)}
+.itin-pill-num{font-family:var(--display);font-size:1.05rem;color:var(--text);display:flex;align-items:center;gap:.3rem}
+.itin-pill-icon{font-size:.8rem}
+.itin-pill-date{font-size:.68rem;color:var(--muted);text-transform:capitalize}
+.itin-pill-count{font-size:.7rem;font-weight:600;color:var(--faint)}
+.itin-pill.is-empty{border-style:dashed}
+.itin-pill.is-empty .itin-pill-count{color:var(--faint);font-style:italic}
+.itin-pill.is-active{background:var(--accent);border-color:var(--accent)}
+.itin-pill.is-active .itin-pill-num,.itin-pill.is-active .itin-pill-date,.itin-pill.is-active .itin-pill-count{color:var(--accent-contrast)}
+.itin-pill-today:not(.is-active){box-shadow:0 0 0 2px var(--accent) inset}
+.itin-pill-past:not(.is-active){opacity:.72}
+.itin-toolbar{display:flex;justify-content:flex-end;margin-bottom:.7rem}
+.itin-toggle{background:var(--surface2);border:1px solid var(--border);color:var(--muted);font-size:.8rem;font-weight:700;padding:.45rem .9rem;border-radius:999px;cursor:pointer;transition:all .15s}
+.itin-toggle:hover{color:var(--text)}
+.itin-toggle.is-on{background:var(--accent);color:var(--accent-contrast);border-color:var(--accent)}
+.itin-single{display:block}
+.itin-all{display:flex;flex-direction:column;gap:1.1rem}
+.itin-daycard{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:1.3rem 1.4rem;box-shadow:var(--shadow2)}
+.itin-day-head{display:flex;align-items:center;gap:.9rem;margin-bottom:1.1rem}
+.itin-day-badge{width:54px;height:54px;border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;background:var(--surface2);border:1px solid var(--border)}
+.itin-day-badge-num{font-family:var(--display);font-size:1.5rem;line-height:1;color:var(--accent)}
+.itin-day-badge-jour{font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+.itin-day-badge-today{background:var(--accent);border-color:var(--accent)}
+.itin-day-badge-today .itin-day-badge-num,.itin-day-badge-today .itin-day-badge-jour{color:var(--accent-contrast)}
+.itin-day-badge-past{opacity:.7}
+.itin-day-headinfo{flex:1;min-width:0}
+.itin-day-name{font-family:var(--display);font-size:1.4rem;background:transparent;border:none;color:var(--text);width:100%;padding:0;outline:none}
+.itin-day-name::placeholder{color:var(--faint)}
+.itin-day-name:focus{border-bottom:1px solid var(--accent)}
+.itin-day-meta{display:flex;align-items:center;gap:.5rem;font-size:.78rem;color:var(--muted);margin-top:.25rem;flex-wrap:wrap}
+.itin-day-status{font-size:.7rem;font-weight:700;padding:.15rem .55rem;border-radius:999px;text-transform:uppercase;letter-spacing:.04em}
+.itin-day-status-today{background:var(--accent-soft);color:var(--accent)}
+.itin-day-status-past{background:var(--surface2);color:var(--faint)}
+.itin-day-status-future{background:var(--surface2);color:var(--muted)}
+.itin-day-date{text-transform:capitalize}
+.itin-day-dot{color:var(--faint)}
+.tl-list{position:relative;display:flex;flex-direction:column;gap:.7rem;margin-bottom:1rem}
+.tl-step{display:flex;gap:.85rem;position:relative}
+.tl-marker{position:relative;flex-shrink:0;width:14px;display:flex;justify-content:center}
+.tl-marker::before{content:"";position:absolute;top:18px;bottom:-22px;left:50%;width:2px;background:var(--border);transform:translateX(-50%)}
+.tl-step:last-child .tl-marker::before{display:none}
+.tl-dot{width:12px;height:12px;border-radius:50%;background:var(--accent);margin-top:6px;box-shadow:0 0 0 3px var(--accent-soft);z-index:1}
+.tl-card{flex:1;min-width:0;background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:.75rem .9rem;transition:transform .12s}
+.tl-card:hover{transform:translateX(2px)}
+.tl-card-head{display:flex;align-items:center;justify-content:space-between;gap:.5rem}
+.tl-time{font-family:var(--display);font-size:1rem;color:var(--accent)}
+.tl-step-actions{display:flex;gap:.2rem;opacity:0;transition:opacity .15s}
+.tl-card:hover .tl-step-actions{opacity:1}
+.tl-act{width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center;border:none;background:transparent;color:var(--faint);border-radius:7px;cursor:pointer;transition:all .15s}
+.tl-act:hover{background:var(--surface);color:var(--text)}
+.tl-act-del:hover{background:#ff704322;color:#ff7043}
+.tl-label{font-size:1rem;font-weight:600;background:transparent;border:none;color:var(--text);width:100%;padding:.15rem 0;outline:none}
+.tl-label:focus{border-bottom:1px dashed var(--accent)}
+.tl-lieu-row{display:flex;align-items:center;gap:.35rem;margin:.15rem 0}
+.tl-lieu-row .step-lieu{flex:1;background:transparent;border:none;color:var(--muted);font-size:.84rem;padding:.1rem 0;outline:none}
+.step-map-btn{background:none;border:none;cursor:pointer;font-size:.85rem;padding:0 .2rem}
+.tl-tags{display:flex;flex-wrap:wrap;gap:.35rem;margin:.35rem 0 .15rem}
+.tl-tag{display:inline-flex;align-items:center;gap:.3rem;font-size:.72rem;font-weight:700;padding:.22rem .6rem;border-radius:999px;text-decoration:none}
+.tl-tag-transport{background:rgba(68,138,255,.15);color:#6ba4ff}
+.tl-tag-link{background:var(--accent-soft);color:var(--accent)}
+.tl-note{width:100%;background:transparent;border:none;color:var(--muted);font-size:.82rem;resize:vertical;outline:none;padding:.2rem 0;font-family:inherit}
+.tl-note:focus{border-bottom:1px dashed var(--border)}
+.itin-day-empty{text-align:center;padding:1.8rem 1rem;background:var(--surface2);border:1px dashed var(--border);border-radius:14px;margin-bottom:1rem}
+.itin-day-empty-emoji{font-size:1.8rem;margin-bottom:.4rem}
+.itin-day-empty-t{font-family:var(--display);font-size:1.1rem;color:var(--text)}
+.itin-day-empty-s{font-size:.82rem;color:var(--muted);margin-top:.2rem}
+.itin-add-step{width:100%;display:flex;align-items:center;justify-content:center;gap:.45rem;padding:.8rem;border-radius:12px;border:1px dashed var(--border);background:transparent;color:var(--accent);font-weight:700;font-size:.88rem;cursor:pointer;transition:all .15s}
+.itin-add-step:hover{background:var(--accent-soft);border-color:var(--accent)}
+.itin-day-note{margin-top:.9rem;border-top:1px solid var(--border);padding-top:.7rem}
+.itin-day-note-sum{font-size:.78rem;font-weight:700;color:var(--muted);cursor:pointer;list-style:none}
+.itin-day-note-sum::-webkit-details-marker{display:none}
+.itin-day-note-hint{font-weight:500;color:var(--faint)}
+.itin-day-note-ta{width:100%;margin-top:.5rem;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:.84rem;padding:.5rem .6rem;resize:vertical;outline:none;font-family:inherit}
+.itin-day-note-ta:focus{border-color:var(--accent)}
+@media(max-width:640px){.itin-cockpit{padding:1.1rem 1.2rem}.itin-daycard{padding:1rem 1.1rem}.itin-cockpit-actions{width:100%;justify-content:flex-start}}
+
 </style>
 </head>
 <body>

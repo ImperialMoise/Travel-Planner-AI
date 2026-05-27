@@ -8,8 +8,7 @@ let readMode=false,timerInd=null,timerToast=null;
 const _photoCache={};
 const _photoOpen={};
 const _geocodeCache={};
-let _map=null,_mapGlobe=null,_mapDetail=null,_mapInited=false,_mapMarkers=[],_mapRoutes=[];
-let _currentMapView='globe';
+let _map=null,_mapInited=false,_mapMarkers=[],_mapRoutes=[];
 let _budgetPayer=null;
 let _budgetFor=new Set();
 const BUDGET_COLORS=['#448aff','#ff7043','#66bb6a','#ab47bc','#ffa726','#26c6da'];
@@ -225,7 +224,7 @@ function switchView(view){
   document.getElementById('nav-'+view).classList.add('active');
   if(view==='budget')renderBudget();
   if(view==='docs')renderDocs();
-  if(view==='map')setTimeout(()=>{initMap();invalidateAllMaps();renderMap();},120);
+  if(view==='map')setTimeout(()=>{initMap();if(_map)_map.invalidateSize();renderMap();},120);
 }
 
 function openModal(id){
@@ -257,9 +256,10 @@ function goHome(){
   Object.keys(_geocodeCache).forEach(k=>delete _geocodeCache[k]);
 
   _mapInited=false;
-_mapMarkers.forEach(m=>{try{_mapGlobe?.removeLayer(m)}catch(e){}try{_mapDetail?.removeLayer(m)}catch(e){}});
-_mapRoutes.forEach(r=>{try{_mapGlobe?.removeLayer(r)}catch(e){}try{_mapDetail?.removeLayer(r)}catch(e){}});
-_mapGlobe=null;_mapDetail=null;
+  if(_map){
+    _mapMarkers.forEach(m=>_map.removeLayer(m));
+    _mapRoutes.forEach(r=>_map.removeLayer(r));
+  }
   _mapMarkers=[];
   _mapRoutes=[];
 
@@ -1016,51 +1016,11 @@ function refreshPaidBySelect(sel){
 const ROUTE_COLORS={pied:'#00e5ff',voiture:'#00e676',train:'#448aff',avion:'#ff6d00',bus:'#ffea00',bateau:'#e040fb',default:'#00e676'};
 
 function initMap(){
-  if(_mapInited)return;
+  if(_mapInited&&_map)return;
+  const container=document.getElementById('map');if(!container)return;
+  _map=L.map('map',{zoomControl:true,attributionControl:false});
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:''}).addTo(_map);
   _mapInited=true;
-
-  // ── Vue Globe (Leaflet + tuile sombre style satellite/topo) ──
-  _mapGlobe=L.map('map-globe',{zoomControl:false,attributionControl:false});
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
-    maxZoom:8, // limité → garde un aspect "globe large"
-    subdomains:'abcd'
-  }).addTo(_mapGlobe);
-  L.control.zoom({position:'bottomright'}).addTo(_mapGlobe);
-  _mapGlobe.setView([20,10],2);
-
-  // ── Vue Détail (Leaflet + tuile Street/OpenStreetMap précise) ──
-  _mapDetail=L.map('map-detail',{zoomControl:false,attributionControl:false});
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{
-    maxZoom:19,
-    subdomains:'abcd'
-  }).addTo(_mapDetail);
-  L.control.zoom({position:'bottomright'}).addTo(_mapDetail);
-  _mapDetail.setView([20,10],5);
-
-  // Sync zoom : dès qu'on zoome trop en globe, on switche auto en détail
-  _mapGlobe.on('zoomend',()=>{
-    if(_mapGlobe.getZoom()>=7) setMapView('detail',true);
-  });
-  _mapDetail.on('zoomend',()=>{
-    if(_mapDetail.getZoom()<=4) setMapView('globe',true);
-  });
-}
-
-function setMapView(view, auto=false){
-  _currentMapView=view;
-  document.getElementById('map-globe').classList.toggle('active', view==='globe');
-  document.getElementById('map-detail').classList.toggle('active', view==='detail');
-  document.getElementById('btn-globe').classList.toggle('active', view==='globe');
-  document.getElementById('btn-detail').classList.toggle('active', view==='detail');
-  invalidateAllMaps();
-  if(!auto) showToast(view==='globe'?'🌍 Vue globe':'🗺 Vue détaillée');
-}
-
-function invalidateAllMaps(){
-  setTimeout(()=>{
-    if(_mapGlobe)_mapGlobe.invalidateSize();
-    if(_mapDetail)_mapDetail.invalidateSize();
-  },50);
 }
 
 async function geocode(lieu){
@@ -1095,9 +1055,9 @@ function _osrmProfile(transport){
 
 async function renderMap(){
   if(!_map||!state.trip)return;
-  _mapMarkers.forEach(m=>{try{_mapGlobe.removeLayer(m)}catch(e){}try{_mapDetail.removeLayer(m)}catch(e){}});
-_mapRoutes.forEach(r=>{try{_mapGlobe.removeLayer(r)}catch(e){}try{_mapDetail.removeLayer(r)}catch(e){}});
-_mapMarkers=[];_mapRoutes=[];
+  _mapMarkers.forEach(m=>_map.removeLayer(m));
+  _mapRoutes.forEach(r=>_map.removeLayer(r));
+  _mapMarkers=[];_mapRoutes=[];
   const allCoords=[];
   for(const[di,day]of state.trip.days.entries()){
     const stepCoords=[];
@@ -1109,7 +1069,7 @@ _mapMarkers=[];_mapRoutes=[];
       stepCoords.push({coord,step,di,si});
       const color=ROUTE_COLORS[step.transport]||ROUTE_COLORS.default;
       const icon=L.divIcon({className:'',html:`<div style="background:${color};width:26px;height:26px;border-radius:50%;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#111;box-shadow:0 2px 6px rgba(0,0,0,.4)">${di+1}</div>`,iconSize:[26,26],iconAnchor:[13,13]});
-      const marker=L.marker([coord.lat,coord.lng],{icon}).addTo(_mapGlobe).addTo(_mapDetail);
+      const marker=L.marker([coord.lat,coord.lng],{icon}).addTo(_map);
       marker.bindPopup(`<strong>${esc(step.label)}</strong><br/><span style="font-size:.82rem">${esc(step.lieu)}</span>${step.time?`<br/><span style="font-size:.78rem;color:#888">${esc(step.time)}</span>`:''}`);
       _mapMarkers.push(marker);
     }
@@ -1127,15 +1087,14 @@ _mapMarkers=[];_mapRoutes=[];
         }else{
           latlngs=await getOsrmRoute(from,to,'driving');
         }
-        const line=L.polyline(latlngs,{color,weight:3,opacity:.8,dashArray:transport==='avion'?'6,6':null}).addTo(_mapGlobe).addTo(_mapDetail);
+        const line=L.polyline(latlngs,{color,weight:3,opacity:.8,dashArray:transport==='avion'?'6,6':null}).addTo(_map);
         _mapRoutes.push(line);
       }
     }
   }
   if(allCoords.length>0){
     if(allCoords.length===1)_map.setView(allCoords[0],13);
-    else _mapGlobe.fitBounds(
-_mapDetail.fitBounds((allCoords,{padding:[40,40]});
+    else _map.fitBounds(allCoords,{padding:[40,40]});
   }
 }
 

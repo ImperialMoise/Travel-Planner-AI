@@ -835,7 +835,6 @@ function syncBudgetAmount(i,v){
   renderBudget();
 }
 
-<<<<<<< HEAD
 function supprimerParticipant(i){
   const nom=state.participants[i];
   if(nom===undefined)return;
@@ -849,20 +848,6 @@ function supprimerParticipant(i){
 
 function ajouterParticipant(){
   const input=document.getElementById('new-participant-input');
-=======
-function supprimerParticipant(i){
-  const nom=state.participants[i];
-  if(nom===undefined)return;
-  if(state.participants.length<=1){showToast('Au moins une personne requise');return}
-  state.participants.splice(i,1);
-  _budgetFor.delete(nom);
-  if(_budgetPayer===nom)_budgetPayer=state.participants[0]||null;
-  saveToLocalStorage();
-  renderBudget();
-}
-
-function ajouterParticipant(){  const input=document.getElementById('new-participant-input');
->>>>>>> f6bbe8f0ec57d887a9b4fcee249c4f9099e52e37
   const nom=input?input.value.trim():'';
   if(!nom||state.participants.includes(nom))return;
   state.participants.push(nom);
@@ -911,8 +896,8 @@ function renderBudget(){
 
   const tabs=document.getElementById('budget-tabs');
   if(tabs){
-    const t=[['overview','Aperçu'],['expenses','Dépenses'],['balance','Équilibre']];
-    tabs.innerHTML=t.map(([k,l])=>`<button class="bdg-tab ${_budgetTab===k?'is-active':''}" onclick="setBudgetTab('${k}')">${l}${k==='expenses'?` <span class="bdg-tab-count">${state.budget.length}</span>`:''}</button>`).join('');
+    const T=[['overview','Aperçu'],['expenses','Dépenses'],['balance','Équilibre']];
+    tabs.innerHTML=T.map(([k,l])=>`<button class="bdg-tab ${_budgetTab===k?'is-active':''}" onclick="setBudgetTab('${k}')">${l}${k==='expenses'?` <span class="bdg-tab-count">${state.budget.length}</span>`:''}</button>`).join('');
   }
 
   const body=document.getElementById('budget-tab-body');
@@ -1243,16 +1228,7 @@ function renderItinerary(){
               Importer un fichier JSON
             </button>
           </div>
-<<<<<<< HEAD
-=======
-          ${tripsStore.trips.length?`<div style="display:flex;flex-direction:column;gap:.5rem;max-width:46ch;margin:0 0 1.4rem">
-            <div style="font-size:.74rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)">Ouvrir un voyage existant</div>
-            ${[...tripsStore.trips].sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0)).map(t=>`<button type="button" onclick="selectTrip('${esc(t.id)}')" style="text-align:left;border:1px solid var(--border);background:var(--accent-soft);color:var(--text);padding:.7rem 1rem;border-radius:var(--r2);font-weight:600;font-size:.9rem;cursor:pointer">${esc(t.name||'Voyage')}</button>`).join('')}
-          </div>`:''}
-          <div style="display:flex;flex-wrap:wrap;gap:.45rem">
-            ${['Plan','Budget','Docs','Carte'].map(x=>`<span style="display:inline-flex;align-items:center;gap:.35rem;font-size:.74rem;font-weight:600;color:var(--muted);background:var(--accent-soft);border:1px solid var(--border);padding:.4rem .75rem;border-radius:999px">${x}</span>`).join('')}
-          </div>
->>>>>>> f6bbe8f0ec57d887a9b4fcee249c4f9099e52e37
+
         </div>
       </div>
     </div>

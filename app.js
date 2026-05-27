@@ -878,7 +878,6 @@ function setBudgetTab(t){_budgetTab=t;renderBudget()}
 function renderBudget(){
   const fmt=n=>(parseFloat(n)||0).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';
 
-<<<<<<< HEAD
   const total=state.budget.reduce((s,b)=>s+(parseFloat(b.amount)||0),0);
   const n=state.participants.length||1;
   const perHead=total/n;
@@ -892,19 +891,6 @@ function renderBudget(){
     if(b.paidBy&&soldes[b.paidBy]!==undefined){soldes[b.paidBy]+=amount;paidByP[b.paidBy]+=amount}
     if(targets.length){const share=amount/targets.length;targets.forEach(p=>{if(soldes[p]!==undefined)soldes[p]-=share})}
   });
-=======
-  const zone=document.getElementById('budget-participants');
-  if(zone){
-    zone.innerHTML=
-      state.participants.map((p,i)=>{
-        const c=BUDGET_COLORS[i%BUDGET_COLORS.length];
-        return `<span class="participant-chip" style="position:relative;display:inline-flex;align-items:center;gap:5px;padding:.3rem .7rem;border-radius:999px;border:1px solid ${c}55;background:${c}18;font-size:.82rem;font-weight:600;color:${c}"><span style="width:9px;height:9px;border-radius:50%;background:${c};flex-shrink:0"></span>${esc(p)}<button type="button" class="participant-remove" onclick="supprimerParticipant(${i})" title="Supprimer" style="display:none;border:none;background:${c};color:#fff;width:15px;height:15px;border-radius:50%;font-size:11px;line-height:1;cursor:pointer;padding:0;align-items:center;justify-content:center">×</button></span>`;      }).join(' ')+
-      `<span style="display:inline-flex;align-items:center;gap:5px">
-        <input id="new-participant-input" type="text" placeholder="Prénom..." style="border:1px solid var(--border);background:var(--bg);color:var(--text);padding:.3rem .6rem;border-radius:var(--r2);font-size:.82rem;width:100px"/>
-        <button onclick="ajouterParticipant()" style="padding:.3rem .65rem;border-radius:var(--r2);border:none;background:var(--accent);color:#fff;font-size:.82rem;cursor:pointer">+ Ajouter</button>
-      </span>`;
-  }
->>>>>>> f6bbe8f0ec57d887a9b4fcee249c4f9099e52e37
 
   const hero=document.getElementById('budget-hero');
   if(hero){

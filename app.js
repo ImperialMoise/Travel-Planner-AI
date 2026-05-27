@@ -1171,8 +1171,7 @@ function renderBudget(){
         const c=pi>=0?BUDGET_COLORS[pi%BUDGET_COLORS.length]:'#888';
         const targets=getExpenseTargets(b);
         const tl=(b.forParticipants||[]).includes('__all__')?'Tout le monde':targets.join(', ');
-        return `<div class="bdg-exp">
-          return `<div class="bdg-exp" onclick="openEditBudgetItem(${i})" style="cursor:pointer">
+        return `<div class="bdg-exp" onclick="openEditBudgetItem(${i})" style="cursor:pointer">
           <span class="bdg-exp-emoji" style="background:${(CAT_COLORS[b.cat]||'#ffa726')}22">${CAT_EMOJI[b.cat]||'📦'}</span>
           <div class="bdg-exp-mid">
             <div class="bdg-exp-desc">${esc(b.desc)}${b._stepRef?` <span class="bdg-exp-linked" title="Liée à une étape">🔗</span>`:''}</div>

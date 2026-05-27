@@ -9,6 +9,7 @@ const _photoCache={};
 const _photoOpen={};
 const _geocodeCache={};
 let _map=null,_mapInited=false,_mapMarkers=[],_mapRoutes=[];
+let _mapSteps=[],_activeMapStep=-1,_mapDayFilter=null;
 let _budgetPayer=null;
 let _budgetFor=new Set();
 const BUDGET_COLORS=['#448aff','#ff7043','#66bb6a','#ab47bc','#ffa726','#26c6da'];
@@ -1058,8 +1059,11 @@ async function renderMap(){
   _mapMarkers.forEach(m=>_map.removeLayer(m));
   _mapRoutes.forEach(r=>_map.removeLayer(r));
   _mapMarkers=[];_mapRoutes=[];
+  _mapSteps=[];
   const allCoords=[];
+
   for(const[di,day]of state.trip.days.entries()){
+    if(_mapDayFilter!==null&&_mapDayFilter!==di)continue;
     const stepCoords=[];
     for(const[si,step]of day.steps.entries()){
       if(!step.lieu)continue;
@@ -1067,11 +1071,14 @@ async function renderMap(){
       if(!coord)continue;
       allCoords.push([coord.lat,coord.lng]);
       stepCoords.push({coord,step,di,si});
+      const idx=_mapSteps.length;
       const color=ROUTE_COLORS[step.transport]||ROUTE_COLORS.default;
-      const icon=L.divIcon({className:'',html:`<div style="background:${color};width:26px;height:26px;border-radius:50%;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#111;box-shadow:0 2px 6px rgba(0,0,0,.4)">${di+1}</div>`,iconSize:[26,26],iconAnchor:[13,13]});
+      const icon=L.divIcon({className:'map-pin-wrap',html:`<div class="map-pin" style="--pin:${color}"><span>${di+1}</span></div>`,iconSize:[34,42],iconAnchor:[17,40],popupAnchor:[0,-38]});
       const marker=L.marker([coord.lat,coord.lng],{icon}).addTo(_map);
-      marker.bindPopup(`<strong>${esc(step.label)}</strong><br/><span style="font-size:.82rem">${esc(step.lieu)}</span>${step.time?`<br/><span style="font-size:.78rem;color:#888">${esc(step.time)}</span>`:''}`);
+      marker.bindPopup(`<div class="map-pop"><div class="map-pop-t">${esc(step.label||'Étape')}</div><div class="map-pop-l">${esc(step.lieu)}</div>${step.time?`<div class="map-pop-time">🕒 ${esc(step.time)}</div>`:''}</div>`);
+      marker.on('click',()=>setActiveMapStep(idx));
       _mapMarkers.push(marker);
+      _mapSteps.push({coord,step,di,si,marker,color});
     }
     if(stepCoords.length>1){
       for(let i=0;i<stepCoords.length-1;i++){
@@ -1087,31 +1094,111 @@ async function renderMap(){
         }else{
           latlngs=await getOsrmRoute(from,to,'driving');
         }
-        const line=L.polyline(latlngs,{color,weight:3,opacity:.8,dashArray:transport==='avion'?'6,6':null}).addTo(_map);
-        _mapRoutes.push(line);
+        const halo=L.polyline(latlngs,{color:'#ffffff',weight:6,opacity:.35}).addTo(_map);
+        const line=L.polyline(latlngs,{color,weight:3.5,opacity:.9,dashArray:transport==='avion'?'6,7':null}).addTo(_map);
+        _mapRoutes.push(halo);_mapRoutes.push(line);
       }
     }
   }
+
   if(allCoords.length>0){
     if(allCoords.length===1)_map.setView(allCoords[0],13);
-    else _map.fitBounds(allCoords,{padding:[40,40]});
+    else _map.fitBounds(allCoords,{padding:[60,60]});
   }
+  renderMapUI();
+}
+
+function renderMapUI(){
+  const titleEl=document.getElementById('map-hud-title');
+  const subEl=document.getElementById('map-hud-sub');
+  const emptyEl=document.getElementById('map-empty');
+  const sheetEl=document.getElementById('map-sheet');
+  if(titleEl&&state.trip)titleEl.textContent=state.trip.name||'Voyage';
+
+  // Day filter chips
+  const filt=document.getElementById('map-dayfilter');
+  if(filt&&state.trip){
+    filt.innerHTML=`<button class="map-chip ${_mapDayFilter===null?'is-active':''}" onclick="mapFilterDay(null)">Tout</button>`+
+      state.trip.days.map((d,di)=>{
+        const c=d.steps.filter(s=>s.lieu&&s.lieu.trim()).length;
+        return `<button class="map-chip ${_mapDayFilter===di?'is-active':''}" onclick="mapFilterDay(${di})">J${di+1}${c?` <span class="map-chip-n">${c}</span>`:''}</button>`;
+      }).join('');
+  }
+
+  const total=_mapSteps.length;
+  if(subEl)subEl.textContent=`${total} lieu${total>1?'x':''}${_mapDayFilter!==null?` · Jour ${_mapDayFilter+1}`:` · ${state.trip?state.trip.days.length:0} jours`}`;
+
+  // Step cards
+  const stepsEl=document.getElementById('map-steps');
+  const countEl=document.getElementById('map-sheet-count');
+  if(countEl)countEl.textContent=total?`${total}`:'';
+  if(stepsEl){
+    if(total){
+      stepsEl.innerHTML=_mapSteps.map((s,idx)=>{
+        const active=idx===_activeMapStep;
+        return `<button class="map-step-card ${active?'is-active':''}" style="--c:${s.color}" onclick="flyToStep(${idx})">
+          <div class="map-step-pin">${s.di+1}</div>
+          <div class="map-step-info">
+            <div class="map-step-title">${esc(s.step.label||'Étape')}</div>
+            <div class="map-step-sub">${s.step.time?esc(s.step.time)+' · ':''}${esc(s.step.lieu)}</div>
+          </div>
+        </button>`;
+      }).join('');
+    }else{
+      stepsEl.innerHTML='';
+    }
+  }
+
+  if(emptyEl)emptyEl.style.display=total?'none':'flex';
+  if(sheetEl)sheetEl.style.display=total?'block':'none';
+}
+
+function setActiveMapStep(idx){
+  _activeMapStep=idx;
+  renderMapUI();
+  const card=document.querySelector('.map-step-card.is-active');
+  if(card)card.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'});
+}
+
+function flyToStep(idx){
+  const s=_mapSteps[idx];
+  if(!s||!_map)return;
+  _activeMapStep=idx;
+  _map.flyTo([s.coord.lat,s.coord.lng],15,{animate:true,duration:1});
+  if(s.marker)setTimeout(()=>s.marker.openPopup(),650);
+  renderMapUI();
+}
+
+function mapFilterDay(di){
+  _mapDayFilter=di;
+  _activeMapStep=-1;
+  renderMap();
+}
+
+function mapFitAll(){
+  if(!_map||!_mapSteps.length)return;
+  _map.fitBounds(_mapSteps.map(s=>[s.coord.lat,s.coord.lng]),{padding:[60,60]});
+}
+
+function mapRecenter(){
+  if(_activeMapStep>=0)flyToStep(_activeMapStep);
+  else mapFitAll();
 }
 
 function focusOnMap(di,si){
   const step=state.trip&&state.trip.days[di]&&state.trip.days[di].steps[si];
   if(!step||!step.lieu){showToast('Aucun lieu pour cette étape');return}
+  _mapDayFilter=null;
   switchView('map');
   setTimeout(async()=>{
     initMap();
     await renderMap();
-    const coord=await geocode(step.lieu);
-    if(!coord){showToast('Lieu introuvable');return}
-    _map.flyTo([coord.lat,coord.lng],15,{animate:true,duration:1.2});
-    _mapMarkers.forEach(m=>{
-      const p=m.getLatLng();
-      if(Math.abs(p.lat-coord.lat)<0.001&&Math.abs(p.lng-coord.lng)<0.001)m.openPopup();
-    });
+    const idx=_mapSteps.findIndex(s=>s.di===di&&s.si===si);
+    if(idx>=0)flyToStep(idx);
+    else{
+      const coord=await geocode(step.lieu);
+      if(coord)_map.flyTo([coord.lat,coord.lng],15,{animate:true,duration:1.2});
+    }
   },350);
 }
 

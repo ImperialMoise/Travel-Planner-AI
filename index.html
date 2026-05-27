@@ -907,32 +907,54 @@
   .day-note-textarea:focus{outline:none;border-color:var(--accent)}
 
   .map-wrap{position:relative}
-  #map{
-    height:calc(100dvh - 150px);
-    min-height:420px;
-    border-radius:20px;
-    border:1px solid var(--border);
-    overflow:hidden;
-    background:#0f172a;
-    z-index:0;
-    box-shadow:var(--shadow3)
-  }
-  .map-legend{
-    position:absolute;top:12px;right:12px;z-index:500;
-    background:rgba(20,24,29,.72);color:#fff;border:1px solid rgba(255,255,255,.08);
-    backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
-    padding:.75rem .82rem;border-radius:16px;min-width:160px;box-shadow:var(--shadow)
-  }
-  .map-legend-title{font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#cfcfcf;margin-bottom:.45rem}
-  .map-legend-item{display:flex;align-items:center;gap:.45rem;font-size:.74rem;color:#ededed}
-  .map-legend-item+.map-legend-item{margin-top:.35rem}
-  .map-legend-dot{width:10px;height:10px;border-radius:999px}
-  .map-legend-line{width:18px;height:3px;border-radius:999px;background:var(--accent)}
-  .leaflet-popup-content-wrapper,.leaflet-popup-tip{background:#171717;color:#f0f0f0}
-  .leaflet-popup-content{margin:10px 12px}
-  .popup-time{font-size:.7rem;color:#8f8f8f;margin-bottom:2px}
-  .popup-label{font-size:.88rem;font-weight:800}
-  .popup-lieu{font-size:.72rem;color:#b9b9b9;margin-top:3px}
+  #map{height:calc(100dvh - 150px);min-height:440px;border-radius:22px;border:1px solid var(--border);overflow:hidden;background:#1a2520;z-index:0;box-shadow:var(--shadow3)}
+  .map-overlay{position:absolute;z-index:600;display:flex;justify-content:space-between;align-items:flex-start;gap:.6rem;pointer-events:none}
+  .map-overlay-top{top:14px;left:14px;right:14px}
+  .map-hud{pointer-events:auto;background:linear-gradient(135deg,rgba(33,67,59,.92),rgba(21,48,42,.92));backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:.7rem 1rem;box-shadow:0 8px 28px rgba(0,0,0,.3);max-width:64%}
+  .map-hud-kicker{font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:var(--accent)}
+  .map-hud-title{font-family:var(--display);font-size:1.25rem;color:#f3ede2;line-height:1.1;margin-top:.1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .map-hud-sub{font-size:.74rem;color:#9db5ab;margin-top:.15rem}
+  .map-ctrls{pointer-events:auto;display:flex;flex-direction:column;gap:.4rem}
+  .map-ctrl{width:42px;height:42px;display:flex;align-items:center;justify-content:center;border-radius:13px;border:1px solid rgba(255,255,255,.12);background:rgba(21,48,42,.9);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);color:#f3ede2;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.28);transition:all .15s}
+  .map-ctrl:hover{background:var(--accent);color:var(--accent-contrast);border-color:var(--accent);transform:translateY(-1px)}
+  .map-dayfilter{position:absolute;z-index:600;top:78px;left:14px;right:14px;display:flex;gap:.4rem;overflow-x:auto;padding-bottom:.3rem;pointer-events:auto;scrollbar-width:none}
+  .map-dayfilter::-webkit-scrollbar{display:none}
+  .map-chip{flex:0 0 auto;display:inline-flex;align-items:center;gap:.35rem;padding:.4rem .8rem;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(21,48,42,.85);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);color:#f3ede2;font-size:.78rem;font-weight:700;cursor:pointer;transition:all .15s;box-shadow:0 4px 12px rgba(0,0,0,.2)}
+  .map-chip:hover{border-color:var(--accent)}
+  .map-chip.is-active{background:var(--accent);color:var(--accent-contrast);border-color:var(--accent)}
+  .map-chip-n{font-size:.66rem;background:rgba(0,0,0,.18);padding:.02rem .35rem;border-radius:999px}
+  .map-pin-wrap{background:none!important;border:none!important}
+  .map-pin{position:relative;width:34px;height:42px;display:flex;align-items:flex-start;justify-content:center;filter:drop-shadow(0 4px 6px rgba(0,0,0,.4))}
+  .map-pin::before{content:"";position:absolute;top:0;left:50%;transform:translateX(-50%);width:30px;height:30px;background:var(--pin);border:2.5px solid #fff;border-radius:50% 50% 50% 0;rotate:45deg;box-shadow:inset 0 -2px 4px rgba(0,0,0,.15)}
+  .map-pin span{position:relative;z-index:1;margin-top:5px;font-size:12px;font-weight:800;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.4)}
+  .map-sheet{position:absolute;z-index:600;left:14px;right:14px;bottom:14px;background:linear-gradient(180deg,rgba(33,67,59,.94),rgba(21,48,42,.96));backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:.7rem .8rem .85rem;box-shadow:0 -8px 30px rgba(0,0,0,.34);pointer-events:auto}
+  .map-sheet-grip{width:38px;height:4px;border-radius:999px;background:rgba(255,255,255,.22);margin:0 auto .55rem}
+  .map-sheet-head{display:flex;align-items:center;gap:.5rem;margin:0 .25rem .55rem;font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#9db5ab}
+  .map-sheet-count{margin-left:auto;background:var(--accent-soft);color:var(--accent);padding:.05rem .5rem;border-radius:999px;font-size:.7rem}
+  .map-steps{display:flex;gap:.55rem;overflow-x:auto;padding:.1rem .15rem .25rem;scrollbar-width:thin}
+  .map-steps::-webkit-scrollbar{height:5px}
+  .map-steps::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18);border-radius:999px}
+  .map-step-card{flex:0 0 auto;width:208px;display:flex;align-items:center;gap:.6rem;padding:.6rem .7rem;border-radius:14px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);cursor:pointer;text-align:left;transition:all .15s}
+  .map-step-card:hover{background:rgba(255,255,255,.1);transform:translateY(-2px)}
+  .map-step-card.is-active{border-color:var(--c);box-shadow:0 0 0 1.5px var(--c) inset;background:rgba(255,255,255,.1)}
+  .map-step-pin{width:30px;height:30px;flex-shrink:0;border-radius:50%;background:var(--c);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.85rem;border:2px solid rgba(255,255,255,.85)}
+  .map-step-info{min-width:0}
+  .map-step-title{font-size:.86rem;font-weight:700;color:#f3ede2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .map-step-sub{font-size:.72rem;color:#9db5ab;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:.1rem}
+  .map-empty{position:absolute;inset:0;z-index:550;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2rem;background:rgba(21,48,42,.55);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);border-radius:22px;pointer-events:none}
+  .map-empty-emoji{font-size:2.6rem;margin-bottom:.6rem}
+  .map-empty-t{font-family:var(--display);font-size:1.4rem;color:#f3ede2}
+  .map-empty-s{font-size:.9rem;color:#9db5ab;max-width:34ch;margin-top:.35rem;line-height:1.5}
+  .map-pop{min-width:140px}
+  .map-pop-t{font-weight:800;font-size:.9rem;color:#f3ede2}
+  .map-pop-l{font-size:.8rem;color:#cdd9d3;margin-top:.15rem}
+  .map-pop-time{font-size:.76rem;color:#9db5ab;margin-top:.2rem}
+  .leaflet-popup-content-wrapper{background:#21433b;color:#f3ede2;border-radius:14px;box-shadow:0 8px 26px rgba(0,0,0,.4)}
+  .leaflet-popup-tip{background:#21433b}
+  .leaflet-popup-content{margin:.7rem .9rem}
+  .leaflet-container a.leaflet-popup-close-button{color:#9db5ab}
+  @media(max-width:640px){.map-hud{max-width:58%;padding:.55rem .8rem}.map-hud-title{font-size:1.05rem}.map-step-card{width:170px}.map-dayfilter{top:72px}}
+
 
   .panel{
     border:1px solid var(--border);
@@ -2917,9 +2939,38 @@
     <section class="view" id="view-map">
       <div class="map-wrap">
         <div id="map"></div>
-        <div class="map-legend" id="map-legend"></div>
+
+        <div class="map-overlay map-overlay-top">
+          <div class="map-hud" id="map-hud">
+            <div class="map-hud-kicker">Carte du voyage</div>
+            <div class="map-hud-title" id="map-hud-title">—</div>
+            <div class="map-hud-sub" id="map-hud-sub"></div>
+          </div>
+          <div class="map-ctrls">
+            <button class="map-ctrl" id="map-fit" onclick="mapFitAll()" title="Voir tout l'itinéraire"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg></button>
+            <button class="map-ctrl" id="map-recenter" onclick="mapRecenter()" title="Recentrer sur l'étape active"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3"/></svg></button>
+          </div>
+        </div>
+
+        <div class="map-dayfilter" id="map-dayfilter"></div>
+
+        <div class="map-sheet" id="map-sheet">
+          <div class="map-sheet-grip"></div>
+          <div class="map-sheet-head">
+            <span id="map-sheet-title">Étapes</span>
+            <span class="map-sheet-count" id="map-sheet-count"></span>
+          </div>
+          <div class="map-steps" id="map-steps"></div>
+        </div>
+
+        <div class="map-empty" id="map-empty" style="display:none">
+          <div class="map-empty-emoji">🗺️</div>
+          <div class="map-empty-t">Aucun lieu à afficher</div>
+          <div class="map-empty-s">Ajoute des étapes avec un lieu dans ton itinéraire pour les voir apparaître ici.</div>
+        </div>
       </div>
     </section>
+
 
     <section class="view" id="view-docs">
       <div class="panel">

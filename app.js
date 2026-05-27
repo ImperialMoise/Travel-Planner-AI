@@ -227,13 +227,11 @@ function switchView(view){
   if(view==='map')setTimeout(()=>{initMap();if(_map)_map.invalidateSize();renderMap();},120);
 }
 
-function closeModal(id){
+function openModal(id){
   const o=document.getElementById(id);
   if(!o)return;
-  o.classList.remove('open');
-  if(!document.querySelector('.modal-overlay.open')){
-    document.body.style.overflow='';
-  }
+  o.classList.add('open');
+  document.body.style.overflow='hidden';
 }
 
 function closeModal(id){
@@ -253,26 +251,26 @@ document.addEventListener('keydown',e=>{
 
 /* ══ Accueil ══ */
 function goHome(){
-  Object.keys(photoCache).forEach(k=>delete photoCache[k]);
-  Object.keys(photoOpen).forEach(k=>delete photoOpen[k]);
-  Object.keys(geocodeCache).forEach(k=>delete geocodeCache[k]);
+  Object.keys(_photoCache).forEach(k=>delete _photoCache[k]);
+  Object.keys(_photoOpen).forEach(k=>delete _photoOpen[k]);
+  Object.keys(_geocodeCache).forEach(k=>delete _geocodeCache[k]);
 
-  mapInited=false;
-  if(map){
-    mapMarkers.forEach(m=>map.removeLayer(m));
-    mapRoutes.forEach(r=>map.removeLayer(r));
+  _mapInited=false;
+  if(_map){
+    _mapMarkers.forEach(m=>_map.removeLayer(m));
+    _mapRoutes.forEach(r=>_map.removeLayer(r));
   }
-  mapMarkers=[];
-  mapRoutes=[];
+  _mapMarkers=[];
+  _mapRoutes=[];
 
   state.trip=null;
   state.docs=[];
   state.budget=[];
-  state.participants=[...DEFAULTPARTICIPANTS];
+  state.participants=[...DEFAULT_PARTICIPANTS];
   tripsStore.activeTripId=null;
 
-  budgetPayer=state.participants[0]||null;
-  budgetFor=new Set(state.participants);
+  _budgetPayer=state.participants[0]||null;
+  _budgetFor=new Set(state.participants);
 
   switchView('itinerary');
   renderItinerary();
@@ -837,8 +835,18 @@ function syncBudgetAmount(i,v){
   renderBudget();
 }
 
-function ajouterParticipant(){
-  const input=document.getElementById('new-participant-input');
+function supprimerParticipant(i){
+  const nom=state.participants[i];
+  if(nom===undefined)return;
+  if(state.participants.length<=1){showToast('Au moins une personne requise');return}
+  state.participants.splice(i,1);
+  _budgetFor.delete(nom);
+  if(_budgetPayer===nom)_budgetPayer=state.participants[0]||null;
+  saveToLocalStorage();
+  renderBudget();
+}
+
+function ajouterParticipant(){  const input=document.getElementById('new-participant-input');
   const nom=input?input.value.trim():'';
   if(!nom||state.participants.includes(nom))return;
   state.participants.push(nom);
@@ -856,8 +864,7 @@ function renderBudget(){
     zone.innerHTML=
       state.participants.map((p,i)=>{
         const c=BUDGET_COLORS[i%BUDGET_COLORS.length];
-        return `<span style="display:inline-flex;align-items:center;gap:5px;padding:.3rem .7rem;border-radius:999px;border:1px solid ${c}55;background:${c}18;font-size:.82rem;font-weight:600;color:${c}"><span style="width:9px;height:9px;border-radius:50%;background:${c};flex-shrink:0"></span>${esc(p)}</span>`;
-      }).join(' ')+
+        return `<span class="participant-chip" style="position:relative;display:inline-flex;align-items:center;gap:5px;padding:.3rem .7rem;border-radius:999px;border:1px solid ${c}55;background:${c}18;font-size:.82rem;font-weight:600;color:${c}"><span style="width:9px;height:9px;border-radius:50%;background:${c};flex-shrink:0"></span>${esc(p)}<button type="button" class="participant-remove" onclick="supprimerParticipant(${i})" title="Supprimer" style="display:none;border:none;background:${c};color:#fff;width:15px;height:15px;border-radius:50%;font-size:11px;line-height:1;cursor:pointer;padding:0;align-items:center;justify-content:center">×</button></span>`;      }).join(' ')+
       `<span style="display:inline-flex;align-items:center;gap:5px">
         <input id="new-participant-input" type="text" placeholder="Prénom..." style="border:1px solid var(--border);background:var(--bg);color:var(--text);padding:.3rem .6rem;border-radius:var(--r2);font-size:.82rem;width:100px"/>
         <button onclick="ajouterParticipant()" style="padding:.3rem .65rem;border-radius:var(--r2);border:none;background:var(--accent);color:#fff;font-size:.82rem;cursor:pointer">+ Ajouter</button>
@@ -1218,6 +1225,10 @@ function renderItinerary(){
               Importer un fichier JSON
             </button>
           </div>
+          ${tripsStore.trips.length?`<div style="display:flex;flex-direction:column;gap:.5rem;max-width:46ch;margin:0 0 1.4rem">
+            <div style="font-size:.74rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)">Ouvrir un voyage existant</div>
+            ${[...tripsStore.trips].sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0)).map(t=>`<button type="button" onclick="selectTrip('${esc(t.id)}')" style="text-align:left;border:1px solid var(--border);background:var(--accent-soft);color:var(--text);padding:.7rem 1rem;border-radius:var(--r2);font-weight:600;font-size:.9rem;cursor:pointer">${esc(t.name||'Voyage')}</button>`).join('')}
+          </div>`:''}
           <div style="display:flex;flex-wrap:wrap;gap:.45rem">
             ${['Plan','Budget','Docs','Carte'].map(x=>`<span style="display:inline-flex;align-items:center;gap:.35rem;font-size:.74rem;font-weight:600;color:var(--muted);background:var(--accent-soft);border:1px solid var(--border);padding:.4rem .75rem;border-radius:999px">${x}</span>`).join('')}
           </div>

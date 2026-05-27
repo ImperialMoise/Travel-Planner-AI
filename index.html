@@ -2625,32 +2625,29 @@
   }
 
   #modal-new-trip .modal,
-  #modal-add-step .modal,
-  #modal-edit-step .modal{
+  .modal-step-adaptive{
     margin-bottom:max(0px, env(safe-area-inset-bottom));
+    max-width:520px;
   }
+  .stt-row{display:flex;gap:.35rem;overflow-x:auto;padding-bottom:.15rem;scrollbar-width:none}
+  .stt-row::-webkit-scrollbar{display:none}
+  .stt{flex:0 0 auto;padding:.38rem .75rem;border-radius:999px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:.78rem;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap}
+  .stt:hover{color:var(--text);border-color:var(--accent)}
+  .stt.is-active{background:var(--accent);color:var(--accent-contrast);border-color:var(--accent)}
+  .step-dur-badge{display:inline-flex;align-items:center;gap:.3rem;font-size:.8rem;font-weight:700;color:var(--accent);background:var(--accent-soft);padding:.3rem .7rem;border-radius:999px;margin-top:.2rem}
+  .escale-row{display:flex;gap:.4rem;align-items:center;margin-top:.35rem}
+  .escale-row input{flex:1}
+  .escale-del{background:none;border:none;color:var(--faint);cursor:pointer;font-size:1.1rem;padding:0 .2rem}
+  .escale-del:hover{color:#ff7043}
 
   #trip-name-input,
   #trip-start,
   #trip-days,
   #trip-end,
-  #step-time,
-  #step-transport-input,
-  #step-label-input,
-  #step-lieu-input,
-  #step-prix-input,
-  #step-link-input,
-  #step-note-input,
-  #edit-step-time,
-  #edit-step-transport,
-  #edit-step-label,
-  #edit-step-lieu,
-  #edit-step-amount,
-  #edit-step-link,
-  #edit-step-note,
-  #edit-step-paidby,
-  #step-paidby-input{
-    border-radius:18px !important;
+  #modal-step input,
+  #modal-step select,
+  #modal-step textarea{
+    border-radius:12px !important;
   }
 
   #step-budget-check-wrap{
@@ -2870,6 +2867,28 @@
 .tl-tag-link{background:var(--accent-soft);color:var(--accent)}
 .tl-note{width:100%;background:transparent;border:none;color:var(--muted);font-size:.82rem;resize:vertical;outline:none;padding:.2rem 0;font-family:inherit}
 .tl-note:focus{border-bottom:1px dashed var(--border)}
+.tl-label-big{font-size:1rem;font-weight:700;color:var(--text);margin:.2rem 0}
+.tl-lieu-small{font-size:.8rem;color:var(--muted);margin:.1rem 0}
+.tl-note-inline{font-size:.8rem;color:var(--muted);margin-top:.3rem;line-height:1.4}
+.tl-type-badge{font-size:.72rem;font-weight:700;padding:.2rem .55rem;border-radius:999px;background:var(--surface);border:1px solid var(--border);color:var(--muted)}
+.tl-badge-logement{background:rgba(180,132,62,.12);color:var(--accent);border-color:var(--accent-soft)}
+.tl-dot-transport{background:#448aff}
+.tl-dot-logement{background:var(--accent)}
+.tl-card-logement{border-left:3px solid var(--accent)}
+.tl-dur-badge{font-size:.78rem;font-weight:700;color:var(--accent);margin:.3rem 0}
+.tl-transport-route{display:flex;align-items:center;gap:.5rem;margin:.55rem 0 .3rem}
+.tl-trp-col{flex:1;min-width:0}
+.tl-trp-col-r{text-align:right}
+.tl-trp-time{font-family:var(--display);font-size:1.05rem;color:var(--text)}
+.tl-trp-place{font-size:.8rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tl-trp-mid{flex:1;display:flex;flex-direction:column;align-items:center;gap:.2rem}
+.tl-trp-line{width:100%;height:2px;background:linear-gradient(90deg,var(--border),var(--accent),var(--border));border-radius:999px}
+.tl-trp-dur{font-size:.72rem;font-weight:700;color:var(--accent)}
+.tl-trp-ref{font-size:.76rem;color:var(--muted);margin-top:.2rem}
+.tl-nextday{font-size:.65rem;background:#ff704322;color:#ff7043;padding:.1rem .3rem;border-radius:4px;margin-left:.25rem}
+.tl-escales{margin:.25rem 0;display:flex;flex-direction:column;gap:.15rem}
+.tl-escale{font-size:.76rem;color:var(--faint);padding-left:.5rem}
+.tl-tag-dur{display:inline-flex;align-items:center;background:var(--surface2);color:var(--muted);border:1px solid var(--border)}
 .itin-day-empty{text-align:center;padding:1.8rem 1rem;background:var(--surface2);border:1px dashed var(--border);border-radius:14px;margin-bottom:1rem}
 .itin-day-empty-emoji{font-size:1.8rem;margin-bottom:.4rem}
 .itin-day-empty-t{font-family:var(--display);font-size:1.1rem;color:var(--text)}
@@ -3070,161 +3089,30 @@
     </div>
   </div>
 
-  <div class="modal-overlay" id="modal-add-step">
-  <div class="modal">
-    <div class="modal-header">
-      <div class="modal-title">Ajouter une étape</div>
-      <button class="modal-close" onclick="closeModal('modal-add-step')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="18" y1="6" x2="6" y2="18"></line>
-          <line x1="6" y1="6" x2="18" y2="18"></line>
-        </svg>
-      </button>
-    </div>
-    <div class="modal-body">
-      <input id="step-day-index" type="hidden"/>
-
-      <div class="row-2">
-  <div class="field">
-    <label for="step-time">Heure</label>
-    <input id="step-time" type="time" />
-  </div>
-  <div class="field">
-    <label for="step-transport-input">Transport</label>
-    <select id="step-transport-input">
-      <option value="">Aucun</option>
-      <option value="pied">Pied</option>
-      <option value="voiture">Voiture</option>
-      <option value="train">Train</option>
-      <option value="avion">Avion</option>
-      <option value="bus">Bus</option>
-      <option value="bateau">Bateau</option>
-    </select>
-  </div>
-</div>
-
-<div class="field">
-  <label for="step-label-input">Titre</label>
-  <input id="step-label-input" type="text" placeholder="Ex: Départ de Bordeaux" />
-</div>
-
-<div class="field">
-  <label for="step-lieu-input">Lieu</label>
-  <div class="autocomplete-wrap">
-    <input id="step-lieu-input" type="text" placeholder="Ex: Lisbonne" oninput="acInput(this,'step-lieu-list')" onkeydown="acKeydown(event,'step-lieu-list')" />
-    <div class="autocomplete-list" id="step-lieu-list"></div>
-  </div>
-</div>
-
-<div class="row-2">
-  <div class="field">
-    <label for="step-prix-input">Prix (€)</label>
-    <input id="step-prix-input" type="number" min="0" step="0.01" placeholder="0.00" />
-  </div>
-  <div class="field">
-    <label for="step-paidby-input">Payé par</label>
-    <select id="step-paidby-input" onmousedown="refreshPaidBySelect(this)"></select>
-  </div>
-</div>
-
-      <div class="field" id="step-budget-check-wrap" style="display:flex;align-items:center;gap:.55rem">
-        <input type="checkbox" id="step-add-budget" style="accent-color:var(--accent)"/>
-        <label for="step-add-budget" style="margin:0;font-size:.86rem;font-weight:600;color:var(--muted);cursor:pointer">
-          Ajouter cette dépense au Budget
-        </label>
+  <div class="modal-overlay" id="modal-step">
+  <div class="modal modal-step-adaptive">
+    <div class="modal-header" style="flex-direction:column;align-items:stretch;gap:.6rem;padding-bottom:.5rem">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div class="modal-title" id="step-modal-title">Ajouter une étape</div>
+        <button class="modal-close" onclick="closeModal('modal-step')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
       </div>
-
-      <div class="field">
-        <label for="step-link-input">Lien</label>
-        <input id="step-link-input" type="url" placeholder="Lien utile, billet, réservation..."/>
-      </div>
-
-      <div class="field">
-        <label for="step-note-input">Note</label>
-        <textarea id="step-note-input" placeholder="Informations complémentaires..."></textarea>
+      <div class="stt-row" id="step-type-tabs">
+        <button class="stt" data-t="transport" onclick="setStepType('transport')">✈️ Transport</button>
+        <button class="stt" data-t="logement" onclick="setStepType('logement')">🏠 Logement</button>
+        <button class="stt" data-t="restaurant" onclick="setStepType('restaurant')">🍽️ Resto</button>
+        <button class="stt" data-t="activite" onclick="setStepType('activite')">🎯 Activité</button>
+        <button class="stt" data-t="autre" onclick="setStepType('autre')">📌 Autre</button>
       </div>
     </div>
+    <div class="modal-body" id="step-modal-body"></div>
     <div class="modal-footer">
-      <button class="btn-ghost" onclick="closeModal('modal-add-step')">Annuler</button>
-      <button class="btn-primary" onclick="addStep()">Ajouter</button>
+      <button class="btn-ghost" onclick="closeModal('modal-step')">Annuler</button>
+      <button class="btn-primary" id="step-modal-save-btn" onclick="saveStep()">Ajouter</button>
     </div>
   </div>
-</div>
-
-  <div class="modal-overlay" id="modal-edit-step">
-  <div class="modal">
-    <div class="modal-header">
-      <div class="modal-title">Modifier l'étape</div>
-      <button class="modal-close" onclick="closeModal('modal-edit-step')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="18" y1="6" x2="6" y2="18"></line>
-          <line x1="6" y1="6" x2="18" y2="18"></line>
-        </svg>
-      </button>
-    </div>
-    <div class="modal-body">
-      <input id="edit-step-di" type="hidden"/>
-      <input id="edit-step-si" type="hidden"/>
-
-      <div class="row-2">
-        <div class="field">
-          <label for="edit-step-time">Heure</label>
-          <input id="edit-step-time" type="time"/>
-        </div>
-        <div class="field">
-          <label for="edit-step-transport">Transport</label>
-          <select id="edit-step-transport">
-            <option value="">Aucun</option>
-            <option value="pied">Pied</option>
-            <option value="voiture">Voiture</option>
-            <option value="train">Train</option>
-            <option value="avion">Avion</option>
-            <option value="bus">Bus</option>
-            <option value="bateau">Bateau</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="field">
-        <label for="edit-step-label">Titre</label>
-        <input id="edit-step-label" type="text" placeholder="Titre"/>
-      </div>
-
-      <div class="field">
-        <label for="edit-step-lieu">Lieu</label>
-        <div class="autocomplete-wrap">
-          <input id="edit-step-lieu" type="text" placeholder="Lieu" oninput="acInput(this,'edit-step-lieu-list')" onkeydown="acKeydown(event,'edit-step-lieu-list')"/>
-          <div class="autocomplete-list" id="edit-step-lieu-list"></div>
-        </div>
-      </div>
-
-      <div class="row-2">
-        <div class="field">
-          <label for="edit-step-amount">Prix (€)</label>
-          <input id="edit-step-amount" type="number" min="0" step="0.01" placeholder="0.00"/>
-        </div>
-        <div class="field">
-          <label for="edit-step-paidby">Payé par</label>
-          <select id="edit-step-paidby" onmousedown="refreshPaidBySelect(this)"></select>
-        </div>
-      </div>
-
-      <div class="field">
-        <label for="edit-step-link">Lien</label>
-        <input id="edit-step-link" type="url" placeholder="Lien utile, billet, réservation..."/>
-      </div>
-
-      <div class="field">
-        <label for="edit-step-note">Note</label>
-        <textarea id="edit-step-note" placeholder="Informations complémentaires..."></textarea>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn-ghost" onclick="closeModal('modal-edit-step')">Annuler</button>
-      <button class="btn-primary" onclick="saveEditStep()">Enregistrer</button>
-    </div>
   </div>
-</div>
 
 <div class="modal-overlay" id="modal-edit-dates">
     <div class="modal">

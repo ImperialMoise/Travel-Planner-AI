@@ -597,116 +597,275 @@ function createTrip(){
 }
 
 /* ══ Étapes ══ */
+/* ══ Types d'étapes ══ */
+const STEP_TYPE_LABELS={transport:'✈️ Transport',logement:'🏠 Logement',restaurant:'🍽️ Restaurant',activite:'🎯 Activité',autre:'📌 Autre'};
+const TRANSPORT_TYPES=['train','avion','bus','voiture','ferry','métro','pied','vélo','taxi'];
+
+let _stepCtx={mode:'add',di:0,si:0,type:'autre'};
+
+function setStepType(t){
+  _stepCtx.type=t;
+  document.querySelectorAll('.stt').forEach(b=>b.classList.toggle('is-active',b.dataset.t===t));
+  renderStepForm();
+}
+
+function _stepVal(id,fallback=''){const el=document.getElementById(id);return el?el.value:fallback}
+function _stepSet(id,v){const el=document.getElementById(id);if(el)el.value=v??''}
+
+function calcDuree(dep,arr,nextDay){
+  if(!dep||!arr)return'';
+  const[dh,dm]=dep.split(':').map(Number);
+  const[ah,am]=arr.split(':').map(Number);
+  let mins=(ah*60+am)-(dh*60+dm);
+  if(nextDay||mins<0)mins+=1440;
+  if(mins<=0)return'';
+  return mins>=60?`${Math.floor(mins/60)}h${String(mins%60).padStart(2,'0')}`:`${mins}min`;
+}
+
+function updateDureeBadge(){
+  const badge=document.getElementById('s-duree-badge');
+  if(!badge)return;
+  const d=calcDuree(_stepVal('s-dep-h'),_stepVal('s-arr-h'),document.getElementById('s-next-day')?.checked);
+  badge.textContent=d?`⏱ ${d}`:'';
+  badge.style.display=d?'inline-flex':'none';
+}
+
+let _escales=[];
+function addEscale(){
+  _escales.push({lieu:'',duree:''});
+  renderEscales();
+}
+function removeEscale(i){_escales.splice(i,1);renderEscales()}
+function renderEscales(){
+  const c=document.getElementById('s-escales');
+  if(!c)return;
+  c.innerHTML=_escales.map((e,i)=>`<div class="escale-row">
+    <input type="text" placeholder="Lieu de l'escale" value="${esc(e.lieu)}" oninput="_escales[${i}].lieu=this.value" style="flex:2"/>
+    <input type="text" placeholder="Durée" value="${esc(e.duree)}" oninput="_escales[${i}].duree=this.value" style="flex:1"/>
+    <button class="escale-del" onclick="removeEscale(${i})">×</button>
+  </div>`).join('');
+}
+
+function _payerRow(idPrix,idPayer,idChk){
+  return `<div class="row-2">
+    <div class="field"><label>Prix (€)</label><input id="${idPrix}" type="number" min="0" step="0.01" placeholder="0.00"/></div>
+    <div class="field"><label>Payé par</label><select id="${idPayer}" onmousedown="refreshPaidBySelect(this)"></select></div>
+  </div>
+  <div class="field" style="display:flex;align-items:center;gap:.5rem;background:var(--surface2);border-radius:10px;padding:.6rem .8rem">
+    <input type="checkbox" id="${idChk}" style="accent-color:var(--accent);width:16px;height:16px"/>
+    <label for="${idChk}" style="margin:0;font-size:.84rem;font-weight:600;cursor:pointer">Ajouter au budget</label>
+  </div>`;
+}
+
+function _lienNote(){
+  return `<div class="field"><label>Lien</label><input id="s-link" type="url" placeholder="Billet, réservation…"/></div>
+  <div class="field"><label>Note</label><textarea id="s-note" rows="2" placeholder="Informations…"></textarea></div>`;
+}
+
+function _acField(id,listId,ph){
+  return `<div class="autocomplete-wrap"><input id="${id}" type="text" placeholder="${ph}" oninput="acInput(this,'${listId}')" onkeydown="acKeydown(event,'${listId}')"/><div class="autocomplete-list" id="${listId}"></div></div>`;
+}
+
+function renderStepForm(){
+  const t=_stepCtx.type;
+  const body=document.getElementById('step-modal-body');
+  if(!body)return;
+  let html='<input id="s-di" type="hidden"/><input id="s-si" type="hidden"/>';
+
+  if(t==='transport'){
+    html+=`<div class="field"><label>Type de transport</label><select id="s-transport-type">
+      ${TRANSPORT_TYPES.map(x=>`<option value="${x}">${{train:'🚆 Train',avion:'✈️ Avion',bus:'🚌 Bus',voiture:'🚗 Voiture',ferry:'⛴️ Ferry',métro:'🚇 Métro',pied:'🚶 À pied',vélo:'🚲 Vélo',taxi:'🚕 Taxi'}[x]||x}</option>`).join('')}
+    </select></div>
+    <div class="row-2">
+      <div class="field"><label>Départ</label>${_acField('s-dep-lieu','s-dep-list','Ville, gare…')}</div>
+      <div class="field"><label>Heure départ</label><input id="s-dep-h" type="time" oninput="updateDureeBadge()"/></div>
+    </div>
+    <div class="row-2">
+      <div class="field"><label>Arrivée</label>${_acField('s-arr-lieu','s-arr-list','Ville, aéroport…')}</div>
+      <div class="field"><label>Heure arrivée</label><input id="s-arr-h" type="time" oninput="updateDureeBadge()"/></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:.7rem;margin-bottom:.4rem">
+      <div class="step-dur-badge" id="s-duree-badge" style="display:none"></div>
+      <label style="display:flex;align-items:center;gap:.35rem;font-size:.8rem;color:var(--muted);cursor:pointer">
+        <input type="checkbox" id="s-next-day" onchange="updateDureeBadge()" style="accent-color:var(--accent)"/> Arrivée le lendemain
+      </label>
+    </div>
+    <div class="field"><label>Escales / correspondances</label><div id="s-escales"></div>
+      <button type="button" onclick="addEscale()" style="margin-top:.4rem;font-size:.8rem;color:var(--accent);background:none;border:none;cursor:pointer;font-weight:700">+ Ajouter une escale</button>
+    </div>
+    <div class="row-2">
+      <div class="field"><label>Transporteur / Réf.</label><input id="s-ref" type="text" placeholder="SNCF, TGV 6601…"/></div>
+      <div class="field"><label>Titre (optionnel)</label><input id="s-label" type="text" placeholder="Paris → Lyon"/></div>
+    </div>
+    ${_payerRow('s-prix','s-payer','s-add-budget')}
+    ${_lienNote()}`;
+  }
+  else if(t==='logement'){
+    html+=`<div class="field"><label>Nom du logement</label><input id="s-label" type="text" placeholder="Hôtel Le Bristol…"/></div>
+    <div class="field"><label>Adresse / Lieu</label>${_acField('s-lieu','s-lieu-list','Adresse, ville…')}</div>
+    <div class="row-2">
+      <div class="field"><label>Check-in</label><input id="s-date-start" type="date" oninput="updateNuits()"/></div>
+      <div class="field"><label>Check-out</label><input id="s-date-end" type="date" oninput="updateNuits()"/></div>
+    </div>
+    <div class="step-dur-badge" id="s-nuits-badge" style="display:none"></div>
+    ${_payerRow('s-prix','s-payer','s-add-budget')}
+    ${_lienNote()}`;
+  }
+  else if(t==='restaurant'){
+    html+=`<div class="field"><label>Nom du restaurant</label><input id="s-label" type="text" placeholder="Le Comptoir…"/></div>
+    <div class="field"><label>Adresse / Lieu</label>${_acField('s-lieu','s-lieu-list','Adresse, quartier…')}</div>
+    <div class="field"><label>Heure</label><input id="s-time" type="time"/></div>
+    ${_payerRow('s-prix','s-payer','s-add-budget')}
+    ${_lienNote()}`;
+  }
+  else if(t==='activite'){
+    html+=`<div class="field"><label>Nom</label><input id="s-label" type="text" placeholder="Musée d'Orsay…"/></div>
+    <div class="field"><label>Lieu</label>${_acField('s-lieu','s-lieu-list','Adresse, ville…')}</div>
+    <div class="row-2">
+      <div class="field"><label>Heure</label><input id="s-time" type="time"/></div>
+      <div class="field"><label>Durée estimée</label><input id="s-duree" type="text" placeholder="2h, 45min…"/></div>
+    </div>
+    ${_payerRow('s-prix','s-payer','s-add-budget')}
+    ${_lienNote()}`;
+  }
+  else{
+    html+=`<div class="field"><label>Titre</label><input id="s-label" type="text" placeholder="Titre de l'étape"/></div>
+    <div class="field"><label>Lieu (optionnel)</label>${_acField('s-lieu','s-lieu-list','Lieu…')}</div>
+    <div class="field"><label>Heure (optionnel)</label><input id="s-time" type="time"/></div>
+    ${_payerRow('s-prix','s-payer','s-add-budget')}
+    ${_lienNote()}`;
+  }
+
+  body.innerHTML=html;
+  _escales=[];
+  if(t==='transport')renderEscales();
+  // pré-remplir payer
+  const payerSel=document.getElementById('s-payer');
+  if(payerSel){refreshPaidBySelect(payerSel);payerSel.value=state.participants[0]||''}
+}
+
 function openAddStepModal(di){
-  document.getElementById('step-day-index').value=di;
-  document.getElementById('step-time').value='09:00';
-  document.getElementById('step-label-input').value='';
-  document.getElementById('step-lieu-input').value='';
-  document.getElementById('step-transport-input').value='';
-  document.getElementById('step-link-input').value='';
-  document.getElementById('step-note-input').value='';
-  const list=document.getElementById('step-lieu-list');
-  if(list){list.innerHTML='';list.classList.remove('open')}
-  delete _acCoords['step-lieu-input'];
-  openModal('modal-add-step');
+  _stepCtx={mode:'add',di,si:0,type:'autre'};
+  document.getElementById('step-modal-title').textContent='Ajouter une étape';
+  document.getElementById('step-modal-save-btn').textContent='Ajouter';
+  setStepType('autre');
+  openModal('modal-step');
 }
 
-function addStep(){
-  const di=parseInt(document.getElementById('step-day-index').value);
-  const time=document.getElementById('step-time').value;
-  const label=document.getElementById('step-label-input').value.trim();
-  const lieu=document.getElementById('step-lieu-input').value.trim();
-  const transport=document.getElementById('step-transport-input').value;
-  const note=document.getElementById('step-note-input').value.trim();
-  const link=document.getElementById('step-link-input').value.trim();
-  const prix=parseFloat(document.getElementById('step-prix-input').value)||0;
-  const paidBy=document.getElementById('step-paidby-input').value||state.participants[0];
-  const ajouterBudget=document.getElementById('step-add-budget').checked;
-  if(!label){document.getElementById('step-label-input').focus();return}
-  if(_acCoords['step-lieu-input']&&lieu){_geocodeCache[lieu.trim().toLowerCase()]=_acCoords['step-lieu-input']}
-  state.trip.days[di].steps.push({time,label,lieu,transport,note,link,subpoints:[]});
-  state.trip.days[di].steps.sort((a,b)=>a.time.localeCompare(b.time));
-  if(prix>0&&ajouterBudget){
-  state.budget.push({
-    cat:'Activité',
-    desc:label,
-    amount:prix,
-    paidBy,
-    forParticipants:['__all__'],
-    _stepRef:`${di}-${state.trip.days[di].steps.length-1}`
-  });
-}
-  saveToLocalStorage();
-  closeModal('modal-add-step');
-  renderItinerary();
-  setTimeout(()=>{const c=document.querySelector(`[data-day="${di}"]`);if(c)c.classList.add('expanded')},50);
-  showToast(prix>0&&ajouterBudget?'Étape ajoutée + dépense au budget ✓':'Étape ajoutée');
-}
-
-/* ══ Modal édition étape ══ */
 function openEditStepModal(di,si){
   const step=state.trip.days[di].steps[si];
-  document.getElementById('edit-step-di').value=di;
-  document.getElementById('edit-step-si').value=si;
-  document.getElementById('edit-step-time').value=step.time||'09:00';
-  document.getElementById('edit-step-label').value=step.label||'';
-  document.getElementById('edit-step-lieu').value=step.lieu||'';
-  document.getElementById('edit-step-transport').value=step.transport||'';
-  document.getElementById('edit-step-link').value=step.link||'';
-  document.getElementById('edit-step-note').value=step.note||'';
-  document.getElementById('edit-step-amount').value=step.amount||'';
-  const pbSel=document.getElementById('edit-step-paidby');
-  refreshPaidBySelect(pbSel);
-  pbSel.value=step.paidBy||state.participants[0]||'';
-  const list=document.getElementById('edit-step-lieu-list');
-  if(list){list.innerHTML='';list.classList.remove('open')}
-  delete _acCoords['edit-step-lieu'];
-  openModal('modal-edit-step');
+  const t=step.type||'autre';
+  _stepCtx={mode:'edit',di,si,type:t};
+  document.getElementById('step-modal-title').textContent='Modifier l\'étape';
+  document.getElementById('step-modal-save-btn').textContent='Enregistrer';
+  setStepType(t);
+  // Pré-remplir selon le type
+  _stepSet('s-di',di);_stepSet('s-si',si);
+  if(t==='transport'){
+    _stepSet('s-transport-type',step.transportType||'train');
+    _stepSet('s-dep-lieu',step.depart||'');_stepSet('s-dep-h',step.time||'');
+    _stepSet('s-arr-lieu',step.arrivee||'');_stepSet('s-arr-h',step.timeEnd||'');
+    if(step.nextDay&&document.getElementById('s-next-day'))document.getElementById('s-next-day').checked=true;
+    _stepSet('s-ref',step.ref||'');_stepSet('s-label',step.label||'');
+    _escales=step.escales?JSON.parse(JSON.stringify(step.escales)):[];
+    renderEscales();updateDureeBadge();
+  } else if(t==='logement'){
+    _stepSet('s-label',step.label||'');_stepSet('s-lieu',step.lieu||'');
+    _stepSet('s-date-start',step.dateStart||'');_stepSet('s-date-end',step.dateEnd||'');
+    updateNuits();
+  } else {
+    _stepSet('s-label',step.label||'');_stepSet('s-lieu',step.lieu||'');
+    _stepSet('s-time',step.time||'');
+    if(t==='activite')_stepSet('s-duree',step.dureeEstimee||'');
+  }
+  _stepSet('s-prix',step.amount||'');_stepSet('s-link',step.link||'');_stepSet('s-note',step.note||'');
+  const payerSel=document.getElementById('s-payer');
+  if(payerSel){refreshPaidBySelect(payerSel);payerSel.value=step.paidBy||state.participants[0]||''}
+  openModal('modal-step');
 }
 
-function saveEditStep(){
-  const di=parseInt(document.getElementById('edit-step-di').value);
-  const si=parseInt(document.getElementById('edit-step-si').value);
-  const newTime=document.getElementById('edit-step-time').value;
-  const newLabel=document.getElementById('edit-step-label').value.trim();
-  const newLieu=document.getElementById('edit-step-lieu').value.trim();
-  const newTransport=document.getElementById('edit-step-transport').value;
-  const newLink=document.getElementById('edit-step-link').value.trim();
-  const newNote=document.getElementById('edit-step-note').value.trim();
-  const newAmount=parseFloat(document.getElementById('edit-step-amount').value)||0;
-  const newPaidBy=document.getElementById('edit-step-paidby').value||state.participants[0]||'';
-  if(!newLabel){document.getElementById('edit-step-label').focus();return}
-  const step=state.trip.days[di].steps[si];
-  const oldLieu=step.lieu||'';
-  step.time=newTime;step.label=newLabel;step.lieu=newLieu;step.transport=newTransport;
-  step.link=newLink;step.note=newNote;step.amount=newAmount;step.paidBy=newPaidBy;
-  if(_acCoords['edit-step-lieu']&&newLieu){_geocodeCache[newLieu.trim().toLowerCase()]=_acCoords['edit-step-lieu']}
-  if(oldLieu!==newLieu){const key=`${di}-${si}`;delete _photoCache[key];_photoOpen[key]=false}
-  // Mise à jour ou création dans le budget si un prix est défini
-  if(newAmount>0){
-  const existing=state.budget.findIndex(b=>b._stepRef===`${di}-${si}`);
-  if(existing>=0){
-    state.budget[existing].amount=newAmount;
-    state.budget[existing].paidBy=newPaidBy;
-    state.budget[existing].desc=newLabel;
-    if(!state.budget[existing].forParticipants)state.budget[existing].forParticipants=['__all__'];
-  }else{
-    state.budget.push({
-      cat:'Activité',
-      desc:newLabel,
-      amount:newAmount,
-      paidBy:newPaidBy,
-      forParticipants:['__all__'],
-      _stepRef:`${di}-${si}`
-    });
-  }
+function updateNuits(){
+  const badge=document.getElementById('s-nuits-badge');if(!badge)return;
+  const s=_stepVal('s-date-start'),e=_stepVal('s-date-end');
+  if(!s||!e){badge.style.display='none';return}
+  const n=Math.round((new Date(e)-new Date(s))/86400000);
+  badge.textContent=n>0?`🌙 ${n} nuit${n>1?'s':''}`:n===0?'Check-in = Check-out':'Dates incohérentes';
+  badge.style.display='inline-flex';
 }
-  state.trip.days[di].steps.sort((a,b)=>a.time.localeCompare(b.time));
+
+function saveStep(){
+  const t=_stepCtx.type;
+  const di=_stepCtx.di;
+  const label=_stepVal('s-label').trim();
+  const lieu=_stepVal('s-lieu').trim();
+  const link=_stepVal('s-link').trim();
+  const note=_stepVal('s-note').trim();
+  const amount=parseFloat(_stepVal('s-prix'))||0;
+  const paidBy=_stepVal('s-payer')||state.participants[0]||'';
+  const addBudget=document.getElementById('s-add-budget')?.checked;
+
+  let step={type:t,label,lieu,link,note,amount,paidBy};
+
+  if(t==='transport'){
+    const depH=_stepVal('s-dep-h');const arrH=_stepVal('s-arr-h');
+    const nextDay=document.getElementById('s-next-day')?.checked||false;
+    const autoLabel=`${_stepVal('s-dep-lieu')||'?'} → ${_stepVal('s-arr-lieu')||'?'}`;
+    step={...step,
+      label:label||autoLabel,
+      transportType:_stepVal('s-transport-type'),
+      depart:_stepVal('s-dep-lieu'),arrivee:_stepVal('s-arr-lieu'),
+      time:depH,timeEnd:arrH,
+      duree:calcDuree(depH,arrH,nextDay),nextDay,
+      escales:_escales.filter(e=>e.lieu),
+      ref:_stepVal('s-ref'),
+      lieu:_stepVal('s-dep-lieu')
+    };
+    if(!step.depart){showToast('Lieu de départ requis');return}
+  } else if(t==='logement'){
+    if(!label){showToast('Nom du logement requis');return}
+    const ds=_stepVal('s-date-start'),de=_stepVal('s-date-end');
+    const nuits=ds&&de?Math.round((new Date(de)-new Date(ds))/86400000):0;
+    step={...step,dateStart:ds,dateEnd:de,nuits,time:''};
+  } else {
+    if(!label){showToast('Titre requis');return}
+    step.time=_stepVal('s-time')||'';
+    if(t==='activite')step.dureeEstimee=_stepVal('s-duree')||'';
+  }
+
+  // Autocomplete coord cache
+  if(_acCoords['s-lieu']&&lieu)_geocodeCache[lieu.toLowerCase()]=_acCoords['s-lieu'];
+  if(_acCoords['s-dep-lieu']&&step.depart)_geocodeCache[step.depart.toLowerCase()]=_acCoords['s-dep-lieu'];
+
+  if(_stepCtx.mode==='add'){
+    state.trip.days[di].steps.push(step);
+  } else {
+    const si=_stepCtx.si;
+    const old=state.trip.days[di].steps[si];
+    if(old.lieu!==step.lieu){const k=`${di}-${si}`;delete _photoCache[k];_photoOpen[k]=false}
+    state.trip.days[di].steps[si]=step;
+  }
+
+  // Trier (logement sans heure mis en dernier)
+  state.trip.days[di].steps.sort((a,b)=>{
+    const ta=a.type==='logement'?'99:99':(a.time||'99:98');
+    const tb=b.type==='logement'?'99:99':(b.time||'99:98');
+    return ta.localeCompare(tb);
+  });
+
+  // Budget
+  const si2=_stepCtx.mode==='edit'?_stepCtx.si:state.trip.days[di].steps.length-1;
+  const ref=`${di}-${si2}`;
+  if(amount>0&&(addBudget||_stepCtx.mode==='edit')){
+    const ex=state.budget.findIndex(b=>b._stepRef===ref);
+    const catMap={transport:'Transport',logement:'Logement',restaurant:'Repas',activite:'Activité',autre:'Divers'};
+    if(ex>=0){state.budget[ex].amount=amount;state.budget[ex].paidBy=paidBy;state.budget[ex].desc=step.label}
+    else state.budget.push({cat:catMap[t]||'Divers',desc:step.label,amount,paidBy,forParticipants:['__all__'],_stepRef:ref});
+  }
+
   saveToLocalStorage();
-  closeModal('modal-edit-step');
+  closeModal('modal-step');
   renderItinerary();
-  setTimeout(()=>{const c=document.querySelector(`[data-day="${di}"]`);if(c)c.classList.add('expanded')},50);
-  showToast('Étape modifiée ✓');
+  showToast(_stepCtx.mode==='add'?'Étape ajoutée ✓':'Étape modifiée ✓');
 }
 
 function deleteStep(di,si){
@@ -1231,30 +1390,63 @@ function toggleItinExpand(){_itinExpanded=!_itinExpanded;renderItinerary()}
 function toggleDay(di){const c=document.querySelector(`[data-day="${di}"]`);if(c)c.classList.toggle('expanded')}
 
 function renderDayCard(day,di){
+const STEP_ICONS={transport:'✈️',logement:'🏠',restaurant:'🍽️',activite:'🎯',autre:'📌'};
+const TTYPE_ICONS={train:'🚆',avion:'✈️',bus:'🚌',voiture:'🚗',ferry:'⛴️','métro':'🚇',pied:'🚶',vélo:'🚲',taxi:'🚕'};
 const stepsHtml=day.steps.map((step,si)=>{
   const key=`${di}-${si}`;
-  const transportLabel=step.transport?step.transport.charAt(0).toUpperCase()+step.transport.slice(1):'';
+  const t=step.type||'autre';
+  const icon=STEP_ICONS[t]||'📌';
+  const actions=`<div class="tl-step-actions">
+    <button class="tl-act" onclick="openEditStepModal(${di},${si})" title="Modifier"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+    <button class="tl-act tl-act-del" onclick="deleteStep(${di},${si})" title="Supprimer"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+  </div>`;
+
+  if(t==='transport'){
+    const ticon=TTYPE_ICONS[step.transportType]||'✈️';
+    const escHtml=step.escales&&step.escales.length?`<div class="tl-escales">${step.escales.map(e=>`<span class="tl-escale">↳ ${esc(e.lieu)}${e.duree?` (${esc(e.duree)})`:''}</span>`).join('')}</div>`:'';
+    return `<div class="tl-step tl-step-transport">
+      <div class="tl-marker"><div class="tl-dot tl-dot-transport"></div></div>
+      <div class="tl-card">
+        <div class="tl-card-head"><span class="tl-type-badge">${ticon} ${(step.transportType||'').charAt(0).toUpperCase()+(step.transportType||'').slice(1)}</span>${actions}</div>
+        <div class="tl-transport-route">
+          <div class="tl-trp-col"><div class="tl-trp-time">${esc(step.time||'')}</div><div class="tl-trp-place">${esc(step.depart||step.label||'')}</div></div>
+          <div class="tl-trp-mid"><div class="tl-trp-line"></div>${step.duree?`<div class="tl-trp-dur">${esc(step.duree)}</div>`:''}</div>
+          <div class="tl-trp-col tl-trp-col-r"><div class="tl-trp-time">${esc(step.timeEnd||'')}${step.nextDay?'<span class="tl-nextday">+1j</span>':''}</div><div class="tl-trp-place">${esc(step.arrivee||'')}</div></div>
+        </div>
+        ${escHtml}
+        ${step.ref?`<div class="tl-trp-ref">🎫 ${esc(step.ref)}</div>`:''}
+        ${step.note?`<div class="tl-note-inline">${esc(step.note)}</div>`:''}
+        ${step.link?`<a href="${esc(step.link)}" target="_blank" rel="noopener noreferrer" class="tl-tag tl-tag-link">🔗 Lien</a>`:''}
+      </div>
+    </div>`;
+  }
+  if(t==='logement'){
+    return `<div class="tl-step tl-step-logement">
+      <div class="tl-marker"><div class="tl-dot tl-dot-logement"></div></div>
+      <div class="tl-card tl-card-logement">
+        <div class="tl-card-head"><span class="tl-type-badge tl-badge-logement">🏠 Logement</span>${actions}</div>
+        <div class="tl-label-big">${esc(step.label)}</div>
+        ${step.lieu?`<div class="tl-lieu-small">📍 ${esc(step.lieu)}</div>`:''}
+        ${step.nuits?`<div class="tl-dur-badge">🌙 ${step.nuits} nuit${step.nuits>1?'s':''} · ${esc(step.dateStart||'')} → ${esc(step.dateEnd||'')}</div>`:''}
+        ${step.note?`<div class="tl-note-inline">${esc(step.note)}</div>`:''}
+        ${step.link?`<a href="${esc(step.link)}" target="_blank" rel="noopener noreferrer" class="tl-tag tl-tag-link">🔗 Lien</a>`:''}
+      </div>
+    </div>`;
+  }
+  // restaurant, activite, autre
+  const lieu=step.lieu||'';
   return `<div class="tl-step">
     <div class="tl-marker"><div class="tl-dot"></div></div>
     <div class="tl-card">
       <div class="tl-card-head">
-        <span class="tl-time">${esc(step.time)}</span>
-        <div class="tl-step-actions">
-          <button class="tl-act" onclick="openEditStepModal(${di},${si})" title="Modifier"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-          <button class="tl-act tl-act-del" onclick="deleteStep(${di},${si})" title="Supprimer"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-        </div>
+        <span class="tl-time">${step.time?esc(step.time):''}</span>
+        ${actions}
       </div>
-      <input class="step-label tl-label" type="text" value="${esc(step.label)}" oninput="syncStepLabel(${di},${si},this.value)" placeholder="Titre de l'étape"/>
-      <div class="step-lieu-row tl-lieu-row">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--faint);flex-shrink:0"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
-        <input class="step-lieu" type="text" value="${esc(step.lieu||'')}" oninput="syncStepLieu(${di},${si},this.value)" placeholder="Lieu…"/>
-        <button class="step-map-btn" id="map-btn-${key}" onclick="focusOnMap(${di},${si})" title="Voir sur la carte" style="${step.lieu&&step.lieu.trim()?'':'display:none'}">📍</button>
-      </div>
-      <div class="tl-tags">
-        ${transportLabel?`<span class="tl-tag tl-tag-transport">🚗 ${esc(transportLabel)}</span>`:''}
-        ${step.link?`<a href="${esc(step.link)}" target="_blank" rel="noopener noreferrer" class="tl-tag tl-tag-link"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>Lien</a>`:''}
-      </div>
-      <textarea class="step-note tl-note" placeholder="Note…" rows="1" oninput="syncStepNote(${di},${si},this.value)">${esc(step.note||'')}</textarea>
+      <div class="tl-label-big">${icon} ${esc(step.label)}</div>
+      ${lieu?`<div class="tl-lieu-small">📍 ${esc(lieu)} <button class="step-map-btn" id="map-btn-${key}" onclick="focusOnMap(${di},${si})" title="Voir sur la carte">📍</button></div>`:''}
+      ${t==='activite'&&step.dureeEstimee?`<span class="tl-tag tl-tag-dur">⏱ ${esc(step.dureeEstimee)}</span>`:''}
+      ${step.note?`<div class="tl-note-inline">${esc(step.note)}</div>`:''}
+      ${step.link?`<a href="${esc(step.link)}" target="_blank" rel="noopener noreferrer" class="tl-tag tl-tag-link">🔗 Lien</a>`:''}
     </div>
   </div>`;
 }).join('');

@@ -280,6 +280,9 @@
   .btn-danger:active{transform:scale(.97)}
 
   .main{max-width:900px;margin:0 auto;padding:1.4rem 1.25rem 2.2rem}
+  @media(min-width:1024px){.main{max-width:1400px;padding:1.6rem 2rem 2.4rem}}
+  @media(min-width:1440px){.main{max-width:1600px;padding:1.8rem 2.5rem 2.6rem}}
+  @media(min-width:1700px){.main{max-width:1760px}}
   .view{display:none}
   .view.active{display:block}
 
@@ -2935,22 +2938,28 @@
 .itin-day-note-ta{width:100%;margin-top:.5rem;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:.84rem;padding:.5rem .6rem;resize:vertical;outline:none;font-family:inherit}
 .itin-day-note-ta:focus{border-color:var(--accent)}
 @media(max-width:640px){.itin-cockpit{padding:1.1rem 1.2rem}.itin-daycard{padding:1rem 1.1rem}.itin-cockpit-actions{width:100%;justify-content:flex-start}}
+@media(min-width:1024px){
+  .itin-cockpit{padding:1.8rem 2.2rem}
+  .itin-cockpit .trip-name{font-size:2.6rem}
+  .itin-cockpit-sub{font-size:.92rem}
+}
 
 /* ===== Layout PC (≥1024px) ===== */
 .itin-layout{display:flex;flex-direction:column;gap:0}
 .itin-side{display:none}
 @media(min-width:1024px){
   .itin-toolbar{justify-content:flex-end;margin-bottom:.8rem}
-  .itin-layout{display:grid;grid-template-columns:240px 1fr 320px;gap:1.1rem;align-items:start}
+  .itin-layout{display:grid;grid-template-columns:280px minmax(0,1fr) 380px;gap:1.6rem;align-items:start}
   .itin-layout.is-expanded{grid-template-columns:1fr}
   .itin-layout.is-expanded .itin-rail,
   .itin-layout.is-expanded .itin-side{display:none}
   .itin-rail{position:sticky;top:.8rem;flex-direction:column;background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:.55rem;max-height:calc(100dvh - 2rem);overflow-y:auto;gap:.35rem}
   .itin-rail::-webkit-scrollbar{width:5px}
-  .itin-pill{width:100%;min-width:0;flex-direction:row;align-items:center;gap:.55rem;padding:.55rem .7rem;border-radius:10px}
-  .itin-pill-num{font-size:.92rem;flex-shrink:0;width:36px}
-  .itin-pill-date{flex:1;text-align:left;font-size:.7rem}
-  .itin-pill-count{font-size:.66rem}
+  .itin-pill{width:100%;min-width:0;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:.7rem;padding:.75rem .9rem;border-radius:12px}
+  .itin-pill-num{font-size:1.05rem;flex-shrink:0;min-width:44px}
+  .itin-pill-date{text-align:left;font-size:.78rem;color:var(--muted);text-transform:capitalize}
+  .itin-pill-count{font-size:.7rem;font-weight:700;padding:.15rem .5rem;border-radius:999px;background:var(--surface2)}
+  .itin-pill.is-active .itin-pill-count{background:rgba(0,0,0,.18);color:var(--accent-contrast)}
   .itin-side{display:block;position:sticky;top:.8rem}
   .itin-side-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:.85rem;box-shadow:var(--shadow2)}
   .itin-side-kicker{font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);margin-bottom:.55rem}
@@ -2964,8 +2973,12 @@
   .panel{max-width:none}
 }
 @media(min-width:1280px){
-  .itin-layout{grid-template-columns:260px 1fr 360px;gap:1.4rem}
-  .itin-mini-map{height:340px}
+  .itin-layout{grid-template-columns:300px minmax(0,1fr) 440px;gap:1.8rem}
+  .itin-mini-map{height:420px}
+}
+@media(min-width:1600px){
+  .itin-layout{grid-template-columns:320px minmax(0,1fr) 480px;gap:2rem}
+  .itin-mini-map{height:480px}
 }
 
 </style>

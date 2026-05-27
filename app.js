@@ -1,4 +1,13 @@
+import {
+  sb, getUser, signIn, signUp, signOut,
+  loadTrip, upsertTrip, upsertDay, upsertStep, deleteStepById,
+  upsertBudgetItem, deleteBudgetItemById,
+  createInviteLink, acceptInvite,
+  subscribeToTrip, unsubscribeFromTrip
+} from './supabase.js';
+
 const LS_KEY='voyage-planner-v6';
+let _currentUser = null; // utilisateur connecté
 const DEFAULT_PARTICIPANTS=['Mathis','Margot'];
 
 let state={trip:null,docs:[],budget:[],participants:[...DEFAULT_PARTICIPANTS]};
@@ -214,6 +223,39 @@ function applyTheme(theme){
     ?`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>`
     :`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
 }
+function _startRealtime(tripId) {
+  subscribeToTrip(tripId, {
+    onStepUpserted: (step, dayId) => {
+      // Trouver le jour concerné et merger l'étape
+      const day = state.trip?.days.find(d => d.supabaseId === dayId);
+      if (!day) return;
+      const idx = day.steps.findIndex(s => s.supabaseId === step.supabaseId);
+      if (idx >= 0) day.steps[idx] = step;
+      else day.steps.push(step);
+      day.steps.sort((a,b) => (a.time||'').localeCompare(b.time||''));
+      saveToLocalStorage();
+      renderItinerary();
+    },
+    onStepDeleted: (supabaseId) => {
+      state.trip?.days.forEach(day => {
+        day.steps = day.steps.filter(s => s.supabaseId !== supabaseId);
+      });
+      saveToLocalStorage();
+      renderItinerary();
+    },
+    onDayUpdated: (row) => {
+      const day = state.trip?.days[row.day_index];
+      if (day) { day.title = row.title; day.note = row.note; renderItinerary(); }
+    },
+    onBudgetChanged: async () => {
+      const fresh = await loadTrip(tripId);
+      state.budget = fresh.budget;
+      saveToLocalStorage();
+      renderBudget();
+    },
+  });
+}
+
 function toggleTheme(){applyTheme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark')}
 function toggleReadMode(){readMode=!readMode;document.body.classList.toggle('read-mode',readMode);document.getElementById('read-mode-toggle').classList.toggle('active',readMode);showToast(readMode?'👁 Mode lecture':'✏️ Mode édition')}
 
@@ -892,6 +934,18 @@ function saveStep(){
   closeModal('modal-step');
   renderItinerary();
   showToast(_stepCtx.mode==='add'?'Étape ajoutée ✓':'Étape modifiée ✓');
+  // Sync Supabase en arrière-plan
+  if(_currentUser && state.trip?.supabaseId) {
+    const day = state.trip.days[di];
+    const si2 = _stepCtx.mode==='edit' ? _stepCtx.si : state.trip.days[di].steps.length-1;
+    try {
+      const dayRow = await upsertDay(state.trip.supabaseId, day, di);
+      day.supabaseId = dayRow.id;
+      const stepRow = await upsertStep(state.trip.supabaseId, dayRow.id, state.trip.days[di].steps[si2], si2, _currentUser.id);
+      state.trip.days[di].steps[si2].supabaseId = stepRow.id;
+      saveToLocalStorage();
+    } catch(e) { showToast('⚠️ Sauvegarde cloud échouée'); console.error(e); }
+  }
 }
 
 function deleteStep(di,si){
@@ -1793,17 +1847,23 @@ function exportJSON(){
   showToast('JSON exporté');
 }
 /* ══ Partage par URL ══ */
-function generateShareLink(){
+async function generateShareLink(){
   if(!state.trip){showToast('Aucun voyage à partager');return}
-  try{
-    const encoded=btoa(unescape(encodeURIComponent(JSON.stringify(state.trip))));
-    const url=location.origin+location.pathname+'?trip='+encoded;
-    navigator.clipboard.writeText(url).then(()=>{
-      showToast('🔗 Lien de sauvegarde copié !');
-    }).catch(()=>{
-      prompt('Copie ce lien :',url);
-    });
-  }catch(e){showToast('Erreur lors de la génération du lien')}
+  if(_currentUser && state.trip.supabaseId) {
+    try {
+      const url = await createInviteLink(state.trip.supabaseId, 'editor');
+      await navigator.clipboard.writeText(url);
+      showToast('🔗 Lien d\'invitation copié ! (valable 7 jours)');
+    } catch(e) { showToast('Erreur : ' + e.message); }
+  } else {
+    // Fallback ancien système si pas connecté
+    try{
+      const encoded=btoa(unescape(encodeURIComponent(JSON.stringify(state.trip))));
+      const url=location.origin+location.pathname+'?trip='+encoded;
+      await navigator.clipboard.writeText(url);
+      showToast('🔗 Lien copié (lecture seule, connecte-toi pour la collaboration)');
+    }catch(e){showToast('Erreur')}
+  }
 }
 
 function loadFromURL(){
@@ -1845,7 +1905,28 @@ function handleImport(event){
 }
 
 /* ══ Init ══ */
-(function init(){
+(async function init(){
+  // Récupérer l'utilisateur connecté
+  _currentUser = await getUser();
+
+  // Détecter une invitation par lien ?invite=TOKEN
+  const params = new URLSearchParams(location.search);
+  const inviteToken = params.get('invite');
+  if (inviteToken && _currentUser) {
+    try {
+      const tripId = await acceptInvite(inviteToken);
+      history.replaceState(null, '', location.pathname);
+      showToast('🎉 Vous avez rejoint le voyage !');
+      const data = await loadTrip(tripId);
+      applyTripData(data);
+      tripsStore.activeTripId = tripId;
+      saveToLocalStorage();
+      renderItinerary(); renderBudget(); renderDocs();
+      _startRealtime(tripId);
+      return;
+    } catch(e) { showToast('Invitation invalide : ' + e.message); }
+  }
+
   const fromURL=loadFromURL();
 
   if(fromURL){
@@ -1859,13 +1940,21 @@ function handleImport(event){
     saveToLocalStorage();
   }else{
     const saved=loadFromLocalStorage();
-    if(saved){
-      tripsStore=saved;
-      const active=saved.trips.find(t=>t.id===saved.activeTripId)||saved.trips[0];
-      if(active)applyTripData(active.data);
-    }else{
-      applyTripData({trip:null,docs:[],budget:[],participants:[...DEFAULT_PARTICIPANTS]});
+  if(saved){
+    tripsStore=saved;
+    const active=saved.trips.find(t=>t.id===saved.activeTripId)||saved.trips[0];
+    if(active) applyTripData(active.data);
+    // Si connecté et voyage Supabase → recharger depuis la vraie source
+    if(_currentUser && tripsStore.activeTripId && active?.data?.trip?.supabaseId) {
+      try {
+        const fresh = await loadTrip(active.data.trip.supabaseId);
+        applyTripData(fresh);
+        _startRealtime(active.data.trip.supabaseId);
+      } catch(e) { console.warn('Supabase offline, mode local', e); }
     }
+  } else {
+    applyTripData({trip:null,docs:[],budget:[],participants:[...DEFAULT_PARTICIPANTS]});
+  }
   }
 
   renderTripSwitcher();

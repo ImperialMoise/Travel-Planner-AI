@@ -93,7 +93,7 @@ function renderTripSwitcher(){
   const items=[...tripsStore.trips].sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
 
   sel.innerHTML=[
-    `<option value="" ${!tripsStore.activeTripId?'selected':''}>Aucun voyage</option>`,
+    `<option value="" disabled ${!tripsStore.activeTripId?'selected':''}>Changer de voyage</option>`,
     ...items.map(t=>`<option value="${esc(t.id)}"${t.id===tripsStore.activeTripId?' selected':''}>${esc(t.name||'Voyage')}</option>`)
   ].join('');
 
@@ -835,6 +835,21 @@ function syncBudgetAmount(i,v){
   renderBudget();
 }
 
+<<<<<<< HEAD
+function supprimerParticipant(i){
+  const nom=state.participants[i];
+  if(nom===undefined)return;
+  if(state.participants.length<=1){showToast('Au moins une personne requise');return}
+  state.participants.splice(i,1);
+  _budgetFor.delete(nom);
+  if(_budgetPayer===nom)_budgetPayer=state.participants[0]||null;
+  saveToLocalStorage();
+  renderBudget();
+}
+
+function ajouterParticipant(){
+  const input=document.getElementById('new-participant-input');
+=======
 function supprimerParticipant(i){
   const nom=state.participants[i];
   if(nom===undefined)return;
@@ -847,6 +862,7 @@ function supprimerParticipant(i){
 }
 
 function ajouterParticipant(){  const input=document.getElementById('new-participant-input');
+>>>>>>> f6bbe8f0ec57d887a9b4fcee249c4f9099e52e37
   const nom=input?input.value.trim():'';
   if(!nom||state.participants.includes(nom))return;
   state.participants.push(nom);
@@ -856,9 +872,27 @@ function ajouterParticipant(){  const input=document.getElementById('new-partici
   renderBudget();
 }
 
+let _budgetTab='overview';
+function setBudgetTab(t){_budgetTab=t;renderBudget()}
+
 function renderBudget(){
   const fmt=n=>(parseFloat(n)||0).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';
 
+<<<<<<< HEAD
+  const total=state.budget.reduce((s,b)=>s+(parseFloat(b.amount)||0),0);
+  const n=state.participants.length||1;
+  const perHead=total/n;
+  const soldes={}; state.participants.forEach(p=>soldes[p]=0);
+  const paidByP={}; state.participants.forEach(p=>paidByP[p]=0);
+  const catTotals={};
+  state.budget.forEach(b=>{
+    const amount=parseFloat(b.amount)||0;
+    catTotals[b.cat]=(catTotals[b.cat]||0)+amount;
+    const targets=getExpenseTargets(b);
+    if(b.paidBy&&soldes[b.paidBy]!==undefined){soldes[b.paidBy]+=amount;paidByP[b.paidBy]+=amount}
+    if(targets.length){const share=amount/targets.length;targets.forEach(p=>{if(soldes[p]!==undefined)soldes[p]-=share})}
+  });
+=======
   const zone=document.getElementById('budget-participants');
   if(zone){
     zone.innerHTML=
@@ -870,134 +904,132 @@ function renderBudget(){
         <button onclick="ajouterParticipant()" style="padding:.3rem .65rem;border-radius:var(--r2);border:none;background:var(--accent);color:#fff;font-size:.82rem;cursor:pointer">+ Ajouter</button>
       </span>`;
   }
+>>>>>>> f6bbe8f0ec57d887a9b4fcee249c4f9099e52e37
 
-  const payerZone=document.getElementById('budget-payer-btns');
-  if(payerZone){
+  const hero=document.getElementById('budget-hero');
+  if(hero){
+    hero.innerHTML=`
+      <div class="bdg-hero-main">
+        <div class="bdg-hero-label">Total du voyage</div>
+        <div class="bdg-hero-total">${(parseFloat(total)||0).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})}<span class="bdg-hero-cur">€</span></div>
+        <div class="bdg-hero-sub">${state.budget.length} dépense${state.budget.length>1?'s':''} · ${fmt(perHead)} / personne</div>
+      </div>
+      <div class="bdg-hero-people">
+        ${state.participants.map((p,i)=>{
+          const c=BUDGET_COLORS[i%BUDGET_COLORS.length];
+          return `<div class="bdg-hero-chip"><span class="bdg-dot" style="background:${c}"></span><span class="bdg-hero-name">${esc(p)}</span><button class="bdg-hero-x" title="Retirer" onclick="supprimerParticipant(${i})">×</button></div>`;
+        }).join('')}
+        <input id="new-participant-input" class="bdg-hero-add" type="text" placeholder="+ personne" onkeydown="if(event.key==='Enter')ajouterParticipant()"/>
+      </div>`;
+  }
+
+  const tabs=document.getElementById('budget-tabs');
+  if(tabs){
+    const t=[['overview','Aperçu'],['expenses','Dépenses'],['balance','Équilibre']];
+    tabs.innerHTML=t.map(([k,l])=>`<button class="bdg-tab ${_budgetTab===k?'is-active':''}" onclick="setBudgetTab('${k}')">${l}${k==='expenses'?` <span class="bdg-tab-count">${state.budget.length}</span>`:''}</button>`).join('');
+  }
+
+  const body=document.getElementById('budget-tab-body');
+  if(!body)return;
+
+  if(_budgetTab==='overview'){
+    const cats=Object.entries(catTotals).sort((a,b)=>b[1]-a[1]);
+    body.innerHTML=`
+      <div class="bdg-kpis">
+        ${state.participants.map((p,i)=>{
+          const c=BUDGET_COLORS[i%BUDGET_COLORS.length];
+          const diff=soldes[p]||0;
+          return `<div class="bdg-kpi" style="--c:${c}">
+            <div class="bdg-kpi-top"><span class="bdg-dot" style="background:${c}"></span>${esc(p)}</div>
+            <div class="bdg-kpi-val">${fmt(paidByP[p])}</div>
+            <div class="bdg-kpi-sub">${diff>=0.005?'récupère '+fmt(Math.abs(diff)):diff<=-0.005?'doit '+fmt(Math.abs(diff)):'à jour'}</div>
+          </div>`;
+        }).join('')}
+      </div>
+      <div class="bdg-section-h">Répartition par catégorie</div>
+      ${cats.length?`<div class="bdg-cat-list">
+        ${cats.map(([cat,amt])=>{
+          const c=CAT_COLORS[cat]||'#ffa726';
+          const pct=total>0?Math.round(amt/total*100):0;
+          return `<div class="bdg-cat-row">
+            <div class="bdg-cat-head"><span>${CAT_EMOJI[cat]||'📦'} ${esc(cat)}</span><span class="bdg-cat-amt">${fmt(amt)} · ${pct}%</span></div>
+            <div class="bdg-cat-track"><div class="bdg-cat-fill" style="width:${pct}%;background:${c}"></div></div>
+          </div>`;
+        }).join('')}
+      </div>`:`<div class="bdg-empty">Aucune dépense à analyser.</div>`}`;
+  }
+  else if(_budgetTab==='expenses'){
     if(!_budgetPayer)_budgetPayer=state.participants[0]||null;
-    payerZone.innerHTML=state.participants.map((p,i)=>{
-      const c=BUDGET_COLORS[i%BUDGET_COLORS.length];
-      const active=_budgetPayer===p;
-      const txt=getContrastText(c);
-      return `<button class="budget-chip ${active?'is-active':'is-inactive'}" onclick="setBudgetPayer('${esc(p)}')" style="${active?`background:${c};border-color:${c};color:${txt}`:''}">${esc(p)}</button>`;
-    }).join('');
-  }
-
-  const forZone=document.getElementById('budget-for-btns');
-  if(forZone){
-    const everyoneSelected=state.participants.length>0 && state.participants.every(p=>_budgetFor.has(p));
-    const allColor='#cbd5e1';
-    forZone.innerHTML=
-      `<button class="budget-chip ${everyoneSelected?'is-active':'is-inactive'}" onclick="setBudgetFor('__all__')" style="${everyoneSelected?`background:${allColor};border-color:${allColor};color:#0f172a`:''}">Tout le monde</button>`+
-      state.participants.map((p,i)=>{
-        const c=BUDGET_COLORS[i%BUDGET_COLORS.length];
-        const active=_budgetFor.has(p);
-        const txt=getContrastText(c);
-        return `<button class="budget-chip ${active?'is-active':'is-inactive'}" onclick="setBudgetFor('${esc(p)}')" style="${active?`background:${c};border-color:${c};color:${txt}`:''}">${esc(p)}</button>`;
-      }).join('');
-  }
-
-  const total=state.budget.reduce((s,b)=>s+(parseFloat(b.amount)||0),0);
-  const totalEl=document.getElementById('budget-total');
-  if(totalEl)totalEl.innerHTML=`${(parseFloat(total)||0).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})} <span class="budget-currency">€</span>`;
-  const countEl=document.getElementById('budget-count');
-  if(countEl)countEl.textContent=`${state.budget.length} dépense${state.budget.length>1?'s':''}`;
-
-  const list=document.getElementById('budget-list');
-  if(list){
-    list.innerHTML=state.budget.length
-      ?state.budget.map((b,i)=>{
+    const everyone=state.participants.length>0&&state.participants.every(p=>_budgetFor.has(p));
+    body.innerHTML=`
+      <details class="bdg-add">
+        <summary class="bdg-add-summary">＋ Ajouter une dépense</summary>
+        <div class="bdg-add-body">
+          <div class="bdg-add-row">
+            <select id="budget-cat-input" class="budget-field">
+              <option value="Transport">🚗 Transport</option><option value="Logement">🏠 Logement</option>
+              <option value="Activité">🎯 Activité</option><option value="Repas">🍽️ Repas</option><option value="Divers">📦 Divers</option>
+            </select>
+            <input id="budget-desc-input" class="budget-field budget-field-grow" type="text" placeholder="Description..."/>
+            <input id="budget-amount-input" class="budget-field budget-field-amount" type="number" placeholder="0.00" step="0.01" min="0"/>
+          </div>
+          <div class="bdg-add-label">Qui a payé ?</div>
+          <div id="budget-payer-btns" class="budget-chip-row">${state.participants.map((p,i)=>{const c=BUDGET_COLORS[i%BUDGET_COLORS.length];const a=_budgetPayer===p;return `<button class="budget-chip ${a?'is-active':'is-inactive'}" onclick="setBudgetPayer('${esc(p)}')" style="${a?`background:${c};border-color:${c};color:${getContrastText(c)}`:''}">${esc(p)}</button>`}).join('')}</div>
+          <div class="bdg-add-label">Pour qui ?</div>
+          <div id="budget-for-btns" class="budget-chip-row">
+            <button class="budget-chip ${everyone?'is-active':'is-inactive'}" onclick="setBudgetFor('__all__')" style="${everyone?'background:#cbd5e1;border-color:#cbd5e1;color:#0f172a':''}">Tout le monde</button>
+            ${state.participants.map((p,i)=>{const c=BUDGET_COLORS[i%BUDGET_COLORS.length];const a=_budgetFor.has(p);return `<button class="budget-chip ${a?'is-active':'is-inactive'}" onclick="setBudgetFor('${esc(p)}')" style="${a?`background:${c};border-color:${c};color:${getContrastText(c)}`:''}">${esc(p)}</button>`}).join('')}
+          </div>
+          <button class="btn-primary bdg-add-btn" onclick="addBudgetItem()">Ajouter la dépense</button>
+        </div>
+      </details>
+      ${state.budget.length?`<div class="budget-list">${state.budget.map((b,i)=>{
         const pi=state.participants.indexOf(b.paidBy);
         const c=pi>=0?BUDGET_COLORS[pi%BUDGET_COLORS.length]:'#888';
-        const emoji=CAT_EMOJI[b.cat]||'📦';
         const targets=getExpenseTargets(b);
-        const targetLabel=(b.forParticipants||[]).includes('__all__')?'Tout le monde':targets.join(', ');
-        return `<div style="display:flex;align-items:center;gap:.6rem;padding:.6rem .75rem;background:var(--bg);border:1px solid var(--border);border-radius:var(--r2)">
-          <span style="font-size:1rem;flex-shrink:0">${emoji}</span>
-          <div style="flex:1;min-width:0">
-            <div style="font-size:.88rem;font-weight:600;color:var(--text);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(b.desc)}</div>
-            <div class="budget-item-meta">
-              <span style="font-size:.78rem;font-weight:700;color:${c};background:${c}18;padding:.2rem .55rem;border-radius:999px;flex-shrink:0">${esc(b.paidBy||'?')}</span>
-              <span class="budget-for-badge">Pour : ${esc(targetLabel||'—')}</span>
-            </div>
+        const tl=(b.forParticipants||[]).includes('__all__')?'Tout le monde':targets.join(', ');
+        return `<div class="bdg-exp">
+          <span class="bdg-exp-emoji" style="background:${(CAT_COLORS[b.cat]||'#ffa726')}22">${CAT_EMOJI[b.cat]||'📦'}</span>
+          <div class="bdg-exp-mid">
+            <div class="bdg-exp-desc">${esc(b.desc)}</div>
+            <div class="bdg-exp-meta"><span class="bdg-exp-payer" style="color:${c};background:${c}18">${esc(b.paidBy||'?')}</span><span class="bdg-exp-for">→ ${esc(tl||'—')}</span></div>
           </div>
-          <span style="font-size:.92rem;font-weight:700;color:var(--text);flex-shrink:0;min-width:70px;text-align:right">${fmt(b.amount)}</span>
-          <button onclick="deleteBudgetItem(${i})" style="background:none;border:none;color:var(--faint);cursor:pointer;padding:0;display:flex;align-items:center">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="18" y1="6" x2="6" y2="18"/>
-              <line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
-          </button>
+          <span class="bdg-exp-amt">${fmt(b.amount)}</span>
+          <button class="bdg-exp-del" onclick="deleteBudgetItem(${i})" title="Supprimer">×</button>
         </div>`;
-      }).join('')
-      :`<div style="color:var(--faint);font-size:.88rem;padding:.75rem 0;text-align:center">Aucune dépense pour l'instant.</div>`;
+      }).join('')}</div>`:`<div class="bdg-empty"><div class="bdg-empty-emoji">🧾</div>Aucune dépense pour l'instant.<br><span>Ajoute-en une avec le panneau ci-dessus.</span></div>`}`;
   }
-
-  const bilan=document.getElementById('budget-bilan');
-  if(!bilan)return;
-
-  const soldes={};
-  state.participants.forEach(p=>soldes[p]=0);
-
-  state.budget.forEach(b=>{
-    const amount=parseFloat(b.amount)||0;
-    const targets=getExpenseTargets(b);
-    if(!targets.length)return;
-    if(b.paidBy && soldes[b.paidBy]!==undefined)soldes[b.paidBy]+=amount;
-    const share=amount/targets.length;
-    targets.forEach(p=>{
-      if(soldes[p]!==undefined)soldes[p]-=share;
-    });
-  });
-
-  let html=`<div style="font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:.75rem">📊 Équilibre des comptes</div>`;
-  html+=`<div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.875rem">`;
-
-  state.participants.forEach((p,i)=>{
-    const c=BUDGET_COLORS[i%BUDGET_COLORS.length];
-    const paye=state.budget.filter(b=>b.paidBy===p).reduce((s,b)=>s+(parseFloat(b.amount)||0),0);
-    const diff=soldes[p]||0;
-    html+=`<div style="flex:1;min-width:120px;background:${c}12;border:1px solid ${c}33;border-radius:var(--r2);padding:.6rem .75rem">
-      <div style="font-size:.78rem;font-weight:700;color:${c};margin-bottom:2px">${esc(p)}</div>
-      <div style="font-size:.88rem;font-weight:700;color:var(--text)">${fmt(paye)} payés</div>
-      <div style="font-size:.72rem;color:${diff>=0?'#66bb6a':'#ff7043'};margin-top:2px">${diff>=0?'↗ Reçoit ':'↘ Doit '}${fmt(Math.abs(diff))}</div>
-    </div>`;
-  });
-
-  html+=`</div>`;
-
-  const doit=[...Object.entries(soldes).filter(([,v])=>v<-0.005).map(([p,v])=>({p,v}))].sort((a,b)=>a.v-b.v);
-  const recoit=[...Object.entries(soldes).filter(([,v])=>v>0.005).map(([p,v])=>({p,v}))].sort((a,b)=>b.v-a.v);
-
-  if(!doit.length){
-    html+=`<div style="padding:.75rem .9rem;border-radius:var(--r2);background:#ecfdf5;border:1px solid #bbf7d0;color:#166534;font-size:.88rem;font-weight:700">✅ Tout est équilibré !</div>`;
-  }else{
-    html+=`<div style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:.5rem">Remboursements à faire</div>`;
-    html+=`<div style="padding:.7rem .8rem;border-radius:var(--r2);background:#fff7ed;border:1px solid #fed7aa">`;
-    const d=[...doit],r=[...recoit];
-    while(d.length&&r.length){
-      const m=Math.min(-d[0].v,r[0].v);
-      if(m>0.005){
-        const ci=state.participants.indexOf(d[0].p);
-        const cj=state.participants.indexOf(r[0].p);
-        const cd=BUDGET_COLORS[ci>=0?ci%BUDGET_COLORS.length:1];
-        const cr=BUDGET_COLORS[cj>=0?cj%BUDGET_COLORS.length:0];
-        html+=`<div style="display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;padding:.35rem 0;font-size:.88rem">
-          <span style="font-weight:700;color:${cd}">${esc(d[0].p)}</span>
-          <span style="color:var(--muted)">doit</span>
-          <span style="font-weight:800;color:var(--accent);font-size:.95rem">${fmt(m)}</span>
-          <span style="color:var(--muted)">à</span>
-          <span style="font-weight:700;color:${cr}">${esc(r[0].p)}</span>
-        </div>`;
+  else {
+    const doit=Object.entries(soldes).filter(([,v])=>v<-0.005).map(([p,v])=>({p,v})).sort((a,b)=>a.v-b.v);
+    const recoit=Object.entries(soldes).filter(([,v])=>v>0.005).map(([p,v])=>({p,v})).sort((a,b)=>b.v-a.v);
+    let h=`<div class="bdg-bal-cards">${state.participants.map((p,i)=>{
+      const c=BUDGET_COLORS[i%BUDGET_COLORS.length];const diff=soldes[p]||0;const pos=diff>=0;
+      return `<div class="bdg-bal-card" style="--c:${c}">
+        <div class="bdg-bal-name">${esc(p)}</div>
+        <div class="bdg-bal-paid">${fmt(paidByP[p])} payés</div>
+        <div class="bdg-bal-diff ${pos?'is-pos':'is-neg'}">${Math.abs(diff)<0.005?'équilibré':(pos?'↗ récupère ':'↘ doit ')+fmt(Math.abs(diff))}</div>
+      </div>`;
+    }).join('')}</div>`;
+    if(!doit.length){
+      h+=`<div class="bdg-settled">✅ Tout est équilibré !</div>`;
+    }else{
+      h+=`<div class="bdg-section-h">Remboursements à faire</div><div class="bdg-transfers">`;
+      const d=doit.map(x=>({...x})),r=recoit.map(x=>({...x}));
+      while(d.length&&r.length){
+        const m=Math.min(-d[0].v,r[0].v);
+        if(m>0.005){
+          const ci=state.participants.indexOf(d[0].p),cj=state.participants.indexOf(r[0].p);
+          const cd=BUDGET_COLORS[ci>=0?ci%BUDGET_COLORS.length:1],cr=BUDGET_COLORS[cj>=0?cj%BUDGET_COLORS.length:0];
+          h+=`<div class="bdg-transfer"><span class="bdg-tr-from" style="color:${cd}">${esc(d[0].p)}</span><span class="bdg-tr-arrow">→</span><span class="bdg-tr-amt">${fmt(m)}</span><span class="bdg-tr-to" style="color:${cr}">${esc(r[0].p)}</span></div>`;
+        }
+        d[0].v+=m;r[0].v-=m;
+        if(Math.abs(d[0].v)<0.005)d.shift();
+        if(Math.abs(r[0].v)<0.005)r.shift();
       }
-      d[0].v+=m;
-      r[0].v-=m;
-      if(Math.abs(d[0].v)<0.005)d.shift();
-      if(Math.abs(r[0].v)<0.005)r.shift();
+      h+=`</div>`;
     }
-    html+=`</div>`;
+    body.innerHTML=h;
   }
-
-  bilan.innerHTML=html;
 }
 
 
@@ -1225,6 +1257,8 @@ function renderItinerary(){
               Importer un fichier JSON
             </button>
           </div>
+<<<<<<< HEAD
+=======
           ${tripsStore.trips.length?`<div style="display:flex;flex-direction:column;gap:.5rem;max-width:46ch;margin:0 0 1.4rem">
             <div style="font-size:.74rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)">Ouvrir un voyage existant</div>
             ${[...tripsStore.trips].sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0)).map(t=>`<button type="button" onclick="selectTrip('${esc(t.id)}')" style="text-align:left;border:1px solid var(--border);background:var(--accent-soft);color:var(--text);padding:.7rem 1rem;border-radius:var(--r2);font-weight:600;font-size:.9rem;cursor:pointer">${esc(t.name||'Voyage')}</button>`).join('')}
@@ -1232,6 +1266,7 @@ function renderItinerary(){
           <div style="display:flex;flex-wrap:wrap;gap:.45rem">
             ${['Plan','Budget','Docs','Carte'].map(x=>`<span style="display:inline-flex;align-items:center;gap:.35rem;font-size:.74rem;font-weight:600;color:var(--muted);background:var(--accent-soft);border:1px solid var(--border);padding:.4rem .75rem;border-radius:999px">${x}</span>`).join('')}
           </div>
+>>>>>>> f6bbe8f0ec57d887a9b4fcee249c4f9099e52e37
         </div>
       </div>
     </div>

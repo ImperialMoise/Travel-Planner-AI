@@ -13,8 +13,79 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..700&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<<<<<<< HEAD
+    .participant-chip:hover .participant-remove{display:inline-flex !important}
+/* ===== Budget redesign ===== */
+.bdg-panel{display:flex;flex-direction:column;gap:1.1rem}
+.bdg-hero{display:flex;flex-wrap:wrap;gap:1rem;justify-content:space-between;align-items:flex-end;background:linear-gradient(135deg,var(--accent-soft),transparent 70%);border:1px solid var(--border);border-radius:var(--r2);padding:1.4rem 1.5rem}
+.bdg-hero-label{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-bottom:.3rem}
+.bdg-hero-total{font-family:var(--display);font-size:clamp(2.4rem,6vw,3.4rem);line-height:1;color:var(--accent)}
+.bdg-hero-cur{font-size:.45em;margin-left:.15em;color:var(--muted)}
+.bdg-hero-sub{font-size:.82rem;color:var(--muted);margin-top:.45rem}
+.bdg-hero-people{display:flex;flex-wrap:wrap;gap:.4rem;align-items:center;max-width:55%;justify-content:flex-end}
+.bdg-hero-chip{display:inline-flex;align-items:center;gap:.4rem;padding:.32rem .35rem .32rem .65rem;border-radius:999px;border:1px solid var(--border);background:var(--surface2);font-size:.8rem;font-weight:600;color:var(--text)}
+.bdg-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.bdg-hero-x{border:none;background:transparent;color:var(--faint);width:18px;height:18px;border-radius:50%;cursor:pointer;font-size:14px;line-height:1;opacity:0;transition:all .15s}
+.bdg-hero-chip:hover .bdg-hero-x{opacity:1}
+.bdg-hero-x:hover{background:#ff704322;color:#ff7043}
+.bdg-hero-add{border:1px dashed var(--border);background:transparent;color:var(--text);padding:.34rem .7rem;border-radius:999px;font-size:.8rem;width:110px}
+.bdg-hero-add:focus{outline:none;border-color:var(--accent)}
+.bdg-tabs{display:flex;gap:.3rem;background:var(--surface2);border:1px solid var(--border);border-radius:999px;padding:.3rem}
+.bdg-tab{flex:1;border:none;background:transparent;color:var(--muted);font-size:.85rem;font-weight:700;padding:.55rem;border-radius:999px;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;justify-content:center;gap:.4rem}
+.bdg-tab:hover{color:var(--text)}
+.bdg-tab.is-active{background:var(--accent);color:var(--accent-contrast)}
+.bdg-tab-count{font-size:.72rem;background:rgba(0,0,0,.15);padding:.05rem .4rem;border-radius:999px}
+.bdg-section-h{font-size:.74rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:.4rem 0 .2rem}
+.bdg-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.6rem}
+.bdg-kpi{background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--c);border-radius:var(--r2);padding:.8rem .9rem}
+.bdg-kpi-top{display:flex;align-items:center;gap:.4rem;font-size:.82rem;font-weight:700;color:var(--text)}
+.bdg-kpi-val{font-family:var(--display);font-size:1.5rem;color:var(--text);margin:.2rem 0}
+.bdg-kpi-sub{font-size:.74rem;color:var(--muted)}
+.bdg-cat-list{display:flex;flex-direction:column;gap:.7rem}
+.bdg-cat-head{display:flex;justify-content:space-between;font-size:.84rem;font-weight:600;color:var(--text);margin-bottom:.3rem}
+.bdg-cat-amt{color:var(--muted);font-weight:600}
+.bdg-cat-track{height:8px;background:var(--surface2);border-radius:999px;overflow:hidden}
+.bdg-cat-fill{height:100%;border-radius:999px;transition:width .4s ease}
+.bdg-add{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r2);overflow:hidden}
+.bdg-add-summary{padding:.85rem 1rem;font-weight:700;font-size:.9rem;color:var(--accent);cursor:pointer;list-style:none}
+.bdg-add-summary::-webkit-details-marker{display:none}
+.bdg-add-body{padding:0 1rem 1rem;display:flex;flex-direction:column;gap:.7rem}
+.bdg-add-row{display:flex;gap:.5rem;flex-wrap:wrap}
+.bdg-add-label{font-size:.74rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.bdg-add-btn{width:100%}
+.bdg-exp{display:flex;align-items:center;gap:.7rem;padding:.7rem .85rem;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r2);transition:transform .12s}
+.bdg-exp:hover{transform:translateX(2px)}
+.bdg-exp-emoji{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.05rem;flex-shrink:0}
+.bdg-exp-mid{flex:1;min-width:0}
+.bdg-exp-desc{font-size:.9rem;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bdg-exp-meta{display:flex;align-items:center;gap:.5rem;margin-top:.25rem;flex-wrap:wrap}
+.bdg-exp-payer{font-size:.74rem;font-weight:700;padding:.15rem .5rem;border-radius:999px}
+.bdg-exp-for{font-size:.74rem;color:var(--muted)}
+.bdg-exp-amt{font-size:.95rem;font-weight:700;color:var(--text);flex-shrink:0}
+.bdg-exp-del{border:none;background:transparent;color:var(--faint);width:24px;height:24px;border-radius:50%;cursor:pointer;font-size:17px;line-height:1;flex-shrink:0;transition:all .15s}
+.bdg-exp-del:hover{background:#ff704322;color:#ff7043}
+.bdg-empty{text-align:center;color:var(--muted);font-size:.9rem;padding:2.2rem 1rem;background:var(--surface2);border:1px dashed var(--border);border-radius:var(--r2);margin-top:.8rem}
+.bdg-empty-emoji{font-size:2rem;margin-bottom:.5rem}
+.bdg-empty span{font-size:.8rem;color:var(--faint)}
+.bdg-bal-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.6rem;margin-bottom:1rem}
+.bdg-bal-card{background:var(--surface2);border:1px solid var(--border);border-top:3px solid var(--c);border-radius:var(--r2);padding:.85rem .95rem}
+.bdg-bal-name{font-size:.82rem;font-weight:700;color:var(--c)}
+.bdg-bal-paid{font-family:var(--display);font-size:1.25rem;color:var(--text);margin:.15rem 0}
+.bdg-bal-diff{font-size:.78rem;font-weight:600}
+.bdg-bal-diff.is-pos{color:#66bb6a}
+.bdg-bal-diff.is-neg{color:#ff7043}
+.bdg-settled{padding:1rem;border-radius:var(--r2);background:rgba(102,187,106,.12);border:1px solid rgba(102,187,106,.3);color:#66bb6a;font-weight:700;text-align:center}
+.bdg-transfers{display:flex;flex-direction:column;gap:.5rem}
+.bdg-transfer{display:flex;align-items:center;gap:.6rem;padding:.7rem .9rem;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r2);font-size:.9rem;flex-wrap:wrap}
+.bdg-tr-from,.bdg-tr-to{font-weight:700}
+.bdg-tr-arrow{color:var(--muted)}
+.bdg-tr-amt{font-weight:800;color:var(--accent);margin-left:auto}
+@media(max-width:640px){.bdg-hero-people{max-width:100%;justify-content:flex-start}.bdg-hero{padding:1.1rem 1.2rem}}
+</style>
+=======
     .participant-chip:hover .participant-remove{display:inline-flex !important}
     <style>
+>>>>>>> f6bbe8f0ec57d887a9b4fcee249c4f9099e52e37
     /* ════════════════════════════════════════════════
        DESIGN LANGUAGE — déduit de la référence :
        vert pétrole profond + accent doré sable unique
@@ -2776,47 +2847,10 @@
     </section>
 
     <section class="view" id="view-budget">
-  <div class="panel">
-    <div class="panel-title">Budget</div>
-
-    <div id="budget-participants" class="budget-participants"></div>
-
-    <div class="budget-summary">
-      <div>
-        <div class="budget-total" id="budget-total">0 <span class="budget-currency">€</span></div>
-        <div class="budget-count" id="budget-count">0 dépense</div>
-      </div>
-    </div>
-
-    <div class="budget-editor">
-      <div class="budget-editor-row">
-        <select id="budget-cat-input" class="budget-field">
-          <option value="Transport">🚗 Transport</option>
-          <option value="Logement">🏠 Logement</option>
-          <option value="Activité">🎯 Activité</option>
-          <option value="Repas">🍽️ Repas</option>
-          <option value="Divers">📦 Divers</option>
-        </select>
-        <input id="budget-desc-input" class="budget-field budget-field-grow" type="text" placeholder="Description de la dépense..."/>
-        <input id="budget-amount-input" class="budget-field budget-field-amount" type="number" placeholder="0.00 €" step="0.01" min="0"/>
-      </div>
-
-      <div class="budget-editor-group">
-        <div class="budget-editor-label">Qui a payé ?</div>
-        <div id="budget-payer-btns" class="budget-chip-row"></div>
-      </div>
-
-      <div class="budget-editor-group">
-        <div class="budget-editor-label">Pour qui ?</div>
-        <div id="budget-for-btns" class="budget-chip-row"></div>
-      </div>
-
-      <button class="btn-primary" onclick="addBudgetItem()" style="width:100%">+ Ajouter la dépense</button>
-    </div>
-
-    <div id="budget-list" class="budget-list"></div>
-
-    <div id="budget-bilan" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r2);padding:.875rem 1rem"></div>
+  <div class="panel bdg-panel">
+    <div id="budget-hero" class="bdg-hero"></div>
+    <div id="budget-tabs" class="bdg-tabs"></div>
+    <div id="budget-tab-body" class="bdg-tab-body"></div>
   </div>
 </section>
   </main>

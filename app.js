@@ -1439,6 +1439,53 @@ let _itinExpanded=false;
 function setActiveDay(di){_activeDay=di;renderItinerary();if(!_itinExpanded){const g=document.getElementById('days-grid');if(g)g.scrollIntoView({behavior:'smooth',block:'nearest'})}}
 function toggleItinExpand(){_itinExpanded=!_itinExpanded;renderItinerary()}
 
+let _itinMiniMap=null,_itinMiniMarkers=[],_itinMiniRoute=null;
+async function renderItinMiniMap(){
+  if(window.innerWidth<1024)return;
+  const el=document.getElementById('itin-mini-map');
+  const foot=document.getElementById('itin-side-foot');
+  if(!el||!state.trip)return;
+  if(typeof L==='undefined')return;
+  if(!_itinMiniMap){
+    _itinMiniMap=L.map(el,{zoomControl:true,attributionControl:false,dragging:true,scrollWheelZoom:false});
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(_itinMiniMap);
+  }
+  _itinMiniMap.invalidateSize();
+  _itinMiniMarkers.forEach(m=>_itinMiniMap.removeLayer(m));
+  if(_itinMiniRoute)_itinMiniMap.removeLayer(_itinMiniRoute);
+  _itinMiniMarkers=[];_itinMiniRoute=null;
+
+  const day=state.trip.days[_activeDay];
+  if(!day){if(foot)foot.innerHTML='<div class="itin-side-empty">Aucun jour sélectionné</div>';return}
+  const coords=[];
+  let withLieu=0,withoutLieu=0;
+  for(const[si,step]of day.steps.entries()){
+    if(!step.lieu){withoutLieu++;continue}
+    const c=await geocode(step.lieu);
+    if(!c){withoutLieu++;continue}
+    withLieu++;
+    coords.push([c.lat,c.lng]);
+    const icon=L.divIcon({className:'',html:`<div class="itin-mini-pin">${si+1}</div>`,iconSize:[24,24],iconAnchor:[12,12]});
+    const m=L.marker([c.lat,c.lng],{icon}).addTo(_itinMiniMap);
+    m.bindPopup(`<strong>${esc(step.label||'Étape')}</strong><br/><span style="font-size:.78rem">${esc(step.lieu)}</span>`);
+    _itinMiniMarkers.push(m);
+  }
+  if(coords.length===1)_itinMiniMap.setView(coords[0],13);
+  else if(coords.length>1){
+    _itinMiniMap.fitBounds(coords,{padding:[20,20]});
+    _itinMiniRoute=L.polyline(coords,{color:'#b4843e',weight:3,opacity:.7,dashArray:'4,6'}).addTo(_itinMiniMap);
+  }
+  else _itinMiniMap.setView([46.5,2.5],4);
+
+  if(foot){
+    if(!day.steps.length)foot.innerHTML='<div class="itin-side-empty">📍 Aucune étape ce jour</div>';
+    else foot.innerHTML=`<div class="itin-side-stat">📍 ${withLieu} localisée${withLieu>1?'s':''}${withoutLieu?` · ${withoutLieu} sans lieu`:''}</div>`;
+  }
+}
+
+const _origSetActiveDay=setActiveDay;
+setActiveDay=function(di){_origSetActiveDay(di);setTimeout(renderItinMiniMap,80)};
+
 /* ══ Rendu carte de jour ══ */
 function toggleDay(di){const c=document.querySelector(`[data-day="${di}"]`);if(c)c.classList.toggle('expanded')}
 
@@ -1644,29 +1691,41 @@ function renderItinerary(){
     </div>
   </div>
 
-  <div class="itin-rail">
-    ${t.days.map((day,di)=>{
-      const status=getTripDayStatus(di);
-      const active=di===_activeDay;
-      const cnt=day.steps.length;
-      const icon=status==='today'?'🔥':status==='past'?'✓':'';
-      return `<button class="itin-pill itin-pill-${status}${active?' is-active':''}${cnt===0?' is-empty':''}" onclick="setActiveDay(${di})">
-        <span class="itin-pill-num">J${di+1}${icon?` <span class="itin-pill-icon">${icon}</span>`:''}</span>
-        <span class="itin-pill-date">${day.dateLabel?esc(day.dateLabel):''}</span>
-        <span class="itin-pill-count">${cnt?`${cnt} étape${cnt>1?'s':''}`:'vide'}</span>
-      </button>`;
-    }).join('')}
-  </div>
-
   <div class="itin-toolbar">
     <button class="itin-toggle ${_itinExpanded?'is-on':''}" onclick="toggleItinExpand()">${_itinExpanded?'▾ Vue jour par jour':'▸ Tout afficher'}</button>
   </div>
 
-  <div id="days-grid" class="${_itinExpanded?'itin-all':'itin-single'}">
-    ${_itinExpanded
-      ? t.days.map((d,i)=>renderDayCard(d,i)).join('')
-      : renderDayCard(t.days[_activeDay],_activeDay)}
+  <div class="itin-layout ${_itinExpanded?'is-expanded':''}">
+    <aside class="itin-rail">
+      ${t.days.map((day,di)=>{
+        const status=getTripDayStatus(di);
+        const active=di===_activeDay;
+        const cnt=day.steps.length;
+        const icon=status==='today'?'🔥':status==='past'?'✓':'';
+        return `<button class="itin-pill itin-pill-${status}${active?' is-active':''}${cnt===0?' is-empty':''}" onclick="setActiveDay(${di})">
+          <span class="itin-pill-num">J${di+1}${icon?` <span class="itin-pill-icon">${icon}</span>`:''}</span>
+          <span class="itin-pill-date">${day.dateLabel?esc(day.dateLabel):''}</span>
+          <span class="itin-pill-count">${cnt?`${cnt} étape${cnt>1?'s':''}`:'vide'}</span>
+        </button>`;
+      }).join('')}
+    </aside>
+
+    <main id="days-grid" class="itin-main ${_itinExpanded?'itin-all':'itin-single'}">
+      ${_itinExpanded
+        ? t.days.map((d,i)=>renderDayCard(d,i)).join('')
+        : renderDayCard(t.days[_activeDay],_activeDay)}
+    </main>
+
+    <aside class="itin-side" id="itin-side">
+      <div class="itin-side-card">
+        <div class="itin-side-kicker">Carte du jour</div>
+        <div id="itin-mini-map" class="itin-mini-map"></div>
+        <div class="itin-side-foot" id="itin-side-foot"></div>
+      </div>
+    </aside>
   </div>`;
+
+  setTimeout(()=>renderItinMiniMap(),50);
 }
 
 

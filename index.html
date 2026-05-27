@@ -2936,6 +2936,38 @@
 .itin-day-note-ta:focus{border-color:var(--accent)}
 @media(max-width:640px){.itin-cockpit{padding:1.1rem 1.2rem}.itin-daycard{padding:1rem 1.1rem}.itin-cockpit-actions{width:100%;justify-content:flex-start}}
 
+/* ===== Layout PC (≥1024px) ===== */
+.itin-layout{display:flex;flex-direction:column;gap:0}
+.itin-side{display:none}
+@media(min-width:1024px){
+  .itin-toolbar{justify-content:flex-end;margin-bottom:.8rem}
+  .itin-layout{display:grid;grid-template-columns:240px 1fr 320px;gap:1.1rem;align-items:start}
+  .itin-layout.is-expanded{grid-template-columns:1fr}
+  .itin-layout.is-expanded .itin-rail,
+  .itin-layout.is-expanded .itin-side{display:none}
+  .itin-rail{position:sticky;top:.8rem;flex-direction:column;background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:.55rem;max-height:calc(100dvh - 2rem);overflow-y:auto;gap:.35rem}
+  .itin-rail::-webkit-scrollbar{width:5px}
+  .itin-pill{width:100%;min-width:0;flex-direction:row;align-items:center;gap:.55rem;padding:.55rem .7rem;border-radius:10px}
+  .itin-pill-num{font-size:.92rem;flex-shrink:0;width:36px}
+  .itin-pill-date{flex:1;text-align:left;font-size:.7rem}
+  .itin-pill-count{font-size:.66rem}
+  .itin-side{display:block;position:sticky;top:.8rem}
+  .itin-side-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:.85rem;box-shadow:var(--shadow2)}
+  .itin-side-kicker{font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);margin-bottom:.55rem}
+  .itin-mini-map{height:300px;border-radius:14px;overflow:hidden;border:1px solid var(--border);background:#1a2520}
+  .itin-side-foot{margin-top:.65rem;font-size:.78rem;color:var(--muted);text-align:center}
+  .itin-side-empty{color:var(--faint);font-style:italic}
+  .itin-side-stat{font-weight:600}
+  .itin-mini-pin{width:24px;height:24px;border-radius:50%;background:var(--accent);color:var(--accent-contrast);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,.3)}
+  .itin-daycard{padding:1.5rem 1.7rem}
+  .itin-cockpit-top{align-items:center}
+  .panel{max-width:none}
+}
+@media(min-width:1280px){
+  .itin-layout{grid-template-columns:260px 1fr 360px;gap:1.4rem}
+  .itin-mini-map{height:340px}
+}
+
 </style>
 </head>
 <body>

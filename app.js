@@ -1,7 +1,7 @@
 import {
   sb, getUser, signIn, signUp, signOut,
-  loadTrip, upsertTrip, upsertDay, upsertStep, deleteStepById,
-  upsertBudgetItem, deleteBudgetItemById,
+  loadTrip, upsertTrip, upsertDay, upsertStep,
+  upsertBudgetItem,
   createInviteLink, acceptInvite,
   subscribeToTrip, unsubscribeFromTrip
 } from './supabase.js';
@@ -1962,3 +1962,71 @@ function handleImport(event){
   renderDocs();
   renderBudget();
 })();
+
+// Exposition des fonctions au scope global (HTML)
+window.goHome = goHome;
+window.switchView = switchView;
+window.toggleTheme = toggleTheme;
+window.toggleReadMode = toggleReadMode;
+window.selectTrip = selectTrip;
+window.deleteCurrentTrip = deleteCurrentTrip;
+window.createTrip = createTrip;
+window.openModal = openModal;
+window.closeModal = closeModal;
+window.openNewTripModal = openNewTripModal;
+window.openImportModal = openImportModal;
+window.handleImport = handleImport;
+window.exportJSON = exportJSON;
+window.generateShareLink = generateShareLink;
+window.resetTrip = resetTrip;
+
+// Fonctions Dates et Itinéraire
+window.onTripStartChange = onTripStartChange;
+window.onTripDaysChange = onTripDaysChange;
+window.onTripEndChange = onTripEndChange;
+window.openEditDates = openEditDates;
+window.syncEditDates = syncEditDates;
+window.saveEditDates = saveEditDates;
+window.setActiveDay = setActiveDay;
+window.toggleItinExpand = toggleItinExpand;
+window.syncTripName = syncTripName;
+window.syncDayName = syncDayName;
+window.syncDayNote = syncDayNote;
+window.openAddStepModal = openAddStepModal;
+window.openEditStepModal = openEditStepModal;
+window.saveStep = saveStep;
+window.deleteStep = deleteStep;
+window.setStepType = setStepType;
+window.addEscale = addEscale;
+window.removeEscale = removeEscale;
+window.updateDureeBadge = updateDureeBadge;
+window.updateNuits = updateNuits;
+window.acInput = acInput;
+window.acSelect = acSelect;
+window.acKeydown = acKeydown;
+window.closeLightbox = closeLightbox;
+window.openLightbox = openLightbox;
+
+// Fonctions Documents
+window.addDoc = addDoc;
+window.deleteDoc = deleteDoc;
+window.syncDocLabel = syncDocLabel;
+window.syncDocValue = syncDocValue;
+
+// Fonctions Budget
+window.setBudgetTab = setBudgetTab;
+window.addBudgetItem = addBudgetItem;
+window.deleteBudgetItem = deleteBudgetItem;
+window.openEditBudgetItem = openEditBudgetItem;
+window.setBudgetPayer = setBudgetPayer;
+window.setBudgetFor = setBudgetFor;
+window.refreshPaidBySelect = refreshPaidBySelect;
+window.ajouterParticipant = ajouterParticipant;
+window.supprimerParticipant = supprimerParticipant;
+
+// Fonctions Map
+window.mapFitAll = mapFitAll;
+window.mapRecenter = mapRecenter;
+window.mapFilterDay = mapFilterDay;
+window.flyToStep = flyToStep;
+window.focusOnMap = focusOnMap;

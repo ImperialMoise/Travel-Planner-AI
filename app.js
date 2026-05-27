@@ -668,10 +668,10 @@ function _payerRow(idPrix,idPayer,idChk){
     <div class="field"><label>Prix (€)</label><input id="${idPrix}" type="number" min="0" step="0.01" placeholder="0.00"/></div>
     <div class="field"><label>Payé par</label><select id="${idPayer}" onmousedown="refreshPaidBySelect(this)"></select></div>
   </div>
-  <div class="field" style="display:flex;align-items:center;gap:.5rem;background:var(--surface2);border-radius:10px;padding:.6rem .8rem">
-    <input type="checkbox" id="${idChk}" style="accent-color:var(--accent);width:16px;height:16px"/>
-    <label for="${idChk}" style="margin:0;font-size:.84rem;font-weight:600;cursor:pointer">Ajouter au budget</label>
-  </div>`;
+  <label class="step-budget-toggle" for="${idChk}">
+    <input type="checkbox" id="${idChk}"/>
+    <span>Ajouter au budget</span>
+  </label>`;
 }
 
 function _lienNote(){
@@ -1407,6 +1407,10 @@ function toggleItinExpand(){_itinExpanded=!_itinExpanded;renderItinerary()}
 function toggleDay(di){const c=document.querySelector(`[data-day="${di}"]`);if(c)c.classList.toggle('expanded')}
 
 function renderDayCard(day,di){
+if(!day.dateISO&&state.trip&&state.trip.startDate){
+  const d=new Date(state.trip.startDate);d.setDate(d.getDate()+di);
+  day.dateISO=d.toISOString().slice(0,10);
+}
 const STEP_ICONS={transport:'✈️',logement:'🏠',restaurant:'🍽️',activite:'🎯',autre:'📌'};
 const TTYPE_ICONS={train:'🚆',avion:'✈️',bus:'🚌',voiture:'🚗',ferry:'⛴️','métro':'🚇',pied:'🚶',vélo:'🚲',taxi:'🚕'};
 const stepsHtml=day.steps.map((step,si)=>{
@@ -1438,15 +1442,27 @@ const stepsHtml=day.steps.map((step,si)=>{
     </div>`;
   }
   if(t==='logement'){
-    return `<div class="tl-step tl-step-logement">
-      <div class="tl-marker"><div class="tl-dot tl-dot-logement"></div></div>
-      <div class="tl-card tl-card-logement">
-        <div class="tl-card-head"><span class="tl-type-badge tl-badge-logement">🏠 Logement</span>${actions}</div>
-        <div class="tl-label-big">${esc(step.label)}</div>
-        ${step.lieu?`<div class="tl-lieu-small">📍 ${esc(step.lieu)}</div>`:''}
-        ${step.nuits?`<div class="tl-dur-badge">🌙 ${step.nuits} nuit${step.nuits>1?'s':''} · ${esc(step.dateStart||'')} → ${esc(step.dateEnd||'')}</div>`:''}
-        ${step.note?`<div class="tl-note-inline">${esc(step.note)}</div>`:''}
-        ${step.link?`<a href="${esc(step.link)}" target="_blank" rel="noopener noreferrer" class="tl-tag tl-tag-link">🔗 Lien</a>`:''}
+    // Détermine si ce jour est le check-in, une nuit intermédiaire, ou le check-out
+    let phase='séjour';
+    let phaseIcon='🏠';
+    if(step.dateStart&&day.dateISO){
+      if(day.dateISO===step.dateStart){phase='Check-in';phaseIcon='🔑'}
+      else if(day.dateISO===step.dateEnd){phase='Check-out';phaseIcon='🚪'}
+      else phase='Nuit sur place';
+    }
+    const dateRange=step.dateStart&&step.dateEnd?`${esc(step.dateStart)} → ${esc(step.dateEnd)}`:'';
+    return `<div class="lgmt-block">
+      <div class="lgmt-strip"></div>
+      <div class="lgmt-content">
+        <div class="lgmt-top">
+          <div class="lgmt-phase">${phaseIcon} ${phase}</div>
+          ${actions}
+        </div>
+        <div class="lgmt-name">${esc(step.label||'Logement')}</div>
+        ${step.lieu?`<div class="lgmt-addr">📍 ${esc(step.lieu)}</div>`:''}
+        ${step.nuits?`<div class="lgmt-stay"><span class="lgmt-nuits">${step.nuits}</span><span class="lgmt-nuits-l">nuit${step.nuits>1?'s':''}</span>${dateRange?`<span class="lgmt-range">${dateRange}</span>`:''}</div>`:''}
+        ${step.note?`<div class="lgmt-note">${esc(step.note)}</div>`:''}
+        ${step.link?`<a href="${esc(step.link)}" target="_blank" rel="noopener noreferrer" class="lgmt-link">🔗 Réservation</a>`:''}
       </div>
     </div>`;
   }

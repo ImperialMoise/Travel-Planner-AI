@@ -2645,6 +2645,10 @@
   .escale-del{background:none;border:none;color:var(--faint);cursor:pointer;font-size:1.1rem;padding:0 .2rem}
   .escale-del:hover{color:#ff7043}
   .escale-dur-badge{font-size:.7rem;font-weight:700;color:var(--accent);white-space:nowrap;align-self:center;min-width:2.5rem;text-align:center}
+  .step-budget-toggle{display:inline-flex;align-items:center;gap:.45rem;background:var(--surface2);border:1px solid var(--border);border-radius:999px;padding:.45rem .85rem;cursor:pointer;font-size:.8rem;font-weight:600;color:var(--muted);margin:-.3rem 0 .2rem;transition:all .15s;width:auto;align-self:flex-start}
+  .step-budget-toggle:hover{border-color:var(--accent);color:var(--text)}
+  .step-budget-toggle input{accent-color:var(--accent);width:15px;height:15px;margin:0;cursor:pointer}
+  .step-budget-toggle:has(input:checked){background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
 
   #trip-name-input,
   #trip-start,
@@ -2895,6 +2899,22 @@
 .tl-escales{margin:.25rem 0;display:flex;flex-direction:column;gap:.15rem}
 .tl-escale{font-size:.76rem;color:var(--faint);padding-left:.5rem}
 .tl-tag-dur{display:inline-flex;align-items:center;background:var(--surface2);color:var(--muted);border:1px solid var(--border)}
+.lgmt-block{display:flex;background:linear-gradient(135deg,var(--accent-soft),transparent 80%);border:1px solid var(--accent-soft);border-radius:16px;overflow:hidden;margin:.5rem 0;box-shadow:var(--shadow2)}
+.lgmt-strip{width:5px;background:linear-gradient(180deg,var(--accent),var(--accent-hover));flex-shrink:0}
+.lgmt-content{flex:1;padding:.85rem 1rem;min-width:0}
+.lgmt-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem}
+.lgmt-phase{font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);background:var(--accent-soft);padding:.2rem .6rem;border-radius:999px}
+.lgmt-name{font-family:var(--display);font-size:1.25rem;color:var(--text);line-height:1.15;margin-bottom:.15rem}
+.lgmt-addr{font-size:.82rem;color:var(--muted);margin-bottom:.55rem}
+.lgmt-stay{display:flex;align-items:baseline;gap:.4rem;flex-wrap:wrap;padding:.5rem .75rem;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:10px;margin:.3rem 0}
+.lgmt-nuits{font-family:var(--display);font-size:1.6rem;color:var(--accent);line-height:1}
+.lgmt-nuits-l{font-size:.8rem;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.05em}
+.lgmt-range{margin-left:auto;font-size:.76rem;color:var(--muted);font-weight:600}
+.lgmt-note{font-size:.82rem;color:var(--muted);margin-top:.4rem;line-height:1.4}
+.lgmt-link{display:inline-flex;align-items:center;gap:.3rem;font-size:.78rem;font-weight:700;color:var(--accent);text-decoration:none;margin-top:.45rem}
+.lgmt-link:hover{text-decoration:underline}
+/* Sur les jours intermédiaires, on compacte */
+.lgmt-block:has(.lgmt-phase:contains("Nuit")) .lgmt-stay{display:none}
 .itin-day-empty{text-align:center;padding:1.8rem 1rem;background:var(--surface2);border:1px dashed var(--border);border-radius:14px;margin-bottom:1rem}
 .itin-day-empty-emoji{font-size:1.8rem;margin-bottom:.4rem}
 .itin-day-empty-t{font-family:var(--display);font-size:1.1rem;color:var(--text)}

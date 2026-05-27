@@ -2775,6 +2775,8 @@
 .bdg-exp-amt{font-size:.95rem;font-weight:700;color:var(--text);flex-shrink:0}
 .bdg-exp-del{border:none;background:transparent;color:var(--faint);width:24px;height:24px;border-radius:50%;cursor:pointer;font-size:17px;line-height:1;flex-shrink:0;transition:all .15s}
 .bdg-exp-del:hover{background:#ff704322;color:#ff7043}
+.bdg-exp:hover{background:var(--surface);border-color:var(--accent-soft)}
+.bdg-exp-linked{font-size:.7rem;opacity:.6;margin-left:.2rem}
 .bdg-empty{text-align:center;color:var(--muted);font-size:.9rem;padding:2.2rem 1rem;background:var(--surface2);border:1px dashed var(--border);border-radius:var(--r2);margin-top:.8rem}
 .bdg-empty-emoji{font-size:2rem;margin-bottom:.5rem}
 .bdg-empty span{font-size:.8rem;color:var(--faint)}
@@ -2913,6 +2915,11 @@
 .lgmt-note{font-size:.82rem;color:var(--muted);margin-top:.4rem;line-height:1.4}
 .lgmt-link{display:inline-flex;align-items:center;gap:.3rem;font-size:.78rem;font-weight:700;color:var(--accent);text-decoration:none;margin-top:.45rem}
 .lgmt-link:hover{text-decoration:underline}
+.lgmt-mini{display:flex;align-items:center;gap:.7rem;padding:.55rem .85rem;background:rgba(180,132,62,.06);border:1px dashed var(--accent-soft);border-radius:12px;margin:.4rem 0}
+.lgmt-mini-icon{font-size:1.2rem;flex-shrink:0}
+.lgmt-mini-body{flex:1;min-width:0}
+.lgmt-mini-name{font-size:.88rem;font-weight:700;color:var(--text)}
+.lgmt-mini-sub{font-size:.74rem;color:var(--muted);margin-top:.1rem}
 /* Sur les jours intermédiaires, on compacte */
 .lgmt-block:has(.lgmt-phase:contains("Nuit")) .lgmt-stay{display:none}
 .itin-day-empty{text-align:center;padding:1.8rem 1rem;background:var(--surface2);border:1px dashed var(--border);border-radius:14px;margin-bottom:1rem}

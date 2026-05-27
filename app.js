@@ -721,8 +721,12 @@ function renderStepForm(){
     html+=`<div class="field"><label>Nom du logement</label><input id="s-label" type="text" placeholder="Hôtel Le Bristol…"/></div>
     <div class="field"><label>Adresse / Lieu</label>${_acField('s-lieu','s-lieu-list','Adresse, ville…')}</div>
     <div class="row-2">
-      <div class="field"><label>Check-in</label><input id="s-date-start" type="date" oninput="updateNuits()"/></div>
-      <div class="field"><label>Check-out</label><input id="s-date-end" type="date" oninput="updateNuits()"/></div>
+      <div class="field"><label>Check-in (date)</label><input id="s-date-start" type="date" oninput="updateNuits()"/></div>
+      <div class="field"><label>Check-out (date)</label><input id="s-date-end" type="date" oninput="updateNuits()"/></div>
+    </div>
+    <div class="row-2">
+      <div class="field"><label>Heure check-in</label><input id="s-time-checkin" type="time" value="15:00"/></div>
+      <div class="field"><label>Heure check-out</label><input id="s-time-checkout" type="time" value="11:00"/></div>
     </div>
     <div class="step-dur-badge" id="s-nuits-badge" style="display:none"></div>
     ${_payerRow('s-prix','s-payer','s-add-budget')}
@@ -789,6 +793,8 @@ function openEditStepModal(di,si){
   } else if(t==='logement'){
     _stepSet('s-label',step.label||'');_stepSet('s-lieu',step.lieu||'');
     _stepSet('s-date-start',step.dateStart||'');_stepSet('s-date-end',step.dateEnd||'');
+    _stepSet('s-time-checkin',step.timeCheckIn||'15:00');
+    _stepSet('s-time-checkout',step.timeCheckOut||'11:00');
     updateNuits();
   } else {
     _stepSet('s-label',step.label||'');_stepSet('s-lieu',step.lieu||'');
@@ -842,7 +848,10 @@ function saveStep(){
     if(!label){showToast('Nom du logement requis');return}
     const ds=_stepVal('s-date-start'),de=_stepVal('s-date-end');
     const nuits=ds&&de?Math.round((new Date(de)-new Date(ds))/86400000):0;
-    step={...step,dateStart:ds,dateEnd:de,nuits,time:''};
+    step={...step,dateStart:ds,dateEnd:de,nuits,
+      timeCheckIn:_stepVal('s-time-checkin')||'15:00',
+      timeCheckOut:_stepVal('s-time-checkout')||'11:00',
+      time:_stepVal('s-time-checkin')||'15:00'};
   } else {
     if(!label){showToast('Titre requis');return}
     step.time=_stepVal('s-time')||'';
@@ -996,7 +1005,33 @@ function getContrastText(hex){
 }
 
 function deleteBudgetItem(i){
+  const b=state.budget[i];
+  if(b&&b._stepRef){
+    const [di,si]=b._stepRef.split('-').map(Number);
+    const step=state.trip&&state.trip.days[di]&&state.trip.days[di].steps[si];
+    if(step){step.amount=0;step.paidBy=''}
+  }
   state.budget.splice(i,1);
+  saveToLocalStorage();
+  if(state.trip)renderItinerary();
+  renderBudget();
+}
+
+function openEditBudgetItem(i){
+  const b=state.budget[i];
+  if(!b)return;
+  if(b._stepRef){
+    const [di,si]=b._stepRef.split('-').map(Number);
+    if(state.trip&&state.trip.days[di]&&state.trip.days[di].steps[si]){
+      openEditStepModal(di,si);
+      return;
+    }
+  }
+  const newDesc=prompt('Description :',b.desc);
+  if(newDesc===null)return;
+  const newAmount=parseFloat(prompt('Montant (€) :',b.amount))||0;
+  b.desc=newDesc.trim()||b.desc;
+  b.amount=newAmount;
   saveToLocalStorage();
   renderBudget();
 }
@@ -1137,13 +1172,14 @@ function renderBudget(){
         const targets=getExpenseTargets(b);
         const tl=(b.forParticipants||[]).includes('__all__')?'Tout le monde':targets.join(', ');
         return `<div class="bdg-exp">
+          return `<div class="bdg-exp" onclick="openEditBudgetItem(${i})" style="cursor:pointer">
           <span class="bdg-exp-emoji" style="background:${(CAT_COLORS[b.cat]||'#ffa726')}22">${CAT_EMOJI[b.cat]||'📦'}</span>
           <div class="bdg-exp-mid">
-            <div class="bdg-exp-desc">${esc(b.desc)}</div>
+            <div class="bdg-exp-desc">${esc(b.desc)}${b._stepRef?` <span class="bdg-exp-linked" title="Liée à une étape">🔗</span>`:''}</div>
             <div class="bdg-exp-meta"><span class="bdg-exp-payer" style="color:${c};background:${c}18">${esc(b.paidBy||'?')}</span><span class="bdg-exp-for">→ ${esc(tl||'—')}</span></div>
           </div>
           <span class="bdg-exp-amt">${fmt(b.amount)}</span>
-          <button class="bdg-exp-del" onclick="deleteBudgetItem(${i})" title="Supprimer">×</button>
+          <button class="bdg-exp-del" onclick="event.stopPropagation();deleteBudgetItem(${i})" title="Supprimer">×</button>
         </div>`;
       }).join('')}</div>`:`<div class="bdg-empty"><div class="bdg-empty-emoji">🧾</div>Aucune dépense pour l'instant.<br><span>Ajoute-en une avec le panneau ci-dessus.</span></div>`}`;
   }
@@ -1442,20 +1478,31 @@ const stepsHtml=day.steps.map((step,si)=>{
     </div>`;
   }
   if(t==='logement'){
-    // Détermine si ce jour est le check-in, une nuit intermédiaire, ou le check-out
-    let phase='séjour';
-    let phaseIcon='🏠';
-    if(step.dateStart&&day.dateISO){
-      if(day.dateISO===step.dateStart){phase='Check-in';phaseIcon='🔑'}
-      else if(day.dateISO===step.dateEnd){phase='Check-out';phaseIcon='🚪'}
-      else phase='Nuit sur place';
-    }
+    let phase='séjour',phaseIcon='🏠',phaseTime='';
+    const isCheckIn=step.dateStart&&day.dateISO===step.dateStart;
+    const isCheckOut=step.dateEnd&&day.dateISO===step.dateEnd;
+    if(isCheckIn){phase='Check-in';phaseIcon='🔑';phaseTime=step.timeCheckIn||'15:00'}
+    else if(isCheckOut){phase='Check-out';phaseIcon='🚪';phaseTime=step.timeCheckOut||'11:00'}
+    else if(step.dateStart&&day.dateISO>step.dateStart&&day.dateISO<step.dateEnd){phase='Nuit sur place';phaseIcon='🌙'}
+    const isMiddle=phase==='Nuit sur place';
+    const dayNum=step.dateStart?Math.round((new Date(day.dateISO)-new Date(step.dateStart))/86400000)+1:null;
     const dateRange=step.dateStart&&step.dateEnd?`${esc(step.dateStart)} → ${esc(step.dateEnd)}`:'';
-    return `<div class="lgmt-block">
+    if(isMiddle){
+      // version condensée pour les jours intermédiaires
+      return `<div class="lgmt-mini">
+        <span class="lgmt-mini-icon">🌙</span>
+        <div class="lgmt-mini-body">
+          <div class="lgmt-mini-name">${esc(step.label||'Logement')}</div>
+          <div class="lgmt-mini-sub">Nuit ${dayNum-1}/${step.nuits||'?'} · même hébergement</div>
+        </div>
+        ${actions}
+      </div>`;
+    }
+    return `<div class="lgmt-block lgmt-${isCheckIn?'in':'out'}">
       <div class="lgmt-strip"></div>
       <div class="lgmt-content">
         <div class="lgmt-top">
-          <div class="lgmt-phase">${phaseIcon} ${phase}</div>
+          <div class="lgmt-phase">${phaseIcon} ${phase}${phaseTime?` · ${phaseTime}`:''}</div>
           ${actions}
         </div>
         <div class="lgmt-name">${esc(step.label||'Logement')}</div>

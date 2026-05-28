@@ -53,7 +53,11 @@ export async function loadTrip(tripId) {
 
   // Reconstituer la structure de state attendue par app.js
   const daysWithSteps = (days || []).map(day => ({
-    ...day,
+    supabaseId:  day.id,
+    title:       day.title || '',
+    note:        day.note || '',
+    dateLabel:   day.date_label || '',
+    dateISO:     day.date_iso || null,
     steps: (steps || [])
       .filter(s => s.day_id === day.id)
       .sort((a, b) => a.step_index - b.step_index)
@@ -61,21 +65,27 @@ export async function loadTrip(tripId) {
   }));
 
   return {
-    trip: { ...trip, days: daysWithSteps },
-    budget: (budget || []).map(dbBudgetToLocal),
-    docs: docs || [],
+    trip: {
+      supabaseId: trip.id,
+      name:       trip.name,
+      startDate:  trip.start_date || null,
+      days:       daysWithSteps,
+    },
+    budget:       (budget || []).map(dbBudgetToLocal),
+    docs:         (docs || []).map(d => ({ supabaseId: d.id, cat: d.cat, label: d.label, value: d.value })),
     participants: (participants || []).map(p => p.name),
-    members: members || []
+    members:      members || []
   };
 }
 
 // ─── Upsert un voyage (nom, dates) ──────────
-export async function upsertTrip(trip) {
+export async function upsertTrip(trip, ownerId) {
+  const uid = ownerId || (await getUser())?.id;
   const { data, error } = await sb.from('trips').upsert({
     id: trip.supabaseId || undefined,
     name: trip.name,
     start_date: trip.startDate || null,
-    owner_id: (await getUser()).id
+    owner_id: uid
   }, { onConflict: 'id' }).select().single();
   if (error) throw error;
   return data;

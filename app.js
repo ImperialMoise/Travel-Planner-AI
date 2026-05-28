@@ -684,7 +684,7 @@ function resetTrip(){
   closeModal('modal-reset');
 }
 /* ══ Création voyage ══ */
-function createTrip(){
+async function createTrip(){
   const name=document.getElementById('trip-name-input').value.trim();
   const days=Math.max(1,parseInt(document.getElementById('trip-days').value)||1);
   const startDate=document.getElementById('trip-start').value||null;
@@ -721,6 +721,26 @@ function createTrip(){
   renderItinerary();
   renderDocs();
   renderBudget();
+  // Sync Supabase
+  if(_currentUser) {
+    try {
+      // 1. Créer le voyage dans Supabase
+      const tripRow = await upsertTrip(state.trip, _currentUser.id);
+      state.trip.supabaseId = tripRow.id;
+      tripsStore.activeTripId = tripRow.id;
+      // 2. Créer tous les jours
+      for(let i=0; i<state.trip.days.length; i++){
+        const dayRow = await upsertDay(tripRow.id, state.trip.days[i], i);
+        state.trip.days[i].supabaseId = dayRow.id;
+      }
+      saveToLocalStorage();
+      _startRealtime(tripRow.id);
+      showToast(`Voyage "${name}" créé et synchronisé ✓`);
+    } catch(e) {
+      console.error('Erreur Supabase:', e);
+      showToast('⚠️ Sauvegarde cloud échouée, voyage en local uniquement');
+    }
+  }
 
   setTimeout(()=>{
     const c=document.querySelector('[data-day="0"]');
@@ -2002,6 +2022,18 @@ function handleImport(event){
 (async function init(){
   // Récupérer l'utilisateur connecté
   _currentUser = await getUser();
+if(!_currentUser){
+  // Attendre que Supabase restaure la session
+  await new Promise(resolve => {
+    const { data: { subscription } } = sb.auth.onAuthStateChange((event, session) => {
+      if(session?.user){ _currentUser = session.user; }
+      subscription.unsubscribe();
+      resolve();
+    });
+    setTimeout(resolve, 1500);
+  });
+}
+_updateAuthBtn();
 
   // Détecter une invitation par lien ?invite=TOKEN
   const params = new URLSearchParams(location.search);

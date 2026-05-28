@@ -1657,10 +1657,12 @@ setActiveDay=function(di){_origSetActiveDay(di);setTimeout(renderItinMiniMap,80)
 function toggleDay(di){const c=document.querySelector(`[data-day="${di}"]`);if(c)c.classList.toggle('expanded')}
 
 function renderDayCard(day,di){
+if(!day)return'';
 if(!day.dateISO&&state.trip&&state.trip.startDate){
   const d=new Date(state.trip.startDate);d.setDate(d.getDate()+di);
   day.dateISO=d.toISOString().slice(0,10);
 }
+if(!day.steps)day.steps=[];
 const STEP_ICONS={transport:'✈️',logement:'🏠',restaurant:'🍽️',activite:'🎯',autre:'📌'};
 const TTYPE_ICONS={train:'🚆',avion:'✈️',bus:'🚌',voiture:'🚗',ferry:'⛴️','métro':'🚇',pied:'🚶',vélo:'🚲',taxi:'🚕'};
 const stepsHtml=day.steps.map((step,si)=>{

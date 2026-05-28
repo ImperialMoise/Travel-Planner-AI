@@ -3026,6 +3026,10 @@
       </svg>
     </button>
     <button class="btn-icon" id="theme-toggle" onclick="toggleTheme()" aria-label="Changer le thème"></button>
+    <button class="btn-auth" id="btn-auth" onclick="openAuthModal()" aria-label="Connexion">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span id="btn-auth-label">Connexion</span>
+    </button>
   </div>
 </div>
   </header>
@@ -3278,5 +3282,45 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script type="module" src="app.js"></script>
+<!-- MODALE AUTH -->
+  <div class="modal-overlay" id="modal-auth">
+    <div class="modal" style="max-width:420px">
+      <div class="modal-header">
+        <div class="modal-title" id="auth-modal-title">Connexion</div>
+        <button class="modal-close" onclick="closeModal('modal-auth')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="auth-tabs">
+          <button class="auth-tab is-active" id="auth-tab-login" onclick="switchAuthTab('login')">Se connecter</button>
+          <button class="auth-tab" id="auth-tab-signup" onclick="switchAuthTab('signup')">Créer un compte</button>
+        </div>
+        <div class="field" style="margin-top:.9rem">
+          <label>Email</label>
+          <input id="auth-email" type="email" placeholder="votre@email.com" autocomplete="email"/>
+        </div>
+        <div class="field">
+          <label>Mot de passe</label>
+          <input id="auth-password" type="password" placeholder="••••••••" autocomplete="current-password"/>
+        </div>
+        <div id="auth-error" style="color:#ff7043;font-size:.82rem;margin-top:.3rem;display:none"></div>
+        <div id="auth-success" style="color:#66bb6a;font-size:.82rem;margin-top:.3rem;display:none"></div>
+      </div>
+      <div class="modal-footer" style="flex-direction:column;gap:.6rem">
+        <button class="btn-primary" id="auth-submit-btn" onclick="submitAuth()" style="width:100%">Se connecter</button>
+        <button class="btn-ghost" id="auth-signout-btn" onclick="doSignOut()" style="width:100%;display:none">Se déconnecter</button>
+      </div>
+    </div>
+  </div>
+
+<style>
+.btn-auth{display:inline-flex;align-items:center;gap:.4rem;padding:.42rem .75rem;border-radius:999px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:.78rem;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap}
+.btn-auth:hover{border-color:var(--accent);color:var(--accent)}
+.btn-auth.is-connected{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+.auth-tabs{display:flex;gap:.35rem;background:var(--surface2);border-radius:999px;padding:.3rem;margin-bottom:.2rem}
+.auth-tab{flex:1;padding:.45rem;border:none;background:transparent;color:var(--muted);font-size:.84rem;font-weight:700;border-radius:999px;cursor:pointer;transition:all .15s}
+.auth-tab.is-active{background:var(--accent);color:var(--accent-contrast)}
+</style>
 </body>
 </html>

@@ -256,7 +256,101 @@ function _startRealtime(tripId) {
   });
 }
 
-function toggleTheme(){applyTheme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark')}
+/* ══ Auth UI ══ */
+let _authTab = 'login';
+
+function openAuthModal(){
+  const btn = document.getElementById('auth-submit-btn');
+  const signout = document.getElementById('auth-signout-btn');
+  const err = document.getElementById('auth-error');
+  const ok = document.getElementById('auth-success');
+  if(err) err.style.display='none';
+  if(ok) ok.style.display='none';
+  if(_currentUser){
+    // Déjà connecté → montrer le bouton déconnexion
+    if(btn) btn.style.display='none';
+    if(signout) signout.style.display='block';
+    document.getElementById('auth-modal-title').textContent = 'Mon compte';
+    document.getElementById('auth-email').value = _currentUser.email;
+    document.getElementById('auth-email').disabled = true;
+    document.getElementById('auth-password').style.display = 'none';
+    document.querySelector('.auth-tabs').style.display = 'none';
+  } else {
+    if(btn) btn.style.display='block';
+    if(signout) signout.style.display='none';
+    document.getElementById('auth-modal-title').textContent = 'Connexion';
+    document.getElementById('auth-email').value = '';
+    document.getElementById('auth-email').disabled = false;
+    document.getElementById('auth-password').style.display = '';
+    document.querySelector('.auth-tabs').style.display = '';
+    switchAuthTab('login');
+  }
+  openModal('modal-auth');
+}
+
+function switchAuthTab(tab){
+  _authTab = tab;
+  document.getElementById('auth-tab-login').classList.toggle('is-active', tab==='login');
+  document.getElementById('auth-tab-signup').classList.toggle('is-active', tab==='signup');
+  document.getElementById('auth-modal-title').textContent = tab==='login'?'Connexion':'Créer un compte';
+  document.getElementById('auth-submit-btn').textContent = tab==='login'?'Se connecter':'Créer mon compte';
+}
+
+async function submitAuth(){
+  const email = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value;
+  const errEl = document.getElementById('auth-error');
+  const okEl = document.getElementById('auth-success');
+  const btn = document.getElementById('auth-submit-btn');
+  errEl.style.display='none'; okEl.style.display='none';
+  if(!email||!password){errEl.textContent='Email et mot de passe requis';errEl.style.display='block';return}
+  btn.textContent='...'; btn.disabled=true;
+  try {
+    if(_authTab==='login'){
+      _currentUser = await signIn(email, password);
+    } else {
+      _currentUser = await signUp(email, password);
+      okEl.textContent='Compte créé ! Vérifiez votre email si nécessaire.';
+      okEl.style.display='block';
+    }
+    _updateAuthBtn();
+    showToast(_authTab==='login'?`Connecté : ${_currentUser.email}`:'Compte créé ✓');
+    closeModal('modal-auth');
+    // Si voyage actif → syncer avec Supabase
+    if(state.trip?.supabaseId) _startRealtime(state.trip.supabaseId);
+  } catch(e){
+    errEl.textContent = e.message||'Erreur de connexion';
+    errEl.style.display='block';
+  } finally {
+    btn.disabled=false;
+    btn.textContent=_authTab==='login'?'Se connecter':'Créer mon compte';
+  }
+}
+
+async function doSignOut(){
+  await signOut();
+  _currentUser = null;
+  _updateAuthBtn();
+  closeModal('modal-auth');
+  showToast('Déconnecté');
+}
+
+function _updateAuthBtn(){
+  const btn = document.getElementById('btn-auth');
+  const label = document.getElementById('btn-auth-label');
+  if(!btn||!label) return;
+  if(_currentUser){
+    const name = _currentUser.user_metadata?.display_name || _currentUser.email.split('@')[0];
+    label.textContent = name;
+    btn.classList.add('is-connected');
+  } else {
+    label.textContent = 'Connexion';
+    btn.classList.remove('is-connected');
+  }
+}
+
+function toggleTheme(){
+  applyTheme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark')}
 function toggleReadMode(){readMode=!readMode;document.body.classList.toggle('read-mode',readMode);document.getElementById('read-mode-toggle').classList.toggle('active',readMode);showToast(readMode?'👁 Mode lecture':'✏️ Mode édition')}
 
 /* ══ Navigation ══ */
@@ -1972,6 +2066,10 @@ window.selectTrip = selectTrip;
 window.deleteCurrentTrip = deleteCurrentTrip;
 window.createTrip = createTrip;
 window.openModal = openModal;
+window.openAuthModal = openAuthModal;
+window.switchAuthTab = switchAuthTab;
+window.submitAuth = submitAuth;
+window.doSignOut = doSignOut;
 window.closeModal = closeModal;
 window.openNewTripModal = openNewTripModal;
 window.openImportModal = openImportModal;

@@ -134,7 +134,11 @@ function saveToLocalStorage(){
 }
 
 async function _syncToSupabase(){
-  if(!_currentUser || !state.trip) return;
+  if(!state.trip) return;
+  // Rafraîchir la session avant chaque sync
+  const { data: { session } } = await sb.auth.getSession();
+  if(!session) return;
+  _currentUser = session.user;
   try {
     // 1. Upsert le voyage
     const tripRow = await upsertTrip(state.trip, _currentUser.id);
@@ -379,6 +383,168 @@ async function doSignOut(){
   _updateAuthBtn();
   closeModal('modal-auth');
   showToast('Déconnecté');
+}
+
+/* ══ Settings ══ */
+async function openSettingsModal(){
+  openModal('modal-settings');
+  const body = document.getElementById('settings-body');
+  if(!body) return;
+  body.innerHTML = '<div style="color:var(--muted);font-size:.88rem">Chargement…</div>';
+
+  const user = _currentUser;
+  const pseudo = user?.user_metadata?.display_name || user?.email?.split('@')[0] || '';
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+
+  // Charger membres + activité en parallèle
+  let members = [], logs = [];
+  if(user && state.trip?.supabaseId){
+    const [{ data: m }, { data: l }] = await Promise.all([
+      sb.from('trip_members').select('role, profiles(display_name, email)').eq('trip_id', state.trip.supabaseId),
+      sb.from('activity_log').select('*').eq('trip_id', state.trip.supabaseId).order('created_at', {ascending:false}).limit(30)
+    ]);
+    members = m || [];
+    logs = l || [];
+  }
+
+  // Charger tous les voyages
+  let allTrips = [];
+  if(user){
+    const { data: t } = await sb.from('trips').select('id, name, updated_at');
+    allTrips = t || [];
+  }
+
+  body.innerHTML = `
+    <!-- Compte -->
+    <div class="settings-section">
+      <div class="settings-section-title">Mon compte</div>
+      ${user ? `
+        <div class="settings-row">
+          <label>Pseudo</label>
+          <div style="display:flex;gap:.5rem;flex:1">
+            <input id="settings-pseudo" type="text" value="${esc(pseudo)}" placeholder="Ton pseudo…" style="flex:1"/>
+            <button class="btn-primary" onclick="savePseudo()" style="flex-shrink:0;padding:.5rem .9rem">Sauver</button>
+          </div>
+        </div>
+        <div class="settings-row">
+          <label>Email</label>
+          <span style="color:var(--muted);font-size:.85rem">${esc(user.email)}</span>
+        </div>
+        <button class="btn-ghost" onclick="doSignOut();closeModal('modal-settings')" style="width:100%;margin-top:.4rem">Se déconnecter</button>
+      ` : `
+        <button class="btn-primary" onclick="closeModal('modal-settings');openAuthModal()" style="width:100%">Se connecter</button>
+      `}
+    </div>
+
+    <!-- Thème -->
+    <div class="settings-section">
+      <div class="settings-section-title">Apparence</div>
+      <div class="settings-row">
+        <label>Thème</label>
+        <div style="display:flex;gap:.4rem">
+          <button class="settings-theme-btn ${!isDark?'is-active':''}" onclick="applyTheme('light');renderSettingsTheme()">☀️ Clair</button>
+          <button class="settings-theme-btn ${isDark?'is-active':''}" onclick="applyTheme('dark');renderSettingsTheme()">🌙 Sombre</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Membres -->
+    ${state.trip?.supabaseId ? `
+    <div class="settings-section">
+      <div class="settings-section-title">Membres du voyage</div>
+      ${members.length ? members.map(m => {
+        const name = m.profiles?.display_name || m.profiles?.email?.split('@')[0] || '?';
+        const isMe = m.profiles?.email === user?.email;
+        return `<div class="settings-row">
+          <span style="display:flex;align-items:center;gap:.5rem">
+            <span style="width:8px;height:8px;border-radius:50%;background:${m.role==='owner'?'var(--accent)':'#66bb6a'}"></span>
+            ${esc(name)}${isMe?' <span style="font-size:.72rem;color:var(--muted)">(toi)</span>':''}
+          </span>
+          <span class="settings-role-badge settings-role-${m.role}">${m.role}</span>
+        </div>`;
+      }).join('') : '<div style="color:var(--faint);font-size:.85rem">Aucun membre</div>'}
+      <button class="btn-ghost" onclick="closeModal('modal-settings');generateShareLink()" style="width:100%;margin-top:.6rem">+ Inviter quelqu'un</button>
+    </div>
+    ` : ''}
+
+    <!-- Journal -->
+    ${state.trip?.supabaseId ? `
+    <div class="settings-section">
+      <div class="settings-section-title">Journal d'activité</div>
+      <div class="settings-log">
+        ${logs.length ? logs.map(l => {
+          const d = new Date(l.created_at);
+          const time = d.toLocaleDateString('fr-FR',{day:'numeric',month:'short'}) + ' · ' + d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+          return `<div class="settings-log-item">
+            <div class="settings-log-who">${esc(l.display_name||'?')}</div>
+            <div class="settings-log-action">${esc(l.action)}</div>
+            <div class="settings-log-time">${time}</div>
+          </div>`;
+        }).join('') : '<div style="color:var(--faint);font-size:.85rem;text-align:center;padding:.8rem 0">Aucune activité enregistrée</div>'}
+      </div>
+    </div>
+    ` : ''}
+
+    <!-- Mes voyages -->
+    ${user ? `
+    <div class="settings-section">
+      <div class="settings-section-title">Mes voyages</div>
+      ${allTrips.length ? allTrips.map(t => {
+        const isActive = t.id === state.trip?.supabaseId;
+        return `<div class="settings-row">
+          <span style="font-weight:${isActive?'700':'500'};color:${isActive?'var(--accent)':'var(--text)'}">${esc(t.name)}${isActive?' ✓':''}</span>
+          <button class="btn-ghost" style="font-size:.75rem;padding:.3rem .6rem" onclick="deleteSettingsTrip('${t.id}','${esc(t.name)}')">Supprimer</button>
+        </div>`;
+      }).join('') : '<div style="color:var(--faint);font-size:.85rem">Aucun voyage</div>'}
+    </div>
+    ` : ''}
+  `;
+}
+
+function renderSettingsTheme(){
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  document.querySelectorAll('.settings-theme-btn').forEach((btn,i) => {
+    btn.classList.toggle('is-active', i===(isDark?1:0));
+  });
+}
+
+async function savePseudo(){
+  const val = document.getElementById('settings-pseudo')?.value.trim();
+  if(!val) return;
+  const { error } = await sb.auth.updateUser({ data: { display_name: val } });
+  if(!error){
+    await sb.from('profiles').update({ display_name: val }).eq('id', _currentUser.id);
+    _currentUser.user_metadata.display_name = val;
+    _updateAuthBtn();
+    showToast('Pseudo mis à jour ✓');
+  }
+}
+
+async function deleteSettingsTrip(id, name){
+  if(!confirm(`Supprimer "${name}" ?`)) return;
+  await sb.from('trips').delete().eq('id', id);
+  if(state.trip?.supabaseId === id){
+    state.trip = null;
+    tripsStore.activeTripId = null;
+    saveToLocalStorage();
+    renderItinerary();
+  }
+  openSettingsModal();
+  showToast('Voyage supprimé');
+}
+
+async function _logActivity(action, details=''){
+  if(!_currentUser || !state.trip?.supabaseId) return;
+  const name = _currentUser.user_metadata?.display_name || _currentUser.email?.split('@')[0] || '?';
+  try {
+    await sb.from('activity_log').insert({
+      trip_id: state.trip.supabaseId,
+      user_id: _currentUser.id,
+      display_name: name,
+      action,
+      details
+    });
+  } catch(e){ console.warn('Log failed:', e.message); }
 }
 
 function _updateAuthBtn(){
@@ -1093,7 +1259,8 @@ async function saveStep(){
   saveToLocalStorage();
   closeModal('modal-step');
   renderItinerary();
-  showToast(_stepCtx.mode==='add'?'Étape ajoutée ✓':'Étape modifiée ✓');
+  saveToLocalStorage();renderItinerary();
+}
   // Sync Supabase en arrière-plan
   if(_currentUser && state.trip?.supabaseId) {
     const day = state.trip.days[di];
@@ -1112,6 +1279,7 @@ function deleteStep(di,si){
   const key=`${di}-${si}`;delete _photoCache[key];delete _photoOpen[key];
   state.trip.days[di].steps.splice(si,1);
   saveToLocalStorage();renderItinerary();
+  _logActivity('A supprimé une étape', state.trip?.days[di]?.title||`Jour ${di+1}`);
 }
 
 const TRANSPORT_EMOJI={pied:'🚶',voiture:'🚗',train:'🚆',avion:'✈️',bus:'🚌',bateau:'⛴️'};
@@ -2075,6 +2243,8 @@ function _showShareModal(url){
 async function _loadShareMembers(){
   const el = document.getElementById('share-members');
   if(!el || !state.trip?.supabaseId) return;
+  const { data: { session } } = await sb.auth.getSession();
+  if(!session) return;
   const { data: members } = await sb.from('trip_members')
     .select('role, profiles(display_name, email)')
     .eq('trip_id', state.trip.supabaseId);
@@ -2306,6 +2476,10 @@ window.syncHebergement = syncHebergement;
 window.renderItinMiniMap = renderItinMiniMap;
 window._calcEscaleDuree = _calcEscaleDuree;
 window.copyShareUrl = copyShareUrl;
+window.openSettingsModal = openSettingsModal;
+window.savePseudo = savePseudo;
+window.deleteSettingsTrip = deleteSettingsTrip;
+window.renderSettingsTheme = renderSettingsTheme;
 window._loadShareMembers = _loadShareMembers;
 Object.defineProperty(window, '_escales', {
   get: () => _escales,

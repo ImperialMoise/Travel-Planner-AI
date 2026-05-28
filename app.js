@@ -2292,25 +2292,7 @@ window.mapFilterDay = mapFilterDay;
 window.flyToStep = flyToStep;
 window.focusOnMap = focusOnMap;
 
-// Fonctions Itinéraire manquantes
-window.openEditDates = openEditDates;
-window.syncEditDates = syncEditDates;
-window.saveEditDates = saveEditDates;
-window.openModal = openModal;
-window.closeModal = closeModal;
-window.toggleTheme = toggleTheme;
-window.toggleReadMode = toggleReadMode;
-window.goHome = goHome;
-window.selectTrip = selectTrip;
-window.deleteCurrentTrip = deleteCurrentTrip;
-window.exportJSON = exportJSON;
-window.generateShareLink = generateShareLink;
-window.handleImport = handleImport;
-window.createTrip = createTrip;
-window.resetTrip = resetTrip;
-window.openNewTripModal = openNewTripModal;
-window.openImportModal = openImportModal;
-window.switchView = switchView;
+// Fonctions supplémentaires
 window.syncStepLabel = syncStepLabel;
 window.syncStepNote = syncStepNote;
 window.syncStepLieu = syncStepLieu;
@@ -2321,14 +2303,10 @@ window.syncTransport = syncTransport;
 window.enableHebergement = enableHebergement;
 window.removeHebergement = removeHebergement;
 window.syncHebergement = syncHebergement;
-window.setBudgetTab = setBudgetTab;
-window.mapFitAll = mapFitAll;
-window.mapRecenter = mapRecenter;
 window.renderItinMiniMap = renderItinMiniMap;
-window.setActiveDay = setActiveDay;
-window.toggleItinExpand = toggleItinExpand;
 window._calcEscaleDuree = _calcEscaleDuree;
-// _escales est un tableau — on expose un proxy pour que les oninput inline puissent y écrire
+window.copyShareUrl = copyShareUrl;
+window._loadShareMembers = _loadShareMembers;
 Object.defineProperty(window, '_escales', {
   get: () => _escales,
   set: (v) => { _escales.length = 0; v.forEach(x => _escales.push(x)); }

@@ -1259,20 +1259,8 @@ async function saveStep(){
   saveToLocalStorage();
   closeModal('modal-step');
   renderItinerary();
-  saveToLocalStorage();renderItinerary();
-}
-  // Sync Supabase en arrière-plan
-  if(_currentUser && state.trip?.supabaseId) {
-    const day = state.trip.days[di];
-    const si2 = _stepCtx.mode==='edit' ? _stepCtx.si : state.trip.days[di].steps.length-1;
-    try {
-      const dayRow = await upsertDay(state.trip.supabaseId, day, di);
-      day.supabaseId = dayRow.id;
-      const stepRow = await upsertStep(state.trip.supabaseId, dayRow.id, state.trip.days[di].steps[si2], si2, _currentUser.id);
-      state.trip.days[di].steps[si2].supabaseId = stepRow.id;
-      saveToLocalStorage();
-    } catch(e) { showToast('⚠️ Sauvegarde cloud échouée'); console.error(e); }
-  }
+  showToast(_stepCtx.mode==='add'?'Étape ajoutée ✓':'Étape modifiée ✓');
+  _logActivity(_stepCtx.mode==='add'?'A ajouté une étape':'A modifié une étape', step.label||'');
 }
 
 function deleteStep(di,si){

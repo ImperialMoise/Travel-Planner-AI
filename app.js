@@ -858,7 +858,7 @@ function updateNuits(){
   badge.style.display='inline-flex';
 }
 
-function saveStep(){
+async function saveStep(){
   const t=_stepCtx.type;
   const di=_stepCtx.di;
   const label=_stepVal('s-label').trim();

@@ -128,7 +128,33 @@ function persistStore(){
   }catch(e){console.warn(e)}
 }
 
-function saveToLocalStorage(){persistStore()}
+function saveToLocalStorage(){
+  persistStore();
+  _syncToSupabase();
+}
+
+async function _syncToSupabase(){
+  if(!_currentUser || !state.trip) return;
+  try {
+    // 1. Upsert le voyage
+    const tripRow = await upsertTrip(state.trip, _currentUser.id);
+    state.trip.supabaseId = tripRow.id;
+
+    // 2. Upsert tous les jours + étapes
+    for(let i=0; i<state.trip.days.length; i++){
+      const day = state.trip.days[i];
+      const dayRow = await upsertDay(tripRow.id, day, i);
+      day.supabaseId = dayRow.id;
+
+      for(let j=0; j<day.steps.length; j++){
+        const stepRow = await upsertStep(tripRow.id, dayRow.id, day.steps[j], j);
+        day.steps[j].supabaseId = stepRow.id;
+      }
+    }
+  } catch(e) {
+    console.warn('Sync Supabase échouée:', e.message);
+  }
+}
 
 function loadFromLocalStorage(){
   try{
@@ -293,7 +319,9 @@ function switchAuthTab(tab){
   document.getElementById('auth-tab-login').classList.toggle('is-active', tab==='login');
   document.getElementById('auth-tab-signup').classList.toggle('is-active', tab==='signup');
   document.getElementById('auth-modal-title').textContent = tab==='login'?'Connexion':'Créer un compte';
-  document.getElementById('auth-submit-btn').textContent = tab==='login'?'Se connecter':'Créer mon compte';
+document.getElementById('auth-submit-btn').textContent = tab==='login'?'Se connecter':'Créer mon compte';
+  const pseudoField = document.getElementById('auth-pseudo-field');
+  if(pseudoField) pseudoField.style.display = tab==='signup'?'block':'none';
 }
 
 async function submitAuth(){
@@ -309,15 +337,33 @@ async function submitAuth(){
     if(_authTab==='login'){
       _currentUser = await signIn(email, password);
     } else {
-      _currentUser = await signUp(email, password);
+      const pseudo = document.getElementById('auth-pseudo')?.value.trim() || email.split('@')[0];
+      _currentUser = await signUp(email, password, pseudo);
       okEl.textContent='Compte créé ! Vérifiez votre email si nécessaire.';
       okEl.style.display='block';
     }
     _updateAuthBtn();
-    showToast(_authTab==='login'?`Connecté : ${_currentUser.email}`:'Compte créé ✓');
     closeModal('modal-auth');
-    // Si voyage actif → syncer avec Supabase
-    if(state.trip?.supabaseId) _startRealtime(state.trip.supabaseId);
+    // Invitation en attente ?
+    const pending = sessionStorage.getItem('pending_invite');
+    if(pending){
+      try {
+        const tripId = await acceptInvite(pending);
+        sessionStorage.removeItem('pending_invite');
+        showToast('🎉 Vous avez rejoint le voyage !');
+        const data = await loadTrip(tripId);
+        applyTripData(data);
+        state.trip.supabaseId = tripId;
+        tripsStore.activeTripId = tripId;
+        saveToLocalStorage();
+        renderTripSwitcher();
+        renderItinerary(); renderBudget(); renderDocs();
+        _startRealtime(tripId);
+      } catch(e){ showToast('Invitation invalide : '+e.message); }
+    } else {
+      showToast(_authTab==='login'?`Connecté ✓`:'Compte créé ✓');
+      if(state.trip?.supabaseId) _startRealtime(state.trip.supabaseId);
+    }
   } catch(e){
     errEl.textContent = e.message||'Erreur de connexion';
     errEl.style.display='block';
@@ -340,7 +386,7 @@ function _updateAuthBtn(){
   const label = document.getElementById('btn-auth-label');
   if(!btn||!label) return;
   if(_currentUser){
-    const name = _currentUser.user_metadata?.display_name || _currentUser.email.split('@')[0];
+    const name = _currentUser.user_metadata?.display_name || _currentUser.user_metadata?.name || _currentUser.email.split('@')[0];
     label.textContent = name;
     btn.classList.add('is-connected');
   } else {
@@ -1991,6 +2037,7 @@ function _showShareModal(url){
         </button>
       </div>
       <div class="modal-body" style="display:flex;flex-direction:column;gap:1rem">
+        <div id="share-members" style="margin-bottom:.5rem"></div>
         <p style="font-size:.88rem;color:var(--muted)">Ce lien permet à quelqu'un de rejoindre ton voyage et de le modifier. Il est valable <strong>7 jours</strong>.</p>
         <div style="display:flex;gap:.5rem">
           <input id="share-url-input" type="text" readonly style="flex:1;font-size:.78rem;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:.6rem .8rem;color:var(--text)"/>
@@ -2017,10 +2064,34 @@ function _showShareModal(url){
   const tripName = state.trip?.name || 'notre voyage';
   const msg = `Rejoins moi sur notre voyage "${tripName}" 🌍 : ${url}`;
   document.getElementById('share-url-input').value = url;
+  // Charger les membres
+  _loadShareMembers();
   document.getElementById('share-whatsapp').href = `https://wa.me/?text=${encodeURIComponent(msg)}`;
   document.getElementById('share-email').href = `mailto:?subject=${encodeURIComponent('Invitation voyage : '+tripName)}&body=${encodeURIComponent(msg)}`;
   document.getElementById('share-sms').href = `sms:?body=${encodeURIComponent(msg)}`;
   openModal('modal-share');
+}
+
+async function _loadShareMembers(){
+  const el = document.getElementById('share-members');
+  if(!el || !state.trip?.supabaseId) return;
+  const { data: members } = await sb.from('trip_members')
+    .select('role, profiles(display_name, email)')
+    .eq('trip_id', state.trip.supabaseId);
+  if(!members?.length) return;
+  el.innerHTML = `
+    <div style="font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);margin-bottom:.5rem">Membres (${members.length})</div>
+    <div style="display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.6rem">
+      ${members.map(m=>{
+        const name = m.profiles?.display_name || m.profiles?.email?.split('@')[0] || '?';
+        const isMe = m.profiles?.email === _currentUser?.email;
+        return `<div style="display:inline-flex;align-items:center;gap:.35rem;padding:.3rem .65rem;border-radius:999px;background:var(--surface2);border:1px solid var(--border);font-size:.78rem;font-weight:600">
+          <span style="width:8px;height:8px;border-radius:50%;background:${m.role==='owner'?'var(--accent)':'#66bb6a'}"></span>
+          ${esc(name)}${isMe?' (toi)':''}
+          <span style="font-size:.66rem;color:var(--muted)">${m.role}</span>
+        </div>`;
+      }).join('')}
+    </div>`;
 }
 
 function copyShareUrl(){
@@ -2088,7 +2159,8 @@ _updateAuthBtn();
 
   // Détecter une invitation par lien ?invite=TOKEN
   const params = new URLSearchParams(location.search);
-  const inviteToken = params.get('invite');
+  const inviteToken = params.get('invite') || sessionStorage.getItem('pending_invite');
+  if(inviteToken) sessionStorage.setItem('pending_invite', inviteToken);
   if (inviteToken && _currentUser) {
     try {
       const tripId = await acceptInvite(inviteToken);
@@ -2101,6 +2173,7 @@ _updateAuthBtn();
       saveToLocalStorage();
       renderTripSwitcher();
       renderItinerary(); renderBudget(); renderDocs();
+      sessionStorage.removeItem('pending_invite');
       _startRealtime(tripId);
       return;
     } catch(e) { showToast('Invitation invalide : ' + e.message); }
@@ -2140,6 +2213,11 @@ _updateAuthBtn();
   renderItinerary();
   renderDocs();
   renderBudget();
+
+  // Démarrer le realtime si voyage Supabase actif
+  if(_currentUser && state.trip?.supabaseId){
+    _startRealtime(state.trip.supabaseId);
+  }
 })();
 
 // Exposition des fonctions au scope global (HTML)

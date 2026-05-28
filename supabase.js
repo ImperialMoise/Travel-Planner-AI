@@ -10,9 +10,20 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 export const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ─── Auth ────────────────────────────────────
-export async function signUp(email, password) {
-  const { data, error } = await sb.auth.signUp({ email, password });
+export async function signUp(email, password, pseudo) {
+  const { data, error } = await sb.auth.signUp({
+    email, password,
+    options: { data: { display_name: pseudo || email.split('@')[0] } }
+  });
   if (error) throw error;
+  // Mettre à jour le profil avec le pseudo
+  if(data.user){
+    await sb.from('profiles').upsert({
+      id: data.user.id,
+      email,
+      display_name: pseudo || email.split('@')[0]
+    }, { onConflict: 'id' });
+  }
   return data.user;
 }
 

@@ -134,6 +134,511 @@ function saveToLocalStorage(){
 }
 
 async function _syncToSupabase(){
+  if(!_currentUser || !state.trip) return;
+  try {
+    // 1. Upsert le voyage
+    const tripRow = await upsertTrip(state.trip, _currentUser.id);
+    state.trip.supabaseId = tripRow.id;
+
+    // 2. Upsert tous les jours + étapes
+    for(let i=0; i<state.trip.days.length; i++){
+      const day = state.trip.days[i];
+      const dayRow = await upsertDay(tripRow.id, day, i);
+      day.supabaseId = dayRow.id;
+
+      for(let j=0; j<day.steps.length; j++){
+        const stepRow = await upsertStep(tripRow.id, dayRow.id, day.steps[j], j);
+        day.steps[j].supabaseId = stepRow.id;
+      }
+    }
+  } catch(e) {
+    console.warn('Sync Supabase échouée:', e.message);
+  }
+}
+
+function loadFromLocalStorage(){
+  try{
+    const raw=localStorage.getItem(LS_KEY);
+    if(!raw)return null;
+    const parsed=JSON.parse(raw);
+
+    if(Array.isArray(parsed?.trips)){
+      return {
+        activeTripId:parsed.activeTripId||parsed.trips[0]?.id||null,
+        trips:parsed.trips.map(normalizeTripRecord)
+      };
+    }
+
+    if(parsed && (parsed.trip||parsed.docs||parsed.budget)){
+      const migrated=normalizeTripRecord({
+        id:makeTripId(),
+        name:parsed.trip?.name||'Voyage',
+        trip:parsed.trip||null,
+        docs:Array.isArray(parsed.docs)?parsed.docs:[],
+        budget:Array.isArray(parsed.budget)?parsed.budget:[],
+        participants:Array.isArray(parsed.participants)&&parsed.participants.length?parsed.participants:[...DEFAULT_PARTICIPANTS]
+      });
+      return {activeTripId:migrated.id,trips:[migrated]};
+    }
+
+    return null;
+  }catch(e){return null}
+}
+
+function clearLocalStorage(){
+  try{localStorage.removeItem(LS_KEY)}catch(e){}
+}
+
+function selectTrip(id){
+  if(!id){
+    goHome();
+    return;
+  }
+
+  const trip=tripsStore.trips.find(t=>t.id===id);
+  if(!trip)return;
+
+  tripsStore.activeTripId=trip.id;
+  applyTripData(trip.data);
+  persistStore();
+  switchView('itinerary');
+  renderItinerary();
+  renderDocs();
+  renderBudget();
+
+  const bb=document.getElementById('btn-back');
+  if(bb)bb.classList.add('visible');
+
+  showToast(`Voyage ${trip.name} chargé`);
+}
+
+function deleteCurrentTrip(){
+  if(!tripsStore.activeTripId)return;
+  const currentId=tripsStore.activeTripId;
+  const current=tripsStore.trips.find(t=>t.id===currentId);
+  if(!confirm(`Supprimer "${current?.name||'ce voyage'}" ?`))return;
+
+  tripsStore.trips=tripsStore.trips.filter(t=>t.id!==currentId);
+
+  if(tripsStore.trips.length){
+    tripsStore.activeTripId=tripsStore.trips[0].id;
+    applyTripData(tripsStore.trips[0].data);
+  }else{
+    tripsStore.activeTripId=null;
+    applyTripData({trip:null,docs:[],budget:[],participants:[...DEFAULT_PARTICIPANTS]});
+  }
+
+  try{localStorage.setItem(LS_KEY,JSON.stringify(tripsStore))}catch(e){}
+  renderTripSwitcher();
+  renderItinerary();
+  renderDocs();
+  renderBudget();
+  showToast('Voyage supprimé');
+}
+
+/* ══ Thème ══ */
+(function initTheme(){
+  const dark=window.matchMedia('(prefers-color-scheme: dark)').matches;
+  applyTheme(dark?'dark':'light');
+})();
+function applyTheme(theme){
+  document.documentElement.setAttribute('data-theme',theme);
+  const btn=document.getElementById('theme-toggle');
+  if(!btn)return;
+  btn.innerHTML=theme==='dark'
+    ?`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>`
+    :`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
+}
+function _startRealtime(tripId) {
+  subscribeToTrip(tripId, {
+    onStepUpserted: (step, dayId) => {
+      // Trouver le jour concerné et merger l'étape
+      const day = state.trip?.days.find(d => d.supabaseId === dayId);
+      if (!day) return;
+      const idx = day.steps.findIndex(s => s.supabaseId === step.supabaseId);
+      if (idx >= 0) day.steps[idx] = step;
+      else day.steps.push(step);
+      day.steps.sort((a,b) => (a.time||'').localeCompare(b.time||''));
+      saveToLocalStorage();
+      renderItinerary();
+    },
+    onStepDeleted: (supabaseId) => {
+      state.trip?.days.forEach(day => {
+        day.steps = day.steps.filter(s => s.supabaseId !== supabaseId);
+      });
+      saveToLocalStorage();
+      renderItinerary();
+    },
+    onDayUpdated: (row) => {
+      const day = state.trip?.days[row.day_index];
+      if (day) { day.title = row.title; day.note = row.note; renderItinerary(); }
+    },
+    onBudgetChanged: async () => {
+      const fresh = await loadTrip(tripId);
+      state.budget = fresh.budget;
+      saveToLocalStorage();
+      renderBudget();
+    },
+  });
+}
+
+/* ══ Auth UI ══ */
+let _authTab = 'login';
+
+function openAuthModal(){
+  const btn = document.getElementById('auth-submit-btn');
+  const signout = document.getElementById('auth-signout-btn');
+  const err = document.getElementById('auth-error');
+  const ok = document.getElementById('auth-success');
+  if(err) err.style.display='none';
+  if(ok) ok.style.display='none';
+  if(_currentUser){
+    // Déjà connecté → montrer le bouton déconnexion
+    if(btn) btn.style.display='none';
+    if(signout) signout.style.display='block';
+    document.getElementById('auth-modal-title').textContent = 'Mon compte';
+    document.getElementById('auth-email').value = _currentUser.email;
+    document.getElementById('auth-email').disabled = true;
+    document.getElementById('auth-password').style.display = 'none';
+    document.querySelector('.auth-tabs').style.display = 'none';
+  } else {
+    if(btn) btn.style.display='block';
+    if(signout) signout.style.display='none';
+    document.getElementById('auth-modal-title').textContent = 'Connexion';
+    document.getElementById('auth-email').value = '';
+    document.getElementById('auth-email').disabled = false;
+    document.getElementById('auth-password').style.display = '';
+    document.querySelector('.auth-tabs').style.display = '';
+    switchAuthTab('login');
+  }
+  openModal('modal-auth');
+}
+
+function switchAuthTab(tab){
+  _authTab = tab;
+  document.getElementById('auth-tab-login').classList.toggle('is-active', tab==='login');
+  document.getElementById('auth-tab-signup').classList.toggle('is-active', tab==='signup');
+  document.getElementById('auth-modal-title').textContent = tab==='login'?'Connexion':'Créer un compte';
+document.getElementById('auth-submit-btn').textContent = tab==='login'?'Se connecter':'Créer mon compte';
+  const pseudoField = document.getElementById('auth-pseudo-field');
+  if(pseudoField) pseudoField.style.display = tab==='signup'?'block':'none';
+}
+
+async function submitAuth(){
+  const email = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value;
+  const errEl = document.getElementById('auth-error');
+  const okEl = document.getElementById('auth-success');
+  const btn = document.getElementById('auth-submit-btn');
+  errEl.style.display='none'; okEl.style.display='none';
+  if(!email||!password){errEl.textContent='Email et mot de passe requis';errEl.style.display='block';return}
+  btn.textContent='...'; btn.disabled=true;
+  try {
+    if(_authTab==='login'){
+      _currentUser = await signIn(email, password);
+    } else {
+      const pseudo = document.getElementById('auth-pseudo')?.value.trim() || email.split('@')[0];
+      _currentUser = await signUp(email, password, pseudo);
+      okEl.textContent='Compte créé ! Vérifiez votre email si nécessaire.';
+      okEl.style.display='block';
+    }
+    _updateAuthBtn();
+    closeModal('modal-auth');
+    // Invitation en attente ?
+    const pending = sessionStorage.getItem('pending_invite');
+    if(pending){
+      try {
+        const tripId = await acceptInvite(pending);
+        sessionStorage.removeItem('pending_invite');
+        showToast('🎉 Vous avez rejoint le voyage !');
+        const data = await loadTrip(tripId);
+        applyTripData(data);
+        state.trip.supabaseId = tripId;
+        tripsStore.activeTripId = tripId;
+        saveToLocalStorage();
+        renderTripSwitcher();
+        renderItinerary(); renderBudget(); renderDocs();
+        _startRealtime(tripId);
+      } catch(e){ showToast('Invitation invalide : '+e.message); }
+    } else {
+      showToast(_authTab==='login'?`Connecté ✓`:'Compte créé ✓');
+      if(state.trip?.supabaseId) _startRealtime(state.trip.supabaseId);
+    }
+  } catch(e){
+    errEl.textContent = e.message||'Erreur de connexion';
+    errEl.style.display='block';
+  } finally {
+    btn.disabled=false;
+    btn.textContent=_authTab==='login'?'Se connecter':'Créer mon compte';
+  }
+}
+
+async function doSignOut(){
+  await signOut();
+  _currentUser = null;
+  _updateAuthBtn();
+  closeModal('modal-auth');
+  showToast('Déconnecté');
+}
+
+/* ══ Settings (refonte premium) ══ */
+let _settingsSection = 'account';
+let _settingsCache = { members: [], logs: [], trips: [] };
+
+async function openSettingsModal(){
+  openModal('modal-settings');
+  _settingsSection = 'account';
+  // Highlight nav
+  document.querySelectorAll('.settings-nav-item').forEach(b => {
+    b.classList.toggle('is-active', b.dataset.sec === _settingsSection);
+  });
+  // User card en bas de sidebar
+  _renderSettingsUserCard();
+  // Charger les données et afficher
+  await _loadSettingsData();
+  renderSettingsContent();
+}
+
+function setSettingsSection(sec){
+  _settingsSection = sec;
+  document.querySelectorAll('.settings-nav-item').forEach(b => {
+    b.classList.toggle('is-active', b.dataset.sec === sec);
+  });
+  renderSettingsContent();
+}
+
+function _renderSettingsUserCard(){
+  const el = document.getElementById('settings-user-card');
+  if(!el) return;
+  if(!_currentUser){ el.innerHTML = ''; return; }
+  const name = _currentUser.user_metadata?.display_name || _currentUser.email.split('@')[0];
+  const initial = name.charAt(0).toUpperCase();
+  el.innerHTML = `
+    <div class="sf-avatar">${esc(initial)}</div>
+    <div class="sf-info">
+      <div class="sf-name">${esc(name)}</div>
+      <div class="sf-email">${esc(_currentUser.email)}</div>
+    </div>`;
+}
+
+async function _loadSettingsData(){
+  _settingsCache = { members: [], logs: [], trips: [] };
+  if(!_currentUser) return;
+  try {
+    if(state.trip?.supabaseId){
+      const [{ data: m }, { data: l }] = await Promise.all([
+        sb.from('trip_members').select('role, user_id, profiles(display_name, email)').eq('trip_id', state.trip.supabaseId),
+        sb.from('activity_log').select('*').eq('trip_id', state.trip.supabaseId).order('created_at', {ascending:false}).limit(50)
+      ]);
+      _settingsCache.members = m || [];
+      _settingsCache.logs = l || [];
+    }
+    const { data: t } = await sb.from('trips').select('id, name, start_date, updated_at').order('updated_at', {ascending:false});
+    _settingsCache.trips = t || [];
+  } catch(e){ console.warn('Settings load failed:', e.message); }
+}
+
+function renderSettingsContent(){
+  const body = document.getElementById('settings-content-body');
+  const titleEl = document.getElementById('settings-content-title');
+  if(!body || !titleEl) return;
+
+  const titles = {
+    account: 'Compte',
+    appearance: 'Apparence',
+    members: 'Membres du voyage',
+    activity: 'Activité',
+    trips: 'Mes voyages'
+  };
+  titleEl.textContent = titles[_settingsSection] || 'Paramètres';
+
+  if(!_currentUser && _settingsSection !== 'appearance'){
+    body.innerHTML = `
+      <div class="set-signin-cta">
+        <div class="set-signin-cta-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        </div>
+        <h3>Connecte-toi pour accéder à cette section</h3>
+        <p>Crée un compte ou connecte-toi pour synchroniser tes voyages, inviter des amis et voir l'activité.</p>
+        <button class="set-btn" onclick="closeModal('modal-settings');openAuthModal()">Se connecter</button>
+      </div>`;
+    return;
+  }
+
+  if(_settingsSection === 'account')      body.innerHTML = _renderAccountSection();
+  else if(_settingsSection === 'appearance') body.innerHTML = _renderAppearanceSection();
+  else if(_settingsSection === 'members')    body.innerHTML = _renderMembersSection();
+  else if(_settingsSection === 'activity')   body.innerHTML = _renderActivitySection();
+  else if(_settingsSection === 'trips')      body.innerHTML = _renderTripsSection();
+}
+
+function _renderAccountSection(){
+  const u = _currentUser;
+  const pseudo = u?.user_metadata?.display_name || u?.email?.split('@')[0] || '';
+  return `
+    <div class="set-card">
+      <div class="set-card-title">Profil</div>
+      <div class="set-row">
+        <span class="set-row-label">Pseudo</span>
+        <div class="set-row-input">
+          <input id="set-pseudo" class="set-input" type="text" value="${esc(pseudo)}" placeholder="Ton pseudo…"/>
+          <button class="set-btn" onclick="savePseudo()">Sauver</button>
+        </div>
+      </div>
+      <div class="set-row">
+        <span class="set-row-label">Email</span>
+        <span class="set-row-value" style="color:var(--muted)">${esc(u.email)}</span>
+      </div>
+    </div>
+    <div class="set-card">
+      <div class="set-card-title">Session</div>
+      <div class="set-row">
+        <span class="set-row-label">Se déconnecter</span>
+        <button class="set-btn set-btn-danger" onclick="doSignOut();closeModal('modal-settings')">Déconnexion</button>
+      </div>
+    </div>`;
+}
+
+function _renderAppearanceSection(){
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  return `
+    <div class="set-card">
+      <div class="set-card-title">Thème</div>
+      <p style="color:var(--muted);font-size:.85rem;margin:0 0 .3rem;line-height:1.5">Choisis l'apparence qui te convient. Le mode sombre est recommandé pour les longues sessions de planification.</p>
+      <div class="set-theme-row">
+        <div class="set-theme-card ${!isDark?'is-active':''}" onclick="applyTheme('light');renderSettingsContent()">
+          <div class="set-theme-preview light">☀️</div>
+          <div class="set-theme-name">Clair</div>
+        </div>
+        <div class="set-theme-card ${isDark?'is-active':''}" onclick="applyTheme('dark');renderSettingsContent()">
+          <div class="set-theme-preview dark">🌙</div>
+          <div class="set-theme-name">Sombre</div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function _renderMembersSection(){
+  if(!state.trip?.supabaseId){
+    return `<div class="set-empty">
+      <div class="set-empty-emoji">👥</div>
+      <div class="set-empty-title">Aucun voyage actif</div>
+      <div class="set-empty-sub">Crée ou ouvre un voyage pour voir et gérer ses membres.</div>
+    </div>`;
+  }
+  const members = _settingsCache.members;
+  if(!members.length){
+    return `<div class="set-empty">
+      <div class="set-empty-emoji">👤</div>
+      <div class="set-empty-title">Tu es seul sur ce voyage</div>
+      <div class="set-empty-sub">Invite quelqu'un pour planifier ce voyage à plusieurs.</div>
+      <button class="set-btn" style="margin-top:.8rem" onclick="closeModal('modal-settings');generateShareLink()">+ Inviter quelqu'un</button>
+    </div>`;
+  }
+  return `
+    <div class="set-card">
+      <div class="set-card-title">${members.length} membre${members.length>1?'s':''}</div>
+      ${members.map(m => {
+        const name = m.profiles?.display_name || m.profiles?.efunction flashSave(){
+  const el=document.getElementById('save-indicator');
+  if(!el)return;
+  el.style.opacity='1';
+  clearTimeout(timerInd);
+  timerInd=setTimeout(()=>el.style.opacity='0',1800);
+}
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  if(!t)return;
+  t.textContent=msg;
+  t.classList.add('show');
+  clearTimeout(timerToast);
+  timerToast=setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+function makeTripId(){
+  return 'trip_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
+}
+
+function normalizeTripRecord(record){
+  return {
+    id:record.id||makeTripId(),
+    name:record.name||record.trip?.name||'Voyage',
+    updatedAt:record.updatedAt||Date.now(),
+    data:{
+      trip:record.data?.trip??record.trip??null,
+      docs:Array.isArray(record.data?.docs)?record.data.docs:(Array.isArray(record.docs)?record.docs:[]),
+      budget:Array.isArray(record.data?.budget)?record.data.budget:(Array.isArray(record.budget)?record.budget:[]),
+      participants:Array.isArray(record.data?.participants)&&record.data.participants.length
+        ?record.data.participants
+        :(Array.isArray(record.participants)&&record.participants.length?record.participants:[...DEFAULT_PARTICIPANTS])
+    }
+  };
+}
+
+function getCurrentTripRecord(){
+  if(!state.trip)return null;
+  return {
+    id:tripsStore.activeTripId||makeTripId(),
+    name:state.trip?.name||'Voyage',
+    updatedAt:Date.now(),
+    data:{
+      trip:state.trip,
+      docs:Array.isArray(state.docs)?state.docs:[],
+      budget:Array.isArray(state.budget)?state.budget:[],
+      participants:Array.isArray(state.participants)&&state.participants.length?state.participants:[...DEFAULT_PARTICIPANTS]
+    }
+  };
+}
+
+function applyTripData(payload){
+  state.trip=payload?.trip||null;
+  state.docs=Array.isArray(payload?.docs)?payload.docs:[];
+  state.budget=Array.isArray(payload?.budget)?payload.budget:[];
+  state.participants=Array.isArray(payload?.participants)&&payload.participants.length?payload.participants:[...DEFAULT_PARTICIPANTS];
+  _budgetPayer=state.participants[0]||null;
+  _budgetFor=new Set(state.participants);
+}
+
+function renderTripSwitcher(){
+  const sel=document.getElementById('trip-switcher');
+  const del=document.getElementById('trip-delete-btn');
+  if(!sel)return;
+
+  const items=[...tripsStore.trips].sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
+
+  sel.innerHTML=[
+    `<option value="" disabled ${!tripsStore.activeTripId?'selected':''}>Changer de voyage</option>`,
+    ...items.map(t=>`<option value="${esc(t.id)}"${t.id===tripsStore.activeTripId?' selected':''}>${esc(t.name||'Voyage')}</option>`)
+  ].join('');
+
+  sel.value=tripsStore.activeTripId || '';
+  sel.disabled=false;
+
+  if(del)del.style.display=tripsStore.activeTripId?'inline-flex':'none';
+}
+
+function persistStore(){
+  try{
+    const current=getCurrentTripRecord();
+    if(current){
+      const idx=tripsStore.trips.findIndex(t=>t.id===current.id);
+      if(idx>=0)tripsStore.trips[idx]=current;
+      else tripsStore.trips.unshift(current);
+      tripsStore.activeTripId=current.id;
+    }
+    localStorage.setItem(LS_KEY,JSON.stringify(tripsStore));
+    flashSave();
+    renderTripSwitcher();
+  }catch(e){console.warn(e)}
+}
+
+function saveToLocalStorage(){
+  persistStore();
+  _syncToSupabase();
+}
+
+async function _syncToSupabase(){
   if(!state.trip) return;
   // Rafraîchir la session avant chaque sync
   const { data: { session } } = await sb.auth.getSession();

@@ -243,6 +243,7 @@ function deleteCurrentTrip(){
 })();
 function applyTheme(theme){
   document.documentElement.setAttribute('data-theme',theme);
+  if(_map&&_mapInited)_setMapTiles();
   const btn=document.getElementById('theme-toggle');
   if(!btn)return;
   btn.innerHTML=theme==='dark'
@@ -379,677 +380,6 @@ async function doSignOut(){
   _updateAuthBtn();
   closeModal('modal-auth');
   showToast('Déconnecté');
-}
-
-/* ══ Settings (refonte premium) ══ */
-let _settingsSection = 'account';
-let _settingsCache = { members: [], logs: [], trips: [] };
-
-async function openSettingsModal(){
-  openModal('modal-settings');
-  _settingsSection = 'account';
-  // Highlight nav
-  document.querySelectorAll('.settings-nav-item').forEach(b => {
-    b.classList.toggle('is-active', b.dataset.sec === _settingsSection);
-  });
-  // User card en bas de sidebar
-  _renderSettingsUserCard();
-  // Charger les données et afficher
-  await _loadSettingsData();
-  renderSettingsContent();
-}
-
-function setSettingsSection(sec){
-  _settingsSection = sec;
-  document.querySelectorAll('.settings-nav-item').forEach(b => {
-    b.classList.toggle('is-active', b.dataset.sec === sec);
-  });
-  renderSettingsContent();
-}
-
-function _renderSettingsUserCard(){
-  const el = document.getElementById('settings-user-card');
-  if(!el) return;
-  if(!_currentUser){ el.innerHTML = ''; return; }
-  const name = _currentUser.user_metadata?.display_name || _currentUser.email.split('@')[0];
-  const initial = name.charAt(0).toUpperCase();
-  el.innerHTML = `
-    <div class="sf-avatar">${esc(initial)}</div>
-    <div class="sf-info">
-      <div class="sf-name">${esc(name)}</div>
-      <div class="sf-email">${esc(_currentUser.email)}</div>
-    </div>`;
-}
-
-async function _loadSettingsData(){
-  _settingsCache = { members: [], logs: [], trips: [] };
-  if(!_currentUser) return;
-  try {
-    if(state.trip?.supabaseId){
-      const [{ data: m }, { data: l }] = await Promise.all([
-        sb.from('trip_members').select('role, user_id, profiles(display_name, email)').eq('trip_id', state.trip.supabaseId),
-        sb.from('activity_log').select('*').eq('trip_id', state.trip.supabaseId).order('created_at', {ascending:false}).limit(50)
-      ]);
-      _settingsCache.members = m || [];
-      _settingsCache.logs = l || [];
-    }
-    const { data: t } = await sb.from('trips').select('id, name, start_date, updated_at').order('updated_at', {ascending:false});
-    _settingsCache.trips = t || [];
-  } catch(e){ console.warn('Settings load failed:', e.message); }
-}
-
-function renderSettingsContent(){
-  const body = document.getElementById('settings-content-body');
-  const titleEl = document.getElementById('settings-content-title');
-  if(!body || !titleEl) return;
-
-  const titles = {
-    account: 'Compte',
-    appearance: 'Apparence',
-    members: 'Membres du voyage',
-    activity: 'Activité',
-    trips: 'Mes voyages'
-  };
-  titleEl.textContent = titles[_settingsSection] || 'Paramètres';
-
-  if(!_currentUser && _settingsSection !== 'appearance'){
-    body.innerHTML = `
-      <div class="set-signin-cta">
-        <div class="set-signin-cta-icon">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        </div>
-        <h3>Connecte-toi pour accéder à cette section</h3>
-        <p>Crée un compte ou connecte-toi pour synchroniser tes voyages, inviter des amis et voir l'activité.</p>
-        <button class="set-btn" onclick="closeModal('modal-settings');openAuthModal()">Se connecter</button>
-      </div>`;
-    return;
-  }
-
-  if(_settingsSection === 'account')      body.innerHTML = _renderAccountSection();
-  else if(_settingsSection === 'appearance') body.innerHTML = _renderAppearanceSection();
-  else if(_settingsSection === 'members')    body.innerHTML = _renderMembersSection();
-  else if(_settingsSection === 'activity')   body.innerHTML = _renderActivitySection();
-  else if(_settingsSection === 'trips')      body.innerHTML = _renderTripsSection();
-}
-
-function _renderAccountSection(){
-  const u = _currentUser;
-  const pseudo = u?.user_metadata?.display_name || u?.email?.split('@')[0] || '';
-  return `
-    <div class="set-card">
-      <div class="set-card-title">Profil</div>
-      <div class="set-row">
-        <span class="set-row-label">Pseudo</span>
-        <div class="set-row-input">
-          <input id="set-pseudo" class="set-input" type="text" value="${esc(pseudo)}" placeholder="Ton pseudo…"/>
-          <button class="set-btn" onclick="savePseudo()">Sauver</button>
-        </div>
-      </div>
-      <div class="set-row">
-        <span class="set-row-label">Email</span>
-        <span class="set-row-value" style="color:var(--muted)">${esc(u.email)}</span>
-      </div>
-    </div>
-    <div class="set-card">
-      <div class="set-card-title">Session</div>
-      <div class="set-row">
-        <span class="set-row-label">Se déconnecter</span>
-        <button class="set-btn set-btn-danger" onclick="doSignOut();closeModal('modal-settings')">Déconnexion</button>
-      </div>
-    </div>`;
-}
-
-function _renderAppearanceSection(){
-  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-  return `
-    <div class="set-card">
-      <div class="set-card-title">Thème</div>
-      <p style="color:var(--muted);font-size:.85rem;margin:0 0 .3rem;line-height:1.5">Choisis l'apparence qui te convient. Le mode sombre est recommandé pour les longues sessions de planification.</p>
-      <div class="set-theme-row">
-        <div class="set-theme-card ${!isDark?'is-active':''}" onclick="applyTheme('light');renderSettingsContent()">
-          <div class="set-theme-preview light">☀️</div>
-          <div class="set-theme-name">Clair</div>
-        </div>
-        <div class="set-theme-card ${isDark?'is-active':''}" onclick="applyTheme('dark');renderSettingsContent()">
-          <div class="set-theme-preview dark">🌙</div>
-          <div class="set-theme-name">Sombre</div>
-        </div>
-      </div>
-    </div>`;
-}
-
-function _renderMembersSection(){
-  if(!state.trip?.supabaseId){
-    return `<div class="set-empty">
-      <div class="set-empty-emoji">👥</div>
-      <div class="set-empty-title">Aucun voyage actif</div>
-      <div class="set-empty-sub">Crée ou ouvre un voyage pour voir et gérer ses membres.</div>
-    </div>`;
-  }
-  const members = _settingsCache.members;
-  if(!members.length){
-    return `<div class="set-empty">
-      <div class="set-empty-emoji">👤</div>
-      <div class="set-empty-title">Tu es seul sur ce voyage</div>
-      <div class="set-empty-sub">Invite quelqu'un pour planifier ce voyage à plusieurs.</div>
-      <button class="set-btn" style="margin-top:.8rem" onclick="closeModal('modal-settings');generateShareLink()">+ Inviter quelqu'un</button>
-    </div>`;
-  }
-  return `
-    <div class="set-card">
-      <div class="set-card-title">${members.length} membre${members.length>1?'s':''}</div>
-      ${members.map(m => {
-        const name = m.profiles?.display_name || m.profiles?.efunction flashSave(){
-  const el=document.getElementById('save-indicator');
-  if(!el)return;
-  el.style.opacity='1';
-  clearTimeout(timerInd);
-  timerInd=setTimeout(()=>el.style.opacity='0',1800);
-}
-
-function showToast(msg){
-  const t=document.getElementById('toast');
-  if(!t)return;
-  t.textContent=msg;
-  t.classList.add('show');
-  clearTimeout(timerToast);
-  timerToast=setTimeout(()=>t.classList.remove('show'),2200);
-}
-
-function makeTripId(){
-  return 'trip_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
-}
-
-function normalizeTripRecord(record){
-  return {
-    id:record.id||makeTripId(),
-    name:record.name||record.trip?.name||'Voyage',
-    updatedAt:record.updatedAt||Date.now(),
-    data:{
-      trip:record.data?.trip??record.trip??null,
-      docs:Array.isArray(record.data?.docs)?record.data.docs:(Array.isArray(record.docs)?record.docs:[]),
-      budget:Array.isArray(record.data?.budget)?record.data.budget:(Array.isArray(record.budget)?record.budget:[]),
-      participants:Array.isArray(record.data?.participants)&&record.data.participants.length
-        ?record.data.participants
-        :(Array.isArray(record.participants)&&record.participants.length?record.participants:[...DEFAULT_PARTICIPANTS])
-    }
-  };
-}
-
-function getCurrentTripRecord(){
-  if(!state.trip)return null;
-  return {
-    id:tripsStore.activeTripId||makeTripId(),
-    name:state.trip?.name||'Voyage',
-    updatedAt:Date.now(),
-    data:{
-      trip:state.trip,
-      docs:Array.isArray(state.docs)?state.docs:[],
-      budget:Array.isArray(state.budget)?state.budget:[],
-      participants:Array.isArray(state.participants)&&state.participants.length?state.participants:[...DEFAULT_PARTICIPANTS]
-    }
-  };
-}
-
-function applyTripData(payload){
-  state.trip=payload?.trip||null;
-  state.docs=Array.isArray(payload?.docs)?payload.docs:[];
-  state.budget=Array.isArray(payload?.budget)?payload.budget:[];
-  state.participants=Array.isArray(payload?.participants)&&payload.participants.length?payload.participants:[...DEFAULT_PARTICIPANTS];
-  _budgetPayer=state.participants[0]||null;
-  _budgetFor=new Set(state.participants);
-}
-
-function renderTripSwitcher(){
-  const sel=document.getElementById('trip-switcher');
-  const del=document.getElementById('trip-delete-btn');
-  if(!sel)return;
-
-  const items=[...tripsStore.trips].sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
-
-  sel.innerHTML=[
-    `<option value="" disabled ${!tripsStore.activeTripId?'selected':''}>Changer de voyage</option>`,
-    ...items.map(t=>`<option value="${esc(t.id)}"${t.id===tripsStore.activeTripId?' selected':''}>${esc(t.name||'Voyage')}</option>`)
-  ].join('');
-
-  sel.value=tripsStore.activeTripId || '';
-  sel.disabled=false;
-
-  if(del)del.style.display=tripsStore.activeTripId?'inline-flex':'none';
-}
-
-function persistStore(){
-  try{
-    const current=getCurrentTripRecord();
-    if(current){
-      const idx=tripsStore.trips.findIndex(t=>t.id===current.id);
-      if(idx>=0)tripsStore.trips[idx]=current;
-      else tripsStore.trips.unshift(current);
-      tripsStore.activeTripId=current.id;
-    }
-    localStorage.setItem(LS_KEY,JSON.stringify(tripsStore));
-    flashSave();
-    renderTripSwitcher();
-  }catch(e){console.warn(e)}
-}
-
-function saveToLocalStorage(){
-  persistStore();
-  _syncToSupabase();
-}
-
-async function _syncToSupabase(){
-  if(!state.trip) return;
-  // Rafraîchir la session avant chaque sync
-  const { data: { session } } = await sb.auth.getSession();
-  if(!session) return;
-  _currentUser = session.user;
-  try {
-    // 1. Upsert le voyage
-    const tripRow = await upsertTrip(state.trip, _currentUser.id);
-    state.trip.supabaseId = tripRow.id;
-
-    // 2. Upsert tous les jours + étapes
-    for(let i=0; i<state.trip.days.length; i++){
-      const day = state.trip.days[i];
-      const dayRow = await upsertDay(tripRow.id, day, i);
-      day.supabaseId = dayRow.id;
-
-      for(let j=0; j<day.steps.length; j++){
-        const stepRow = await upsertStep(tripRow.id, dayRow.id, day.steps[j], j);
-        day.steps[j].supabaseId = stepRow.id;
-      }
-    }
-  } catch(e) {
-    console.warn('Sync Supabase échouée:', e.message);
-  }
-}
-
-function loadFromLocalStorage(){
-  try{
-    const raw=localStorage.getItem(LS_KEY);
-    if(!raw)return null;
-    const parsed=JSON.parse(raw);
-
-    if(Array.isArray(parsed?.trips)){
-      return {
-        activeTripId:parsed.activeTripId||parsed.trips[0]?.id||null,
-        trips:parsed.trips.map(normalizeTripRecord)
-      };
-    }
-
-    if(parsed && (parsed.trip||parsed.docs||parsed.budget)){
-      const migrated=normalizeTripRecord({
-        id:makeTripId(),
-        name:parsed.trip?.name||'Voyage',
-        trip:parsed.trip||null,
-        docs:Array.isArray(parsed.docs)?parsed.docs:[],
-        budget:Array.isArray(parsed.budget)?parsed.budget:[],
-        participants:Array.isArray(parsed.participants)&&parsed.participants.length?parsed.participants:[...DEFAULT_PARTICIPANTS]
-      });
-      return {activeTripId:migrated.id,trips:[migrated]};
-    }
-
-    return null;
-  }catch(e){return null}
-}
-
-function clearLocalStorage(){
-  try{localStorage.removeItem(LS_KEY)}catch(e){}
-}
-
-function selectTrip(id){
-  if(!id){
-    goHome();
-    return;
-  }
-
-  const trip=tripsStore.trips.find(t=>t.id===id);
-  if(!trip)return;
-
-  tripsStore.activeTripId=trip.id;
-  applyTripData(trip.data);
-  persistStore();
-  switchView('itinerary');
-  renderItinerary();
-  renderDocs();
-  renderBudget();
-
-  const bb=document.getElementById('btn-back');
-  if(bb)bb.classList.add('visible');
-
-  showToast(`Voyage ${trip.name} chargé`);
-}
-
-function deleteCurrentTrip(){
-  if(!tripsStore.activeTripId)return;
-  const currentId=tripsStore.activeTripId;
-  const current=tripsStore.trips.find(t=>t.id===currentId);
-  if(!confirm(`Supprimer "${current?.name||'ce voyage'}" ?`))return;
-
-  tripsStore.trips=tripsStore.trips.filter(t=>t.id!==currentId);
-
-  if(tripsStore.trips.length){
-    tripsStore.activeTripId=tripsStore.trips[0].id;
-    applyTripData(tripsStore.trips[0].data);
-  }else{
-    tripsStore.activeTripId=null;
-    applyTripData({trip:null,docs:[],budget:[],participants:[...DEFAULT_PARTICIPANTS]});
-  }
-
-  try{localStorage.setItem(LS_KEY,JSON.stringify(tripsStore))}catch(e){}
-  renderTripSwitcher();
-  renderItinerary();
-  renderDocs();
-  renderBudget();
-  showToast('Voyage supprimé');
-}
-
-/* ══ Thème ══ */
-(function initTheme(){
-  const dark=window.matchMedia('(prefers-color-scheme: dark)').matches;
-  applyTheme(dark?'dark':'light');
-})();
-function applyTheme(theme){
-  document.documentElement.setAttribute('data-theme',theme);
-  const btn=document.getElementById('theme-toggle');
-  if(!btn)return;
-  btn.innerHTML=theme==='dark'
-    ?`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>`
-    :`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
-}
-function _startRealtime(tripId) {
-  subscribeToTrip(tripId, {
-    onStepUpserted: (step, dayId) => {
-      // Trouver le jour concerné et merger l'étape
-      const day = state.trip?.days.find(d => d.supabaseId === dayId);
-      if (!day) return;
-      const idx = day.steps.findIndex(s => s.supabaseId === step.supabaseId);
-      if (idx >= 0) day.steps[idx] = step;
-      else day.steps.push(step);
-      day.steps.sort((a,b) => (a.time||'').localeCompare(b.time||''));
-      saveToLocalStorage();
-      renderItinerary();
-    },
-    onStepDeleted: (supabaseId) => {
-      state.trip?.days.forEach(day => {
-        day.steps = day.steps.filter(s => s.supabaseId !== supabaseId);
-      });
-      saveToLocalStorage();
-      renderItinerary();
-    },
-    onDayUpdated: (row) => {
-      const day = state.trip?.days[row.day_index];
-      if (day) { day.title = row.title; day.note = row.note; renderItinerary(); }
-    },
-    onBudgetChanged: async () => {
-      const fresh = await loadTrip(tripId);
-      state.budget = fresh.budget;
-      saveToLocalStorage();
-      renderBudget();
-    },
-  });
-}
-
-/* ══ Auth UI ══ */
-let _authTab = 'login';
-
-function openAuthModal(){
-  const btn = document.getElementById('auth-submit-btn');
-  const signout = document.getElementById('auth-signout-btn');
-  const err = document.getElementById('auth-error');
-  const ok = document.getElementById('auth-success');
-  if(err) err.style.display='none';
-  if(ok) ok.style.display='none';
-  if(_currentUser){
-    // Déjà connecté → montrer le bouton déconnexion
-    if(btn) btn.style.display='none';
-    if(signout) signout.style.display='block';
-    document.getElementById('auth-modal-title').textContent = 'Mon compte';
-    document.getElementById('auth-email').value = _currentUser.email;
-    document.getElementById('auth-email').disabled = true;
-    document.getElementById('auth-password').style.display = 'none';
-    document.querySelector('.auth-tabs').style.display = 'none';
-  } else {
-    if(btn) btn.style.display='block';
-    if(signout) signout.style.display='none';
-    document.getElementById('auth-modal-title').textContent = 'Connexion';
-    document.getElementById('auth-email').value = '';
-    document.getElementById('auth-email').disabled = false;
-    document.getElementById('auth-password').style.display = '';
-    document.querySelector('.auth-tabs').style.display = '';
-    switchAuthTab('login');
-  }
-  openModal('modal-auth');
-}
-
-function switchAuthTab(tab){
-  _authTab = tab;
-  document.getElementById('auth-tab-login').classList.toggle('is-active', tab==='login');
-  document.getElementById('auth-tab-signup').classList.toggle('is-active', tab==='signup');
-  document.getElementById('auth-modal-title').textContent = tab==='login'?'Connexion':'Créer un compte';
-document.getElementById('auth-submit-btn').textContent = tab==='login'?'Se connecter':'Créer mon compte';
-  const pseudoField = document.getElementById('auth-pseudo-field');
-  if(pseudoField) pseudoField.style.display = tab==='signup'?'block':'none';
-}
-
-async function submitAuth(){
-  const email = document.getElementById('auth-email').value.trim();
-  const password = document.getElementById('auth-password').value;
-  const errEl = document.getElementById('auth-error');
-  const okEl = document.getElementById('auth-success');
-  const btn = document.getElementById('auth-submit-btn');
-  errEl.style.display='none'; okEl.style.display='none';
-  if(!email||!password){errEl.textContent='Email et mot de passe requis';errEl.style.display='block';return}
-  btn.textContent='...'; btn.disabled=true;
-  try {
-    if(_authTab==='login'){
-      _currentUser = await signIn(email, password);
-    } else {
-      const pseudo = document.getElementById('auth-pseudo')?.value.trim() || email.split('@')[0];
-      _currentUser = await signUp(email, password, pseudo);
-      okEl.textContent='Compte créé ! Vérifiez votre email si nécessaire.';
-      okEl.style.display='block';
-    }
-    _updateAuthBtn();
-    closeModal('modal-auth');
-    // Invitation en attente ?
-    const pending = sessionStorage.getItem('pending_invite');
-    if(pending){
-      try {
-        const tripId = await acceptInvite(pending);
-        sessionStorage.removeItem('pending_invite');
-        showToast('🎉 Vous avez rejoint le voyage !');
-        const data = await loadTrip(tripId);
-        applyTripData(data);
-        state.trip.supabaseId = tripId;
-        tripsStore.activeTripId = tripId;
-        saveToLocalStorage();
-        renderTripSwitcher();
-        renderItinerary(); renderBudget(); renderDocs();
-        _startRealtime(tripId);
-      } catch(e){ showToast('Invitation invalide : '+e.message); }
-    } else {
-      showToast(_authTab==='login'?`Connecté ✓`:'Compte créé ✓');
-      if(state.trip?.supabaseId) _startRealtime(state.trip.supabaseId);
-    }
-  } catch(e){
-    errEl.textContent = e.message||'Erreur de connexion';
-    errEl.style.display='block';
-  } finally {
-    btn.disabled=false;
-    btn.textContent=_authTab==='login'?'Se connecter':'Créer mon compte';
-  }
-}
-
-async function doSignOut(){
-  await signOut();
-  _currentUser = null;
-  _updateAuthBtn();
-  closeModal('modal-auth');
-  showToast('Déconnecté');
-}
-
-/* ══ Settings ══ */
-async function openSettingsModal(){
-  openModal('modal-settings');
-  const body = document.getElementById('settings-body');
-  if(!body) return;
-  body.innerHTML = '<div style="color:var(--muted);font-size:.88rem">Chargement…</div>';
-
-  const user = _currentUser;
-  const pseudo = user?.user_metadata?.display_name || user?.email?.split('@')[0] || '';
-  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-
-  // Charger membres + activité en parallèle
-  let members = [], logs = [];
-  if(user && state.trip?.supabaseId){
-    const [{ data: m }, { data: l }] = await Promise.all([
-      sb.from('trip_members').select('role, profiles(display_name, email)').eq('trip_id', state.trip.supabaseId),
-      sb.from('activity_log').select('*').eq('trip_id', state.trip.supabaseId).order('created_at', {ascending:false}).limit(30)
-    ]);
-    members = m || [];
-    logs = l || [];
-  }
-
-  // Charger tous les voyages
-  let allTrips = [];
-  if(user){
-    const { data: t } = await sb.from('trips').select('id, name, updated_at');
-    allTrips = t || [];
-  }
-
-  body.innerHTML = `
-    <!-- Compte -->
-    <div class="settings-section">
-      <div class="settings-section-title">Mon compte</div>
-      ${user ? `
-        <div class="settings-row">
-          <label>Pseudo</label>
-          <div style="display:flex;gap:.5rem;flex:1">
-            <input id="settings-pseudo" type="text" value="${esc(pseudo)}" placeholder="Ton pseudo…" style="flex:1"/>
-            <button class="btn-primary" onclick="savePseudo()" style="flex-shrink:0;padding:.5rem .9rem">Sauver</button>
-          </div>
-        </div>
-        <div class="settings-row">
-          <label>Email</label>
-          <span style="color:var(--muted);font-size:.85rem">${esc(user.email)}</span>
-        </div>
-        <button class="btn-ghost" onclick="doSignOut();closeModal('modal-settings')" style="width:100%;margin-top:.4rem">Se déconnecter</button>
-      ` : `
-        <button class="btn-primary" onclick="closeModal('modal-settings');openAuthModal()" style="width:100%">Se connecter</button>
-      `}
-    </div>
-
-    <!-- Thème -->
-    <div class="settings-section">
-      <div class="settings-section-title">Apparence</div>
-      <div class="settings-row">
-        <label>Thème</label>
-        <div style="display:flex;gap:.4rem">
-          <button class="settings-theme-btn ${!isDark?'is-active':''}" onclick="applyTheme('light');renderSettingsTheme()">☀️ Clair</button>
-          <button class="settings-theme-btn ${isDark?'is-active':''}" onclick="applyTheme('dark');renderSettingsTheme()">🌙 Sombre</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Membres -->
-    ${state.trip?.supabaseId ? `
-    <div class="settings-section">
-      <div class="settings-section-title">Membres du voyage</div>
-      ${members.length ? members.map(m => {
-        const name = m.profiles?.display_name || m.profiles?.email?.split('@')[0] || '?';
-        const isMe = m.profiles?.email === user?.email;
-        return `<div class="settings-row">
-          <span style="display:flex;align-items:center;gap:.5rem">
-            <span style="width:8px;height:8px;border-radius:50%;background:${m.role==='owner'?'var(--accent)':'#66bb6a'}"></span>
-            ${esc(name)}${isMe?' <span style="font-size:.72rem;color:var(--muted)">(toi)</span>':''}
-          </span>
-          <span class="settings-role-badge settings-role-${m.role}">${m.role}</span>
-        </div>`;
-      }).join('') : '<div style="color:var(--faint);font-size:.85rem">Aucun membre</div>'}
-      <button class="btn-ghost" onclick="closeModal('modal-settings');generateShareLink()" style="width:100%;margin-top:.6rem">+ Inviter quelqu'un</button>
-    </div>
-    ` : ''}
-
-    <!-- Journal -->
-    ${state.trip?.supabaseId ? `
-    <div class="settings-section">
-      <div class="settings-section-title">Journal d'activité</div>
-      <div class="settings-log">
-        ${logs.length ? logs.map(l => {
-          const d = new Date(l.created_at);
-          const time = d.toLocaleDateString('fr-FR',{day:'numeric',month:'short'}) + ' · ' + d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
-          return `<div class="settings-log-item">
-            <div class="settings-log-who">${esc(l.display_name||'?')}</div>
-            <div class="settings-log-action">${esc(l.action)}</div>
-            <div class="settings-log-time">${time}</div>
-          </div>`;
-        }).join('') : '<div style="color:var(--faint);font-size:.85rem;text-align:center;padding:.8rem 0">Aucune activité enregistrée</div>'}
-      </div>
-    </div>
-    ` : ''}
-
-    <!-- Mes voyages -->
-    ${user ? `
-    <div class="settings-section">
-      <div class="settings-section-title">Mes voyages</div>
-      ${allTrips.length ? allTrips.map(t => {
-        const isActive = t.id === state.trip?.supabaseId;
-        return `<div class="settings-row">
-          <span style="font-weight:${isActive?'700':'500'};color:${isActive?'var(--accent)':'var(--text)'}">${esc(t.name)}${isActive?' ✓':''}</span>
-          <button class="btn-ghost" style="font-size:.75rem;padding:.3rem .6rem" onclick="deleteSettingsTrip('${t.id}','${esc(t.name)}')">Supprimer</button>
-        </div>`;
-      }).join('') : '<div style="color:var(--faint);font-size:.85rem">Aucun voyage</div>'}
-    </div>
-    ` : ''}
-  `;
-}
-
-function renderSettingsTheme(){
-  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-  document.querySelectorAll('.settings-theme-btn').forEach((btn,i) => {
-    btn.classList.toggle('is-active', i===(isDark?1:0));
-  });
-}
-
-async function savePseudo(){
-  const val = document.getElementById('settings-pseudo')?.value.trim();
-  if(!val) return;
-  const { error } = await sb.auth.updateUser({ data: { display_name: val } });
-  if(!error){
-    await sb.from('profiles').update({ display_name: val }).eq('id', _currentUser.id);
-    _currentUser.user_metadata.display_name = val;
-    _updateAuthBtn();
-    showToast('Pseudo mis à jour ✓');
-  }
-}
-
-async function deleteSettingsTrip(id, name){
-  if(!confirm(`Supprimer "${name}" ?`)) return;
-  await sb.from('trips').delete().eq('id', id);
-  if(state.trip?.supabaseId === id){
-    state.trip = null;
-    tripsStore.activeTripId = null;
-    saveToLocalStorage();
-    renderItinerary();
-  }
-  openSettingsModal();
-  showToast('Voyage supprimé');
-}
-
-async function _logActivity(action, details=''){
-  if(!_currentUser || !state.trip?.supabaseId) return;
-  const name = _currentUser.user_metadata?.display_name || _currentUser.email?.split('@')[0] || '?';
-  try {
-    await sb.from('activity_log').insert({
-      trip_id: state.trip.supabaseId,
-      user_id: _currentUser.id,
-      display_name: name,
-      action,
-      details
-    });
-  } catch(e){ console.warn('Log failed:', e.message); }
 }
 
 function _updateAuthBtn(){
@@ -1765,14 +1095,24 @@ async function saveStep(){
   closeModal('modal-step');
   renderItinerary();
   showToast(_stepCtx.mode==='add'?'Étape ajoutée ✓':'Étape modifiée ✓');
-  _logActivity(_stepCtx.mode==='add'?'A ajouté une étape':'A modifié une étape', step.label||'');
+  // Sync Supabase en arrière-plan
+  if(_currentUser && state.trip?.supabaseId) {
+    const day = state.trip.days[di];
+    const si2 = _stepCtx.mode==='edit' ? _stepCtx.si : state.trip.days[di].steps.length-1;
+    try {
+      const dayRow = await upsertDay(state.trip.supabaseId, day, di);
+      day.supabaseId = dayRow.id;
+      const stepRow = await upsertStep(state.trip.supabaseId, dayRow.id, state.trip.days[di].steps[si2], si2, _currentUser.id);
+      state.trip.days[di].steps[si2].supabaseId = stepRow.id;
+      saveToLocalStorage();
+    } catch(e) { showToast('⚠️ Sauvegarde cloud échouée'); console.error(e); }
+  }
 }
 
 function deleteStep(di,si){
   const key=`${di}-${si}`;delete _photoCache[key];delete _photoOpen[key];
   state.trip.days[di].steps.splice(si,1);
   saveToLocalStorage();renderItinerary();
-  _logActivity('A supprimé une étape', state.trip?.days[di]?.title||`Jour ${di+1}`);
 }
 
 const TRANSPORT_EMOJI={pied:'🚶',voiture:'🚗',train:'🚆',avion:'✈️',bus:'🚌',bateau:'⛴️'};
@@ -2105,9 +1445,33 @@ const ROUTE_COLORS={pied:'#00e5ff',voiture:'#00e676',train:'#448aff',avion:'#ff6
 function initMap(){
   if(_mapInited&&_map)return;
   const container=document.getElementById('map');if(!container)return;
-  _map=L.map('map',{zoomControl:true,attributionControl:false});
-  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:''}).addTo(_map);
+  _map=L.map('map',{zoomControl:false,attributionControl:false});
+  L.control.zoom({position:'bottomright'}).addTo(_map);
+  _setMapTiles();
   _mapInited=true;
+}
+
+let _mapTileLayer=null;
+function _setMapTiles(){
+  if(!_map)return;
+  if(_mapTileLayer)_map.removeLayer(_mapTileLayer);
+  const dark=document.documentElement.getAttribute('data-theme')==='dark';
+  // CARTO : tuiles épurées qui s'accordent à la DA (sombre verdâtre / clair beige)
+  const url=dark
+    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+    : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+  _mapTileLayer=L.tileLayer(url,{maxZoom:20,subdomains:'abcd',attribution:''});
+  _mapTileLayer.addTo(_map);
+  // Teinte DA appliquée par-dessus les tuiles (vert/beige) via CSS sur le conteneur
+  container_tint(dark);
+}
+function container_tint(dark){
+  const pane=_map?.getPane('tilePane');
+  if(pane){
+    pane.style.filter=dark
+      ? 'hue-rotate(120deg) saturate(.55) brightness(.85)'
+      : 'sepia(.32) hue-rotate(58deg) saturate(.78) brightness(1.02)';
+  }
 }
 
 async function geocode(lieu){
@@ -2140,6 +1504,10 @@ function _osrmProfile(transport){
   return'driving';
 }
 
+// Palette de couleurs par jour (dans la DA : doré + verts + terracotta)
+const DAY_COLORS=['#b4843e','#5a8c6e','#c9772f','#7a9b76','#a8632e','#4f7a64','#d49a4a','#8a5a3c'];
+function _dayColor(di){return DAY_COLORS[di%DAY_COLORS.length]}
+
 async function renderMap(){
   if(!_map||!state.trip)return;
   _mapMarkers.forEach(m=>_map.removeLayer(m));
@@ -2147,49 +1515,45 @@ async function renderMap(){
   _mapMarkers=[];_mapRoutes=[];
   _mapSteps=[];
   const allCoords=[];
+  const journeyCoords=[]; // fil chronologique complet
 
   for(const[di,day]of state.trip.days.entries()){
     if(_mapDayFilter!==null&&_mapDayFilter!==di)continue;
     const stepCoords=[];
+    const dayColor=_dayColor(di);
     for(const[si,step]of day.steps.entries()){
       if(!step.lieu)continue;
       const coord=await geocode(step.lieu);
       if(!coord)continue;
       allCoords.push([coord.lat,coord.lng]);
+      journeyCoords.push([coord.lat,coord.lng]);
       stepCoords.push({coord,step,di,si});
       const idx=_mapSteps.length;
-      const color=ROUTE_COLORS[step.transport]||ROUTE_COLORS.default;
-      const icon=L.divIcon({className:'map-pin-wrap',html:`<div class="map-pin" style="--pin:${color}"><span>${di+1}</span></div>`,iconSize:[34,42],iconAnchor:[17,40],popupAnchor:[0,-38]});
+      const icon=L.divIcon({
+        className:'map-pin-wrap',
+        html:`<div class="map-pin" style="--pin:${dayColor}"><span>${di+1}</span></div>`,
+        iconSize:[36,46],iconAnchor:[18,44],popupAnchor:[0,-42]
+      });
       const marker=L.marker([coord.lat,coord.lng],{icon}).addTo(_map);
-      marker.bindPopup(`<div class="map-pop"><div class="map-pop-t">${esc(step.label||'Étape')}</div><div class="map-pop-l">${esc(step.lieu)}</div>${step.time?`<div class="map-pop-time">🕒 ${esc(step.time)}</div>`:''}</div>`);
+      marker.bindPopup(`<div class="map-pop"><div class="map-pop-day" style="color:${dayColor}">Jour ${di+1}</div><div class="map-pop-t">${esc(step.label||'Étape')}</div><div class="map-pop-l">${esc(step.lieu)}</div>${step.time?`<div class="map-pop-time">🕒 ${esc(step.time)}</div>`:''}</div>`);
       marker.on('click',()=>setActiveMapStep(idx));
       _mapMarkers.push(marker);
-      _mapSteps.push({coord,step,di,si,marker,color});
+      _mapSteps.push({coord,step,di,si,marker,color:dayColor});
     }
-    if(stepCoords.length>1){
-      for(let i=0;i<stepCoords.length-1;i++){
-        const from=stepCoords[i].coord;
-        const to=stepCoords[i+1].coord;
-        const transport=stepCoords[i+1].step.transport||'';
-        const color=ROUTE_COLORS[transport]||ROUTE_COLORS.default;
-        let latlngs;
-        if(['pied','voiture'].includes(transport)){
-          latlngs=await getOsrmRoute(from,to,_osrmProfile(transport));
-        }else if(transport==='avion'||transport==='bateau'){
-          latlngs=[[from.lat,from.lng],[to.lat,to.lng]];
-        }else{
-          latlngs=await getOsrmRoute(from,to,'driving');
-        }
-        const halo=L.polyline(latlngs,{color:'#ffffff',weight:6,opacity:.35}).addTo(_map);
-        const line=L.polyline(latlngs,{color,weight:3.5,opacity:.9,dashArray:transport==='avion'?'6,7':null}).addTo(_map);
-        _mapRoutes.push(halo);_mapRoutes.push(line);
-      }
-    }
+  }
+
+  // ── Fil du voyage : une seule ligne dorée animée reliant toutes les étapes dans l'ordre ──
+  if(journeyCoords.length>1){
+    // Halo doux dessous
+    const halo=L.polyline(journeyCoords,{color:'#b4843e',weight:8,opacity:.18,lineJoin:'round',lineCap:'round'}).addTo(_map);
+    // Ligne principale pointillée animée (classe CSS pour l'animation)
+    const line=L.polyline(journeyCoords,{color:'#b4843e',weight:3,opacity:.9,dashArray:'1,12',lineCap:'round',className:'journey-line'}).addTo(_map);
+    _mapRoutes.push(halo);_mapRoutes.push(line);
   }
 
   if(allCoords.length>0){
     if(allCoords.length===1)_map.setView(allCoords[0],13);
-    else _map.fitBounds(allCoords,{padding:[60,60]});
+    else _map.fitBounds(allCoords,{padding:[70,70]});
   }
   renderMapUI();
 }
@@ -2736,8 +2100,6 @@ function _showShareModal(url){
 async function _loadShareMembers(){
   const el = document.getElementById('share-members');
   if(!el || !state.trip?.supabaseId) return;
-  const { data: { session } } = await sb.auth.getSession();
-  if(!session) return;
   const { data: members } = await sb.from('trip_members')
     .select('role, profiles(display_name, email)')
     .eq('trip_id', state.trip.supabaseId);
@@ -2955,7 +2317,25 @@ window.mapFilterDay = mapFilterDay;
 window.flyToStep = flyToStep;
 window.focusOnMap = focusOnMap;
 
-// Fonctions supplémentaires
+// Fonctions Itinéraire manquantes
+window.openEditDates = openEditDates;
+window.syncEditDates = syncEditDates;
+window.saveEditDates = saveEditDates;
+window.openModal = openModal;
+window.closeModal = closeModal;
+window.toggleTheme = toggleTheme;
+window.toggleReadMode = toggleReadMode;
+window.goHome = goHome;
+window.selectTrip = selectTrip;
+window.deleteCurrentTrip = deleteCurrentTrip;
+window.exportJSON = exportJSON;
+window.generateShareLink = generateShareLink;
+window.handleImport = handleImport;
+window.createTrip = createTrip;
+window.resetTrip = resetTrip;
+window.openNewTripModal = openNewTripModal;
+window.openImportModal = openImportModal;
+window.switchView = switchView;
 window.syncStepLabel = syncStepLabel;
 window.syncStepNote = syncStepNote;
 window.syncStepLieu = syncStepLieu;
@@ -2966,14 +2346,14 @@ window.syncTransport = syncTransport;
 window.enableHebergement = enableHebergement;
 window.removeHebergement = removeHebergement;
 window.syncHebergement = syncHebergement;
+window.setBudgetTab = setBudgetTab;
+window.mapFitAll = mapFitAll;
+window.mapRecenter = mapRecenter;
 window.renderItinMiniMap = renderItinMiniMap;
+window.setActiveDay = setActiveDay;
+window.toggleItinExpand = toggleItinExpand;
 window._calcEscaleDuree = _calcEscaleDuree;
-window.copyShareUrl = copyShareUrl;
-window.openSettingsModal = openSettingsModal;
-window.savePseudo = savePseudo;
-window.deleteSettingsTrip = deleteSettingsTrip;
-window.renderSettingsTheme = renderSettingsTheme;
-window._loadShareMembers = _loadShareMembers;
+// _escales est un tableau — on expose un proxy pour que les oninput inline puissent y écrire
 Object.defineProperty(window, '_escales', {
   get: () => _escales,
   set: (v) => { _escales.length = 0; v.forEach(x => _escales.push(x)); }

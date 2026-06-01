@@ -1110,6 +1110,67 @@ async function saveStep(){
   }
 }
 
+/* ══ Drag & drop des étapes ══ */
+let _dragStep=null; // {di,si}
+function onStepDragStart(e,di,si){
+  _dragStep={di,si};
+  e.dataTransfer.effectAllowed='move';
+  try{e.dataTransfer.setData('text/plain',`${di}-${si}`)}catch(_){}
+  const card=e.currentTarget;
+  setTimeout(()=>card.classList.add('is-dragging'),0);
+}
+function onStepDragEnd(e){
+  e.currentTarget.classList.remove('is-dragging');
+  document.querySelectorAll('.tl-list.drag-over').forEach(l=>l.classList.remove('drag-over'));
+  document.querySelectorAll('.tl-step.drop-before,.tl-step.drop-after,.lgmt-block.drop-before,.lgmt-block.drop-after').forEach(s=>s.classList.remove('drop-before','drop-after'));
+  _dragStep=null;
+}
+function onStepDragOver(e,di){
+  if(!_dragStep)return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect='move';
+  const list=e.currentTarget;
+  list.classList.add('drag-over');
+  // Indicateur visuel sur la carte survolée
+  const cards=[...list.querySelectorAll('[data-si]')];
+  list.querySelectorAll('.drop-before,.drop-after').forEach(c=>c.classList.remove('drop-before','drop-after'));
+  const target=e.target.closest('[data-si]');
+  if(target){
+    const r=target.getBoundingClientRect();
+    const before=(e.clientY-r.top)<r.height/2;
+    target.classList.add(before?'drop-before':'drop-after');
+  }
+}
+function onStepDrop(e,destDi){
+  if(!_dragStep)return;
+  e.preventDefault();
+  const list=e.currentTarget;
+  list.classList.remove('drag-over');
+  const {di:srcDi,si:srcSi}=_dragStep;
+  // Calculer l'index de destination
+  const target=e.target.closest('[data-si]');
+  let destSi;
+  if(target){
+    const r=target.getBoundingClientRect();
+    const before=(e.clientY-r.top)<r.height/2;
+    destSi=parseInt(target.dataset.si);
+    if(!before)destSi++;
+  } else {
+    destSi=state.trip.days[destDi].steps.length;
+  }
+  // Retirer de la source
+  const [moved]=state.trip.days[srcDi].steps.splice(srcSi,1);
+  if(!moved){_dragStep=null;return}
+  // Ajuster l'index si on déplace dans le même jour après le point de retrait
+  if(srcDi===destDi && srcSi<destSi)destSi--;
+  state.trip.days[destDi].steps.splice(destSi,0,moved);
+  _dragStep=null;
+  saveToLocalStorage();
+  renderItinerary();
+  showToast('Étape déplacée ✓');
+  if(typeof _logActivity==='function')_logActivity('A réorganisé une étape', moved.label||'');
+}
+
 function deleteStep(di,si){
   const key=`${di}-${si}`;delete _photoCache[key];delete _photoOpen[key];
   state.trip.days[di].steps.splice(si,1);
@@ -1958,6 +2019,7 @@ const stepsHtml=day.steps.map((step,si)=>{
   const key=`${di}-${si}`;
   const t=step.type||'autre';
   const icon=STEP_ICONS[t]||'📌';
+  const dragAttrs=`draggable="true" data-di="${di}" data-si="${si}" ondragstart="onStepDragStart(event,${di},${si})" ondragend="onStepDragEnd(event)"`;
   const actions=`<div class="tl-step-actions">
     <button class="tl-act" onclick="openEditStepModal(${di},${si})" title="Modifier"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
     <button class="tl-act tl-act-del" onclick="deleteStep(${di},${si})" title="Supprimer"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
@@ -1966,8 +2028,8 @@ const stepsHtml=day.steps.map((step,si)=>{
   if(t==='transport'){
     const ticon=TTYPE_ICONS[step.transportType]||'✈️';
     const escHtml=step.escales&&step.escales.length?`<div class="tl-escales">${step.escales.map(e=>`<span class="tl-escale">↳ ${esc(e.lieu)}${e.duree?` (${esc(e.duree)})`:''}</span>`).join('')}</div>`:'';
-    return `<div class="tl-step tl-step-transport">
-      <div class="tl-marker"><div class="tl-dot tl-dot-transport"></div></div>
+    return `<div class="tl-step tl-step-transport" ${dragAttrs}>
+      <div class="tl-marker"><div class="tl-dot tl-dot-transport"></div><span class="tl-drag-handle" title="Glisser pour réordonner">⠿</span></div>
       <div class="tl-card">
         <div class="tl-card-head"><span class="tl-type-badge">${ticon} ${(step.transportType||'').charAt(0).toUpperCase()+(step.transportType||'').slice(1)}</span>${actions}</div>
         <div class="tl-transport-route">
@@ -2003,7 +2065,7 @@ const stepsHtml=day.steps.map((step,si)=>{
         ${actions}
       </div>`;
     }
-    return `<div class="lgmt-block lgmt-${isCheckIn?'in':'out'}">
+    return `<div class="lgmt-block lgmt-${isCheckIn?'in':'out'}" ${dragAttrs}>
       <div class="lgmt-strip"></div>
       <div class="lgmt-content">
         <div class="lgmt-top">
@@ -2020,8 +2082,8 @@ const stepsHtml=day.steps.map((step,si)=>{
   }
   // restaurant, activite, autre
   const lieu=step.lieu||'';
-  return `<div class="tl-step">
-    <div class="tl-marker"><div class="tl-dot"></div></div>
+  return `<div class="tl-step" ${dragAttrs}>
+    <div class="tl-marker"><div class="tl-dot"></div><span class="tl-drag-handle" title="Glisser pour réordonner">⠿</span></div>
     <div class="tl-card">
       <div class="tl-card-head">
         <span class="tl-time">${step.time?esc(step.time):''}</span>
@@ -2059,7 +2121,7 @@ return `<div class="day-card itin-daycard${pastClass} expanded" data-day="${di}"
 
   <div class="itin-day-body">
     ${day.steps.length
-      ?`<div class="tl-list">${stepsHtml}</div>`
+      ?`<div class="tl-list" data-day-list="${di}" ondragover="onStepDragOver(event,${di})" ondrop="onStepDrop(event,${di})">${stepsHtml}</div>`
       :`<div class="itin-day-empty"><div class="itin-day-empty-emoji">🗺️</div><div class="itin-day-empty-t">Journée libre</div><div class="itin-day-empty-s">Ajoute une première étape pour planifier ce jour.</div></div>`}
 
     <button class="add-step-btn itin-add-step" onclick="openAddStepModal(${di})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Ajouter une étape</button>
@@ -2500,6 +2562,10 @@ window.openAddStepModal = openAddStepModal;
 window.openEditStepModal = openEditStepModal;
 window.saveStep = saveStep;
 window.deleteStep = deleteStep;
+window.onStepDragStart = onStepDragStart;
+window.onStepDragEnd = onStepDragEnd;
+window.onStepDragOver = onStepDragOver;
+window.onStepDrop = onStepDrop;
 window.setStepType = setStepType;
 window.addEscale = addEscale;
 window.removeEscale = removeEscale;

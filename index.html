@@ -2935,6 +2935,17 @@
 .itin-day-date{text-transform:capitalize}
 .itin-day-dot{color:var(--faint)}
 .tl-list{position:relative;display:flex;flex-direction:column;gap:.7rem;margin-bottom:1rem}
+.tl-list.drag-over{outline:2px dashed var(--accent);outline-offset:6px;border-radius:14px}
+.tl-step[draggable],.lgmt-block[draggable]{cursor:default}
+.tl-step.is-dragging,.lgmt-block.is-dragging{opacity:.45;transform:scale(.98)}
+.tl-step.drop-before::before,.lgmt-block.drop-before::before,.tl-step.drop-after::after,.lgmt-block.drop-after::after{content:"";position:absolute;left:0;right:0;height:3px;background:var(--accent);border-radius:999px;z-index:5}
+.tl-step.drop-before::before,.lgmt-block.drop-before::before{top:-5px}
+.tl-step.drop-after::after,.lgmt-block.drop-after::after{bottom:-5px}
+.tl-drag-handle{position:absolute;top:-2px;left:50%;transform:translateX(-50%);font-size:.85rem;color:var(--faint);cursor:grab;opacity:0;transition:opacity .15s;letter-spacing:-1px}
+.tl-step:hover .tl-drag-handle{opacity:.7}
+.tl-drag-handle:active{cursor:grabbing}
+.tl-step{position:relative}
+.lgmt-block{position:relative}</parameter>
 .tl-step{display:flex;gap:.85rem;position:relative}
 .tl-marker{position:relative;flex-shrink:0;width:14px;display:flex;justify-content:center}
 .tl-marker::before{content:"";position:absolute;top:18px;bottom:-22px;left:50%;width:2px;background:var(--border);transform:translateX(-50%)}

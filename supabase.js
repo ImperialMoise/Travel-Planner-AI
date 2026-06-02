@@ -1,23 +1,36 @@
-// ═══════════════════════════════════════════
-// supabase.js — module de synchronisation
-// ═══════════════════════════════════════════
+// ════════════════════════════════════════════════════════════
+// supabase.js — couche d'accès aux données + auth
+// ════════════════════════════════════════════════════════════
 
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
-const SUPABASE_URL = 'https://mzohsmpqhsibzqjupoos.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im16b2hzbXBxaHNpYnpxanVwb29zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5MDE1MDAsImV4cCI6MjA5NTQ3NzUwMH0.ioBfWZh6JY-zNdyS5okIk8KXIHoyg6C45icyxYtsNM4';
+const SUPABASE_URL  = 'https://kxxxwijywumqehjchjae.supabase.co'; 
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt4eHh3aWp5d3VtcWVoamNoamFlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0MjA3NjQsImV4cCI6MjA5NTk5Njc2NH0.Jwqjq3BMSoGD77QsnPLELFuRXScGHBaQI7-KhprPzYw';                   
 
-export const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+export const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
 
-// ─── Auth ────────────────────────────────────
+// ─── Auth ───────────────────────────────────────────────────
+export async function getUser() {
+  const { data } = await sb.auth.getUser();
+  return data.user ?? null;
+}
+
+export async function getSession() {
+  const { data } = await sb.auth.getSession();
+  return data.session ?? null;
+}
+
+export function onAuthChange(callback) {
+  return sb.auth.onAuthStateChange((event, session) => callback(session?.user ?? null, event));
+}
+
 export async function signUp(email, password, pseudo) {
   const { data, error } = await sb.auth.signUp({
     email, password,
     options: { data: { display_name: pseudo || email.split('@')[0] } }
   });
   if (error) throw error;
-  // Mettre à jour le profil avec le pseudo
-  if(data.user){
+  if (data.user) {
     await sb.from('profiles').upsert({
       id: data.user.id,
       email,
@@ -37,241 +50,104 @@ export async function signOut() {
   await sb.auth.signOut();
 }
 
-export async function getUser() {
-  const { data } = await sb.auth.getUser();
-  return data.user;
-}
-
-// ─── Charger un voyage complet ───────────────
-export async function loadTrip(tripId) {
-  const [
-    { data: trip },
-    { data: days },
-    { data: steps },
-    { data: budget },
-    { data: docs },
-    { data: participants },
-    { data: members }
-  ] = await Promise.all([
-    sb.from('trips').select('*').eq('id', tripId).single(),
-    sb.from('trip_days').select('*').eq('trip_id', tripId).order('day_index'),
-    sb.from('trip_steps').select('*').eq('trip_id', tripId).order('step_index'),
-    sb.from('budget_items').select('*').eq('trip_id', tripId),
-    sb.from('documents').select('*').eq('trip_id', tripId),
-    sb.from('trip_participants').select('*').eq('trip_id', tripId).order('sort_index'),
-    sb.from('trip_members').select('*, profiles(display_name, email)').eq('trip_id', tripId)
-  ]);
-
-  // Reconstituer la structure de state attendue par app.js
-  const daysWithSteps = (days || []).map(day => ({
-    supabaseId:  day.id,
-    title:       day.title || '',
-    note:        day.note || '',
-    dateLabel:   day.date_label || '',
-    dateISO:     day.date_iso || null,
-    steps: (steps || [])
-      .filter(s => s.day_id === day.id)
-      .sort((a, b) => a.step_index - b.step_index)
-      .map(dbStepToLocal)
-  }));
-
-  return {
-    trip: {
-      supabaseId: trip.id,
-      name:       trip.name,
-      startDate:  trip.start_date || null,
-      days:       daysWithSteps,
-    },
-    budget:       (budget || []).map(dbBudgetToLocal),
-    docs:         (docs || []).map(d => ({ supabaseId: d.id, cat: d.cat, label: d.label, value: d.value })),
-    participants: (participants || []).map(p => p.name),
-    members:      members || []
-  };
-}
-
-// ─── Upsert un voyage (nom, dates) ──────────
-export async function upsertTrip(trip, ownerId) {
-  const uid = ownerId || (await getUser())?.id;
-  const { data, error } = await sb.from('trips').upsert({
-    id: trip.supabaseId || undefined,
-    name: trip.name,
-    start_date: trip.startDate || null,
-    owner_id: uid
-  }, { onConflict: 'id' }).select().single();
+// ─── Voyages ────────────────────────────────────────────────
+export async function listMyTrips() {
+  const { data, error } = await sb
+    .from('trips')
+    .select('id, name, start_date, owner_id, updated_at')
+    .order('updated_at', { ascending: false });
   if (error) throw error;
-  return data;
+  return data ?? [];
 }
 
-// ─── Upsert un jour ─────────────────────────
-export async function upsertDay(tripId, day, dayIndex) {
-  const { data, error } = await sb.from('trip_days').upsert({
-    id: day.supabaseId || undefined,
-    trip_id: tripId,
-    day_index: dayIndex,
-    title: day.title || '',
-    note: day.note || '',
-    date_label: day.dateLabel || '',
-    date_iso: day.dateISO || null
-  }, { onConflict: 'trip_id,day_index' }).select().single();
-  if (error) throw error;
-  return data;
-}
-
-// ─── Upsert une étape ────────────────────────
-export async function upsertStep(tripId, dayId, step, stepIndex) {
-  const user = await getUser();
-  const { data, error } = await sb.from('trip_steps').upsert({
-    id: step.supabaseId || undefined,
-    trip_id: tripId,
-    day_id: dayId,
-    step_index: stepIndex,
-    type: step.type || 'autre',
-    label: step.label || '',
-    lieu: step.lieu || '',
-    time: step.time || '',
-    time_end: step.timeEnd || '',
-    transport_type: step.transportType || '',
-    depart: step.depart || '',
-    arrivee: step.arrivee || '',
-    duree: step.duree || '',
-    next_day: step.nextDay || false,
-    escales: step.escales || [],
-    ref: step.ref || '',
-    date_start: step.dateStart || null,
-    date_end: step.dateEnd || null,
-    nuits: step.nuits || 0,
-    time_check_in: step.timeCheckIn || '15:00',
-    time_check_out: step.timeCheckOut || '11:00',
-    duree_estimee: step.dureeEstimee || '',
-    link: step.link || '',
-    note: step.note || '',
-    amount: step.amount || 0,
-    paid_by: step.paidBy || '',
-    created_by: user?.id
-  }, { onConflict: 'id' }).select().single();
-  if (error) throw error;
-  return data;
-}
-
-// ─── Supprimer une étape ─────────────────────
-export async function deleteStep(stepSupabaseId) {
-  const { error } = await sb.from('trip_steps').delete().eq('id', stepSupabaseId);
-  if (error) throw error;
-}
-
-// ─── Upsert budget item ──────────────────────
-export async function upsertBudgetItem(tripId, item) {
-  const user = await getUser();
-  const { data, error } = await sb.from('budget_items').upsert({
-    id: item.supabaseId || undefined,
-    trip_id: tripId,
-    step_id: item.stepSupabaseId || null,
-    cat: item.cat || 'Divers',
-    description: item.desc || '',
-    amount: item.amount || 0,
-    paid_by: item.paidBy || '',
-    for_participants: item.forParticipants || ['__all__'],
-    created_by: user?.id
-  }, { onConflict: 'id' }).select().single();
-  if (error) throw error;
-  return data;
-}
-
-// ─── Invitation par lien token ────────────────
-export async function createInviteLink(tripId, role = 'editor') {
-  const user = await getUser();
-  const { data, error } = await sb.from('trip_invites').insert({
-    trip_id: tripId,
-    role,
-    created_by: user.id
-  }).select().single();
-  if (error) throw error;
-  const url = `${location.origin}${location.pathname}?invite=${data.token}`;
-  return url;
-}
-
-export async function acceptInvite(token) {
+export async function createTrip({ name, startDate, days }) {
   const user = await getUser();
   if (!user) throw new Error('Connexion requise');
 
-  // Récupérer l'invitation
-  const { data: invite, error } = await sb.from('trip_invites')
-    .select('*')
-    .eq('token', token)
-    .is('used_at', null)
-    .gt('expires_at', new Date().toISOString())
-    .single();
-  if (error || !invite) throw new Error('Invitation invalide ou expirée');
+  // 1. Créer le voyage
+  const { data: trip, error } = await sb.from('trips').insert({
+    name,
+    start_date: startDate || null,
+    owner_id: user.id
+  }).select().single();
+  if (error) throw error;
 
-  // Ajouter le membre
-  await sb.from('trip_members').upsert({
-    trip_id: invite.trip_id,
-    user_id: user.id,
-    role: invite.role
-  }, { onConflict: 'trip_id,user_id' });
+  // 2. Créer les jours
+  const dayRows = Array.from({ length: days }, (_, i) => {
+    let dateISO = null, dateLabel = '';
+    if (startDate) {
+      const d = new Date(startDate);
+      d.setDate(d.getDate() + i);
+      dateISO = d.toISOString().slice(0, 10);
+      dateLabel = d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
+    }
+    return {
+      trip_id: trip.id,
+      day_index: i,
+      date_iso: dateISO,
+      date_label: dateLabel
+    };
+  });
+  await sb.from('trip_days').insert(dayRows);
 
-  // Marquer l'invitation comme utilisée
-  await sb.from('trip_invites').update({
-    used_by: user.id,
-    used_at: new Date().toISOString()
-  }).eq('id', invite.id);
-
-  return invite.trip_id;
+  return trip;
 }
 
-// ─── Temps réel ──────────────────────────────
-let _realtimeChannel = null;
+export async function loadTrip(tripId) {
+  const [
+    { data: trip,  error: e1 },
+    { data: days,  error: e2 },
+    { data: steps, error: e3 }
+  ] = await Promise.all([
+    sb.from('trips').select('*').eq('id', tripId).single(),
+    sb.from('trip_days').select('*').eq('trip_id', tripId).order('day_index'),
+    sb.from('trip_steps').select('*').eq('trip_id', tripId).order('day_id, step_index')
+  ]);
+  if (e1) throw e1;
 
-export function subscribeToTrip(tripId, callbacks) {
-  if (_realtimeChannel) {
-    sb.removeChannel(_realtimeChannel);
-  }
+  return {
+    id: trip.id,
+    name: trip.name,
+    startDate: trip.start_date,
+    ownerId: trip.owner_id,
+    days: (days ?? []).map(d => ({
+      id: d.id,
+      index: d.day_index,
+      title: d.title || '',
+      note: d.note || '',
+      dateLabel: d.date_label || '',
+      dateISO: d.date_iso,
+      steps: (steps ?? []).filter(s => s.day_id === d.id).map(dbStepToLocal)
+    }))
+  };
+}
 
-  _realtimeChannel = sb.channel(`trip:${tripId}`)
-    .on('postgres_changes', {
-      event: '*',
-      schema: 'public',
-      table: 'trip_steps',
-      filter: `trip_id=eq.${tripId}`
-    }, payload => {
-      if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
-        callbacks.onStepUpserted?.(dbStepToLocal(payload.new));
-      } else if (payload.eventType === 'DELETE') {
-        callbacks.onStepDeleted?.(payload.old.id);
-      }
-    })
-    .on('postgres_changes', {
-      event: '*',
-      schema: 'public',
-      table: 'budget_items',
-      filter: `trip_id=eq.${tripId}`
-    }, payload => {
-      callbacks.onBudgetChanged?.();
-    })
-    .on('postgres_changes', {
-      event: '*',
-      schema: 'public',
-      table: 'trip_days',
-      filter: `trip_id=eq.${tripId}`
-    }, payload => {
-      callbacks.onDayUpdated?.(payload.new);
-    })
+export async function deleteTrip(tripId) {
+  const { error } = await sb.from('trips').delete().eq('id', tripId);
+  if (error) throw error;
+}
+
+// ─── Realtime ──────────────────────────────────────────────
+let _channel = null;
+export function subscribeTrip(tripId, onChange) {
+  if (_channel) sb.removeChannel(_channel);
+  _channel = sb.channel(`trip:${tripId}`)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'trip_steps', filter: `trip_id=eq.${tripId}` }, onChange)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'trip_days',  filter: `trip_id=eq.${tripId}` }, onChange)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'trips',      filter: `id=eq.${tripId}` },      onChange)
     .subscribe();
-
-  return _realtimeChannel;
+  return _channel;
+}
+export function unsubscribeTrip() {
+  if (_channel) { sb.removeChannel(_channel); _channel = null; }
 }
 
-export function unsubscribeFromTrip() {
-  if (_realtimeChannel) {
-    sb.removeChannel(_realtimeChannel);
-    _realtimeChannel = null;
-  }
-}
-
-// ─── Conversions DB → local ──────────────────
+// ─── Helpers conversions ───────────────────────────────────
 function dbStepToLocal(s) {
   return {
-    supabaseId: s.id,
+    id: s.id,
+    dayId: s.day_id,
+    stepIndex: s.step_index,
     type: s.type,
     label: s.label,
     lieu: s.lieu,
@@ -282,7 +158,7 @@ function dbStepToLocal(s) {
     arrivee: s.arrivee,
     duree: s.duree,
     nextDay: s.next_day,
-    escales: s.escales || [],
+    escales: s.escales ?? [],
     ref: s.ref,
     dateStart: s.date_start,
     dateEnd: s.date_end,
@@ -294,17 +170,5 @@ function dbStepToLocal(s) {
     note: s.note,
     amount: s.amount,
     paidBy: s.paid_by
-  };
-}
-
-function dbBudgetToLocal(b) {
-  return {
-    supabaseId: b.id,
-    stepSupabaseId: b.step_id,
-    cat: b.cat,
-    desc: b.description,
-    amount: b.amount,
-    paidBy: b.paid_by,
-    forParticipants: b.for_participants || ['__all__']
   };
 }

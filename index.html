@@ -52,7 +52,82 @@
   </header>
 
   <!-- ZONE DE CONTENU PRINCIPALE (Le corps de l'appli ira ici) -->
-  <main id="main-track">
+  <!-- ZONE DE CONTENU PRINCIPALE -->
+  <main class="main-track-wrapper">
+    <div class="track" id="track">
+      
+      <!-- PANNEAU 1 : ITINÉRAIRE -->
+      <div class="panel">
+        
+        <!-- COLONNE 1 : SPINE (Liste des jours) -->
+        <aside class="spine">
+          <div class="spine-head">
+            <div class="kicker">Corée du Sud</div>
+            <div class="spine-title">15 jours</div>
+            <div class="spine-dates">1 oct. — 15 oct. 2025</div>
+          </div>
+          
+          <div class="spine-list">
+            <!-- Ligne verticale de la timeline -->
+            <div class="spine-line"></div>
+
+            <!-- Jour Passé -->
+            <button class="spine-day past">
+              <div class="day-dot-wrapper"><div class="day-dot"></div></div>
+              <div class="day-info">
+                <div class="day-header">
+                  <span class="day-n">J1</span>
+                  <span class="day-city">Paris → Séoul</span>
+                </div>
+                <div class="day-date">Mer 1 oct.</div>
+              </div>
+            </button>
+
+            <!-- Jour Actif (Aujourd'hui) -->
+            <button class="spine-day active">
+              <div class="day-dot-wrapper"><div class="day-dot"></div></div>
+              <div class="day-info">
+                <div class="day-header">
+                  <span class="day-n">J6</span>
+                  <span class="day-city">Excursion DMZ</span>
+                </div>
+                <div class="day-date">Lun 6 oct.</div>
+              </div>
+            </button>
+
+            <!-- Jour Futur -->
+            <button class="spine-day future">
+              <div class="day-dot-wrapper"><div class="day-dot"></div></div>
+              <div class="day-info">
+                <div class="day-header">
+                  <span class="day-n">J7</span>
+                  <span class="day-city">Séoul → Busan</span>
+                </div>
+                <div class="day-date">Mar 7 oct.</div>
+              </div>
+            </button>
+            
+          </div>
+        </aside>
+
+        <!-- COLONNE 2 : DÉTAIL DU JOUR (À venir) -->
+        <div class="detail" style="flex: 1; padding: 20px 24px;">
+           <!-- Nous mettrons l'image Hero et les cartes d'étapes ici -->
+        </div>
+
+        <!-- COLONNE 3 : ÉLÉMENTS ÉPINGLÉS (À venir) -->
+        <aside class="ctx" style="width: 304px; border-left: 1px solid var(--line); background: rgba(255,255,255,.35);">
+           <!-- Nous mettrons la carte, la checklist et les stats ici -->
+        </aside>
+
+      </div>
+
+      <!-- PANNEAU 2 : SYNTHÈSE (À venir) -->
+      <div class="panel">
+         <!-- Dashboard de synthèse -->
+      </div>
+
+    </div>
   </main>
 
 </body>

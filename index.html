@@ -35,22 +35,20 @@
 
   <!-- Modules de l'app -->
   <!-- supabase.js est un module ES qui exporte sb, signIn, etc. -->
-  <script type="module">
-    // On expose Supabase sur window pour que les composants Babel-transformés y aient accès
-    import * as SB from './js/lib/supabase.js';
+<script type="module">
+    import * as SB from './lib/supabase.js';
     window.SB = SB;
     window.dispatchEvent(new CustomEvent('sb-ready'));
   </script>
 
-  <!-- Tous les autres scripts sont du JSX, transformés par Babel -->
-  <script type="text/babel" data-type="module" data-presets="react" src="js/lib/state.js"></script>
-  <script type="text/babel" data-type="module" data-presets="react" src="js/ui/Shared.js"></script>
-  <script type="text/babel" data-type="module" data-presets="react" src="js/views/Itinerary.js"></script>
-  <script type="text/babel" data-type="module" data-presets="react" src="js/views/Map.js"></script>
-  <script type="text/babel" data-type="module" data-presets="react" src="js/views/Budget.js"></script>
-  <script type="text/babel" data-type="module" data-presets="react" src="js/views/Docs.js"></script>
-  <script type="text/babel" data-type="module" data-presets="react" src="js/views/Settings.js"></script>
-  <script type="text/babel" data-type="module" data-presets="react" src="js/ui/AppShell.js"></script>
+  <script type="text/babel" data-type="module" data-presets="react" src="lib/state.js"></script>
+  <script type="text/babel" data-type="module" data-presets="react" src="ui/Shared.js"></script>
+  <script type="text/babel" data-type="module" data-presets="react" src="views/Itinerary.js"></script>
+  <script type="text/babel" data-type="module" data-presets="react" src="views/Map.js"></script>
+  <script type="text/babel" data-type="module" data-presets="react" src="views/Budget.js"></script>
+  <script type="text/babel" data-type="module" data-presets="react" src="views/Docs.js"></script>
+  <script type="text/babel" data-type="module" data-presets="react" src="views/Settings.js"></script>
+  <script type="text/babel" data-type="module" data-presets="react" src="ui/AppShell.js"></script>
   <script type="text/babel" data-type="module" data-presets="react" src="app.js"></script>
 </body>
 </html>

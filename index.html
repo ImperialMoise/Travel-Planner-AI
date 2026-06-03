@@ -188,10 +188,94 @@
 
         </div>
 
-        <!-- COLONNE 3 : ÉLÉMENTS ÉPINGLÉS (À venir) -->
-        <aside class="ctx" style="width: 304px; flex-shrink: 0; border-left: 1px solid var(--line); background: rgba(255,255,255,.35);">
-        </aside>
+        <!-- COLONNE 3 : ÉLÉMENTS ÉPINGLÉS -->
+        <aside class="ctx">
+          
+          <div class="ctx-header">
+            <div class="kicker">Épinglé</div>
+            <button class="btn-text">Personnaliser</button>
+          </div>
 
+          <div class="ctx-content">
+            
+            <!-- BLOC 1 : CARTE -->
+            <div class="block-shell">
+              <!-- Placeholder pour la carte générée en SVG plus tard -->
+              <div class="mini-map-placeholder">Carte Séoul</div>
+              <button class="btn-full-map">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M9 4 3 6.6v13.4L9 17.4l6 2.6 6-2.6V4l-6 2.6L9 4z"></path>
+                  <path d="M9 4v13.4M15 6.6V20"></path>
+                </svg>
+                Carte complète
+              </button>
+            </div>
+
+            <!-- BLOC 2 : CHECK-LIST -->
+            <div class="block-shell">
+              <div class="block-head">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="color: var(--faint);">
+                  <path d="m5 12.6 4.5 4.4L19 7"></path>
+                </svg>
+                <div class="block-title">Check-list</div>
+              </div>
+              <div class="block-body">
+                <div class="checklist-item">
+                  <div class="checkbox"></div>
+                  <span class="checklist-text">Passeport sur soi (contrôle)</span>
+                </div>
+                <div class="checklist-item">
+                  <div class="checkbox"></div>
+                  <span class="checklist-text">Confirmer l'horaire de la navette</span>
+                </div>
+                <div class="checklist-item">
+                  <div class="checkbox"></div>
+                  <span class="checklist-text">Pas de short ni sandales</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- BLOC 3 : NOTE DE JOURNÉE -->
+            <div class="block-shell">
+              <div class="block-head">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="color: var(--faint);">
+                  <path d="M12 3.2l1.9 5.4 5.4 1.9-5.4 1.9L12 17.8l-1.9-5.4L4.7 10.5l5.4-1.9z"></path>
+                </svg>
+                <div class="block-title">Note de journée</div>
+              </div>
+              <div class="block-body">
+                <div class="note-text">Réservation obligatoire — passeport indispensable.</div>
+              </div>
+            </div>
+
+            <!-- BLOC 4 : REPÈRES DU JOUR -->
+            <div class="block-shell">
+              <div class="block-head">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="color: var(--faint);">
+                  <circle cx="6" cy="6" r="2.4"></circle><circle cx="18" cy="18" r="2.4"></circle><path d="M8 6h7a3 3 0 0 1 0 6H9a3 3 0 0 0 0 6h6.5"></path>
+                </svg>
+                <div class="block-title">Repères du jour</div>
+              </div>
+              <div class="block-body">
+                <div class="stat-grid">
+                  <div class="stat-box">
+                    <div class="stat-val">2</div>
+                    <div class="stat-lbl">étapes</div>
+                  </div>
+                  <div class="stat-box">
+                    <div class="stat-val">1</div>
+                    <div class="stat-lbl">transport</div>
+                  </div>
+                  <div class="stat-box">
+                    <div class="stat-val">—</div>
+                    <div class="stat-lbl">nuits</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </aside>
       </div>
 
       <!-- PANNEAU 2 : SYNTHÈSE (À venir) -->

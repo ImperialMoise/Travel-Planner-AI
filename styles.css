@@ -484,3 +484,170 @@ body {
   cursor: pointer;
   margin-top: 5px;
 }
+
+/* === COLONNE DE DROITE (ÉLÉMENTS ÉPINGLÉS) === */
+.ctx {
+  width: 304px;
+  flex-shrink: 0;
+  border-left: 1px solid var(--line);
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  min-height: 0;
+  background: rgba(255, 255, 255, 0.35);
+  overflow: hidden;
+}
+
+.ctx-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.btn-text {
+  border: none;
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 8px;
+  padding: 4px 10px;
+}
+
+.ctx-content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  padding-right: 2px;
+  margin-right: -2px;
+}
+
+/* Blocs épinglés */
+.block-shell {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: var(--shadow);
+}
+
+.block-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 14px 0;
+}
+
+.block-title {
+  flex: 1;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.block-body {
+  padding: 13px;
+}
+
+/* Carte mini */
+.mini-map-placeholder {
+  height: 158px;
+  background: var(--inset);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: var(--faint);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+
+.btn-full-map {
+  width: 100%;
+  border: none;
+  border-top: 1px solid var(--line);
+  background: transparent;
+  color: var(--accent);
+  font-size: 12.5px;
+  font-weight: 700;
+  padding: 11px 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+/* Check-list */
+.checklist-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 0;
+  border: none;
+  background: none;
+  text-align: left;
+  border-bottom: 1px solid var(--line2);
+}
+
+.checklist-item:last-child {
+  border-bottom: none;
+}
+
+.checkbox {
+  width: 19px;
+  height: 19px;
+  border-radius: 6px;
+  flex-shrink: 0;
+  border: 1.5px solid var(--faint);
+  display: grid;
+  place-items: center;
+}
+
+.checklist-text {
+  font-size: 12.5px;
+  color: var(--text);
+  line-height: 1.35;
+}
+
+/* Note */
+.note-text {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.55;
+  font-style: italic;
+}
+
+/* Stats / Repères */
+.stat-grid {
+  display: flex;
+  gap: 10px;
+}
+
+.stat-box {
+  flex: 1;
+  background: var(--inset);
+  border-radius: 11px;
+  padding: 10px 12px;
+}
+
+.stat-val {
+  font-family: var(--font-serif);
+  font-size: 24px;
+  line-height: 1;
+}
+
+.stat-lbl {
+  font-size: 10.5px;
+  color: var(--muted);
+  margin-top: 3px;
+}

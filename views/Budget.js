@@ -268,7 +268,7 @@ function BudgetView() {
 
   // ── Rendu ───────────────────────────────────────────────
   return (
-    <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+    <div style={{ flex: 1, minHeight: 'calc(100vh - 60px)', overflowY: 'auto' }}>
       <div style={{ maxWidth: 860, margin: '0 auto', padding: '24px 22px 40px' }}>
 
         <div style={kicker}>Budget</div>

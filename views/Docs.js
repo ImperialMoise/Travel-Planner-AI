@@ -1,7 +1,16 @@
 function DocsView() {
   const { trip } = Store.useStore();
   return (
-    <Placeholder
+    <div style={{ flex: 1, minHeight: 'calc(100vh - 60px)' }}>
+      <Placeholder
+        kicker="Documents"
+        title={trip.name}
+        subtitle="Réservations, billets, contacts"
+        hint="Stockage des références clés du voyage (numéros, liens, codes). Catégorisable."
+      />
+    </div>
+  );
+}
       kicker="Documents"
       title={trip.name}
       subtitle="Réservations, billets, contacts"

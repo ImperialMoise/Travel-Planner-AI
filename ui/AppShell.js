@@ -33,10 +33,7 @@ function AppShell() {
          !trip ? <LoadingTrip /> :
          CurrentView ? <CurrentView /> : <div style={{ padding: 40, color: 'var(--muted)' }}>Vue inconnue : {view}</div>}
       </main>
-      
-      {/* On cache aussi la BottomNav si on est sur l'Itinéraire */}
-      <BottomNav />
-      
+                
       {settingsOpen && window.SettingsModal && <window.SettingsModal />}
       {toast && <div className="toast show">{toast.msg}</div>}
     </>

@@ -32,10 +32,11 @@ body {
   font-family: var(--font-sans);
   color: var(--text);
   background: var(--bg);
-  height: 100vh;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable; /* Empêche le saut de page */
 }
 
 /* === TOPBAR === */

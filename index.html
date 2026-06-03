@@ -29,9 +29,17 @@
   <script type="module">
     import * as SB from './lib/supabase.js';
     window.SB = SB;
-    window.dispatchEvent(new Event('sb-ready'));
+    
+    // Tire le signal de départ toutes les 250ms tant que l'app n'est pas affichée
+    // (Cela compense le temps de chargement de la carte 3D !)
+    const startApp = setInterval(() => {
+      if (document.getElementById('root').innerHTML !== '') {
+        clearInterval(startApp);
+      } else {
+        window.dispatchEvent(new Event('sb-ready'));
+      }
+    }, 250);
   </script>
-
   <script src="lib/state.js"></script>
   
   <script type="text/babel" src="ui/Shared.js"></script>

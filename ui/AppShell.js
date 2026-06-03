@@ -448,23 +448,21 @@ function ModalShell({ title, onClose, children }) {
     document.addEventListener('keydown', onEsc);
     return () => document.removeEventListener('keydown', onEsc);
   }, [onClose]);
-  return (
+  
+  return ReactDOM.createPortal(
     <div onClick={onClose} style={{
-      position: 'fixed', inset: 0, zIndex: 500,
+      position: 'fixed', inset: 0, zIndex: 5000,
       background: 'rgba(0,0,0,.6)',
       backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
-      display: 'grid', placeItems: 'center', padding: 16
+      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16
     }}>
       <div onClick={e => e.stopPropagation()} style={{
-        width: '100%', maxWidth: 420,
-        background: 'var(--card)',
-        border: '1px solid var(--line)',
-        borderRadius: 18,
-        boxShadow: 'var(--shadow-lg)',
-        overflow: 'hidden'
+        width: '100%', maxWidth: 420, maxHeight: '90vh', display: 'flex', flexDirection: 'column',
+        background: 'var(--card)', border: '1px solid var(--line)',
+        borderRadius: 18, boxShadow: 'var(--shadow-lg)', overflow: 'hidden'
       }}>
         <div style={{
-          padding: '16px 20px',
+          padding: '16px 20px', flexShrink: 0,
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           borderBottom: '1px solid var(--line)'
         }}>
@@ -474,9 +472,10 @@ function ModalShell({ title, onClose, children }) {
             cursor: 'pointer', padding: 6, borderRadius: 8
           }}><Icon name="x" size={18} /></button>
         </div>
-        <div style={{ padding: 20 }}>{children}</div>
+        <div style={{ padding: 20, overflowY: 'auto' }}>{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

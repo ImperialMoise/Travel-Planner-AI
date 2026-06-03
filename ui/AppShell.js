@@ -158,6 +158,36 @@ function Topbar() {
         </div>
       )}
 
+      {/* NAVIGATION GLOBALE */}
+      <nav style={{ display: 'flex', gap: 4, marginLeft: 20 }}>
+        {[
+          { id: 'itinerary', label: 'Plan',   icon: 'route' },
+          { id: 'map',       label: 'Carte',  icon: 'map' },
+          { id: 'budget',    label: 'Budget', icon: 'sparkle' },
+          { id: 'docs',      label: 'Docs',   icon: 'flag' }
+        ].map(it => {
+          const on = view === it.id;
+          return (
+            <button
+              key={it.id}
+              onClick={() => Store.set({ view: it.id })}
+              style={{
+                border: 'none',
+                background: on ? 'rgba(217,182,126,.15)' : 'transparent',
+                color: on ? 'var(--accent)' : 'var(--muted)',
+                cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: 8,
+                fontSize: 13, fontWeight: on ? 700 : 600, fontFamily: 'inherit',
+                padding: '6px 12px', borderRadius: 10, transition: 'all .2s'
+              }}
+            >
+              <Icon name={it.icon} size={14} />
+              {it.label}
+            </button>
+          );
+        })}
+      </nav>
+
       <div style={{ flex: 1 }} />
 
       {/* Actions à droite */}
@@ -215,49 +245,6 @@ function Topbar() {
   );
 }
 
-// ─── Bottom Nav ─────────────────────────────────────────────
-function BottomNav() {
-  const { view, trip } = Store.useStore();
-  if (!trip) return null;
-  const items = [
-    { id: 'itinerary', label: 'Plan',   icon: 'route' },
-    { id: 'map',       label: 'Carte',  icon: 'map' },
-    { id: 'budget',    label: 'Budget', icon: 'sparkle' },
-    { id: 'docs',      label: 'Docs',   icon: 'flag' }
-  ];
-  return (
-    <nav style={{
-      height: 64, flexShrink: 0,
-      display: 'grid', gridTemplateColumns: `repeat(${items.length},1fr)`,
-      borderTop: '1px solid var(--line)',
-      background: 'rgba(20,42,36,.85)',
-      backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
-      position: 'sticky', bottom: 0, zIndex: 90
-    }}>
-      {items.map(it => {
-        const on = view === it.id;
-        return (
-          <button
-            key={it.id}
-            onClick={() => Store.set({ view: it.id })}
-            style={{
-              border: 'none', background: 'transparent',
-              color: on ? 'var(--accent)' : 'var(--muted)',
-              cursor: 'pointer',
-              display: 'flex', flexDirection: 'column',
-              alignItems: 'center', justifyContent: 'center', gap: 3,
-              fontSize: 11, fontWeight: 700,
-              fontFamily: 'inherit', letterSpacing: '.02em'
-            }}
-          >
-            <Icon name={it.icon} size={20} />
-            <span>{it.label}</span>
-          </button>
-        );
-      })}
-    </nav>
-  );
-}
 
 // ─── Écrans vides ───────────────────────────────────────────
 function LoggedOutHome() {

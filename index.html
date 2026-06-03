@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Voyage Planner</title>
+  <title>Voyage Planner - Atelier</title>
   
   <link rel="stylesheet" href="styles.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -18,26 +18,28 @@
   
   <div id="root"></div>
 
-  <script src="assets/trip-data.js"></script>
-  <script src="assets/image-slot.js"></script>
-  <script type="text/babel" src="assets/itin-shared.jsx"></script>
-  <script type="text/babel" src="assets/itin-atelier-v2.jsx"></script>
+  <script src="views/trip-data.js"></script>
+  <script src="views/image-slot.js"></script>
+  <script type="text/babel" src="views/itin-shared.jsx"></script>
+  <script type="text/babel" src="views/itin-atelier-v2.jsx"></script>
 
   <script type="module">
-    import * as SB from './js/lib/supabase.js';
+    import * as SB from './lib/supabase.js';
     window.SB = SB;
     window.dispatchEvent(new Event('sb-ready'));
   </script>
 
-  <script src="js/lib/state.js"></script>
-  <script type="text/babel" src="js/ui/Shared.js"></script>
-  <script type="text/babel" src="js/ui/AppShell.js"></script>
-  <script type="text/babel" src="js/views/Itinerary.js"></script>
-  <script type="text/babel" src="js/views/Map.js"></script>
-  <script type="text/babel" src="js/views/Budget.js"></script>
-  <script type="text/babel" src="js/views/Docs.js"></script>
-  <script type="text/babel" src="js/views/Settings.js"></script>
+  <script src="lib/state.js"></script>
   
+  <script type="text/babel" src="ui/Shared.js"></script>
+  
+  <script type="text/babel" src="views/Itinerary.js"></script>
+  <script type="text/babel" src="views/Map.js"></script>
+  <script type="text/babel" src="views/Budget.js"></script>
+  <script type="text/babel" src="views/Docs.js"></script>
+  <script type="text/babel" src="views/Settings.js"></script>
+  
+  <script type="text/babel" src="ui/AppShell.js"></script>
   <script type="text/babel" src="app.js"></script>
 
 </body>

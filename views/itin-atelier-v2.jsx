@@ -24,7 +24,40 @@ function palette(mode) {
 }
 
 function AtelierV2() {
-  const T = window.TRIP;
+  // --- 1. CONNEXION À TA BASE DE DONNÉES SUPABASE ---
+  const { trip: realTrip } = Store.useStore();
+
+  const T = realTrip ? {
+    ...window.TRIP, // On garde les éléments graphiques (avatars, chapitres, carte) de la démo de Claude
+    name: realTrip.name,
+    startISO: realTrip.startDate,
+    endISO: realTrip.days.length > 0 ? realTrip.days[realTrip.days.length - 1].dateISO : realTrip.startDate,
+    duration: realTrip.days.length || 1,
+    todayIndex: 0, // Par défaut on affiche le premier jour de ton voyage
+    days: realTrip.days.map((d, i) => {
+      // On pioche une journée de démo pour hériter de sa couleur et de sa position sur la carte
+      const demoDay = window.TRIP.days[i % window.TRIP.days.length]; 
+      return {
+        ...demoDay, 
+        n: d.index + 1,
+        dateISO: d.dateISO,
+        title: d.title || 'Journée libre',
+        note: d.note,
+        steps: d.steps.map(s => ({
+          type: s.type || 'autre',
+          label: s.label || s.lieu,
+          place: s.lieu,
+          time: s.time,
+          note: s.note,
+          mode: s.transportType || 'car',
+          from: s.depart,
+          to: s.arrivee
+        }))
+      };
+    })
+  } : window.TRIP;
+  // ---------------------------------------------------
+
   const serif = '"DM Serif Display",Georgia,serif';
   const mono = 'ui-monospace,SFMono-Regular,Menlo,monospace';
   // dégradé de placeholder « photo de lieu » — hsl (portable, capturable)

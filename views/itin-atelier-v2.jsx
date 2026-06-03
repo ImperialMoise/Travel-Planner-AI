@@ -299,7 +299,21 @@ function AtelierV2() {
 
   return React.createElement('div', { style: s.frame },
     React.createElement('style', null, `@keyframes itdash{to{stroke-dashoffset:-160}} .it-journey{animation:itdash 9s linear infinite}`),
-
+    
+    /* TOPBAR DE CLAUDE RESTAURÉE */
+    React.createElement('div', { style: s.top },
+      React.createElement('div', { style: s.brand },
+        React.createElement('div', { style: s.mark }, React.createElement(Icon, { name: 'route', size: 15 })),
+        React.createElement('div', { style: s.wordmark }, 'Atelier')),
+      React.createElement('div', { style: s.seg },
+        React.createElement('button', { style: s.segBtn(view === 'itin'), onClick: () => setView('itin') }, 'Itinéraire'),
+        React.createElement('button', { style: s.segBtn(view === 'recit'), onClick: () => setView('recit') }, 'Synthèse')),
+      React.createElement('div', { style: s.topRight },
+        React.createElement(Avatars, { people: T.participants, size: 30, dark: mode === 'light' }),
+        React.createElement('button', { style: s.iconBtn, title: mode === 'dark' ? 'Passer en clair' : 'Passer en sombre', onClick: () => setMode(m => m === 'dark' ? 'light' : 'dark') },
+          React.createElement(Icon, { name: mode === 'dark' ? 'sun' : 'moon', size: 17, style: { color: C.accent } })),
+        React.createElement('button', { style: s.ghost, onClick: () => setMapOpen(true) }, React.createElement(Icon, { name: 'map', size: 16, style: { color: C.accent } }), 'Carte'))),
+    
     /* BODY */
     React.createElement('div', { style: { flex: 1, overflow: 'hidden', position: 'relative' } },
       React.createElement('div', { style: s.track(view) },
@@ -309,16 +323,11 @@ function AtelierV2() {
             React.createElement('div', { style: s.spineHead },
               React.createElement('div', { style: s.kicker }, T.name),
               React.createElement('div', { style: { fontFamily: serif, fontStyle: 'italic', fontSize: 20, marginTop: 4, color: C.text } }, realTrip ? `${realTrip.days.length} jours` : '15 jours'),
-              React.createElement('div', { style: { fontSize: 12, color: C.muted, marginTop: 3, marginBottom: 16 } }, dayRange(T.startISO, T.endISO)),
-              // Le toggle est glissé ici !
-              React.createElement('div', { style: s.seg },
-                React.createElement('button', { style: s.segBtn(view === 'itin'), onClick: () => setView('itin') }, 'Itinéraire'),
-                React.createElement('button', { style: s.segBtn(view === 'recit'), onClick: () => setView('recit') }, 'Synthèse')
-              )
-            ),
+              React.createElement('div', { style: { fontSize: 12, color: C.muted, marginTop: 3 } }, dayRange(T.startISO, T.endISO))),
             React.createElement('div', { style: s.spineList },
               React.createElement('div', { style: { position: 'absolute', left: 30, top: 16, bottom: 16, width: 2, background: C.line2 } }),
               T.days.map((d, i) => React.createElement(SpineDay, { key: d.n, i })))),
+          
           /* détail */
           React.createElement('div', { style: s.detail },
             React.createElement('div', { key: 'hero' + day.n, style: { position: 'relative', height: 190, borderRadius: 18, overflow: 'hidden', flexShrink: 0, background: heroGrad(heroHue(day), mode === 'light'), boxShadow: C.shadow } },
@@ -333,14 +342,13 @@ function AtelierV2() {
                   React.createElement('div', { style: { fontFamily: serif, fontStyle: 'italic', fontSize: 26, lineHeight: 1, whiteSpace: 'nowrap', textShadow: '0 2px 14px rgba(0,0,0,.55)' } }, day.title)))),
             React.createElement('div', { style: { flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', gap: 11 } },
               day.steps.map((step, k) => React.createElement(StepCard, { key: k, s: step })),
+              
+              /* BOUTON AJOUTER RELIÉ À SUPABASE */
               React.createElement('button', { 
                 onClick: async () => {
-                  // 1. On demande le nom de l'étape à l'utilisateur
                   const titre = window.prompt("Nom de la nouvelle étape ? (ex: Visite du musée)");
-                  if (!titre) return; // Si on annule, on ne fait rien
-                  
+                  if (!titre) return;
                   try {
-                    // 2. On envoie l'étape directement dans ta base Supabase !
                     await window.SB.sb.from('trip_steps').insert({
                       trip_id: realTrip.id,
                       day_id: day.id,
@@ -353,20 +361,13 @@ function AtelierV2() {
                   }
                 },
                 style: { ...s.ghost, alignSelf: 'flex-start', borderStyle: 'dashed', background: 'transparent', color: C.muted } 
-              },
-                React.createElement(Icon, { name: 'plus', size: 15 }), 'Ajouter une étape'))),
+              }, React.createElement(Icon, { name: 'plus', size: 15 }), 'Ajouter une étape'))),
+          
           /* COLONNE ÉPINGLÉE */
           React.createElement('aside', { style: s.ctx },
-           React.createElement('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' } },
+            React.createElement('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' } },
               React.createElement('div', { style: s.kicker }, 'Épinglé'),
-              React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 12 } },
-                // Le bouton Clair/Sombre est glissé ici !
-                React.createElement('button', { title: 'Thème clair/sombre', onClick: () => setMode(m => m === 'dark' ? 'light' : 'dark'), style: { background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex' } },
-                  React.createElement(Icon, { name: mode === 'dark' ? 'sun' : 'moon', size: 16, style: { color: C.accent } })
-                ),
-                React.createElement('button', { onClick: () => setEditPins(e => !e), style: { border: 'none', background: editPins ? C.accent : 'transparent', color: editPins ? C.accentInk : C.accent, cursor: 'pointer', fontSize: 12, fontWeight: 700, borderRadius: 8, padding: '4px 10px' } }, editPins ? 'Terminé' : 'Personnaliser')
-              )
-            ),
+              React.createElement('button', { onClick: () => setEditPins(e => !e), style: { border: 'none', background: editPins ? C.accent : 'transparent', color: editPins ? C.accentInk : C.accent, cursor: 'pointer', fontSize: 12, fontWeight: 700, borderRadius: 8, padding: '4px 10px' } }, editPins ? 'Terminé' : 'Personnaliser')),
             React.createElement('div', { style: { flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 13, paddingRight: 2, marginRight: -2 } },
               pinned.map(id => BLOCKS[id] && React.createElement('div', { key: id }, BLOCKS[id].render())),
               editPins && unpinned.length > 0 && React.createElement('div', { style: { borderRadius: 14, border: `1px dashed ${C.line}`, padding: 12 } },

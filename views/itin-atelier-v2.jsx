@@ -23,6 +23,214 @@ function palette(mode) {
   };
 }
 
+/* ════════════════════════════════════════════════════════════════
+   ÉDITEUR D'ÉTAPE — fenêtre modale (ajout / modification / suppression)
+   Style « L'Atelier ». Les champs s'adaptent au type choisi.
+   ════════════════════════════════════════════════════════════════ */
+function calcDuree(dep, arr, nextDay) {
+  if (!dep || !arr) return '';
+  const [dh, dm] = dep.split(':').map(Number);
+  const [ah, am] = arr.split(':').map(Number);
+  let mins = (ah * 60 + am) - (dh * 60 + dm);
+  if (nextDay || mins < 0) mins += 1440;
+  if (mins <= 0) return '';
+  return mins >= 60 ? `${Math.floor(mins / 60)}h${String(mins % 60).padStart(2, '0')}` : `${mins} min`;
+}
+function calcNuits(a, b) {
+  if (!a || !b) return 0;
+  const n = Math.round((new Date(b) - new Date(a)) / 86400000);
+  return n > 0 ? n : 0;
+}
+
+function StepEditor({ open, tripId, dayId, step, stepCount, onClose, onSaved }) {
+  const { theme = localStorage.getItem('it_theme') || 'light' } = Store.useStore();
+  const C = palette(theme);
+  const serif = '"DM Serif Display",Georgia,serif';
+
+  const TYPES = [
+    { id: 'transport', label: 'Transport', icon: 'route' },
+    { id: 'logement', label: 'Logement', icon: 'bed' },
+    { id: 'restaurant', label: 'Table', icon: 'fork' },
+    { id: 'activite', label: 'Activité', icon: 'camera' },
+    { id: 'autre', label: 'Autre', icon: 'pin' }
+  ];
+  const TRANSPORTS = [
+    ['train', '🚆 Train'], ['avion', '✈️ Avion'], ['bus', '🚌 Bus'],
+    ['voiture', '🚗 Voiture'], ['ferry', '⛴️ Ferry'], ['metro', '🚇 Métro'],
+    ['pied', '🚶 À pied'], ['taxi', '🚕 Taxi']
+  ];
+
+  const blank = {
+    type: 'activite', label: '', lieu: '', time: '', timeEnd: '',
+    transportType: 'train', depart: '', arrivee: '', nextDay: false, ref: '',
+    dateStart: '', dateEnd: '', timeCheckIn: '15:00', timeCheckOut: '11:00',
+    dureeEstimee: '', link: '', note: ''
+  };
+  const [f, setF] = React.useState(blank);
+  const [busy, setBusy] = React.useState(false);
+  const set = (k, v) => setF(prev => ({ ...prev, [k]: v }));
+
+  React.useEffect(() => {
+    if (!open) return;
+    if (step) {
+      setF({
+        ...blank, ...step,
+        dateStart: step.dateStart || '', dateEnd: step.dateEnd || '',
+        timeCheckIn: step.timeCheckIn || '15:00', timeCheckOut: step.timeCheckOut || '11:00',
+        transportType: step.transportType || 'train'
+      });
+    } else {
+      setF(blank);
+    }
+  }, [open, step]);
+
+  if (!open) return null;
+
+  const duree = calcDuree(f.time, f.timeEnd, f.nextDay);
+  const nuits = calcNuits(f.dateStart, f.dateEnd);
+
+  async function handleSave() {
+    setBusy(true);
+    try {
+      const p = {
+        id: step ? step.id : undefined,
+        stepIndex: step ? step.stepIndex : (stepCount || 0),
+        type: f.type, label: f.label, note: f.note, link: f.link, time: f.time
+      };
+      if (f.type === 'transport') {
+        Object.assign(p, { transportType: f.transportType, depart: f.depart, arrivee: f.arrivee, timeEnd: f.timeEnd, nextDay: f.nextDay, duree, ref: f.ref });
+      } else if (f.type === 'logement') {
+        Object.assign(p, { lieu: f.lieu, dateStart: f.dateStart || null, dateEnd: f.dateEnd || null, timeCheckIn: f.timeCheckIn, timeCheckOut: f.timeCheckOut, nuits });
+      } else if (f.type === 'activite') {
+        Object.assign(p, { lieu: f.lieu, dureeEstimee: f.dureeEstimee });
+      } else {
+        Object.assign(p, { lieu: f.lieu });
+      }
+      await window.SB.saveStep(tripId, dayId, p);
+      onSaved && onSaved();
+      onClose();
+    } catch (e) {
+      alert('Erreur : ' + e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleDelete() {
+    if (!step || !step.id) return;
+    if (!window.confirm('Supprimer cette étape définitivement ?')) return;
+    setBusy(true);
+    try {
+      await window.SB.deleteStep(step.id);
+      onSaved && onSaved();
+      onClose();
+    } catch (e) {
+      alert('Erreur : ' + e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const inp = { width: '100%', padding: '10px 12px', border: `1px solid ${C.line}`, borderRadius: 11, background: C.inset, color: C.text, fontFamily: 'inherit', fontSize: 14, outline: 'none' };
+  const lbl = { display: 'block', fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: C.muted, marginBottom: 6 };
+  const ghost = { border: `1px solid ${C.line}`, background: C.inset, color: C.text, borderRadius: 11, padding: '9px 16px', fontSize: 13.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' };
+  const primary = { border: 'none', background: C.accent, color: C.accentInk, borderRadius: 11, padding: '9px 18px', fontSize: 13.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' };
+  const badge = { display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 700, color: C.accent, background: C.accentSoft, borderRadius: 999, padding: '5px 11px' };
+
+  const field = (label, child) => <div style={{ marginBottom: 12 }}><label style={lbl}>{label}</label>{child}</div>;
+  const twoCol = (a, b) => <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>{a}{b}</div>;
+
+  return ReactDOM.createPortal(
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 300, background: theme === 'light' ? 'rgba(31,46,40,.34)' : 'rgba(0,0,0,.55)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', display: 'grid', placeItems: 'center', padding: 24 }}>
+      <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 520, maxHeight: '90vh', display: 'flex', flexDirection: 'column', background: C.card, border: `1px solid ${C.line}`, borderRadius: 20, overflow: 'hidden', boxShadow: '0 40px 90px rgba(0,0,0,.4)' }}>
+
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 20px', borderBottom: `1px solid ${C.line}` }}>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase', color: C.accent }}>{step ? 'Modifier' : 'Nouvelle étape'}</div>
+            <div style={{ fontFamily: serif, fontStyle: 'italic', fontSize: 22, color: C.text, marginTop: 2 }}>{step ? 'Modifier l’étape' : 'Ajouter au programme'}</div>
+          </div>
+          <button onClick={onClose} style={{ border: 'none', background: 'transparent', color: C.muted, cursor: 'pointer', padding: 6, borderRadius: 8 }}><Icon name="x" size={20} /></button>
+        </div>
+
+        <div style={{ padding: 20, overflowY: 'auto' }}>
+          <div style={{ display: 'flex', gap: 6, marginBottom: 18 }}>
+            {TYPES.map(t => {
+              const on = f.type === t.id;
+              return <button key={t.id} onClick={() => set('type', t.id)} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, padding: '10px 4px', borderRadius: 12, cursor: 'pointer', transition: 'all .15s', border: `1px solid ${on ? C.accent : C.line}`, background: on ? C.accent : C.inset, color: on ? C.accentInk : C.muted, fontSize: 11, fontWeight: 700 }}><Icon name={t.icon} size={18} />{t.label}</button>;
+            })}
+          </div>
+
+          {f.type === 'transport' && <>
+            {field('Mode de transport', <select style={inp} value={f.transportType} onChange={e => set('transportType', e.target.value)}>{TRANSPORTS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select>)}
+            {twoCol(
+              field('Départ', <input style={inp} value={f.depart} onChange={e => set('depart', e.target.value)} placeholder="Ville, gare…" />),
+              field('Heure départ', <input type="time" style={inp} value={f.time} onChange={e => set('time', e.target.value)} />)
+            )}
+            {twoCol(
+              field('Arrivée', <input style={inp} value={f.arrivee} onChange={e => set('arrivee', e.target.value)} placeholder="Ville, aéroport…" />),
+              field('Heure arrivée', <input type="time" style={inp} value={f.timeEnd} onChange={e => set('timeEnd', e.target.value)} />)
+            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 12 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, color: C.muted, cursor: 'pointer' }}><input type="checkbox" checked={f.nextDay} onChange={e => set('nextDay', e.target.checked)} style={{ accentColor: C.accent }} />Arrivée le lendemain</label>
+              {duree && <span style={badge}><Icon name="clock" size={12} />{duree}</span>}
+            </div>
+            {twoCol(
+              field('Référence', <input style={inp} value={f.ref} onChange={e => set('ref', e.target.value)} placeholder="TGV 6601…" />),
+              field('Titre (option.)', <input style={inp} value={f.label} onChange={e => set('label', e.target.value)} placeholder="Paris → Lyon" />)
+            )}
+          </>}
+
+          {f.type === 'logement' && <>
+            {field('Nom du logement', <input style={inp} value={f.label} onChange={e => set('label', e.target.value)} placeholder="Hôtel Le Bristol…" />)}
+            {field('Adresse / lieu', <input style={inp} value={f.lieu} onChange={e => set('lieu', e.target.value)} placeholder="Adresse, ville…" />)}
+            {twoCol(
+              field('Arrivée (date)', <input type="date" style={inp} value={f.dateStart} onChange={e => set('dateStart', e.target.value)} />),
+              field('Départ (date)', <input type="date" style={inp} value={f.dateEnd} onChange={e => set('dateEnd', e.target.value)} />)
+            )}
+            {twoCol(
+              field('Heure check-in', <input type="time" style={inp} value={f.timeCheckIn} onChange={e => set('timeCheckIn', e.target.value)} />),
+              field('Heure check-out', <input type="time" style={inp} value={f.timeCheckOut} onChange={e => set('timeCheckOut', e.target.value)} />)
+            )}
+            {nuits > 0 && <div style={{ marginBottom: 12 }}><span style={badge}><Icon name="moon" size={12} />{nuits} {nuits > 1 ? 'nuits' : 'nuit'}</span></div>}
+          </>}
+
+          {f.type === 'restaurant' && <>
+            {field('Nom du restaurant', <input style={inp} value={f.label} onChange={e => set('label', e.target.value)} placeholder="Le Comptoir…" />)}
+            {field('Adresse / lieu', <input style={inp} value={f.lieu} onChange={e => set('lieu', e.target.value)} placeholder="Adresse, quartier…" />)}
+            {field('Heure', <input type="time" style={inp} value={f.time} onChange={e => set('time', e.target.value)} />)}
+          </>}
+
+          {f.type === 'activite' && <>
+            {field('Nom', <input style={inp} value={f.label} onChange={e => set('label', e.target.value)} placeholder="Musée d’Orsay…" />)}
+            {field('Lieu', <input style={inp} value={f.lieu} onChange={e => set('lieu', e.target.value)} placeholder="Adresse, ville…" />)}
+            {twoCol(
+              field('Heure', <input type="time" style={inp} value={f.time} onChange={e => set('time', e.target.value)} />),
+              field('Durée estimée', <input style={inp} value={f.dureeEstimee} onChange={e => set('dureeEstimee', e.target.value)} placeholder="2h, 45 min…" />)
+            )}
+          </>}
+
+          {f.type === 'autre' && <>
+            {field('Titre', <input style={inp} value={f.label} onChange={e => set('label', e.target.value)} placeholder="Titre de l’étape" />)}
+            {field('Lieu (option.)', <input style={inp} value={f.lieu} onChange={e => set('lieu', e.target.value)} placeholder="Lieu…" />)}
+            {field('Heure (option.)', <input type="time" style={inp} value={f.time} onChange={e => set('time', e.target.value)} />)}
+          </>}
+
+          {field('Lien (option.)', <input style={inp} value={f.link} onChange={e => set('link', e.target.value)} placeholder="Réservation, billet…" />)}
+          {field('Note (option.)', <textarea style={{ ...inp, resize: 'vertical', minHeight: 60 }} value={f.note} onChange={e => set('note', e.target.value)} placeholder="Informations…" />)}
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 20px', borderTop: `1px solid ${C.line}` }}>
+          {step && <button onClick={handleDelete} disabled={busy} style={{ ...ghost, color: '#c0563f', borderColor: 'rgba(192,86,63,.35)' }}>Supprimer</button>}
+          <div style={{ flex: 1 }} />
+          <button onClick={onClose} disabled={busy} style={ghost}>Annuler</button>
+          <button onClick={handleSave} disabled={busy} style={primary}>{busy ? '…' : (step ? 'Enregistrer' : 'Ajouter')}</button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
 function AtelierV2() {
   // --- 1. CONNEXION À TA BASE DE DONNÉES SUPABASE ---
   const { trip: realTrip } = Store.useStore();
@@ -45,14 +253,16 @@ function AtelierV2() {
         title: d.title || 'Journée libre',
         note: d.note,
         steps: d.steps.map(s => ({
-          type: s.type || 'autre',
+          ...s, // garde l'id + tous les champs bruts (indispensable pour la modification)
           label: s.label || s.lieu,
           place: s.lieu,
-          time: s.time,
-          note: s.note,
           mode: s.transportType || 'car',
           from: s.depart,
-          to: s.arrivee
+          to: s.arrivee,
+          nights: s.nuits,
+          checkin: s.timeCheckIn,
+          dur: s.dureeEstimee || s.duree,
+          over: s.nextDay ? ' +1' : ''
         }))
       };
     })
@@ -81,6 +291,8 @@ function AtelierV2() {
     return ['map', 'checklist', 'note'];
   });
   const [done, setDone] = React.useState({});  // checklist coché
+  const [editor, setEditor] = React.useState({ open: false, dayId: null, step: null });
+  const reload = () => { if (realTrip) window.SB.loadTrip(realTrip.id).then(t => Store.set({ trip: t })).catch(() => {}); };
 
   React.useEffect(() => { localStorage.setItem('it_pins', JSON.stringify(pinned)); }, [pinned]);
 
@@ -147,7 +359,7 @@ function AtelierV2() {
   /* ——— step card ——— */
   function StepCard({ s: step }) {
     const v = stepView(step);
-    return React.createElement('div', { style: { display: 'flex', gap: 14, padding: 14, borderRadius: 14, background: C.inset, border: `1px solid ${C.line2}` } },
+    return React.createElement('div', { onClick: () => setEditor({ open: true, dayId: day.id, step }), title: 'Modifier cette étape', style: { display: 'flex', gap: 14, padding: 14, borderRadius: 14, background: C.inset, border: `1px solid ${C.line2}`, cursor: 'pointer' } },
       React.createElement('div', { style: { width: 58, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center' } },
         React.createElement('div', { style: { fontFamily: mono, fontSize: 12, color: C.text, background: C.soft, borderRadius: 8, padding: '4px 7px', whiteSpace: 'nowrap' } }, (v.range || '—').split('–')[0]),
         React.createElement('div', { style: { width: 36, height: 36, borderRadius: 10, background: C.accentSoft, color: C.accent, display: 'grid', placeItems: 'center' } },
@@ -342,23 +554,9 @@ function AtelierV2() {
               day.steps.map((step, k) => React.createElement(StepCard, { key: k, s: step })),
               
               /* BOUTON AJOUTER RELIÉ À SUPABASE */
-              React.createElement('button', { 
-                onClick: async () => {
-                  const titre = window.prompt("Nom de la nouvelle étape ? (ex: Visite du musée)");
-                  if (!titre) return;
-                  try {
-                    await window.SB.sb.from('trip_steps').insert({
-                      trip_id: realTrip.id,
-                      day_id: day.id,
-                      type: 'activite',
-                      label: titre,
-                      time: '10:00'
-                    });
-                  } catch (e) {
-                    alert("Erreur : " + e.message);
-                  }
-                },
-                style: { ...s.ghost, alignSelf: 'flex-start', borderStyle: 'dashed', background: 'transparent', color: C.muted } 
+              React.createElement('button', {
+                onClick: () => setEditor({ open: true, dayId: day.id, step: null }),
+                style: { ...s.ghost, alignSelf: 'flex-start', borderStyle: 'dashed', background: 'transparent', color: C.muted }
               }, React.createElement(Icon, { name: 'plus', size: 15 }), 'Ajouter une étape'))),
           
           /* COLONNE ÉPINGLÉE */
@@ -377,7 +575,16 @@ function AtelierV2() {
                     React.createElement(Icon, { name: 'plus', size: 14, style: { color: C.faint } })))))) )),
         /* SYNTHÈSE */
         React.createElement('div', { style: s.panel }, React.createElement(Synthese, null)))),
-    mapOpen && React.createElement(MapOverlay, null)
+    mapOpen && React.createElement(MapOverlay, null),
+    React.createElement(StepEditor, {
+      open: editor.open,
+      tripId: realTrip && realTrip.id,
+      dayId: editor.dayId,
+      step: editor.step,
+      stepCount: day.steps.length,
+      onClose: () => setEditor({ open: false, dayId: null, step: null }),
+      onSaved: reload
+    })
   );
 }
 window.AtelierV2 = AtelierV2;

@@ -45,8 +45,14 @@ function AppShell() {
 
 // ─── Topbar ─────────────────────────────────────────────────
 function Topbar() {
-  const { user, trips, activeTripId, trip } = Store.useStore();
+  const { user, trips, activeTripId, trip, view, theme = localStorage.getItem('it_theme') || 'light' } = Store.useStore();
   const [authOpen, setAuthOpen] = React.useState(false);
+
+  const toggleTheme = () => {
+    const newTheme = theme === 'dark' ? 'light' : 'dark';
+    localStorage.setItem('it_theme', newTheme);
+    Store.set({ theme: newTheme });
+  };
   const [tripMenuOpen, setTripMenuOpen] = React.useState(false);
   const [newTripOpen, setNewTripOpen] = React.useState(false);
   const menuRef = React.useRef(null);
@@ -160,6 +166,18 @@ function Topbar() {
       {/* Actions à droite */}
       {user ? (
         <>
+          {/* Bouton Clair/Sombre */}
+          <button
+            onClick={toggleTheme}
+            title={theme === 'dark' ? 'Passer en clair' : 'Passer en sombre'}
+            style={{
+              width: 38, height: 38, borderRadius: 11,
+              background: 'var(--inset)', border: '1px solid var(--line)',
+              color: 'var(--accent)', cursor: 'pointer',
+              display: 'grid', placeItems: 'center'
+            }}
+          ><Icon name={theme === 'dark' ? 'sun' : 'moon'} size={16} /></button>
+
           <button
             onClick={() => Store.set({ settingsOpen: true })}
             title="Paramètres"

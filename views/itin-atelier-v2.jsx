@@ -70,7 +70,8 @@ function AtelierV2() {
       : `linear-gradient(150deg, hsl(${h} 30% 34%), hsl(${h} 32% 23%))`;
   }
 
-  const [mode, setMode] = React.useState(() => localStorage.getItem('it_theme') || 'light');
+  const { theme = localStorage.getItem('it_theme') || 'light' } = Store.useStore();
+  const mode = theme;
   const [view, setView] = React.useState('itin');
   const [sel, setSel] = React.useState(T.todayIndex);
   const [mapOpen, setMapOpen] = React.useState(false);
@@ -81,7 +82,6 @@ function AtelierV2() {
   });
   const [done, setDone] = React.useState({});  // checklist coché
 
-  React.useEffect(() => { localStorage.setItem('it_theme', mode); }, [mode]);
   React.useEffect(() => { localStorage.setItem('it_pins', JSON.stringify(pinned)); }, [pinned]);
 
   const C = palette(mode);
@@ -310,9 +310,7 @@ function AtelierV2() {
         React.createElement('button', { style: s.segBtn(view === 'recit'), onClick: () => setView('recit') }, 'Synthèse')),
       React.createElement('div', { style: s.topRight },
         React.createElement(Avatars, { people: T.participants, size: 30, dark: mode === 'light' }),
-        React.createElement('button', { style: s.iconBtn, title: mode === 'dark' ? 'Passer en clair' : 'Passer en sombre', onClick: () => setMode(m => m === 'dark' ? 'light' : 'dark') },
-          React.createElement(Icon, { name: mode === 'dark' ? 'sun' : 'moon', size: 17, style: { color: C.accent } })),
-        React.createElement('button', { style: s.ghost, onClick: () => setMapOpen(true) }, React.createElement(Icon, { name: 'map', size: 16, style: { color: C.accent } }), 'Carte'))),
+        React.createElement('button', { style: s.ghost, onClick: () => setMapOpen(true) }, React.createElement(Icon, { name: 'map', size: 16, style: { color: C.accent } }), 'Carte de l\'étape'))),
     
     /* BODY */
     React.createElement('div', { style: { flex: 1, overflow: 'hidden', position: 'relative' } },

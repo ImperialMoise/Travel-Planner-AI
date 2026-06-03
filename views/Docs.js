@@ -1,7 +1,7 @@
 function DocsView() {
   const { trip } = Store.useStore();
   return (
-    <div style={{ flex: 1, minHeight: 'calc(100vh - 60px)' }}>
+    <div style={{ flex: 1, minHeight: 'calc(100vh - 60px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <Placeholder
         kicker="Documents"
         title={trip.name}

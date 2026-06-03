@@ -27,7 +27,7 @@ function AppShell() {
       {/* On cache la Topbar de l'app si le design de Claude est affiché (car il a la sienne) */}
       <Topbar />
       
-      <main style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+      <main style={{ flex: 1, minHeight: 'calc(100vh - 60px)', display: 'flex', flexDirection: 'column' }}>
         {!user ? <LoggedOutHome /> :
          !activeTripId ? <NoTripHome /> :
          !trip ? <LoadingTrip /> :

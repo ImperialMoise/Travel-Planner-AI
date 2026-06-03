@@ -1,54 +1,59 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#15302a" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <title>Voyage Planner — L'Atelier</title>
-  <link rel="manifest" href="manifest.json" />
-
-  <!-- Polices DA Atelier -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-
-  <link rel="stylesheet" href="styles.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Atelier - Itinéraire</title>
+  <!-- Polices de caractères -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..700&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+  <!-- Feuille de style principale -->
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div id="root">
-    <!-- Pendant que React monte -->
-    <div class="boot">
-      <div class="boot-mark">VP</div>
-      <div class="boot-label">Chargement…</div>
+
+  <!-- BARRE DE NAVIGATION (TOPBAR) -->
+  <header class="topbar">
+    
+    <!-- Logo et Titre -->
+    <div class="brand">
+      <div class="mark">
+        <!-- Icône "route" -->
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="6" cy="6" r="2.4"></circle>
+          <circle cx="18" cy="18" r="2.4"></circle>
+          <path d="M8 6h7a3 3 0 0 1 0 6H9a3 3 0 0 0 0 6h6.5"></path>
+        </svg>
+      </div>
+      <div class="wordmark">Atelier</div>
     </div>
-  </div>
 
-  <!-- React 18 + ReactDOM via CDN (UMD, pas de build) -->
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Onglets Itinéraire / Synthèse -->
+    <nav class="seg">
+      <button class="seg-btn active">Itinéraire</button>
+      <button class="seg-btn">Synthèse</button>
+    </nav>
 
-  <!-- Babel standalone pour transformer le JSX à la volée -->
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Actions de droite -->
+    <div class="top-right">
+      <!-- Espace pour les avatars (on s'en occupera après) -->
+      <div class="avatars-placeholder"></div>
+      
+      <button class="ghost-btn">
+        <!-- Icône "map" -->
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b4843e" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 4 3 6.6v13.4L9 17.4l6 2.6 6-2.6V4l-6 2.6L9 4z"></path>
+          <path d="M9 4v13.4M15 6.6V20"></path>
+        </svg>
+        Carte
+      </button>
+    </div>
+  </header>
 
-  <!-- Supabase JS (ESM) — chargé dans supabase.js -->
+  <!-- ZONE DE CONTENU PRINCIPALE (Le corps de l'appli ira ici) -->
+  <main id="main-track">
+  </main>
 
-  <!-- Modules de l'app -->
-  <!-- supabase.js est un module ES qui exporte sb, signIn, etc. -->
-<script type="module">
-    import * as SB from './lib/supabase.js';
-    window.SB = SB;
-    window.dispatchEvent(new CustomEvent('sb-ready'));
-  </script>
-
-  <script type="text/babel" data-type="module" data-presets="react" src="lib/state.js"></script>
-  <script type="text/babel" data-type="module" data-presets="react" src="ui/Shared.js"></script>
-  <script type="text/babel" data-type="module" data-presets="react" src="views/Itinerary.js"></script>
-  <script type="text/babel" data-type="module" data-presets="react" src="views/Map.js"></script>
-  <script type="text/babel" data-type="module" data-presets="react" src="views/Budget.js"></script>
-  <script type="text/babel" data-type="module" data-presets="react" src="views/Docs.js"></script>
-  <script type="text/babel" data-type="module" data-presets="react" src="views/Settings.js"></script>
-  <script type="text/babel" data-type="module" data-presets="react" src="ui/AppShell.js"></script>
-  <script type="text/babel" data-type="module" data-presets="react" src="app.js"></script>
 </body>
 </html>

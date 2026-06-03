@@ -39,6 +39,7 @@ function AtelierV2() {
       const demoDay = window.TRIP.days[i % window.TRIP.days.length]; 
       return {
         ...demoDay, 
+        id: d.id, 
         n: d.index + 1,
         dateISO: d.dateISO,
         title: d.title || 'Journée libre',
@@ -338,7 +339,27 @@ function AtelierV2() {
                   React.createElement('div', { style: { fontFamily: serif, fontStyle: 'italic', fontSize: 26, lineHeight: 1, whiteSpace: 'nowrap', textShadow: '0 2px 14px rgba(0,0,0,.55)' } }, day.title)))),
             React.createElement('div', { style: { flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', gap: 11 } },
               day.steps.map((step, k) => React.createElement(StepCard, { key: k, s: step })),
-              React.createElement('button', { style: { ...s.ghost, alignSelf: 'flex-start', borderStyle: 'dashed', background: 'transparent', color: C.muted } },
+              React.createElement('button', { 
+                onClick: async () => {
+                  // 1. On demande le nom de l'étape à l'utilisateur
+                  const titre = window.prompt("Nom de la nouvelle étape ? (ex: Visite du musée)");
+                  if (!titre) return; // Si on annule, on ne fait rien
+                  
+                  try {
+                    // 2. On envoie l'étape directement dans ta base Supabase !
+                    await window.SB.sb.from('trip_steps').insert({
+                      trip_id: realTrip.id,
+                      day_id: day.id,
+                      type: 'activite',
+                      label: titre,
+                      time: '10:00'
+                    });
+                  } catch (e) {
+                    alert("Erreur : " + e.message);
+                  }
+                },
+                style: { ...s.ghost, alignSelf: 'flex-start', borderStyle: 'dashed', background: 'transparent', color: C.muted } 
+              },
                 React.createElement(Icon, { name: 'plus', size: 15 }), 'Ajouter une étape'))),
           /* COLONNE ÉPINGLÉE */
           React.createElement('aside', { style: s.ctx },

@@ -25,7 +25,7 @@ function AppShell() {
   return (
     <>
       {/* On cache la Topbar de l'app si le design de Claude est affiché (car il a la sienne) */}
-      {view !== 'itinerary' && <Topbar />}
+      <Topbar />
       
       <main style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
         {!user ? <LoggedOutHome /> :
@@ -35,7 +35,7 @@ function AppShell() {
       </main>
       
       {/* On cache aussi la BottomNav si on est sur l'Itinéraire */}
-      {view !== 'itinerary' && <BottomNav />}
+      <BottomNav />
       
       {settingsOpen && window.SettingsModal && <window.SettingsModal />}
       {toast && <div className="toast show">{toast.msg}</div>}

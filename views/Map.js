@@ -179,55 +179,41 @@ function MapView() {
   const clone = o => JSON.parse(JSON.stringify(o));
   async function buildBase() {
     const isDark = theme === 'dark';
-    const style = clone(await fetchS(isDark ? MV_DARK : MV_POS));
+    // ON UTILISE MV_VOY (Voyager) EN MODE CLAIR POUR AVOIR LES ROUTES JAUNES ET LE ZONAGE
+    const style = clone(await fetchS(isDark ? MV_DARK : MV_VOY));
 
-    // Couleurs signature "L'Atelier" pour redonner vie à la carte
-    const colWater = isDark ? '#112923' : '#d9e3e0'; // Bleu/vert pétrole très doux
-    const colPark = isDark ? '#1c3d31' : '#e2eadc'; // Vert doux / sauge
-    const colBld = isDark ? '#2a5046' : '#f0ece1'; // Couleur des bâtiments 3D
-    const colText = isDark ? '#9db5ab' : '#5e7068'; // Texte des POI
+    // Couleurs signature "L'Atelier" (on garde nos couleurs pour l'eau et les parcs)
+    const colWater = isDark ? '#112923' : '#d9e3e0'; 
+    const colPark = isDark ? '#1c3d31' : '#e2eadc'; 
+    const colBld = isDark ? '#2a5046' : '#f0ece1'; 
+    const colText = isDark ? '#9db5ab' : '#5e7068';
 
-    // On parcourt TOUTES les couches de la carte pour les modifier
     style.layers.forEach(l => {
-      // 1. Coloriser l'Eau & les Parcs
+      // 1. On personnalise uniquement l'Eau & les Parcs pour garder ta touche "Atelier"
       if (l.type === 'fill') {
         if (l.id.includes('water')) l.paint['fill-color'] = colWater;
-        if (l.id.includes('park') || l.id.includes('wood') || l.id.includes('landcover')) {
+        if (l.id.includes('park') || l.id.includes('wood') || l.id.includes('landcover_green')) {
           l.paint['fill-color'] = colPark;
           l.paint['fill-opacity'] = 0.8;
         }
       }
 
-      // 2. Gérer la langue et réveiller les Points d'Intérêts (POI)
-      if (l.type === 'symbol') {
-        // Tenter d'afficher le nom international (anglais/latin) en priorité sur le coréen
-        if (l.layout && l.layout['text-field']) {
-           l.layout['text-field'] = ['coalesce', ['get', 'name:en'], ['get', 'name:latin'], ['get', 'name']];
-        }
-        
-        // Rendre les monuments/métros bien visibles
-        if (l.id.includes('poi')) {
-           l.layout['visibility'] = 'visible';
-           if (l.paint) {
-             l.paint['text-color'] = colText;
-             l.paint['text-halo-color'] = isDark ? '#15302a' : '#ffffff';
-             l.paint['text-halo-width'] = 1.5;
-           }
-        }
+      // 2. Gestion de la langue (anglais en priorité)
+      if (l.type === 'symbol' && l.layout && l.layout['text-field']) {
+         l.layout['text-field'] = ['coalesce', ['get', 'name:en'], ['get', 'name:latin'], ['get', 'name']];
       }
     });
 
-    // 3. Le cheat code absolu : Ajouter les Bâtiments en 3D !
+    // 3. Ajouter les Bâtiments en 3D
     const sourceName = Object.keys(style.sources)[0]; 
     style.layers.push({
       'id': '3d-buildings',
       'source': sourceName,
       'source-layer': 'building',
       'type': 'fill-extrusion',
-      'minzoom': 14.5, // Ne s'affiche que quand on zoome près (comme un drone)
+      'minzoom': 14.5,
       'paint': {
         'fill-extrusion-color': colBld,
-        // Utilise la vraie hauteur du bâtiment, ou 10m par défaut si inconnu
         'fill-extrusion-height': ['coalesce', ['get', 'render_height'], ['get', 'height'], 10],
         'fill-extrusion-base': ['coalesce', ['get', 'render_min_height'], ['get', 'min_height'], 0],
         'fill-extrusion-opacity': 0.8

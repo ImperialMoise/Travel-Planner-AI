@@ -533,14 +533,6 @@ function AtelierV2() {
       React.createElement('div', { style: s.track(view) },
         /* ITIN */
         React.createElement('div', { style: s.panel },
-          React.createElement('aside', { style: s.spine },
-            React.createElement('div', { style: s.spineHead },
-              React.createElement('div', { style: s.kicker }, T.name),
-              React.createElement('div', { style: { fontFamily: serif, fontStyle: 'italic', fontSize: 20, marginTop: 4, color: C.text } }, realTrip ? `${realTrip.days.length} jours` : '15 jours'),
-              React.createElement('div', { style: { fontSize: 12, color: C.muted, marginTop: 3 } }, dayRange(T.startISO, T.endISO))),
-            React.createElement('div', { style: s.spineList },
-              React.createElement('div', { style: { position: 'absolute', left: 30, top: 16, bottom: 16, width: 2, background: C.line2 } }),
-              T.days.map((d, i) => React.createElement(SpineDay, { key: d.n, i })))),
           
           /* détail */
           React.createElement('div', { style: s.detail },

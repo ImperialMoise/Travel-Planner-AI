@@ -23,25 +23,24 @@ function AppShell() {
   }
 
   return (
-    <>
-      {/* On cache la Topbar de l'app si le design de Claude est affiché (car il a la sienne) */}
+    <div className="app-layout" style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100vw', overflow: 'hidden' }}>
       <Topbar />
       
-      <main style={{ flex: 1, minHeight: 0, display: 'flex', overflow: 'hidden' }}>
-        {!user ? <LoggedOutHome /> :
-         !activeTripId ? <NoTripHome /> :
-         !trip ? <LoadingTrip /> :
-         <>
-           {view !== 'itinerary' && view !== 'map' && <DaySpine />}
-           <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-             {CurrentView ? <CurrentView /> : <div style={{ padding: 40, color: 'var(--muted)' }}>Vue inconnue : {view}</div>}
-           </div>
-         </>}
+      {/* 🏗️ LE NOUVEAU SQUELETTE PRINCIPAL */}
+      <main className="app-main" style={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden' }}>
+        
+        {/* La Spine Globale : toujours à gauche */}
+        <window.DaySpine />
+        
+        {/* L'espace restant pour le contenu (Centre + Panneau Droit) de chaque onglet */}
+        <div style={{ flex: 1, display: 'flex', minHeight: 0, overflow: 'hidden', background: 'var(--bg)' }}>
+          {children}
+        </div>
+        
       </main>
-                
-      {settingsOpen && window.SettingsModal && <window.SettingsModal />}
-      {toast && <div className="toast show">{toast.msg}</div>}
-    </>
+      
+      <Toast />
+    </div>
   );
 }
 

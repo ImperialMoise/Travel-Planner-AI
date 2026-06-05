@@ -160,41 +160,6 @@ function MapView() {
   
   // --- ÉTAPE 1 : ÉTATS DE RECHERCHE ---
   const [searchQuery, setSearchQuery] = React.useState('');
-  const [isSearching, setIsSearching] = React.useState(false);
-
-  async function handleSearch(e) {
-    if (e.key !== 'Enter' || !searchQuery.trim()) return;
-    setIsSearching(true);
-    try {
-      // On interroge la carte du monde gratuite !
-      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=1`);
-      const data = await res.json();
-      
-      if (data && data.length > 0) {
-        const lat = parseFloat(data[0].lat);
-        const lon = parseFloat(data[0].lon);
-        spinRef.current = false; // On arrête de faire tourner la Terre
-        
-        // Vol cinématique vers la destination
-        mapRef.current?.flyTo({
-          center: [lon, lat],
-          zoom: 12,
-          pitch: 50, // On incline pour voir le relief !
-          duration: 3000,
-          curve: 1.4
-        });
-        
-        Store.showToast(`Vol vers ${data[0].display_name.split(',')[0]} ✈️`);
-        setSearchQuery(''); // On vide la barre
-      } else {
-        Store.showToast("Lieu introuvable...");
-      }
-    } catch (err) {
-      Store.showToast("Erreur de recherche");
-    } finally {
-      setIsSearching(false);
-    }
-  }
   // ------------------------------------
   const [curStyle, setCurStyle] = React.useState('minimal');
   const spinRef = React.useRef(true);
@@ -430,15 +395,18 @@ function MapView() {
           <div className="mv-ov" style={{ top: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 10, width: '100%', maxWidth: 360, padding: '0 16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 999, padding: '8px 18px', boxShadow: 'var(--shadow-lg)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}>
               <Icon name="pin" size={16} style={{ color: 'var(--muted)', marginRight: 10 }} />
-              <input
+              <LocationInput
                 value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                onKeyDown={handleSearch}
-                placeholder="Voler vers une ville... (Puis Entrée)"
-                disabled={isSearching}
-                style={{ flex: 1, border: 'none', background: 'transparent', outline: 'none', color: 'var(--text)', fontSize: 14, fontFamily: 'inherit' }}
+                onChange={v => setSearchQuery(v)}
+                onSelect={(loc) => {
+                  spinRef.current = false;
+                  // On vole directement vers les coordonnées exactes !
+                  mapRef.current?.flyTo({ center: [loc.lng, loc.lat], zoom: 12, pitch: 50, duration: 3000, curve: 1.4 });
+                  Store.showToast(`Vol vers ${loc.label.split(',')[0]} ✈️`);
+                }}
+                placeholder="Rechercher un lieu dans le monde..."
+                style={{ flex: 1, border: 'none', background: 'transparent', outline: 'none', color: 'var(--text)', fontSize: 14, fontFamily: 'inherit', minWidth: 220 }}
               />
-              {isSearching && <span style={{ fontSize: 12, color: 'var(--accent)', fontWeight: 700 }}>...</span>}
             </div>
           </div>
           {/* --------------------------------------------- */}

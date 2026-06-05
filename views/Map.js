@@ -40,7 +40,7 @@ const MAP_TRIP = {
       steps:[{t:"transport",mode:"train",l:"AREX express",s:"Séoul → ICN · 43 min",time:"06:30",c:[126.9707,37.5547]},{t:"transport",mode:"avion",l:"Séoul ICN → Paris CDG",s:"AF 265 · 12 h 15",time:"10:35",c:[126.4407,37.4602]}]}
   ]
 };
-let MAP_LEGS = []; // On a vidé les faux trajets pour l'instant
+const MAP_LEGS=[{a:[2.5479,49.0097],b:[126.4407,37.4602],mode:"avion"},{a:[126.9707,37.5547],b:[129.0414,35.1151],mode:"train"},{a:[129.0414,35.1151],b:[126.9707,37.5547],mode:"train"}];
 
 /* ═══ HELPERS ═══ */
 const MAP_IC={avion:'<path d="M21 16v-2l-8-5V3.6a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.4V19l-2 1.4V22l3.5-1 3.5 1v-1.6L13 19v-5.4z"/>',train:'<rect x="5" y="3.5" width="14" height="13" rx="3.5"/><path d="M5 11h14"/><circle cx="9" cy="13.8" r="1"/><circle cx="15" cy="13.8" r="1"/><path d="M8 16.5 6 20M16 16.5 18 20"/>',bus:'<rect x="4" y="4" width="16" height="12" rx="2.5"/><path d="M4 11h16"/><circle cx="8" cy="13.4" r="1"/><circle cx="16" cy="13.4" r="1"/><path d="M7 16.5V19M17 16.5V19"/>',bed:'<path d="M3 19v-8a2 2 0 0 1 2-2h8.5a4.5 4.5 0 0 1 4.5 4.5V19M3 14.5h18M3 19v1.5M21 16.5V20.5"/><circle cx="7.6" cy="12" r="1.4"/>',fork:'<path d="M6.5 3v6.5a2 2 0 0 0 4 0V3M8.5 3v18M16.5 3c-1.6 0-2.6 2.1-2.6 5.2s1 4.3 2.6 4.3M16.5 3v18"/>',camera:'<rect x="3" y="7" width="18" height="12.5" rx="2.5"/><path d="M8.6 7 10 4.5h4L15.4 7"/><circle cx="12" cy="13.2" r="3.2"/>',pin:'<path d="M12 21.5s6.5-5.8 6.5-11A6.5 6.5 0 0 0 5.5 10.5c0 5.2 6.5 11 6.5 11z"/><circle cx="12" cy="10.2" r="2.4"/>',route:'<circle cx="6" cy="6" r="2.4"/><circle cx="18" cy="18" r="2.4"/><path d="M8 6h7a3 3 0 0 1 0 6H9a3 3 0 0 0 0 6h6.5"/>'};
@@ -162,47 +162,13 @@ function MapView() {
   const markersRef = React.useRef({ day: [], step: [] });
   const tourRef = React.useRef({ on: false, timer: null });
   const styleCache = React.useRef({});
+  const T = MAP_TRIP;
 
-  // 1. ON BRANCHE LES VRAIES DONNÉES SUPABASE
-  const T = React.useMemo(() => {
-    if (!trip || !trip.days) return null;
-    
-    return {
-      name: trip.name,
-      dates: trip.startDate ? 'Départ le ' + mvFmtDate(trip.startDate) : "Dates à définir",
-      days: trip.days.map((d, i) => {
-        // On cherche le nom de la ville dans la première étape
-        const firstStep = d.steps[0] || {};
-        const cityName = firstStep.lieu || firstStep.arrivee || "Étape " + (i + 1);
-        
-        return {
-          n: i + 1,
-          date: d.dateISO || "",
-          wd: d.dateLabel ? d.dateLabel.split(' ')[0] : "Jour",
-          region: "Mon Voyage",
-          city: cityName,
-          title: d.title || "Journée libre",
-          tag: "JOUR " + (i + 1),
-          note: d.note || "",
-          // Par défaut on met Paris (on va rajouter la fonction GPS juste après !)
-          c: [2.3488, 48.8534], 
-          z: 12,
-          steps: d.steps.map((s, k) => ({
-            ...s,
-            t: s.type || 'autre',
-            mode: s.transportType || '',
-            l: s.label || s.lieu || "Activité",
-            s: s.duree || s.note || "",
-            // On décale très légèrement chaque point pour qu'ils ne se superposent pas
-            c: [2.3488 + (k * 0.005), 48.8534 - (k * 0.005)] 
-          }))
-        };
-      })
-    };
-  }, [trip]);
-
-  // 2. On met les kilomètres à zéro en attendant
-  const totalKm = 0;
+  // Total km
+  const totalKm = React.useMemo(() => {
+    let km = 0; MAP_LEGS.forEach(l => km += gcDist(l.a, l.b)); km += gcDist(MAP_LEGS[0].a, MAP_LEGS[0].b);
+    return (Math.round(km / 100) * 100).toLocaleString('fr-FR');
+  }, []);
 
   // ── Style builders ──
   async function fetchS(u) { if (styleCache.current[u]) return styleCache.current[u]; const j = await (await fetch(u)).json(); styleCache.current[u] = j; return j; }
@@ -300,7 +266,6 @@ function MapView() {
   function doSelect(i, fly) {
     spinRef.current = false;
     setSel(i);
-    Store.set({ selectedDayIndex: i }); // Dit au reste de l'application quel jour on regarde !
     const map = mapRef.current; if (!map) return;
     markersRef.current.day.forEach((dm, k) => dm.el.classList.toggle('active', k === i));
     showStepMarkers(map, T.days[i]);
@@ -381,7 +346,7 @@ function MapView() {
     map.setStyle(st === 'sat' ? await buildSat() : await buildBase());
   }
 
-  if (!trip || !T) return null;
+  if (!trip) return null;
 
   return (
     <>

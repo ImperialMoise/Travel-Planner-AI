@@ -175,6 +175,143 @@ function MapView(){
   if(!trip)return null;
   const segBtn=(on)=>({border:'none',cursor:'pointer',padding:'7px 14px',borderRadius:9,fontSize:12.5,fontWeight:700,fontFamily:'inherit',background:on?'var(--accent)':'transparent',color:on?'var(--accent-ink)':'var(--muted)',transition:'all .15s'});
 
+  // Curseur pointeur sur les POIs
+  React.useEffect(()=>{
+    const map=mapRef.current;if(!map)return;
+    const onMove=e=>{const fs=map.queryRenderedFeatures(e.point).filter(f=>f.layer.type==='symbol'&&(f.properties.name||f.properties['name:fr']));map.getCanvas().style.cursor=fs.length?'pointer':'';};
+    map.on('mousemove',onMove);
+    return()=>map.off('mousemove',onMove);
+  });
+
+  return(
+    <>
+    <style>{MV_CSS}</style>
+    <div className="mv-frame" style={{flexDirection:'row'}}>
+
+      {/* ═══ SPINE ═══ */}
+      <aside className="mv-spine">
+        <div style={{padding:'16px 22px 12px',borderBottom:'1px solid var(--line2)'}}>
+          <div style={{fontSize:11,fontWeight:700,letterSpacing:'.16em',textTransform:'uppercase',color:'var(--accent)'}}>{T.name}</div>
+          <div style={{fontFamily:'var(--font-serif)',fontStyle:'italic',fontSize:20,marginTop:4,color:'var(--text)'}}>{T.days.length} jours</div>
+          <div style={{fontSize:12,color:'var(--muted)',marginTop:3}}>{T.dates}</div>
+        </div>
+
+        {/* Fiche lieu trouvé (dans la spine) */}
+        {foundPlace&&!editorOpen&&(
+          <div style={{padding:14,borderBottom:'1px solid var(--line)'}}>
+            <div style={{display:'flex',gap:10,alignItems:'flex-start',marginBottom:10}}>
+              <div style={{width:36,height:36,borderRadius:10,background:'var(--accent-soft)',color:'var(--accent)',display:'grid',placeItems:'center',flexShrink:0}}><Icon name="pin" size={17}/></div>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontFamily:'var(--font-serif)',fontStyle:'italic',fontSize:17,color:'var(--text)',lineHeight:1.15}}>{foundPlace.name}</div>
+                <div style={{fontSize:11,color:'var(--muted)',marginTop:2}}>{foundPlace.address}</div>
+              </div>
+              <button onClick={()=>setFoundPlace(null)} style={{border:'none',background:'transparent',color:'var(--faint)',cursor:'pointer',padding:2}}><Icon name="x" size={16}/></button>
+            </div>
+            {!pickingDay?(
+              <button onClick={()=>setPickingDay(true)} style={{width:'100%',border:'none',background:'var(--accent)',color:'var(--accent-ink)',borderRadius:10,padding:'9px 0',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',justifyContent:'center',gap:7}}><Icon name="plus" size={14}/>Ajouter au séjour</button>
+            ):(
+              <div>
+                <div style={{fontSize:10,fontWeight:700,letterSpacing:'.08em',textTransform:'uppercase',color:'var(--faint)',marginBottom:8}}>Choisir le jour</div>
+                <div style={{display:'flex',flexWrap:'wrap',gap:5}}>
+                  {realTrip&&realTrip.days.map((d,i)=>(
+                    <button key={d.id} onClick={()=>openEditorForDay(i)} title={"J"+(i+1)+" · "+(d.dateLabel||'')}
+                      style={{width:34,height:34,borderRadius:10,border:'1px solid var(--line)',background:'var(--inset)',color:'var(--text)',fontFamily:'var(--font-serif)',fontSize:14,fontWeight:700,cursor:'pointer',display:'grid',placeItems:'center',transition:'all .12s'}}
+                      onMouseEnter={e=>{e.currentTarget.style.background='var(--accent)';e.currentTarget.style.color='var(--accent-ink)';e.currentTarget.style.borderColor='var(--accent)';}}
+                      onMouseLeave={e=>{e.currentTarget.style.background='var(--inset)';e.currentTarget.style.color='var(--text)';e.currentTarget.style.borderColor='var(--line)';}}
+                    >{i+1}</button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="mv-spine-list">
+          <div className="mv-spine-line"/>
+          {T.days.map((d,i)=>{const on=sel===i;return(
+            <button key={i} onClick={()=>doSelect(i,true)} style={{width:'100%',display:'flex',alignItems:'center',gap:13,padding:'5px 12px 5px 8px',border:'none',cursor:'pointer',borderRadius:10,textAlign:'left',fontFamily:'inherit',color:'var(--text)',background:on?'var(--card)':'transparent',boxShadow:on?'var(--shadow)':'none',marginBottom:2,position:'relative',transition:'all .16s'}}>
+              <div style={{width:22,display:'flex',justifyContent:'center',flexShrink:0,zIndex:1}}>
+                <div style={{width:on?13:10,height:on?13:10,borderRadius:'50%',background:d.region==='Busan'?'#c98a3c':'var(--accent)',border:'2px solid '+(d.region==='Busan'?'#c98a3c':'var(--accent)'),boxShadow:on?'0 0 0 4px var(--accent-soft)':'none',transition:'all .16s'}}/>
+              </div>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{display:'flex',alignItems:'baseline',gap:7}}>
+                  <span style={{fontFamily:'var(--font-serif)',fontSize:14.5,color:on?'var(--accent)':'var(--text)'}}>J{d.n}</span>
+                  <span style={{fontSize:12.5,fontWeight:600,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{d.city}</span>
+                </div>
+                <div style={{fontSize:10,color:'var(--muted)',marginTop:1}}>{d.wd} {mvFmtDate(d.date)}</div>
+              </div>
+            </button>
+          );})}
+        </div>
+      </aside>
+
+      {/* ═══ MAP (plein écran, contrôles en overlay) ═══ */}
+      <div className="mv-map-wrap">
+        <div id="mv-map" ref={mapEl}/>
+
+        {/* Top-left : Affichage + Survoler */}
+        <div style={{position:'absolute',top:14,left:14,zIndex:6,display:'flex',gap:8,alignItems:'center'}}>
+          <div style={{position:'relative'}}>
+            <button onClick={()=>setLayersOpen(p=>!p)} style={{display:'inline-flex',alignItems:'center',gap:7,border:'1px solid var(--line)',background:'var(--card)',color:layersOpen?'var(--accent)':'var(--muted)',borderRadius:10,padding:'7px 12px',fontSize:12.5,fontWeight:700,cursor:'pointer',fontFamily:'inherit',boxShadow:'var(--shadow)'}}><Icon name="map" size={14}/>Affichage</button>
+            {layersOpen&&(
+              <div style={{position:'absolute',top:'calc(100% + 6px)',left:0,background:'var(--card)',border:'1px solid var(--line)',borderRadius:14,padding:14,boxShadow:'0 12px 40px rgba(31,46,40,.2)',minWidth:200,zIndex:100}}>
+                <div style={{fontSize:10.5,fontWeight:800,color:'var(--faint)',textTransform:'uppercase',letterSpacing:'.08em',marginBottom:8}}>Fond de carte</div>
+                <div style={{display:'flex',background:'var(--inset)',border:'1px solid var(--line)',borderRadius:10,padding:3,gap:2,marginBottom:10}}>
+                  <button style={segBtn(curStyle==='minimal')} onClick={()=>setCurStyle('minimal')}>Plan</button>
+                  <button style={segBtn(curStyle==='sat')} onClick={()=>setCurStyle('sat')}>Satellite</button>
+                </div>
+              </div>
+            )}
+          </div>
+          <button onClick={()=>{if(tourRef.current.on)stopTour();else startTour();}} style={{display:'inline-flex',alignItems:'center',gap:7,border:'none',background:touring?'var(--accent)':'var(--text)',color:touring?'var(--accent-ink)':'var(--card)',borderRadius:10,padding:'8px 14px',fontSize:12.5,fontWeight:700,cursor:'pointer',fontFamily:'inherit',boxShadow:'var(--shadow)'}}><Icon name="route" size={14}/>{touring?'Stop':'Survoler'}</button>
+        </div>
+
+        {/* Top-center : Recherche */}
+        <div style={{position:'absolute',top:14,left:'50%',transform:'translateX(-50%)',zIndex:7,width:380,maxWidth:'calc(100% - 340px)'}}>
+          <div style={{position:'relative'}}>
+            <input value={query} onChange={e=>doSearch(e.target.value)} placeholder="Rechercher un lieu…" style={{width:'100%',padding:'10px 14px 10px 38px',borderRadius:999,border:'1.5px solid var(--accent)',background:'var(--card)',color:'var(--text)',fontFamily:'inherit',fontSize:13.5,outline:'none',boxShadow:'0 6px 24px rgba(31,46,40,.12)'}}/>
+            <Icon name="pin" size={14} style={{position:'absolute',left:13,top:12,color:'var(--accent)'}}/>
+            {results.length>0&&(
+              <div style={{position:'absolute',top:'calc(100% + 4px)',left:0,right:0,background:'var(--card)',border:'1px solid var(--line)',borderRadius:14,boxShadow:'0 18px 50px rgba(31,46,40,.22)',overflow:'hidden',maxHeight:280,overflowY:'auto',zIndex:200}}>
+                {results.map((f,k)=>(
+                  <button key={k} onClick={()=>pickResult(f)} style={{width:'100%',display:'flex',alignItems:'center',gap:10,padding:'10px 14px',border:'none',borderBottom:'1px solid var(--line2)',background:'transparent',cursor:'pointer',fontFamily:'inherit',textAlign:'left',color:'var(--text)'}} onMouseEnter={e=>e.currentTarget.style.background='var(--inset)'} onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                    <div style={{width:28,height:28,borderRadius:8,background:'var(--accent-soft)',color:'var(--accent)',display:'grid',placeItems:'center',flexShrink:0}}><Icon name="pin" size={13}/></div>
+                    <div style={{flex:1,minWidth:0}}><div style={{fontSize:13,fontWeight:700}}>{f.text}</div><div style={{fontSize:11,color:'var(--muted)',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{f.place_name}</div></div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Top-right : Vue globale + contrôles */}
+        <div style={{position:'absolute',top:14,right:14,zIndex:5,display:'flex',flexDirection:'column',gap:10,alignItems:'flex-end'}}>
+          <button onClick={fitAll} style={{display:'inline-flex',alignItems:'center',gap:7,border:'1px solid var(--line)',background:'var(--card)',color:'var(--muted)',borderRadius:10,padding:'7px 12px',fontSize:12.5,fontWeight:700,cursor:'pointer',fontFamily:'inherit',boxShadow:'var(--shadow)'}}><Icon name="expand" size={14}/>Vue globale</button>
+          <div className="mv-ctrl">
+            <button onClick={()=>{spinRef.current=false;mapRef.current?.zoomIn({duration:400});}}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+            <button onClick={()=>{spinRef.current=false;mapRef.current?.zoomOut({duration:400});}}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"><path d="M5 12h14"/></svg></button>
+            <button onClick={()=>mapRef.current?.easeTo({bearing:0,pitch:0,duration:600})}><svg ref={needleRef} width="18" height="18" viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3l3.2 8L12 9.4 8.8 11z" fill="var(--accent)" stroke="var(--accent)" strokeWidth="1.5"/><path d="M12 9.4 8.8 13 12 21l3.2-8z" fill="var(--muted)" stroke="var(--muted)" strokeWidth="1.5"/></svg></button>
+          </div>
+          <div className="mv-ctrl">
+            <button onClick={()=>{const p=mapRef.current?.getPitch()>10?0:55;mapRef.current?.easeTo({pitch:p,duration:700});}}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-5 9 5-9 5z"/><path d="M3 9v6l9 5 9-5V9"/></svg></button>
+          </div>
+          <div className="mv-readout" ref={readoutRef}><b>GLOBE</b> · z1.6</div>
+        </div>
+
+        {/* Day card (bas gauche) */}
+        <div ref={cardRef} style={{position:'absolute',bottom:16,left:16,zIndex:5}}/>
+
+        {/* StepEditor */}
+        {editorOpen&&foundPlace&&window.StepEditor&&React.createElement(window.StepEditor,{open:true,tripId:realTrip&&realTrip.id,dayId:editorOpen.dayId,step:{type:'activite',label:foundPlace.name,lieu:foundPlace.address,lat:foundPlace.lat,lng:foundPlace.lng},stepCount:editorOpen.stepCount,onClose:onEditorClose,onSaved:onEditorSaved})}
+      </div>
+    </div>
+    </>
+  );
+}
+window.MapView=MapView;
+
+  const segBtn=(on)=>({border:'none',cursor:'pointer',padding:'7px 14px',borderRadius:9,fontSize:12.5,fontWeight:700,fontFamily:'inherit',background:on?'var(--accent)':'transparent',color:on?'var(--accent-ink)':'var(--muted)',transition:'all .15s'});
+
   return(
     <>
     <style>{MV_CSS}</style>

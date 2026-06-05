@@ -217,29 +217,34 @@ function MapView() {
         }
       }
 
-      // 3. Textes internationaux prioritaires
-      if (l.type === 'symbol' && l.layout && l.layout['text-field']) {
-         l.layout['text-field'] = ['coalesce', ['get', 'name:en'], ['get', 'name:latin'], ['get', 'name']];
-      }
+      // 3. Textes, Lieux et Rues
+      if (l.type === 'symbol') {
+        // SÉCURITÉ : On s'assure que l'objet layout existe avant de le modifier !
+        l.layout = l.layout || {};
 
-      // 4. RÉVEIL DES LIEUX DE PROXIMITÉ (Connecté au menu)
-      if (l.type === 'symbol' && (l.id.includes('poi') || l.id.includes('transit') || l.id.includes('station'))) {
-         l.layout['visibility'] = layerOpts.pois ? 'visible' : 'none'; // <-- ICI
-         if (l.paint) {
-           l.paint['text-color'] = isDark ? '#b8c5c0' : '#6b5a4b';
-           l.paint['text-halo-color'] = isDark ? '#15302a' : '#ffffff';
-           l.paint['text-halo-width'] = 1.5;
-         }
-      }
+        if (l.layout['text-field']) {
+           l.layout['text-field'] = ['coalesce', ['get', 'name:en'], ['get', 'name:latin'], ['get', 'name']];
+        }
 
-      // 5. NOM DES RUES (Connecté au menu)
-      if (l.type === 'symbol' && l.id.includes('road')) {
-         l.layout['visibility'] = layerOpts.labels ? 'visible' : 'none'; // <-- ICI
+        // Connecté au menu : Commerces & Lieux
+        if (l.id.includes('poi') || l.id.includes('transit') || l.id.includes('station')) {
+           l.layout['visibility'] = layerOpts.pois ? 'visible' : 'none';
+           if (l.paint) {
+             l.paint['text-color'] = isDark ? '#b8c5c0' : '#6b5a4b';
+             l.paint['text-halo-color'] = isDark ? '#15302a' : '#ffffff';
+             l.paint['text-halo-width'] = 1.5;
+           }
+        }
+
+        // Connecté au menu : Noms des rues
+        if (l.id.includes('road')) {
+           l.layout['visibility'] = layerOpts.labels ? 'visible' : 'none';
+        }
       }
     });
 
-    // 6. BÂTIMENTS 3D (Connecté au menu)
-    if (layerOpts.buildings3D) { // <-- ET LÀ
+    // 4. BÂTIMENTS 3D (Connecté au menu)
+    if (layerOpts.buildings3D) {
       const sourceName = Object.keys(style.sources)[0];
       style.layers.push({
         'id': '3d-buildings',
@@ -258,6 +263,7 @@ function MapView() {
 
     return style;
   }
+
 
   async function buildSat() {
     const s = clone(await fetchS(MV_VOY));

@@ -143,10 +143,10 @@ const MV_CSS = `
 `;
 
 /* ═══ TILE SOURCES (gratuit, sans token) ═══ */
-const MV_POS='https://basemaps.cartocdn.com/gl/positron-gl-style/style.json';
-const MV_DARK='https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
-const MV_VOY='https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json';
-const MV_ESRI='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+const MT_KEY='08IwMKKAkP3BQJss5poF';
+const MV_POS='https://api.maptiler.com/maps/streets-v2/style.json?key='+MT_KEY+'&language=fr';
+const MV_DARK='https://api.maptiler.com/maps/streets-v2-dark/style.json?key='+MT_KEY+'&language=fr';
+const MV_SAT='https://api.maptiler.com/maps/hybrid/style.json?key='+MT_KEY+'&language=fr';
 
 function MapView() {
   const { trip, theme = localStorage.getItem('it_theme') || 'light' } = Store.useStore();
@@ -176,6 +176,47 @@ function MapView() {
   const tourRef = React.useRef({ on: false, timer: null });
   const styleCache = React.useRef({});
   const T = MAP_TRIP;
+  const { trip: realTrip } = Store.useStore();
+  const [query, setQuery] = React.useState('');
+  const [results, setResults] = React.useState([]);
+  const [addTarget, setAddTarget] = React.useState(null); // {place, open}
+  const searchTimer = React.useRef(null);
+
+  function doSearch(q) {
+    setQuery(q);
+    clearTimeout(searchTimer.current);
+    if (!q.trim()) { setResults([]); return; }
+    searchTimer.current = setTimeout(async () => {
+      try {
+        const r = await fetch('https://api.maptiler.com/geocoding/' + encodeURIComponent(q) + '.json?key=' + MT_KEY + '&language=fr&limit=6');
+        const j = await r.json();
+        setResults(j.features || []);
+      } catch (e) { setResults([]); }
+    }, 350);
+  }
+  function pickResult(f) {
+    setResults([]); setQuery('');
+    const map = mapRef.current; if (!map) return;
+    map.flyTo({ center: f.center, zoom: 15, duration: 1600 });
+    setAddTarget({ place: f, open: false });
+  }
+  async function addToDay(dayIndex) {
+    if (!addTarget || !realTrip) return;
+    const day = realTrip.days[dayIndex]; if (!day) return;
+    try {
+      await window.SB.saveStep(realTrip.id, day.id, {
+        type: 'activite',
+        label: addTarget.place.text || '',
+        lieu: addTarget.place.place_name || '',
+        lat: addTarget.place.center[1],
+        lng: addTarget.place.center[0],
+        stepIndex: day.steps.length
+      });
+      Store.showToast("Ajouté au Jour " + (dayIndex + 1) + " ✓");
+      setAddTarget(null);
+      window.SB.loadTrip(realTrip.id).then(t => Store.set({ trip: t }));
+    } catch (e) { alert("Erreur : " + e.message); }
+  }
 
   // Total km
   const totalKm = React.useMemo(() => {
@@ -266,13 +307,7 @@ function MapView() {
   }
 
 
-  async function buildSat() {
-    const s = clone(await fetchS(MV_VOY));
-    s.sources.satimg = { type: 'raster', tiles: [MV_ESRI], tileSize: 256 };
-    const labels = s.layers.filter(l => l.type === 'symbol').map(l => { l.paint = l.paint || {}; l.paint['text-color'] = '#f7f2e8'; l.paint['text-halo-color'] = 'rgba(8,16,12,.8)'; l.paint['text-halo-width'] = 1.4; return l; });
-    s.layers = [{ id: 'bg', type: 'background', paint: { 'background-color': '#0d1a14' } }, { id: 'satimg', type: 'raster', source: 'satimg' }, ...labels];
-    return s;
-  }
+  async function buildSat() { return clone(await fetchS(MV_SAT)); }
 
   function applyGlobe(map) {
     try { map.setProjection({ type: 'globe' }); } catch (e) {}
@@ -555,6 +590,63 @@ function MapView() {
           {/* LE GLOBE 3D */}
           <div className="mv-map-wrap">
             <div id="mv-map" ref={mapEl} />
+
+          {/* BARRE DE RECHERCHE */}
+          <div style={{ position: 'absolute', top: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 8, width: 380, maxWidth: 'calc(100% - 340px)' }}>
+            <div style={{ position: 'relative' }}>
+              <input value={query} onChange={e => doSearch(e.target.value)} placeholder="Rechercher un lieu, une adresse…"
+                style={{ width: '100%', padding: '11px 14px 11px 38px', borderRadius: 14, border: '1px solid var(--line)', background: 'var(--card)', color: 'var(--text)', fontFamily: 'inherit', fontSize: 13.5, fontWeight: 500, boxShadow: 'var(--shadow)', outline: 'none', backdropFilter: 'blur(8px)' }} />
+              <svg style={{ position: 'absolute', left: 12, top: 11, color: 'var(--muted)' }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></svg>
+            </div>
+            {results.length > 0 && (
+              <div style={{ marginTop: 4, background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 14, boxShadow: '0 18px 50px rgba(31,46,40,.22)', overflow: 'hidden', maxHeight: 280, overflowY: 'auto' }}>
+                {results.map((f, k) => (
+                  <button key={k} onClick={() => pickResult(f)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', border: 'none', borderBottom: '1px solid var(--line2)', background: 'transparent', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left', color: 'var(--text)', transition: 'background .12s' }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'var(--inset)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                    <div style={{ width: 30, height: 30, borderRadius: 9, background: 'var(--accent-soft)', color: 'var(--accent)', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"><path d="M12 21.5s6.5-5.8 6.5-11A6.5 6.5 0 0 0 5.5 10.5c0 5.2 6.5 11 6.5 11z" /><circle cx="12" cy="10.2" r="2.4" /></svg>
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{f.text}</div>
+                      <div style={{ fontSize: 11, color: 'var(--muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{f.place_name}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* CARTE DU LIEU TROUVÉ → Ajouter au voyage */}
+          {addTarget && (
+            <div style={{ position: 'absolute', bottom: 16, right: 16, zIndex: 8, width: 320 }}>
+              <div style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 16, boxShadow: '0 18px 50px rgba(31,46,40,.22)', overflow: 'hidden' }}>
+                <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--line2)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--accent)' }}>Lieu trouvé</div>
+                      <div style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: 19, color: 'var(--text)', marginTop: 3 }}>{addTarget.place.text}</div>
+                      <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 3 }}>{addTarget.place.place_name}</div>
+                    </div>
+                    <button onClick={() => setAddTarget(null)} style={{ border: 'none', background: 'transparent', color: 'var(--faint)', cursor: 'pointer', padding: 4 }}><Icon name="x" size={18} /></button>
+                  </div>
+                </div>
+                <div style={{ padding: '10px 16px 14px' }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--faint)', marginBottom: 8 }}>Ajouter au jour…</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 200, overflowY: 'auto' }}>
+                    {realTrip && realTrip.days.map((d, i) => (
+                      <button key={d.id} onClick={() => addToDay(i)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', border: '1px solid var(--line2)', borderRadius: 10, background: 'transparent', cursor: 'pointer', fontFamily: 'inherit', color: 'var(--text)', transition: 'all .12s' }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.background = 'var(--accent-soft)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--line2)'; e.currentTarget.style.background = 'transparent'; }}>
+                        <span style={{ fontFamily: 'var(--font-serif)', fontSize: 15, color: 'var(--accent)', width: 28 }}>J{i + 1}</span>
+                        <span style={{ fontSize: 12.5, fontWeight: 600, flex: 1, textAlign: 'left' }}>{d.title || d.dateLabel || ''}</span>
+                        <Icon name="plus" size={14} style={{ color: 'var(--accent)' }} />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
             {/* Boutons de contrôle caméra (zoom/boussole) */}
             <div className="mv-ov mv-ov-tr">

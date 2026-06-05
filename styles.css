@@ -652,3 +652,21 @@ body {
   color: var(--muted);
   margin-top: 3px;
 }
+
+/* ═══════ Thème sombre — activé via html.dark ═══════════════ */
+html.dark {
+  --bg: radial-gradient(1100px 700px at 75% -10%, rgba(217,182,126,.06), transparent 60%), linear-gradient(180deg, #15302a, #173a31);
+  --card: #21433b;
+  --soft: #2a5046;
+  --inset: rgba(0,0,0,.18);
+  --text: #f3ede2;
+  --muted: #9db5ab;
+  --faint: #6f8a80;
+  --accent: #d9b67e;
+  --accent-soft: rgba(217,182,126,.14);
+  --accent-ink: #15302a;
+  --line: rgba(255,255,255,.08);
+  --line2: rgba(255,255,255,.05);
+  --topbar: rgba(20,42,36,.85);
+  --shadow: 0 3px 14px rgba(0,0,0,.3);
+}

@@ -306,7 +306,7 @@ function AtelierV2() {
   const togglePin = (id) => setPinned(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id]);
 
   const s = {
-    frame: { width: '100%', height: 860, color: C.text, fontFamily: '"DM Sans",system-ui,sans-serif',
+    frame: { width: '100%', flex: 1, minHeight: 0, color: C.text, fontFamily: '"DM Sans",system-ui,sans-serif',
       position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column',
       background: C.bgCss, transition: 'background .4s' },
     top: { height: 64, flexShrink: 0, display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center',

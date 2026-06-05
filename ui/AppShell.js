@@ -48,6 +48,7 @@ function Topbar() {
   const toggleTheme = () => {
     const newTheme = theme === 'dark' ? 'light' : 'dark';
     localStorage.setItem('it_theme', newTheme);
+    document.documentElement.classList.toggle('dark', newTheme === 'dark');
     Store.set({ theme: newTheme });
   };
   const [tripMenuOpen, setTripMenuOpen] = React.useState(false);
@@ -70,7 +71,7 @@ function Topbar() {
       display: 'flex', alignItems: 'center', gap: 14,
       padding: '0 18px',
       borderBottom: '1px solid var(--line)',
-      background: 'rgba(20,42,36,.7)',
+      background: 'var(--topbar)',
       backdropFilter: 'blur(10px)',
       WebkitBackdropFilter: 'blur(10px)',
       position: 'sticky', top: 0, zIndex: 100
@@ -159,7 +160,7 @@ function Topbar() {
       )}
 
       {/* NAVIGATION GLOBALE */}
-      <nav style={{ display: 'flex', gap: 4, marginLeft: 20 }}>
+      <nav style={{ display: 'flex', gap: 2, marginLeft: 20, background: 'var(--inset)', border: '1px solid var(--line)', borderRadius: 999, padding: 3 }}>
         {[
           { id: 'itinerary', label: 'Plan',   icon: 'route' },
           { id: 'map',       label: 'Carte',  icon: 'map' },
@@ -173,12 +174,12 @@ function Topbar() {
               onClick={() => Store.set({ view: it.id })}
               style={{
                 border: 'none',
-                background: on ? 'rgba(217,182,126,.15)' : 'transparent',
-                color: on ? 'var(--accent)' : 'var(--muted)',
+                background: on ? 'var(--accent)' : 'transparent',
+                color: on ? 'var(--accent-ink)' : 'var(--muted)',
                 cursor: 'pointer',
-                display: 'flex', alignItems: 'center', gap: 8,
-                fontSize: 13, fontWeight: on ? 700 : 600, fontFamily: 'inherit',
-                padding: '6px 12px', borderRadius: 10, transition: 'all .2s'
+                display: 'flex', alignItems: 'center', gap: 7,
+                fontSize: 13, fontWeight: 700, fontFamily: 'inherit',
+                padding: '7px 14px', borderRadius: 999, transition: 'all .2s'
               }}
             >
               <Icon name={it.icon} size={14} />

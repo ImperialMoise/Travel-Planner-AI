@@ -179,48 +179,66 @@ function MapView() {
   const clone = o => JSON.parse(JSON.stringify(o));
   async function buildBase() {
     const isDark = theme === 'dark';
-    // ON UTILISE MV_VOY (Voyager) EN MODE CLAIR POUR AVOIR LES ROUTES JAUNES ET LE ZONAGE
     const style = clone(await fetchS(isDark ? MV_DARK : MV_VOY));
 
-    // Couleurs signature "L'Atelier" (on garde nos couleurs pour l'eau et les parcs)
-    const colWater = isDark ? '#112923' : '#d9e3e0'; 
-    const colPark = isDark ? '#1c3d31' : '#e2eadc'; 
-    const colBld = isDark ? '#2a5046' : '#f0ece1'; 
-    const colText = isDark ? '#9db5ab' : '#5e7068';
+    // Les codes couleurs exacts inspirés de Google Maps
+    const colWater = isDark ? '#1a3642' : '#aadaff';
+    const colPark = isDark ? '#1c3d31' : '#cdeac0';
+    const colLand = isDark ? '#242f2b' : '#ebebeb'; 
+    const colBld = isDark ? '#2a5046' : '#f2f2f2'; 
+    const colBldBorder = isDark ? '#3d6358' : '#e6e6e6';
+    const colHwy = isDark ? '#475c55' : '#ffda82'; 
 
     style.layers.forEach(l => {
-      // 1. On personnalise uniquement l'Eau & les Parcs pour garder ta touche "Atelier"
+      // 1. Fond et espaces naturels
       if (l.type === 'fill') {
-        if (l.id.includes('water')) l.paint['fill-color'] = colWater;
-        if (l.id.includes('park') || l.id.includes('wood') || l.id.includes('landcover_green')) {
+        if (l.id.includes('water')) {
+          l.paint['fill-color'] = colWater;
+        } else if (l.id.includes('park') || l.id.includes('wood') || l.id.includes('green')) {
           l.paint['fill-color'] = colPark;
-          l.paint['fill-opacity'] = 0.8;
+          l.paint['fill-opacity'] = 1;
+        } else if (l.id.includes('land') || l.id === 'background') {
+          l.paint['fill-color'] = colLand;
+        } else if (l.id.includes('building')) {
+          l.paint['fill-color'] = colBld;
+          if (l.paint['fill-outline-color']) l.paint['fill-outline-color'] = colBldBorder;
         }
       }
 
-      // 2. Gestion de la langue (anglais en priorité)
+      // 2. Hiérarchie des routes (Le fameux réseau sanguin jaune !)
+      if (l.type === 'line' && l.id.includes('road')) {
+        if (l.id.includes('motorway') || l.id.includes('trunk') || l.id.includes('primary')) {
+          if (!isDark) l.paint['line-color'] = colHwy;
+        }
+      }
+
+      // 3. Textes internationaux prioritaires
       if (l.type === 'symbol' && l.layout && l.layout['text-field']) {
          l.layout['text-field'] = ['coalesce', ['get', 'name:en'], ['get', 'name:latin'], ['get', 'name']];
       }
     });
 
-    // 3. Ajouter les Bâtiments en 3D
-    const sourceName = Object.keys(style.sources)[0]; 
+    // 4. Bâtiments 3D "Discrets" (Façon Google, pas SimCity)
+    const sourceName = Object.keys(style.sources)[0];
     style.layers.push({
       'id': '3d-buildings',
       'source': sourceName,
       'source-layer': 'building',
       'type': 'fill-extrusion',
-      'minzoom': 14.5,
+      // On retarde la 3D pour que la carte globale reste lisible
+      'minzoom': 15.5, 
       'paint': {
         'fill-extrusion-color': colBld,
-        'fill-extrusion-height': ['coalesce', ['get', 'render_height'], ['get', 'height'], 10],
+        // On réduit la hauteur artificielle par défaut
+        'fill-extrusion-height': ['coalesce', ['get', 'render_height'], ['get', 'height'], 6], 
         'fill-extrusion-base': ['coalesce', ['get', 'render_min_height'], ['get', 'min_height'], 0],
-        'fill-extrusion-opacity': 0.8
+        // Translucide pour ne jamais boucher la vue des rues
+        'fill-extrusion-opacity': 0.6 
       }
     });
 
     return style;
+  }urn style;
   }
   async function buildSat() {
     const s = clone(await fetchS(MV_VOY));

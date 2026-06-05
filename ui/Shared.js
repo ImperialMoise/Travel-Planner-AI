@@ -213,52 +213,6 @@ function LocationInput({ value, onChange, onSelect, placeholder, style }) {
     </div>
   );
 }
-// ─── Composant Colonne de Gauche Globale (DaySpine) ────────
-function DaySpine() {
-  const { trip, selectedDayIndex, view } = Store.useStore();
-
-  // On cache la colonne si on est sur l'accueil ou s'il n'y a pas de voyage
-  if (!trip || view === 'home') return null;
-
-  return (
-    <aside style={{ width: 258, flexShrink: 0, borderRight: '1px solid var(--line)', display: 'flex', flexDirection: 'column', background: 'var(--card)', zIndex: 10 }}>
-      <div style={{ padding: '24px 24px 16px', borderBottom: '1px solid var(--line2)' }}>
-        <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--faint)', textTransform: 'uppercase', letterSpacing: '.12em' }}>{trip.name || "Nouveau Voyage"}</div>
-        <div style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: 22, marginTop: 4, color: 'var(--text)' }}>{trip.days?.length || 0} jours</div>
-        <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>{trip.dates || "Dates à définir"}</div>
-      </div>
-      
-      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 12px', position: 'relative' }}>
-        <div style={{ position: 'absolute', left: 28, top: 24, bottom: 24, width: 2, background: 'var(--line2)' }} />
-        
-        {trip.days?.map((d, i) => {
-          const active = selectedDayIndex === i;
-          // On garde ta belle logique de couleur selon la région !
-          const col = d.region === 'Busan' ? '#c98a3c' : 'var(--accent)';
-          
-          return (
-            <button 
-              key={i} 
-              onClick={() => Store.set({ selectedDayIndex: i })}
-              style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '8px', border: 'none', background: active ? 'var(--inset)' : 'transparent', borderRadius: 10, cursor: 'pointer', textAlign: 'left', position: 'relative', transition: 'all 0.2s', marginBottom: 2 }}
-            >
-              <div style={{ width: 20, display: 'flex', justifyContent: 'center', zIndex: 1, flexShrink: 0 }}>
-                <div style={{ width: active ? 12 : 8, height: active ? 12 : 8, borderRadius: '50%', background: col, border: `2px solid ${col}`, boxShadow: active ? `0 0 0 4px ${col}33` : 'none', transition: 'all 0.2s' }} />
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                  <span style={{ fontFamily: 'var(--font-serif)', fontSize: 14, color: active ? col : 'var(--text)' }}>J{d.n}</span>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.city || 'Étape'}</span>
-                </div>
-                <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>{d.wd} {window.fmtDate ? window.fmtDate(d.date) : d.date}</div>
-              </div>
-            </button>
-          );
-        })}
-      </div>
-    </aside>
-  );
-}
 
 // On l'expose pour toute l'app
 window.LocationInput = LocationInput;
@@ -270,4 +224,3 @@ window.dayRange = dayRange;
 window.todayISO = todayISO;
 window.statusOf = statusOf;
 window.hashHue = hashHue;
-window.DaySpine = DaySpine;

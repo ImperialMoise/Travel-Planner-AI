@@ -457,7 +457,23 @@ function MapView() {
       dragRotate: true, maxPitch: 70
     });
     mapRef.current = map;
-    map.on('style.load', () => { applyGlobe(map); addRoutes(map); });
+    map.on('style.load', () => {
+      applyGlobe(map); addRoutes(map);
+      // Forcer TOUS les textes en français (puis latin en fallback)
+      map.getStyle().layers.forEach(layer => {
+        if (layer.type === 'symbol' && map.getLayoutProperty(layer.id, 'text-field')) {
+          try {
+            map.setLayoutProperty(layer.id, 'text-field', [
+              'coalesce',
+              ['get', 'name:fr'],
+              ['get', 'name:latin'],
+              ['get', 'name']
+            ]);
+          } catch (e) {}
+        }
+      });
+    });
+    
     let inited = false;
     function initContent() { if (inited) return; inited = true; buildDayMarkers(map); setTimeout(spinGlobe, 400); }
     map.on('load', initContent);

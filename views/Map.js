@@ -179,7 +179,9 @@ function MapView() {
   const { trip: realTrip } = Store.useStore();
   const [query, setQuery] = React.useState('');
   const [results, setResults] = React.useState([]);
-  const [addTarget, setAddTarget] = React.useState(null); // {place, open}
+  const [foundPlace, setFoundPlace] = React.useState(null);
+  const [pickingDay, setPickingDay] = React.useState(false);
+  const [editorOpen, setEditorOpen] = React.useState(null); // {dayId}
   const searchTimer = React.useRef(null);
 
   function doSearch(q) {
@@ -198,25 +200,17 @@ function MapView() {
     setResults([]); setQuery('');
     const map = mapRef.current; if (!map) return;
     map.flyTo({ center: f.center, zoom: 15, duration: 1600 });
-    setAddTarget({ place: f, open: false });
+    setFoundPlace({ name: f.text || '', address: f.place_name || '', lat: f.center[1], lng: f.center[0] });
+    setPickingDay(false); setEditorOpen(null);
   }
-  async function addToDay(dayIndex) {
-    if (!addTarget || !realTrip) return;
+  function openEditorForDay(dayIndex) {
+    if (!realTrip) return;
     const day = realTrip.days[dayIndex]; if (!day) return;
-    try {
-      await window.SB.saveStep(realTrip.id, day.id, {
-        type: 'activite',
-        label: addTarget.place.text || '',
-        lieu: addTarget.place.place_name || '',
-        lat: addTarget.place.center[1],
-        lng: addTarget.place.center[0],
-        stepIndex: day.steps.length
-      });
-      Store.showToast("Ajouté au Jour " + (dayIndex + 1) + " ✓");
-      setAddTarget(null);
-      window.SB.loadTrip(realTrip.id).then(t => Store.set({ trip: t }));
-    } catch (e) { alert("Erreur : " + e.message); }
+    setPickingDay(false);
+    setEditorOpen({ dayId: day.id, dayIndex, stepCount: day.steps.length });
   }
+  function onEditorClose() { setEditorOpen(null); setFoundPlace(null); }
+  function onEditorSaved() { if (realTrip) window.SB.loadTrip(realTrip.id).then(t => Store.set({ trip: t })); }
 
   // Total km
   const totalKm = React.useMemo(() => {
@@ -473,11 +467,24 @@ function MapView() {
         }
       });
     });
-    
+
     let inited = false;
     function initContent() { if (inited) return; inited = true; buildDayMarkers(map); setTimeout(spinGlobe, 400); }
     map.on('load', initContent);
     setTimeout(initContent, 3000);
+
+    // Clic sur un POI de la carte → fiche lieu
+    map.on('click', (e) => {
+      const fs = map.queryRenderedFeatures(e.point).filter(f => f.layer.type === 'symbol' && (f.properties.name || f.properties['name:fr'] || f.properties['name:latin']));
+      if (!fs.length) return;
+      const f = fs[0];
+      const name = f.properties['name:fr'] || f.properties['name:latin'] || f.properties.name || '';
+      if (!name) return;
+      const cls = f.properties.class || f.properties.subclass || '';
+      setFoundPlace({ name, address: cls ? cls.charAt(0).toUpperCase() + cls.slice(1).replace(/_/g, ' ') : '', lat: e.lngLat.lat, lng: e.lngLat.lng });
+      setPickingDay(false); setEditorOpen(null);
+      map.flyTo({ center: [e.lngLat.lng, e.lngLat.lat], zoom: Math.max(map.getZoom(), 15), duration: 800 });
+    });
     map.on('moveend', () => { if (spinRef.current && map.getZoom() <= 3.2) setTimeout(spinGlobe, 0); });
     ['dragstart', 'mousedown', 'touchstart', 'wheel'].forEach(ev => map.on(ev, () => { spinRef.current = false; }));
     map.on('move', () => {
@@ -607,23 +614,23 @@ function MapView() {
           <div className="mv-map-wrap">
             <div id="mv-map" ref={mapEl} />
 
-          {/* BARRE DE RECHERCHE */}
-          <div style={{ position: 'absolute', top: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 8, width: 380, maxWidth: 'calc(100% - 340px)' }}>
+          {/* ── BARRE DE RECHERCHE (centrée, premium) ── */}
+          <div style={{ position: 'absolute', top: 14, left: '50%', transform: 'translateX(-50%)', zIndex: 8, width: 400, maxWidth: 'calc(100% - 340px)' }}>
             <div style={{ position: 'relative' }}>
-              <input value={query} onChange={e => doSearch(e.target.value)} placeholder="Rechercher un lieu, une adresse…"
-                style={{ width: '100%', padding: '11px 14px 11px 38px', borderRadius: 14, border: '1px solid var(--line)', background: 'var(--card)', color: 'var(--text)', fontFamily: 'inherit', fontSize: 13.5, fontWeight: 500, boxShadow: 'var(--shadow)', outline: 'none', backdropFilter: 'blur(8px)' }} />
-              <svg style={{ position: 'absolute', left: 12, top: 11, color: 'var(--muted)' }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></svg>
+              <input value={query} onChange={e => doSearch(e.target.value)} placeholder="Rechercher un lieu…"
+                style={{ width: '100%', padding: '12px 14px 12px 40px', borderRadius: 999, border: '1.5px solid var(--accent)', background: 'var(--card)', color: 'var(--text)', fontFamily: 'inherit', fontSize: 14, fontWeight: 500, boxShadow: '0 6px 24px rgba(31,46,40,.14)', outline: 'none' }} />
+              <svg style={{ position: 'absolute', left: 14, top: 13, color: 'var(--accent)' }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></svg>
             </div>
             {results.length > 0 && (
-              <div style={{ marginTop: 4, background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 14, boxShadow: '0 18px 50px rgba(31,46,40,.22)', overflow: 'hidden', maxHeight: 280, overflowY: 'auto' }}>
+              <div style={{ marginTop: 6, background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 16, boxShadow: '0 18px 50px rgba(31,46,40,.22)', overflow: 'hidden', maxHeight: 300, overflowY: 'auto' }}>
                 {results.map((f, k) => (
-                  <button key={k} onClick={() => pickResult(f)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', border: 'none', borderBottom: '1px solid var(--line2)', background: 'transparent', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left', color: 'var(--text)', transition: 'background .12s' }}
+                  <button key={k} onClick={() => pickResult(f)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', border: 'none', borderBottom: '1px solid var(--line2)', background: 'transparent', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left', color: 'var(--text)' }}
                     onMouseEnter={e => e.currentTarget.style.background = 'var(--inset)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                     <div style={{ width: 30, height: 30, borderRadius: 9, background: 'var(--accent-soft)', color: 'var(--accent)', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"><path d="M12 21.5s6.5-5.8 6.5-11A6.5 6.5 0 0 0 5.5 10.5c0 5.2 6.5 11 6.5 11z" /><circle cx="12" cy="10.2" r="2.4" /></svg>
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{f.text}</div>
+                      <div style={{ fontSize: 13.5, fontWeight: 700 }}>{f.text}</div>
                       <div style={{ fontSize: 11, color: 'var(--muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{f.place_name}</div>
                     </div>
                   </button>
@@ -631,6 +638,57 @@ function MapView() {
               </div>
             )}
           </div>
+
+          {/* ── FICHE LIEU TROUVÉ ── */}
+          {foundPlace && !editorOpen && (
+            <div style={{ position: 'absolute', bottom: 20, left: '50%', transform: 'translateX(-50%)', zIndex: 8, width: 360 }}>
+              <div style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 18, boxShadow: '0 20px 60px rgba(31,46,40,.25)', overflow: 'hidden' }}>
+                <div style={{ padding: '16px 18px', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                  <div style={{ width: 42, height: 42, borderRadius: 12, background: 'var(--accent-soft)', color: 'var(--accent)', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"><path d="M12 21.5s6.5-5.8 6.5-11A6.5 6.5 0 0 0 5.5 10.5c0 5.2 6.5 11 6.5 11z" /><circle cx="12" cy="10.2" r="2.4" /></svg>
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: 20, color: 'var(--text)', lineHeight: 1.15 }}>{foundPlace.name}</div>
+                    <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 3 }}>{foundPlace.address}</div>
+                  </div>
+                  <button onClick={() => setFoundPlace(null)} style={{ border: 'none', background: 'transparent', color: 'var(--faint)', cursor: 'pointer', padding: 4 }}><Icon name="x" size={18} /></button>
+                </div>
+                {!pickingDay ? (
+                  <div style={{ padding: '0 18px 16px' }}>
+                    <button onClick={() => setPickingDay(true)} style={{ width: '100%', border: 'none', background: 'var(--accent)', color: 'var(--accent-ink)', borderRadius: 12, padding: '11px 0', fontSize: 13.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                      <Icon name="plus" size={15} />Ajouter au séjour
+                    </button>
+                  </div>
+                ) : (
+                  <div style={{ padding: '0 14px 14px' }}>
+                    <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--faint)', marginBottom: 8, paddingLeft: 4 }}>Ajouter au jour…</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 3, maxHeight: 180, overflowY: 'auto' }}>
+                      {realTrip && realTrip.days.map((d, i) => (
+                        <button key={d.id} onClick={() => openEditorForDay(i)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 9, padding: '8px 10px', border: '1px solid var(--line2)', borderRadius: 10, background: 'transparent', cursor: 'pointer', fontFamily: 'inherit', color: 'var(--text)', transition: 'all .12s' }}
+                          onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.background = 'var(--accent-soft)'; }}
+                          onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--line2)'; e.currentTarget.style.background = 'transparent'; }}>
+                          <span style={{ fontFamily: 'var(--font-serif)', fontSize: 15, color: 'var(--accent)', width: 28 }}>J{i + 1}</span>
+                          <span style={{ fontSize: 12.5, fontWeight: 600, flex: 1, textAlign: 'left' }}>{d.dateLabel || d.title || ''}</span>
+                          <Icon name="plus" size={14} style={{ color: 'var(--accent)' }} />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ── STEP EDITOR (pré-rempli) ── */}
+          {editorOpen && foundPlace && window.StepEditor && React.createElement(window.StepEditor, {
+            open: true,
+            tripId: realTrip && realTrip.id,
+            dayId: editorOpen.dayId,
+            step: { type: 'activite', label: foundPlace.name, lieu: foundPlace.address, lat: foundPlace.lat, lng: foundPlace.lng },
+            stepCount: editorOpen.stepCount,
+            onClose: onEditorClose,
+            onSaved: onEditorSaved
+          })}
 
           {/* CARTE DU LIEU TROUVÉ → Ajouter au voyage */}
           {addTarget && (

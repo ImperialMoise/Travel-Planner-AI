@@ -106,6 +106,8 @@ function StepEditor({ open, tripId, dayId, step, stepCount, onClose, onSaved }) 
       } else {
         Object.assign(p, { lieu: f.lieu });
       }
+      if (f.lat) p.lat = f.lat;
+      if (f.lng) p.lng = f.lng;
       await window.SB.saveStep(tripId, dayId, p);
       onSaved && onSaved();
       onClose();
@@ -230,6 +232,8 @@ function StepEditor({ open, tripId, dayId, step, stepCount, onClose, onSaved }) 
     document.body
   );
 }
+
+window.StepEditor = StepEditor;
 
 function AtelierV2() {
   // --- 1. CONNEXION À TA BASE DE DONNÉES SUPABASE ---

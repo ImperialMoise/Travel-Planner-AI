@@ -188,6 +188,7 @@ function MapView() {
     const isDark = theme === 'dark';
     const style = clone(await fetchS(isDark ? MV_DARK : MV_VOY));
 
+    // Les codes couleurs exacts inspirés de Google Maps
     const colWater = isDark ? '#1a3642' : '#aadaff';
     const colPark = isDark ? '#1c3d31' : '#cdeac0';
     const colLand = isDark ? '#242f2b' : '#ebebeb'; 
@@ -196,10 +197,11 @@ function MapView() {
     const colHwy = isDark ? '#475c55' : '#ffda82'; 
 
     style.layers.forEach(l => {
-      // 1. Fond et espaces naturels
+      // Fond et espaces naturels
       if (l.type === 'fill') {
-        if (l.id.includes('water')) l.paint['fill-color'] = colWater;
-        else if (l.id.includes('park') || l.id.includes('wood') || l.id.includes('green')) {
+        if (l.id.includes('water')) {
+          l.paint['fill-color'] = colWater;
+        } else if (l.id.includes('park') || l.id.includes('wood') || l.id.includes('green')) {
           l.paint['fill-color'] = colPark;
           l.paint['fill-opacity'] = 1;
         } else if (l.id.includes('land') || l.id === 'background') {
@@ -210,16 +212,15 @@ function MapView() {
         }
       }
 
-      // 2. Hiérarchie des routes
+      // Hiérarchie des routes (Le réseau sanguin jaune)
       if (l.type === 'line' && l.id.includes('road')) {
         if (l.id.includes('motorway') || l.id.includes('trunk') || l.id.includes('primary')) {
           if (!isDark) l.paint['line-color'] = colHwy;
         }
       }
 
-      // 3. Textes, Lieux et Rues
+      // Textes, Lieux et Rues (Connecté au menu)
       if (l.type === 'symbol') {
-        // SÉCURITÉ : On s'assure que l'objet layout existe avant de le modifier !
         l.layout = l.layout || {};
 
         if (l.layout['text-field']) {
@@ -243,7 +244,7 @@ function MapView() {
       }
     });
 
-    // 4. BÂTIMENTS 3D (Connecté au menu)
+    // BÂTIMENTS 3D (Connecté au menu)
     if (layerOpts.buildings3D) {
       const sourceName = Object.keys(style.sources)[0];
       style.layers.push({
@@ -307,11 +308,27 @@ function MapView() {
     day.steps.forEach((s, k) => {
       if (!s.c) return;
       const el = document.createElement('div');
-      el.className = 'mv-sp';
-      el.style.animationDelay = (k * 60) + 'ms';
-      el.innerHTML = '<div class="sp-ic">' + mvSvg(mvStepIcon(s), 15) + '</div><div style="display:flex;flex-direction:column;line-height:1.1"><span class="sp-name">' + s.l + '</span><span class="sp-time">' + (s.time || '') + '</span></div>';
+      
+      // Nouveau design : un petit cercle épuré avec juste l'icône
+      el.style.width = '28px';
+      el.style.height = '28px';
+      el.style.borderRadius = '50%';
+      el.style.background = 'var(--card)';
+      el.style.border = '2px solid var(--accent)';
+      el.style.color = 'var(--accent)';
+      el.style.display = 'grid';
+      el.style.placeItems = 'center';
+      el.style.boxShadow = '0 3px 8px rgba(0,0,0,.2)';
+      el.style.cursor = 'pointer';
+      el.style.transition = 'transform .2s';
+      el.onmouseover = () => el.style.transform = 'scale(1.15) translateY(-4px)';
+      el.onmouseout = () => el.style.transform = 'none';
+
+      el.innerHTML = mvSvg(mvStepIcon(s), 14);
       el.addEventListener('click', () => { if (s.c) map.flyTo({ center: s.c, zoom: Math.max(map.getZoom(), 15.5), duration: 1400 }); });
-      const m = new maplibregl.Marker({ element: el, anchor: 'left' }).setLngLat(s.c).addTo(map);
+      
+      // On accroche le pin par le bas pour qu'il pointe précisément le lieu
+      const m = new maplibregl.Marker({ element: el, anchor: 'bottom' }).setLngLat(s.c).addTo(map);
       markersRef.current.step.push(m);
     });
   }
@@ -438,16 +455,16 @@ function MapView() {
       <div className="mv-frame" style={{ flexDirection: 'column' }}>
 
         {/* --- LE NOUVEAU RUBAN (TOOLBAR CARTE) --- */}
-        <div style={{ height: 64, flexShrink: 0, display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', padding: '0 24px', borderBottom: '1px solid var(--line)', background: 'var(--topbar)' }}>
+        <div style={{ height: 64, flexShrink: 0, display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', padding: '0 24px', borderBottom: '1px solid var(--line)', background: theme === 'light' ? 'rgba(244,239,229,.78)' : 'rgba(20,42,36,.7)' }}>
           
           {/* Gauche : Boutons Affichage & Survol */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, justifySelf: 'start' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifySelf: 'start' }}>
             <div style={{ position: 'relative' }}>
-              <button onClick={() => setLayersOpen(!layersOpen)} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, border: '1px solid var(--line)', background: 'var(--inset)', color: 'var(--text)', borderRadius: 11, padding: '8px 12px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-                <Icon name="map" size={14} style={{ color: 'var(--accent)' }}/> Affichage
+              <button onClick={() => setLayersOpen(!layersOpen)} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, border: 'none', background: 'transparent', color: 'var(--muted)', borderRadius: 999, padding: '8px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'all .2s' }} onMouseOver={e => e.currentTarget.style.color='var(--accent)'} onMouseOut={e => e.currentTarget.style.color='var(--muted)'}>
+                <Icon name="map" size={15} /> Affichage
               </button>
               {layersOpen && (
-                <div style={{ position: 'absolute', top: 'calc(100% + 8px)', left: 0, background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 14, padding: 16, boxShadow: 'var(--shadow-lg)', minWidth: 220, zIndex: 100, backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}>
+                <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 14, padding: 16, boxShadow: 'var(--shadow-lg)', minWidth: 220, zIndex: 100, backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}>
                   <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--faint)', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 8 }}>Fond de carte</div>
                   <div className="mv-seg" style={{ marginBottom: 18 }}>
                     <button className={curStyle === 'minimal' ? 'active' : ''} onClick={() => setCurStyle('minimal')} style={{ flex: 1 }}>Plan</button>
@@ -469,14 +486,14 @@ function MapView() {
                 </div>
               )}
             </div>
-            <button ref={tourBtnRef} onClick={() => { if (tourRef.current.on) stopTour(); else startTour(); }} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, border: 'none', background: 'var(--text)', color: 'var(--card)', borderRadius: 11, padding: '8px 15px', fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'all .15s' }}>
+            <button ref={tourBtnRef} onClick={() => { if (tourRef.current.on) stopTour(); else startTour(); }} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, border: 'none', background: 'var(--accent)', color: 'var(--accent-ink)', borderRadius: 999, padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'all .15s' }}>
               <Icon name="route" size={14} /> Survoler
             </button>
           </div>
 
           {/* Centre : Recherche */}
-          <div style={{ display: 'flex', alignItems: 'center', background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 999, padding: '6px 16px', boxShadow: 'var(--shadow)', width: 360, justifySelf: 'center' }}>
-            <Icon name="pin" size={16} style={{ color: 'var(--muted)', marginRight: 10 }} />
+          <div style={{ display: 'flex', alignItems: 'center', background: 'var(--inset)', border: '1px solid var(--line)', borderRadius: 999, padding: '5px 16px', width: 360, justifySelf: 'center' }}>
+            <Icon name="pin" size={15} style={{ color: 'var(--muted)', marginRight: 8 }} />
             <LocationInput
               value={searchQuery}
               onChange={v => setSearchQuery(v)}
@@ -486,14 +503,14 @@ function MapView() {
                 Store.showToast(`Vol vers ${loc.label.split(',')[0]} ✈️`);
               }}
               placeholder="Rechercher un lieu..."
-              style={{ flex: 1, border: 'none', background: 'transparent', outline: 'none', color: 'var(--text)', fontSize: 14, fontFamily: 'inherit' }}
+              style={{ flex: 1, border: 'none', background: 'transparent', outline: 'none', color: 'var(--text)', fontSize: 13.5, fontFamily: 'inherit' }}
             />
           </div>
 
           {/* Droite : Vue globale */}
           <div style={{ justifySelf: 'end' }}>
-            <button onClick={fitAll} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, border: '1px dashed var(--line)', background: 'transparent', color: 'var(--text)', borderRadius: 11, padding: '8px 12px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-              <Icon name="expand" size={14} /> Vue globale
+            <button onClick={fitAll} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, border: 'none', background: 'transparent', color: 'var(--muted)', borderRadius: 999, padding: '8px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }} onMouseOver={e => e.currentTarget.style.color='var(--accent)'} onMouseOut={e => e.currentTarget.style.color='var(--muted)'}>
+              <Icon name="expand" size={15} /> Vue globale
             </button>
           </div>
         </div>

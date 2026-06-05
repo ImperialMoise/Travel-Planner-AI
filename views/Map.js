@@ -536,21 +536,6 @@ function MapView() {
                 Survoler
               </button>
             </div>
-            {sel !== null && T.days[sel] && (
-              <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                {T.days[sel].steps.map((s, k) => (
-                  <button key={k} onClick={() => { if (s.c && mapRef.current) mapRef.current.flyTo({ center: s.c, zoom: Math.max(mapRef.current.getZoom(), 15.5), duration: 1200 }); }}
-                    style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 10, padding: '6px 12px 6px 8px', cursor: 'pointer', fontFamily: 'inherit', boxShadow: 'var(--shadow)', transition: 'all .15s' }}>
-                    <div style={{ width: 26, height: 26, borderRadius: 8, background: 'var(--accent-soft)', color: 'var(--accent)', display: 'grid', placeItems: 'center', flexShrink: 0 }}
-                      dangerouslySetInnerHTML={{ __html: mvSvg(mvStepIcon(s), 14) }} />
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.l}</div>
-                      <div style={{ fontSize: 10, color: 'var(--muted)' }}>{s.time || ''}{s.s ? ' · ' + s.s : ''}</div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
 
           <div className="mv-ov mv-ov-tr">

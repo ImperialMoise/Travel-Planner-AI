@@ -435,127 +435,132 @@ function MapView() {
   return (
     <>
       <style>{MV_CSS}</style>
-      <div className="mv-frame">
-        {/* ── SPINE ── */}
-        <aside className="mv-spine">
-          <div className="mv-spine-head">
-            <div className="mv-kicker">Carte du voyage</div>
-            <div className="mv-spine-title">{T.name}</div>
-            <div className="mv-spine-dates">{T.dates}</div>
-            <div className="mv-stats">
-              <div className="mv-stat"><div className="v">{totalKm}</div><div className="l">kilomètres</div></div>
-              <div className="mv-stat"><div className="v">2</div><div className="l">villes</div></div>
-              <div className="mv-stat"><div className="v">15</div><div className="l">jours</div></div>
-            </div>
-          </div>
-          <button className="mv-all-btn" onClick={fitAll}>
-            <Icon name="expand" size={14} />Survol du voyage entier
-          </button>
-          <div className="mv-spine-list">
-            <div className="mv-spine-line" />
-            {T.days.map((d, i) => (
-              <button key={i} className={'mv-day ' + mvRegClass(d.region) + (sel === i ? ' active' : '')} onClick={() => doSelect(i, true)}>
-                <div className="mv-dotw"><div className="mv-dot" /></div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 7 }}>
-                    <span className="mv-dn">J{d.n}</span>
-                    <span className="mv-dc">{d.city}</span>
+      <div className="mv-frame" style={{ flexDirection: 'column' }}>
+
+        {/* --- LE NOUVEAU RUBAN (TOOLBAR CARTE) --- */}
+        <div style={{ height: 64, flexShrink: 0, display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', padding: '0 24px', borderBottom: '1px solid var(--line)', background: 'var(--topbar)' }}>
+          
+          {/* Gauche : Boutons Affichage & Survol */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, justifySelf: 'start' }}>
+            <div style={{ position: 'relative' }}>
+              <button onClick={() => setLayersOpen(!layersOpen)} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, border: '1px solid var(--line)', background: 'var(--inset)', color: 'var(--text)', borderRadius: 11, padding: '8px 12px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                <Icon name="map" size={14} style={{ color: 'var(--accent)' }}/> Affichage
+              </button>
+              {layersOpen && (
+                <div style={{ position: 'absolute', top: 'calc(100% + 8px)', left: 0, background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 14, padding: 16, boxShadow: 'var(--shadow-lg)', minWidth: 220, zIndex: 100, backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}>
+                  <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--faint)', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 8 }}>Fond de carte</div>
+                  <div className="mv-seg" style={{ marginBottom: 18 }}>
+                    <button className={curStyle === 'minimal' ? 'active' : ''} onClick={() => setCurStyle('minimal')} style={{ flex: 1 }}>Plan</button>
+                    <button className={curStyle === 'sat' ? 'active' : ''} onClick={() => setCurStyle('sat')} style={{ flex: 1 }}>Satellite</button>
                   </div>
-                  <div className="mv-dd">{d.wd} {mvFmtDate(d.date)}</div>
+                  <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--faint)', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 10 }}>Détails</div>
+                  <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 13, fontWeight: 600, cursor: 'pointer', marginBottom: 12, color: 'var(--text)' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Icon name="bed" size={14} style={{ color: 'var(--muted)' }}/> Bâtiments 3D</span>
+                    <input type="checkbox" checked={layerOpts.buildings3D} onChange={e => setLayerOpts(o => ({...o, buildings3D: e.target.checked}))} style={{ accentColor: 'var(--accent)', width: 16, height: 16, cursor: 'pointer' }}/>
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 13, fontWeight: 600, cursor: 'pointer', marginBottom: 12, color: 'var(--text)' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Icon name="camera" size={14} style={{ color: 'var(--muted)' }}/> Commerces & Lieux</span>
+                    <input type="checkbox" checked={layerOpts.pois} onChange={e => setLayerOpts(o => ({...o, pois: e.target.checked}))} style={{ accentColor: 'var(--accent)', width: 16, height: 16, cursor: 'pointer' }}/>
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 13, fontWeight: 600, cursor: 'pointer', color: 'var(--text)' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Icon name="route" size={14} style={{ color: 'var(--muted)' }}/> Nom des rues</span>
+                    <input type="checkbox" checked={layerOpts.labels} onChange={e => setLayerOpts(o => ({...o, labels: e.target.checked}))} style={{ accentColor: 'var(--accent)', width: 16, height: 16, cursor: 'pointer' }}/>
+                  </label>
                 </div>
-              </button>
-            ))}
-          </div>
-        </aside>
-
-        {/* ── MAP ── */}
-        <div className="mv-map-wrap">
-          <div id="mv-map" ref={mapEl} />
-          {/* --- ÉTAPE 1 : BARRE DE RECHERCHE VISUELLE --- */}
-          <div className="mv-ov" style={{ top: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 10, width: '100%', maxWidth: 360, padding: '0 16px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 999, padding: '8px 18px', boxShadow: 'var(--shadow-lg)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}>
-              <Icon name="pin" size={16} style={{ color: 'var(--muted)', marginRight: 10 }} />
-              <LocationInput
-                value={searchQuery}
-                onChange={v => setSearchQuery(v)}
-                onSelect={(loc) => {
-                  spinRef.current = false;
-                  // On vole directement vers les coordonnées exactes !
-                  mapRef.current?.flyTo({ center: [loc.lng, loc.lat], zoom: 12, pitch: 50, duration: 3000, curve: 1.4 });
-                  Store.showToast(`Vol vers ${loc.label.split(',')[0]} ✈️`);
-                }}
-                placeholder="Rechercher un lieu dans le monde..."
-                style={{ flex: 1, border: 'none', background: 'transparent', outline: 'none', color: 'var(--text)', fontSize: 14, fontFamily: 'inherit', minWidth: 220 }}
-              />
+              )}
             </div>
+            <button ref={tourBtnRef} onClick={() => { if (tourRef.current.on) stopTour(); else startTour(); }} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, border: 'none', background: 'var(--text)', color: 'var(--card)', borderRadius: 11, padding: '8px 15px', fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'all .15s' }}>
+              <Icon name="route" size={14} /> Survoler
+            </button>
           </div>
-          {/* --------------------------------------------- */}
 
-          <div className="mv-ov mv-ov-tl" style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
-            <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-              
-              {/* --- MENU DES CALQUES --- */}
-              <div style={{ position: 'relative' }}>
-                <button className="mv-tour" onClick={() => setLayersOpen(!layersOpen)} style={{ background: 'var(--card)', color: 'var(--text)', border: '1px solid var(--line)' }}>
-                  <Icon name="map" size={14} style={{ color: 'var(--accent)' }}/> 
-                  Affichage
-                </button>
-                
-                {layersOpen && (
-                  <div style={{ position: 'absolute', top: 'calc(100% + 8px)', left: 0, background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 14, padding: 16, boxShadow: 'var(--shadow-lg)', minWidth: 220, zIndex: 100, backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}>
-                    
-                    <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--faint)', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 8 }}>Fond de carte</div>
-                    <div className="mv-seg" style={{ marginBottom: 18 }}>
-                      <button className={curStyle === 'minimal' ? 'active' : ''} onClick={() => setCurStyle('minimal')} style={{ flex: 1 }}>Plan</button>
-                      <button className={curStyle === 'sat' ? 'active' : ''} onClick={() => setCurStyle('sat')} style={{ flex: 1 }}>Satellite</button>
+          {/* Centre : Recherche */}
+          <div style={{ display: 'flex', alignItems: 'center', background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 999, padding: '6px 16px', boxShadow: 'var(--shadow)', width: 360, justifySelf: 'center' }}>
+            <Icon name="pin" size={16} style={{ color: 'var(--muted)', marginRight: 10 }} />
+            <LocationInput
+              value={searchQuery}
+              onChange={v => setSearchQuery(v)}
+              onSelect={(loc) => {
+                spinRef.current = false;
+                mapRef.current?.flyTo({ center: [loc.lng, loc.lat], zoom: 14, pitch: 50, duration: 3000, curve: 1.4 });
+                Store.showToast(`Vol vers ${loc.label.split(',')[0]} ✈️`);
+              }}
+              placeholder="Rechercher un lieu..."
+              style={{ flex: 1, border: 'none', background: 'transparent', outline: 'none', color: 'var(--text)', fontSize: 14, fontFamily: 'inherit' }}
+            />
+          </div>
+
+          {/* Droite : Vue globale */}
+          <div style={{ justifySelf: 'end' }}>
+            <button onClick={fitAll} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, border: '1px dashed var(--line)', background: 'transparent', color: 'var(--text)', borderRadius: 11, padding: '8px 12px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+              <Icon name="expand" size={14} /> Vue globale
+            </button>
+          </div>
+        </div>
+        {/* ----------------------------------------- */}
+
+
+        {/* --- LE CORPS PRINCIPAL (COLONNE + CARTE) --- */}
+        <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
+          
+          {/* LA COLONNE DE GAUCHE UNIFIÉE */}
+          <aside style={{ width: 258, flexShrink: 0, borderRight: '1px solid var(--line)', display: 'flex', flexDirection: 'column', minHeight: 0, background: theme === 'light' ? 'rgba(255,255,255,.4)' : 'rgba(0,0,0,.12)' }}>
+            <div style={{ padding: '16px 22px 12px', borderBottom: '1px solid var(--line2)' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase', color: 'var(--accent)' }}>{T.name}</div>
+              <div style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: 20, marginTop: 4, color: 'var(--text)' }}>{T.days.length} jours</div>
+              <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 3 }}>{T.dates}</div>
+            </div>
+            
+            <div style={{ flex: 1, overflowY: 'auto', padding: '8px 14px 12px', position: 'relative' }}>
+              <div style={{ position: 'absolute', left: 30, top: 16, bottom: 16, width: 2, background: 'var(--line2)' }} />
+              {T.days.map((d, i) => {
+                const on = sel === i;
+                // Code couleur comme dans l'itinéraire principal
+                const col = d.region === 'Busan' ? (theme === 'light' ? '#c98a3c' : '#e0a96d') : 'var(--accent)';
+                return (
+                  <button key={i} onClick={() => doSelect(i, true)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 13, padding: '5px 12px 5px 8px', border: 'none', cursor: 'pointer', borderRadius: 10, textAlign: 'left', position: 'relative', background: on ? 'var(--card)' : 'transparent', boxShadow: on ? 'var(--shadow)' : 'none', transition: 'all .18s', marginBottom: 2 }}>
+                    <div style={{ width: 22, display: 'flex', justifyContent: 'center', flexShrink: 0, zIndex: 1 }}>
+                      <div style={{ width: on ? 13 : 10, height: on ? 13 : 10, borderRadius: '50%', background: col, border: `2px solid ${col}`, boxShadow: on ? '0 0 0 4px var(--accent-soft)' : 'none', transition: 'all .16s' }} />
                     </div>
-                    
-                    <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--faint)', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 10 }}>Détails</div>
-                    
-                    <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 13, fontWeight: 600, cursor: 'pointer', marginBottom: 12, color: 'var(--text)' }}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Icon name="bed" size={14} style={{ color: 'var(--muted)' }}/> Bâtiments 3D</span>
-                      <input type="checkbox" checked={layerOpts.buildings3D} onChange={e => setLayerOpts(o => ({...o, buildings3D: e.target.checked}))} style={{ accentColor: 'var(--accent)', width: 16, height: 16, cursor: 'pointer' }}/>
-                    </label>
-                    
-                    <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 13, fontWeight: 600, cursor: 'pointer', marginBottom: 12, color: 'var(--text)' }}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Icon name="camera" size={14} style={{ color: 'var(--muted)' }}/> Commerces & Lieux</span>
-                      <input type="checkbox" checked={layerOpts.pois} onChange={e => setLayerOpts(o => ({...o, pois: e.target.checked}))} style={{ accentColor: 'var(--accent)', width: 16, height: 16, cursor: 'pointer' }}/>
-                    </label>
-                    
-                    <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 13, fontWeight: 600, cursor: 'pointer', color: 'var(--text)' }}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Icon name="route" size={14} style={{ color: 'var(--muted)' }}/> Nom des rues</span>
-                      <input type="checkbox" checked={layerOpts.labels} onChange={e => setLayerOpts(o => ({...o, labels: e.target.checked}))} style={{ accentColor: 'var(--accent)', width: 16, height: 16, cursor: 'pointer' }}/>
-                    </label>
-                  </div>
-                )}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 7 }}>
+                        <span style={{ fontFamily: 'var(--font-serif)', fontSize: 14.5, color: on ? 'var(--accent)' : 'var(--text)' }}>J{d.n}</span>
+                        <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.city}</span>
+                      </div>
+                      <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 1 }}>{d.wd} {mvFmtDate(d.date)}</div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </aside>
+
+          {/* LE GLOBE 3D */}
+          <div className="mv-map-wrap">
+            <div id="mv-map" ref={mapEl} />
+
+            {/* Boutons de contrôle caméra (zoom/boussole) */}
+            <div className="mv-ov mv-ov-tr">
+              <div className="mv-ctrl">
+                <button onClick={() => { spinRef.current = false; mapRef.current?.zoomIn({ duration: 400 }); }} title="Zoomer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg></button>
+                <button onClick={() => { spinRef.current = false; mapRef.current?.zoomOut({ duration: 400 }); }} title="Dézoomer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"><path d="M5 12h14" /></svg></button>
+                <button onClick={() => mapRef.current?.easeTo({ bearing: 0, pitch: 0, duration: 600 })} title="Nord">
+                  <svg ref={needleRef} width="18" height="18" viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 3l3.2 8L12 9.4 8.8 11z" fill="var(--accent)" stroke="var(--accent)" strokeWidth="1.5" />
+                    <path d="M12 9.4 8.8 13 12 21l3.2-8z" fill="var(--muted)" stroke="var(--muted)" strokeWidth="1.5" />
+                  </svg>
+                </button>
               </div>
-              {/* ------------------------- */}
-
-              <button className="mv-tour" ref={tourBtnRef} onClick={() => { if (tourRef.current.on) stopTour(); else startTour(); }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
-                Survoler
-              </button>
+              <div className="mv-ctrl">
+                <button onClick={() => { const p = mapRef.current?.getPitch() > 10 ? 0 : 55; mapRef.current?.easeTo({ pitch: p, duration: 700 }); }} title="Vue 3D"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-5 9 5-9 5z" /><path d="M3 9v6l9 5 9-5V9" /></svg></button>
+              </div>
+              <div className="mv-readout" ref={readoutRef}><b>GLOBE</b> · z1.6</div>
             </div>
+
+            {/* L'emplacement du futur tiroir (Bottom Sheet) */}
+            <div className="mv-ov mv-ov-bl" ref={cardRef} />
           </div>
 
-          <div className="mv-ov mv-ov-tr">
-            <div className="mv-ctrl">
-              <button onClick={() => { spinRef.current = false; mapRef.current?.zoomIn({ duration: 400 }); }} title="Zoomer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg></button>
-              <button onClick={() => { spinRef.current = false; mapRef.current?.zoomOut({ duration: 400 }); }} title="Dézoomer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"><path d="M5 12h14" /></svg></button>
-              <button onClick={() => mapRef.current?.easeTo({ bearing: 0, pitch: 0, duration: 600 })} title="Nord">
-                <svg ref={needleRef} width="18" height="18" viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 3l3.2 8L12 9.4 8.8 11z" fill="var(--accent)" stroke="var(--accent)" strokeWidth="1.5" />
-                  <path d="M12 9.4 8.8 13 12 21l3.2-8z" fill="var(--muted)" stroke="var(--muted)" strokeWidth="1.5" />
-                </svg>
-              </button>
-            </div>
-            <div className="mv-ctrl">
-              <button onClick={() => { const p = mapRef.current?.getPitch() > 10 ? 0 : 55; mapRef.current?.easeTo({ pitch: p, duration: 700 }); }} title="Vue 3D"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-5 9 5-9 5z" /><path d="M3 9v6l9 5 9-5V9" /></svg></button>
-            </div>
-            <div className="mv-readout" ref={readoutRef}><b>GLOBE</b> · z1.6</div>
-          </div>
-
-          <div className="mv-ov mv-ov-bl" ref={cardRef} />
         </div>
       </div>
     </>

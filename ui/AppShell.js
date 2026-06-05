@@ -27,11 +27,16 @@ function AppShell() {
       {/* On cache la Topbar de l'app si le design de Claude est affiché (car il a la sienne) */}
       <Topbar />
       
-      <main style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <main style={{ flex: 1, minHeight: 0, display: 'flex', overflow: 'hidden' }}>
         {!user ? <LoggedOutHome /> :
          !activeTripId ? <NoTripHome /> :
          !trip ? <LoadingTrip /> :
-         CurrentView ? <CurrentView /> : <div style={{ padding: 40, color: 'var(--muted)' }}>Vue inconnue : {view}</div>}
+         <>
+           {view !== 'itinerary' && view !== 'map' && <DaySpine />}
+           <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+             {CurrentView ? <CurrentView /> : <div style={{ padding: 40, color: 'var(--muted)' }}>Vue inconnue : {view}</div>}
+           </div>
+         </>}
       </main>
                 
       {settingsOpen && window.SettingsModal && <window.SettingsModal />}
@@ -41,6 +46,50 @@ function AppShell() {
 }
 
 // ─── Topbar ─────────────────────────────────────────────────
+function DaySpine() {
+  const { trip, selectedDayIndex, view } = Store.useStore();
+  if (!trip || !trip.days) return null;
+  const days = trip.days;
+  const accent = 'var(--accent)';
+  return (
+    <aside style={{ width: 250, flexShrink: 0, borderRight: '1px solid var(--line)', background: 'var(--card)', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+      <div style={{ padding: '16px 20px 12px', borderBottom: '1px solid var(--line2)' }}>
+        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase', color: accent }}>{trip.name}</div>
+        <div style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: 20, marginTop: 4, color: 'var(--text)' }}>{days.length} jours</div>
+        {trip.startDate && <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 3 }}>{fmtDate(trip.startDate)}</div>}
+      </div>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '8px 12px', position: 'relative' }}>
+        <div style={{ position: 'absolute', left: 28, top: 16, bottom: 16, width: 2, background: 'var(--line2)' }} />
+        {days.map((d, i) => {
+          const on = selectedDayIndex === i;
+          const label = d.title || (d.steps && d.steps.length ? d.steps[0].label || d.steps[0].lieu : '') || '';
+          return (
+            <button key={d.id || i} onClick={() => Store.set({ selectedDayIndex: i })} style={{
+              width: '100%', display: 'flex', alignItems: 'center', gap: 12,
+              padding: '6px 10px 6px 8px', border: 'none', cursor: 'pointer', borderRadius: 10,
+              textAlign: 'left', fontFamily: 'inherit', color: 'var(--text)', marginBottom: 2,
+              background: on ? 'var(--card)' : 'transparent',
+              boxShadow: on ? 'var(--shadow)' : 'none',
+              position: 'relative', transition: 'all .15s'
+            }}>
+              <div style={{ width: 22, display: 'flex', justifyContent: 'center', flexShrink: 0, zIndex: 1 }}>
+                <div style={{ width: on ? 13 : 10, height: on ? 13 : 10, borderRadius: '50%', background: accent, border: '2px solid ' + accent, boxShadow: on ? '0 0 0 4px var(--accent-soft)' : 'none', transition: 'all .16s' }} />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', gap: 7, alignItems: 'baseline' }}>
+                  <span style={{ fontFamily: 'var(--font-serif)', fontSize: 14.5, color: on ? accent : 'var(--text)' }}>J{i + 1}</span>
+                  <span style={{ fontSize: 12.5, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</span>
+                </div>
+                <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 1 }}>{d.dateLabel || ''}</div>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </aside>
+  );
+}
+
 function Topbar() {
   const { user, trips, activeTripId, trip, view, theme = localStorage.getItem('it_theme') || 'light' } = Store.useStore();
   const [authOpen, setAuthOpen] = React.useState(false);

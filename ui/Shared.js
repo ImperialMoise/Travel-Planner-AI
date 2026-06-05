@@ -131,7 +131,91 @@ function Btn({ variant = 'ghost', icon, children, onClick, style, ...rest }) {
   );
 }
 
-// ─── Expose globalement ─────────────────────────────────────
+// ─── Composant Auto-complétion de lieu (Premium) ────────────
+function LocationInput({ value, onChange, onSelect, placeholder, style }) {
+  const [query, setQuery] = React.useState(value || '');
+  const [results, setResults] = React.useState([]);
+  const [open, setOpen] = React.useState(false);
+  const [loading, setLoading] = React.useState(false);
+
+  // Synchronise si la valeur externe change
+  React.useEffect(() => { setQuery(value || ''); }, [value]);
+
+  // Cherche les lieux quand on tape (avec un délai pour ne pas spammer l'API)
+  React.useEffect(() => {
+    if (!query || query.length < 3 || !open) {
+      setResults([]);
+      return;
+    }
+    const delay = setTimeout(async () => {
+      setLoading(true);
+      try {
+        // API gratuite Photon (basée sur OpenStreetMap)
+        const res = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=5`);
+        const data = await res.json();
+        setResults(data.features || []);
+      } catch (e) {
+        console.error("Erreur de recherche:", e);
+      } finally {
+        setLoading(false);
+      }
+    }, 400); // 400ms de délai (debounce)
+    
+    return () => clearTimeout(delay);
+  }, [query, open]);
+
+  return (
+    <div style={{ position: 'relative', width: '100%' }}>
+      <input
+        value={query}
+        onChange={e => { setQuery(e.target.value); onChange(e.target.value); setOpen(true); }}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setTimeout(() => setOpen(false), 200)} // Petit délai pour laisser le temps de cliquer
+        placeholder={placeholder}
+        style={style}
+        autoComplete="off"
+      />
+      {open && (results.length > 0 || loading) && (
+        <div style={{
+          position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0,
+          background: 'var(--card)', border: '1px solid var(--line)',
+          borderRadius: 10, boxShadow: 'var(--shadow-lg)', zIndex: 9999, overflow: 'hidden'
+        }}>
+          {loading && results.length === 0 && <div style={{ padding: '8px 12px', fontSize: 13, color: 'var(--muted)' }}>Recherche...</div>}
+          
+          {results.map((f, i) => {
+            const p = f.properties;
+            // On construit une belle étiquette (Ex: Tour Eiffel, Paris, France)
+            const label = [p.name, p.city || p.state, p.country].filter(Boolean).join(', ');
+            
+            return (
+              <div key={i}
+                onClick={() => {
+                  setQuery(label);
+                  onChange(label);
+                  setOpen(false);
+                  if (onSelect) onSelect({ label, lat: f.geometry.coordinates[1], lng: f.geometry.coordinates[0] });
+                }}
+                style={{
+                  padding: '8px 12px', cursor: 'pointer', borderBottom: i < results.length - 1 ? '1px solid var(--line2)' : 'none',
+                  fontSize: 13, color: 'var(--text)', transition: 'background 0.2s', textAlign: 'left'
+                }}
+                onMouseOver={e => e.currentTarget.style.background = 'var(--inset)'}
+                onMouseOut={e => e.currentTarget.style.background = 'transparent'}
+              >
+                <div style={{ fontWeight: 700 }}>{p.name}</div>
+                <div style={{ fontSize: 11, color: 'var(--muted)' }}>{[p.city, p.state, p.country].filter(Boolean).join(', ')}</div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// On l'expose pour toute l'app
+window.LocationInput = LocationInput;
 window.Icon = Icon;
 window.Avatars = Avatars;
 window.Btn = Btn;

@@ -163,11 +163,11 @@ function StepEditor({ open, tripId, dayId, step, stepCount, onClose, onSaved }) 
           {f.type === 'transport' && <>
             {field('Mode de transport', <select style={inp} value={f.transportType} onChange={e => set('transportType', e.target.value)}>{TRANSPORTS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select>)}
             {twoCol(
-              field('Départ', <input style={inp} value={f.depart} onChange={e => set('depart', e.target.value)} placeholder="Ville, gare…" />),
+              field('Départ', <window.LocationInput style={inp} value={f.depart} onChange={v => set('depart', v)} placeholder="Ville, gare…" />),
               field('Heure départ', <input type="time" style={inp} value={f.time} onChange={e => set('time', e.target.value)} />)
             )}
             {twoCol(
-              field('Arrivée', <input style={inp} value={f.arrivee} onChange={e => set('arrivee', e.target.value)} placeholder="Ville, aéroport…" />),
+              field('Arrivée', <window.LocationInput style={inp} value={f.arrivee} onChange={v => set('arrivee', v)} placeholder="Ville, aéroport…" />),
               field('Heure arrivée', <input type="time" style={inp} value={f.timeEnd} onChange={e => set('timeEnd', e.target.value)} />)
             )}
             <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 12 }}>
@@ -182,7 +182,7 @@ function StepEditor({ open, tripId, dayId, step, stepCount, onClose, onSaved }) 
 
           {f.type === 'logement' && <>
             {field('Nom du logement', <input style={inp} value={f.label} onChange={e => set('label', e.target.value)} placeholder="Hôtel Le Bristol…" />)}
-            {field('Adresse / lieu', <input style={inp} value={f.lieu} onChange={e => set('lieu', e.target.value)} placeholder="Adresse, ville…" />)}
+            {field('Adresse / lieu', <window.LocationInput style={inp} value={f.lieu} onChange={v => set('lieu', v)} placeholder="Adresse, ville…" />)}
             {twoCol(
               field('Arrivée (date)', <input type="date" style={inp} value={f.dateStart} onChange={e => set('dateStart', e.target.value)} />),
               field('Départ (date)', <input type="date" style={inp} value={f.dateEnd} onChange={e => set('dateEnd', e.target.value)} />)
@@ -196,13 +196,13 @@ function StepEditor({ open, tripId, dayId, step, stepCount, onClose, onSaved }) 
 
           {f.type === 'restaurant' && <>
             {field('Nom du restaurant', <input style={inp} value={f.label} onChange={e => set('label', e.target.value)} placeholder="Le Comptoir…" />)}
-            {field('Adresse / lieu', <input style={inp} value={f.lieu} onChange={e => set('lieu', e.target.value)} placeholder="Adresse, quartier…" />)}
+            {field('Adresse / lieu', <window.LocationInput style={inp} value={f.lieu} onChange={v => set('lieu', v)} placeholder="Adresse, quartier…" />)}
             {field('Heure', <input type="time" style={inp} value={f.time} onChange={e => set('time', e.target.value)} />)}
           </>}
 
           {f.type === 'activite' && <>
             {field('Nom', <input style={inp} value={f.label} onChange={e => set('label', e.target.value)} placeholder="Musée d’Orsay…" />)}
-            {field('Lieu', <input style={inp} value={f.lieu} onChange={e => set('lieu', e.target.value)} placeholder="Adresse, ville…" />)}
+            {field('Lieu', <window.LocationInput style={inp} value={f.lieu} onChange={v => set('lieu', v)} placeholder="Adresse, ville…" />)}
             {twoCol(
               field('Heure', <input type="time" style={inp} value={f.time} onChange={e => set('time', e.target.value)} />),
               field('Durée estimée', <input style={inp} value={f.dureeEstimee} onChange={e => set('dureeEstimee', e.target.value)} placeholder="2h, 45 min…" />)
@@ -211,7 +211,7 @@ function StepEditor({ open, tripId, dayId, step, stepCount, onClose, onSaved }) 
 
           {f.type === 'autre' && <>
             {field('Titre', <input style={inp} value={f.label} onChange={e => set('label', e.target.value)} placeholder="Titre de l’étape" />)}
-            {field('Lieu (option.)', <input style={inp} value={f.lieu} onChange={e => set('lieu', e.target.value)} placeholder="Lieu…" />)}
+            {field('Lieu (option.)', <window.LocationInput style={inp} value={f.lieu} onChange={v => set('lieu', v)} placeholder="Lieu…" />)}
             {field('Heure (option.)', <input type="time" style={inp} value={f.time} onChange={e => set('time', e.target.value)} />)}
           </>}
 

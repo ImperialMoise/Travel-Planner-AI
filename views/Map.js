@@ -238,8 +238,8 @@ function MapView() {
     });
 
     return style;
-  }urn style;
   }
+
   async function buildSat() {
     const s = clone(await fetchS(MV_VOY));
     s.sources.satimg = { type: 'raster', tiles: [MV_ESRI], tileSize: 256 };

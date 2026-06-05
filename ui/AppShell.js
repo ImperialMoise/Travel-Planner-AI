@@ -27,7 +27,7 @@ function AppShell() {
       {/* On cache la Topbar de l'app si le design de Claude est affiché (car il a la sienne) */}
       <Topbar />
       
-      <main style={{ flex: 1, minHeight: 'calc(100vh - 60px)', display: 'flex', flexDirection: 'column' }}>
+      <main style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {!user ? <LoggedOutHome /> :
          !activeTripId ? <NoTripHome /> :
          !trip ? <LoadingTrip /> :
@@ -70,7 +70,7 @@ function Topbar() {
       height: 60, flexShrink: 0,
       display: 'flex', alignItems: 'center', gap: 14,
       padding: '0 18px',
-      borderBottom: '1px solid var(--line)',
+      borderBottom: '1px solid var(--accent-soft)',
       background: 'var(--topbar)',
       backdropFilter: 'blur(10px)',
       WebkitBackdropFilter: 'blur(10px)',
@@ -84,7 +84,7 @@ function Topbar() {
           display: 'grid', placeItems: 'center',
           fontFamily: 'var(--serif)', fontStyle: 'italic', fontSize: 16
         }}>VP</div>
-        <div style={{ fontFamily: 'var(--serif)', fontStyle: 'italic', fontSize: 18, color: 'var(--text)' }}>L'Atelier</div>
+        <div style={{ fontFamily: 'var(--serif)', fontStyle: 'italic', fontSize: 18, color: 'var(--accent)' }}>L'Atelier</div>
       </div>
 
       {/* Sélecteur voyage */}

@@ -25,6 +25,7 @@ const IT_ICONS = {
   clock:   '<circle cx="12" cy="12" r="8.4"/><path d="M12 7.4V12l3.2 2"/>',
   cal:     '<rect x="4" y="5" width="16" height="16" rx="2.6"/><path d="M4 9.6h16M8.2 3v4M15.8 3v4"/>',
   moon:    '<path d="M20 14.6A8.2 8.2 0 1 1 9.4 4 6.6 6.6 0 0 0 20 14.6z"/>',
+  sun:     '<circle cx="12" cy="12" r="4.2"/><path d="M12 2.6v2.4M12 19v2.4M4.6 4.6l1.7 1.7M17.7 17.7l1.7 1.7M2.6 12h2.4M19 12h2.4M4.6 19.4l1.7-1.7M17.7 6.3l1.7-1.7"/>',
   check:   '<path d="m5 12.6 4.5 4.4L19 7"/>',
   plus:    '<path d="M12 5.2v13.6M5.2 12h13.6"/>',
   x:       '<path d="M6 6l12 12M18 6 6 18"/>',

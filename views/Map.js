@@ -188,16 +188,16 @@ function MapView() {
     const isDark = theme === 'dark';
     const style = clone(await fetchS(isDark ? MV_DARK : MV_VOY));
 
-    // Les codes couleurs exacts inspirés de Google Maps
-    const colWater = isDark ? '#1a3642' : '#aadaff';
-    const colPark = isDark ? '#1c3d31' : '#cdeac0';
-    const colLand = isDark ? '#242f2b' : '#ebebeb'; 
-    const colBld = isDark ? '#2a5046' : '#f2f2f2'; 
-    const colBldBorder = isDark ? '#3d6358' : '#e6e6e6';
-    const colHwy = isDark ? '#475c55' : '#ffda82'; 
+    // Les vrais codes couleurs "Google Maps"
+    const colWater = isDark ? '#1a3642' : '#90CAF9'; // Le fameux bleu franc
+    const colPark = isDark ? '#1c3d31' : '#CEEAD6';  // Vert typique
+    const colLand = isDark ? '#242f2b' : '#F1F3F4';  // Fond gris très clair
+    const colBld = isDark ? '#2a5046' : '#E8EAED';   // Bâtiments discrets
+    const colBldBorder = isDark ? '#3d6358' : '#DADCE0';
+    const colHwy = isDark ? '#475c55' : '#FDE293';   // Jaune autoroute/boulevard
 
     style.layers.forEach(l => {
-      // Fond et espaces naturels
+      // 1. Fond et espaces naturels
       if (l.type === 'fill') {
         if (l.id.includes('water')) {
           l.paint['fill-color'] = colWater;
@@ -212,14 +212,14 @@ function MapView() {
         }
       }
 
-      // Hiérarchie des routes (Le réseau sanguin jaune)
+      // 2. Hiérarchie des routes (Le réseau sanguin jaune)
       if (l.type === 'line' && l.id.includes('road')) {
         if (l.id.includes('motorway') || l.id.includes('trunk') || l.id.includes('primary')) {
           if (!isDark) l.paint['line-color'] = colHwy;
         }
       }
 
-      // Textes, Lieux et Rues (Connecté au menu)
+      // 3. Textes, Lieux et Rues (Connecté au menu)
       if (l.type === 'symbol') {
         l.layout = l.layout || {};
 
@@ -231,7 +231,7 @@ function MapView() {
         if (l.id.includes('poi') || l.id.includes('transit') || l.id.includes('station')) {
            l.layout['visibility'] = layerOpts.pois ? 'visible' : 'none';
            if (l.paint) {
-             l.paint['text-color'] = isDark ? '#b8c5c0' : '#6b5a4b';
+             l.paint['text-color'] = isDark ? '#b8c5c0' : '#5F6368'; // Gris typique Google pour les labels
              l.paint['text-halo-color'] = isDark ? '#15302a' : '#ffffff';
              l.paint['text-halo-width'] = 1.5;
            }
@@ -244,7 +244,7 @@ function MapView() {
       }
     });
 
-    // BÂTIMENTS 3D (Connecté au menu)
+    // 4. BÂTIMENTS 3D (Connecté au menu)
     if (layerOpts.buildings3D) {
       const sourceName = Object.keys(style.sources)[0];
       style.layers.push({

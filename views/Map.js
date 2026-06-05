@@ -158,10 +158,19 @@ function MapView() {
   const tourBtnRef = React.useRef(null);
   const [sel, setSel] = React.useState(null);
   
-  // --- ÉTAPE 1 : ÉTATS DE RECHERCHE ---
+  /// --- ÉTAPE 1 : ÉTATS DE RECHERCHE ---
   const [searchQuery, setSearchQuery] = React.useState('');
   // ------------------------------------
   const [curStyle, setCurStyle] = React.useState('minimal');
+  
+  // --- MENU DES CALQUES ---
+  const [layersOpen, setLayersOpen] = React.useState(false);
+  const [layerOpts, setLayerOpts] = React.useState({
+    buildings3D: true,
+    pois: true,
+    labels: true
+  });
+  // ------------------------
   const spinRef = React.useRef(true);
   const markersRef = React.useRef({ day: [], step: [] });
   const tourRef = React.useRef({ on: false, timer: null });
@@ -175,13 +184,10 @@ function MapView() {
   }, []);
 
   // ── Style builders ──
-  async function fetchS(u) { if (styleCache.current[u]) return styleCache.current[u]; const j = await (await fetch(u)).json(); styleCache.current[u] = j; return j; }
-  const clone = o => JSON.parse(JSON.stringify(o));
   async function buildBase() {
     const isDark = theme === 'dark';
     const style = clone(await fetchS(isDark ? MV_DARK : MV_VOY));
 
-    // Les codes couleurs exacts inspirés de Google Maps
     const colWater = isDark ? '#1a3642' : '#aadaff';
     const colPark = isDark ? '#1c3d31' : '#cdeac0';
     const colLand = isDark ? '#242f2b' : '#ebebeb'; 
@@ -192,9 +198,8 @@ function MapView() {
     style.layers.forEach(l => {
       // 1. Fond et espaces naturels
       if (l.type === 'fill') {
-        if (l.id.includes('water')) {
-          l.paint['fill-color'] = colWater;
-        } else if (l.id.includes('park') || l.id.includes('wood') || l.id.includes('green')) {
+        if (l.id.includes('water')) l.paint['fill-color'] = colWater;
+        else if (l.id.includes('park') || l.id.includes('wood') || l.id.includes('green')) {
           l.paint['fill-color'] = colPark;
           l.paint['fill-opacity'] = 1;
         } else if (l.id.includes('land') || l.id === 'background') {
@@ -205,7 +210,7 @@ function MapView() {
         }
       }
 
-      // 2. Hiérarchie des routes (Le fameux réseau sanguin jaune !)
+      // 2. Hiérarchie des routes
       if (l.type === 'line' && l.id.includes('road')) {
         if (l.id.includes('motorway') || l.id.includes('trunk') || l.id.includes('primary')) {
           if (!isDark) l.paint['line-color'] = colHwy;
@@ -216,26 +221,40 @@ function MapView() {
       if (l.type === 'symbol' && l.layout && l.layout['text-field']) {
          l.layout['text-field'] = ['coalesce', ['get', 'name:en'], ['get', 'name:latin'], ['get', 'name']];
       }
-    });
 
-    // 4. Bâtiments 3D "Discrets" (Façon Google, pas SimCity)
-    const sourceName = Object.keys(style.sources)[0];
-    style.layers.push({
-      'id': '3d-buildings',
-      'source': sourceName,
-      'source-layer': 'building',
-      'type': 'fill-extrusion',
-      // On retarde la 3D pour que la carte globale reste lisible
-      'minzoom': 15.5, 
-      'paint': {
-        'fill-extrusion-color': colBld,
-        // On réduit la hauteur artificielle par défaut
-        'fill-extrusion-height': ['coalesce', ['get', 'render_height'], ['get', 'height'], 6], 
-        'fill-extrusion-base': ['coalesce', ['get', 'render_min_height'], ['get', 'min_height'], 0],
-        // Translucide pour ne jamais boucher la vue des rues
-        'fill-extrusion-opacity': 0.6 
+      // 4. RÉVEIL DES LIEUX DE PROXIMITÉ (Connecté au menu)
+      if (l.type === 'symbol' && (l.id.includes('poi') || l.id.includes('transit') || l.id.includes('station'))) {
+         l.layout['visibility'] = layerOpts.pois ? 'visible' : 'none'; // <-- ICI
+         if (l.paint) {
+           l.paint['text-color'] = isDark ? '#b8c5c0' : '#6b5a4b';
+           l.paint['text-halo-color'] = isDark ? '#15302a' : '#ffffff';
+           l.paint['text-halo-width'] = 1.5;
+         }
+      }
+
+      // 5. NOM DES RUES (Connecté au menu)
+      if (l.type === 'symbol' && l.id.includes('road')) {
+         l.layout['visibility'] = layerOpts.labels ? 'visible' : 'none'; // <-- ICI
       }
     });
+
+    // 6. BÂTIMENTS 3D (Connecté au menu)
+    if (layerOpts.buildings3D) { // <-- ET LÀ
+      const sourceName = Object.keys(style.sources)[0];
+      style.layers.push({
+        'id': '3d-buildings',
+        'source': sourceName,
+        'source-layer': 'building',
+        'type': 'fill-extrusion',
+        'minzoom': 15.5, 
+        'paint': {
+          'fill-extrusion-color': colBld,
+          'fill-extrusion-height': ['coalesce', ['get', 'render_height'], ['get', 'height'], 6], 
+          'fill-extrusion-base': ['coalesce', ['get', 'render_min_height'], ['get', 'min_height'], 0],
+          'fill-extrusion-opacity': 0.6 
+        }
+      });
+    }
 
     return style;
   }
@@ -399,18 +418,11 @@ function MapView() {
     return () => { stopTour(); map.remove(); mapRef.current = null; markersRef.current = { day: [], step: [] }; };
   }, []);
 
-  // ── Theme change → restyle map ──
+ // ── Mise à jour dynamique du style (Thème, Calques, Fond) ──
   React.useEffect(() => {
     const map = mapRef.current; if (!map) return;
     (async () => { map.setStyle(curStyle === 'sat' ? await buildSat() : await buildBase()); })();
-  }, [theme]);
-
-  // ── Style switch ──
-  async function switchStyle(st) {
-    const map = mapRef.current; if (!map || st === curStyle) return;
-    setCurStyle(st);
-    map.setStyle(st === 'sat' ? await buildSat() : await buildBase());
-  }
+  }, [theme, curStyle, layerOpts]);
 
   if (!trip) return null;
 
@@ -475,10 +487,44 @@ function MapView() {
 
           <div className="mv-ov mv-ov-tl" style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
             <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-              <div className="mv-seg">
-                <button className={curStyle === 'minimal' ? 'active' : ''} onClick={() => switchStyle('minimal')}>Épuré</button>
-                <button className={curStyle === 'sat' ? 'active' : ''} onClick={() => switchStyle('sat')}>Satellite</button>
+              
+              {/* --- MENU DES CALQUES --- */}
+              <div style={{ position: 'relative' }}>
+                <button className="mv-tour" onClick={() => setLayersOpen(!layersOpen)} style={{ background: 'var(--card)', color: 'var(--text)', border: '1px solid var(--line)' }}>
+                  <Icon name="map" size={14} style={{ color: 'var(--accent)' }}/> 
+                  Affichage
+                </button>
+                
+                {layersOpen && (
+                  <div style={{ position: 'absolute', top: 'calc(100% + 8px)', left: 0, background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 14, padding: 16, boxShadow: 'var(--shadow-lg)', minWidth: 220, zIndex: 100, backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}>
+                    
+                    <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--faint)', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 8 }}>Fond de carte</div>
+                    <div className="mv-seg" style={{ marginBottom: 18 }}>
+                      <button className={curStyle === 'minimal' ? 'active' : ''} onClick={() => setCurStyle('minimal')} style={{ flex: 1 }}>Plan</button>
+                      <button className={curStyle === 'sat' ? 'active' : ''} onClick={() => setCurStyle('sat')} style={{ flex: 1 }}>Satellite</button>
+                    </div>
+                    
+                    <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--faint)', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 10 }}>Détails</div>
+                    
+                    <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 13, fontWeight: 600, cursor: 'pointer', marginBottom: 12, color: 'var(--text)' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Icon name="bed" size={14} style={{ color: 'var(--muted)' }}/> Bâtiments 3D</span>
+                      <input type="checkbox" checked={layerOpts.buildings3D} onChange={e => setLayerOpts(o => ({...o, buildings3D: e.target.checked}))} style={{ accentColor: 'var(--accent)', width: 16, height: 16, cursor: 'pointer' }}/>
+                    </label>
+                    
+                    <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 13, fontWeight: 600, cursor: 'pointer', marginBottom: 12, color: 'var(--text)' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Icon name="camera" size={14} style={{ color: 'var(--muted)' }}/> Commerces & Lieux</span>
+                      <input type="checkbox" checked={layerOpts.pois} onChange={e => setLayerOpts(o => ({...o, pois: e.target.checked}))} style={{ accentColor: 'var(--accent)', width: 16, height: 16, cursor: 'pointer' }}/>
+                    </label>
+                    
+                    <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 13, fontWeight: 600, cursor: 'pointer', color: 'var(--text)' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Icon name="route" size={14} style={{ color: 'var(--muted)' }}/> Nom des rues</span>
+                      <input type="checkbox" checked={layerOpts.labels} onChange={e => setLayerOpts(o => ({...o, labels: e.target.checked}))} style={{ accentColor: 'var(--accent)', width: 16, height: 16, cursor: 'pointer' }}/>
+                    </label>
+                  </div>
+                )}
               </div>
+              {/* ------------------------- */}
+
               <button className="mv-tour" ref={tourBtnRef} onClick={() => { if (tourRef.current.on) stopTour(); else startTour(); }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
                 Survoler

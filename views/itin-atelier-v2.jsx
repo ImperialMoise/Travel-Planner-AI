@@ -334,8 +334,8 @@ function AtelierV2() {
     spineHead: { padding: '16px 22px 12px', borderBottom: `1px solid ${C.line2}` },
     spineList: { flex: 1, overflow: 'hidden', padding: '8px 14px 12px', position: 'relative' },
     detail: { flex: 1, minWidth: 0, padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 14, minHeight: 0 },
-    ctx: { width: 304, flexShrink: 0, borderLeft: `1px solid ${C.line}`, padding: '18px 20px', display: 'flex',
-      flexDirection: 'column', gap: 13, minHeight: 0, background: mode === 'light' ? 'rgba(255,255,255,.35)' : 'rgba(0,0,0,.08)', overflow: 'hidden' }
+    ctx: { width: 320, flexShrink: 0, borderLeft: '1px solid var(--outline-variant)', padding: 16, display: 'flex',
+      flexDirection: 'column', gap: 16, minHeight: 0, background: 'var(--bg)', overflow: 'hidden' }
   };
 
   /* ——— spine ——— */
@@ -417,56 +417,110 @@ function AtelierV2() {
   const lodging = day.steps.find(x => x.type === 'logement');
   const transport = day.steps.find(x => x.type === 'transport');
 
-  function BlockShell({ id, title, icon, children, pad = 15 }) {
-    return React.createElement('div', { style: { background: C.card, border: `1px solid ${C.line}`, borderRadius: 16, overflow: 'hidden', position: 'relative', boxShadow: C.shadow } },
-      React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 8, padding: '11px 14px 0' } },
-        React.createElement(Icon, { name: icon, size: 13, style: { color: C.faint } }),
-        React.createElement('div', { style: { flex: 1, fontSize: 10.5, fontWeight: 800, letterSpacing: '.12em', textTransform: 'uppercase', color: C.faint } }, title),
-        editPins && React.createElement('button', { onClick: () => togglePin(id), title: 'Détacher',
-          style: { width: 22, height: 22, borderRadius: 7, border: 'none', cursor: 'pointer', background: C.accentSoft, color: C.accent, display: 'grid', placeItems: 'center', fontSize: 15, lineHeight: 1 } }, '×')),
-      React.createElement('div', { style: { padding: pad } }, children));
+  /* ——— widget shell (Stitch) ——— */
+  function BlockShell({ id, title, icon, iconColor, children, noPad }) {
+    return React.createElement('div', { style: {
+      background: 'var(--card)', borderRadius: 12,
+      boxShadow: '0 2px 8px rgba(82,98,91,0.05)',
+      border: '1px solid var(--outline-variant)',
+      overflow: 'hidden', position: 'relative'
+    } },
+      React.createElement('div', { style: {
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '12px 16px', borderBottom: '1px solid var(--outline-variant)',
+        background: 'var(--soft)'
+      } },
+        React.createElement('span', { style: {
+          fontSize: 13, fontWeight: 600, lineHeight: '18px', color: 'var(--text)',
+          display: 'flex', alignItems: 'center', gap: 8
+        } },
+          React.createElement(Icon, { name: icon, size: 16, style: { color: iconColor || 'var(--tertiary)' } }),
+          title),
+        editPins && React.createElement('button', { onClick: function() { togglePin(id); },
+          style: { width: 22, height: 22, borderRadius: 7, border: 'none', cursor: 'pointer',
+            background: 'var(--accent-soft)', color: 'var(--accent)',
+            display: 'grid', placeItems: 'center', fontSize: 15, lineHeight: 1 }
+        }, '\u00d7')),
+      React.createElement('div', { style: noPad ? {} : { padding: 16 } }, children));
   }
 
-  const BLOCKS = {
-    map: { label: 'Aperçu géographique', icon: 'map', render: () => React.createElement('div', { style: { background: C.card, border: `1px solid ${C.line}`, borderRadius: 16, overflow: 'hidden', boxShadow: C.shadow, position: 'relative' } },
-      editPins && React.createElement('button', { onClick: () => togglePin('map'), title: 'Détacher', style: { position: 'absolute', zIndex: 3, right: 8, top: 8, width: 22, height: 22, borderRadius: 7, border: 'none', cursor: 'pointer', background: 'rgba(0,0,0,.4)', color: '#fff', display: 'grid', placeItems: 'center', fontSize: 15, lineHeight: 1 } }, '×'),
-      React.createElement('div', { style: { height: 158 } }, React.createElement(AbstractMap, { points: dayPts, theme: mode, cities: T.cities, label: day.region.toUpperCase() })),
-      React.createElement('button', { onClick: () => setMapOpen(true), style: { width: '100%', border: 'none', borderTop: `1px solid ${C.line}`, background: 'transparent', color: C.accent, fontSize: 12.5, fontWeight: 700, padding: '11px 0', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 } },
-        React.createElement(Icon, { name: 'map', size: 15 }), 'Carte complète')) },
-    checklist: { label: 'Check-list', icon: 'check', render: () => {
-      const items = day.todo || [];
-      return React.createElement(BlockShell, { id: 'checklist', title: 'Check-list', icon: 'check', pad: 13 },
-        items.length ? items.map((t, i) => {
-          const key = sel + '_' + i; const ok = done[key];
-          return React.createElement('button', { key: i, onClick: () => setDone(d => ({ ...d, [key]: !d[key] })),
-            style: { width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '7px 0', border: 'none', background: 'none', cursor: 'pointer', textAlign: 'left', borderBottom: i < items.length - 1 ? `1px solid ${C.line2}` : 'none' } },
-            React.createElement('div', { style: { width: 19, height: 19, borderRadius: 6, flexShrink: 0, border: `1.5px solid ${ok ? C.accent : C.faint}`, background: ok ? C.accent : 'transparent', color: C.accentInk, display: 'grid', placeItems: 'center' } },
-              ok && React.createElement(Icon, { name: 'check', size: 12, sw: 2.4 })),
-            React.createElement('span', { style: { fontSize: 12.5, color: ok ? C.faint : C.text, textDecoration: ok ? 'line-through' : 'none', lineHeight: 1.35 } }, t));
-        }) : React.createElement('div', { style: { fontSize: 12.5, color: C.faint, fontStyle: 'italic', padding: '4px 0' } }, 'Rien à préparer ce jour-là.'));
+  var lodging = day.steps.find(function(x) { return x.type === 'logement'; });
+  var transport = day.steps.find(function(x) { return x.type === 'transport'; });
+
+  var BLOCKS = {
+    map: { label: 'Carte du jour', icon: 'map', render: function() {
+      return React.createElement(BlockShell, { id: 'map', title: 'Carte du jour', icon: 'map', iconColor: 'var(--tertiary)', noPad: true },
+        React.createElement('div', { style: { height: 160 } },
+          React.createElement(AbstractMap, { points: dayPts, theme: mode, cities: T.cities, label: day.region ? day.region.toUpperCase() : '' })));
     } },
-    note: { label: 'Note de journée', icon: 'sparkle', render: () => React.createElement(BlockShell, { id: 'note', title: 'Note de journée', icon: 'sparkle' },
-      day.note ? React.createElement('div', { style: { fontSize: 13, color: C.muted, lineHeight: 1.55, fontStyle: 'italic' } }, day.note)
-        : React.createElement('div', { style: { fontSize: 12.5, color: C.faint, fontStyle: 'italic' } }, 'Aucune note.')) },
-    people: { label: 'Voyageurs', icon: 'users', render: () => React.createElement(BlockShell, { id: 'people', title: 'Voyageurs', icon: 'users', pad: 13 },
-      React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 12 } },
-        React.createElement(Avatars, { people: T.participants, size: 34, dark: mode === 'light' }),
-        React.createElement('div', null,
-          React.createElement('div', { style: { fontSize: 13, fontWeight: 700 } }, 'Mathis & Margot'),
-          React.createElement('div', { style: { fontSize: 11, color: C.muted } }, 'Voyagent ensemble')))) },
-    stats: { label: 'Repères du jour', icon: 'route', render: () => React.createElement(BlockShell, { id: 'stats', title: 'Repères du jour', icon: 'route', pad: 13 },
-      React.createElement('div', { style: { display: 'flex', gap: 10 } },
-        React.createElement('div', { style: { flex: 1, background: C.inset, borderRadius: 11, padding: '10px 12px' } },
-          React.createElement('div', { style: { fontFamily: serif, fontSize: 24, lineHeight: 1 } }, day.steps.length),
-          React.createElement('div', { style: { fontSize: 10.5, color: C.muted, marginTop: 3 } }, day.steps.length > 1 ? 'étapes' : 'étape')),
-        React.createElement('div', { style: { flex: 1, background: C.inset, borderRadius: 11, padding: '10px 12px' } },
-          React.createElement('div', { style: { fontFamily: serif, fontSize: 24, lineHeight: 1 } }, transport ? '1' : '0'),
-          React.createElement('div', { style: { fontSize: 10.5, color: C.muted, marginTop: 3 } }, 'transport')),
-        React.createElement('div', { style: { flex: 1, background: C.inset, borderRadius: 11, padding: '10px 12px' } },
-          React.createElement('div', { style: { fontFamily: serif, fontSize: 24, lineHeight: 1 } }, lodging ? lodging.nights : '—'),
-          React.createElement('div', { style: { fontSize: 10.5, color: C.muted, marginTop: 3 } }, 'nuits'))) ) }
+
+    checklist: { label: '\u00c0 ne pas oublier', icon: 'check', render: function() {
+      var items = day.todo || [];
+      return React.createElement(BlockShell, { id: 'checklist', title: '\u00c0 ne pas oublier', icon: 'check', iconColor: 'var(--accent)' },
+        items.length ? items.map(function(t, i) {
+          var key = sel + '_' + i; var ok = done[key];
+          return React.createElement('label', { key: i,
+            onClick: function() { setDone(function(d) { var n = {}; for (var k in d) n[k] = d[k]; n[key] = !d[key]; return n; }); },
+            style: { display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer',
+              padding: '7px 0', borderBottom: i < items.length - 1 ? '1px solid var(--line2)' : 'none' }
+          },
+            React.createElement('div', { style: {
+              width: 20, height: 20, borderRadius: 4, flexShrink: 0,
+              border: ok ? 'none' : '1.5px solid var(--outline)',
+              background: ok ? 'var(--accent)' : 'var(--card)',
+              display: 'grid', placeItems: 'center'
+            } },
+              ok && React.createElement(Icon, { name: 'check', size: 14, sw: 2.4, style: { color: '#fff' } })),
+            React.createElement('span', { style: {
+              fontSize: 13.5, lineHeight: '20px',
+              color: ok ? 'var(--faint)' : 'var(--text)',
+              textDecoration: ok ? 'line-through' : 'none',
+              opacity: ok ? 0.7 : 1
+            } }, t));
+        }) : React.createElement('div', { style: { fontSize: 13, color: 'var(--faint)', fontStyle: 'italic' } }, 'Rien \u00e0 pr\u00e9parer.'));
+    } },
+
+    note: { label: 'Journal du jour', icon: 'sparkle', render: function() {
+      return React.createElement('div', { style: {
+        background: 'var(--soft)', borderRadius: 12,
+        boxShadow: '0 2px 8px rgba(82,98,91,0.05)',
+        border: '1px solid rgba(217,182,126,0.3)',
+        padding: 16, position: 'relative', overflow: 'hidden'
+      } },
+        React.createElement('div', { style: { position: 'absolute', top: 0, right: 0, width: 32, height: 32, background: 'rgba(217,182,126,0.1)', borderRadius: '0 0 0 12px' } }),
+        React.createElement('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 } },
+          React.createElement('span', { style: { fontSize: 13, fontWeight: 600, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8 } },
+            React.createElement(Icon, { name: 'sparkle', size: 16, style: { color: 'var(--tan)' } }), 'Journal du jour'),
+          editPins && React.createElement('button', { onClick: function() { togglePin('note'); },
+            style: { width: 22, height: 22, borderRadius: 7, border: 'none', cursor: 'pointer',
+              background: 'var(--accent-soft)', color: 'var(--accent)',
+              display: 'grid', placeItems: 'center', fontSize: 15, lineHeight: 1 }
+          }, '\u00d7')),
+        day.note
+          ? React.createElement('div', { style: { fontSize: 13.5, lineHeight: '20px', color: 'var(--muted)', fontStyle: 'italic' } }, day.note)
+          : React.createElement('div', { style: { fontSize: 13, color: 'var(--faint)', fontStyle: 'italic' } }, 'Aucune note pour ce jour.'));
+    } },
+
+    people: { label: 'Voyageurs', icon: 'users', render: function() {
+      return React.createElement(BlockShell, { id: 'people', title: 'Voyageurs', icon: 'users', iconColor: 'var(--tertiary)' },
+        React.createElement(Avatars, { people: T.participants, size: 34, dark: mode === 'light' }));
+    } },
+
+    stats: { label: 'Rep\u00e8res du jour', icon: 'route', render: function() {
+      return React.createElement(BlockShell, { id: 'stats', title: 'Rep\u00e8res du jour', icon: 'route', iconColor: 'var(--accent)' },
+        React.createElement('div', { style: { display: 'flex', gap: 10 } },
+          React.createElement('div', { style: { flex: 1, background: 'var(--inset)', borderRadius: 10, padding: '10px 12px' } },
+            React.createElement('div', { style: { fontFamily: 'var(--font-serif)', fontSize: 24, lineHeight: 1 } }, day.steps.length),
+            React.createElement('div', { style: { fontSize: 10.5, color: 'var(--muted)', marginTop: 3 } }, day.steps.length > 1 ? '\u00e9tapes' : '\u00e9tape')),
+          React.createElement('div', { style: { flex: 1, background: 'var(--inset)', borderRadius: 10, padding: '10px 12px' } },
+            React.createElement('div', { style: { fontFamily: 'var(--font-serif)', fontSize: 24, lineHeight: 1 } }, transport ? '1' : '0'),
+            React.createElement('div', { style: { fontSize: 10.5, color: 'var(--muted)', marginTop: 3 } }, 'transport')),
+          React.createElement('div', { style: { flex: 1, background: 'var(--inset)', borderRadius: 10, padding: '10px 12px' } },
+            React.createElement('div', { style: { fontFamily: 'var(--font-serif)', fontSize: 24, lineHeight: 1 } }, lodging ? lodging.nights : '\u2014'),
+            React.createElement('div', { style: { fontSize: 10.5, color: 'var(--muted)', marginTop: 3 } }, 'nuits'))));
+    } }
   };
-  const ORDER = ['map', 'checklist', 'note', 'stats', 'people'];
+  var ORDER = ['map', 'checklist', 'note', 'stats', 'people'];
 
   /* ——— Synthèse refondue ——— */
   function Synthese() {
@@ -578,8 +632,8 @@ function AtelierV2() {
     /* COLONNE DROITE */
     React.createElement('aside', { style: s.ctx },
       React.createElement('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' } },
-        React.createElement('div', { style: s.kicker }, '\u00c9pingl\u00e9'),
-        React.createElement('button', { onClick: function() { setEditPins(function(e) { return !e; }); }, style: { border: 'none', background: editPins ? C.accent : 'transparent', color: editPins ? C.accentInk : C.accent, cursor: 'pointer', fontSize: 12, fontWeight: 700, borderRadius: 8, padding: '4px 10px' } }, editPins ? 'Termin\u00e9' : 'Personnaliser')),
+        React.createElement('div', { style: { fontSize: 11, fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase', color: 'var(--muted)' } }, 'Bo\u00eete \u00e0 outils'),
+        React.createElement('button', { onClick: function() { setEditPins(function(e) { return !e; }); }, style: { border: 'none', background: editPins ? C.accent : 'transparent', color: editPins ? C.accentInk : C.accent, cursor: 'pointer', fontSize: 12, fontWeight: 700, borderRadius: 8, padding: '4px 10px' } }, React.createElement(Icon, { name: 'gear', size: 16 }))),
       React.createElement('div', { style: { flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 13, paddingRight: 2, marginRight: -2 } },
         pinned.map(function(id) { return BLOCKS[id] && React.createElement('div', { key: id }, BLOCKS[id].render()); }),
         editPins && unpinned.length > 0 && React.createElement('div', { style: { borderRadius: 14, border: '1px dashed ' + C.line, padding: 12 } },

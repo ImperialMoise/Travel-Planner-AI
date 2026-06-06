@@ -139,7 +139,78 @@ function MapView(){
   // ── Markers ──
   function buildDayMarkers(map){T.days.forEach((d,i)=>{const el=document.createElement('div');el.className='mv-pin '+mvRegClass(d.region);el.innerHTML='<div class="badge">'+d.n+'</div>';el.addEventListener('click',e=>{e.stopPropagation();doSelect(i,true);});const m=new maplibregl.Marker({element:el,anchor:'center'}).setLngLat(d.c).addTo(map);markersRef.current.day.push({m,el});});}
   function clearStepMarkers(){markersRef.current.step.forEach(m=>m.remove());markersRef.current.step=[];const map=mapRef.current;if(map){try{map.removeLayer('step-route-glow');}catch(e){}try{map.removeLayer('step-route-line');}catch(e){}try{map.removeSource('step-route');}catch(e){}}}
-  function showStepMarkers(map,day){clearStepMarkers();var coords=[];var typeCol={transport:'#597b72',logement:'#7c5410',restaurant:'#d9b67e',activite:'#7c5410',autre:'#827567'};day.steps.forEach(function(s,k){if(!s.c)return;coords.push(s.c);var col=typeCol[s.t]||'#7c5410';var el=document.createElement('div');el.style.cssText='width:32px;height:32px;border-radius:50%;background:#fff;border:2.5px solid '+col+';color:'+col+';display:grid;place-items:center;box-shadow:0 3px 10px rgba(0,0,0,.25);cursor:pointer;transition:all .2s;font-family:var(--font-mono);font-size:12px;font-weight:700';el.textContent=String(k+1);el.onmouseover=function(){el.style.transform='scale(1.2)';el.style.background=col;el.style.color='#fff';};el.onmouseout=function(){el.style.transform='none';el.style.background='#fff';el.style.color=col;};el.onclick=function(){if(s.c)map.flyTo({center:s.c,zoom:Math.max(map.getZoom(),15.5),duration:1400});};var m=new maplibregl.Marker({element:el,anchor:'center'}).setLngLat(s.c).addTo(map);markersRef.current.step.push(m);});if(coords.length>1){map.addSource('step-route',{type:'geojson',data:{type:'Feature',geometry:{type:'LineString',coordinates:coords}}});map.addLayer({id:'step-route-glow',type:'line',source:'step-route',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#d9b67e','line-width':6,'line-opacity':0.18,'line-blur':4}});map.addLayer({id:'step-route-line',type:'line',source:'step-route',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#d9b67e','line-width':2.5,'line-dasharray':[2,3]}});}}
+  function showStepMarkers(map,day){
+  clearStepMarkers();
+  var coords=[];
+  var typeCol={transport:'#597b72',logement:'#7c5410',restaurant:'#d9b67e',activite:'#7c5410',autre:'#827567'};
+
+  day.steps.forEach(function(s,k){
+    if(!s.c)return;
+
+    coords.push(s.c);
+
+    var col=typeCol[s.t]||'#7c5410';
+    var el=document.createElement('div');
+
+    el.style.cssText='width:32px;height:32px;border-radius:50%;background:#fff;border:2.5px solid '+col+';color:'+col+';display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(0,0,0,.25);cursor:pointer;transition:transform .2s, background .2s, color .2s;border-box;font-family:var(--font-mono);font-size:12px;font-weight:700;transform-origin:center center;';
+    el.textContent=String(k+1);
+
+    el.onmouseover=function(){
+      el.style.transform='translate(-50%, -50%) scale(1.2)';
+      el.style.background=col;
+      el.style.color='#fff';
+    };
+
+    el.onmouseout=function(){
+      el.style.transform='translate(-50%, -50%)';
+      el.style.background='#fff';
+      el.style.color=col;
+    };
+
+    el.onclick=function(){
+      if(s.c)map.flyTo({center:s.c,zoom:Math.max(map.getZoom(),15.5),duration:1400});
+    };
+
+    var m=new maplibregl.Marker({
+      element:el,
+      anchor:'center'
+    }).setLngLat(s.c).addTo(map);
+
+    el.style.transform='translate(-50%, -50%)';
+
+    markersRef.current.step.push(m);
+  });
+
+  if(coords.length>1){
+    map.addSource('step-route',{
+      type:'geojson',
+      data:{
+        type:'Feature',
+        geometry:{
+          type:'LineString',
+          coordinates:coords
+        }
+      }
+    });
+
+    map.addLayer({
+      id:'step-route-glow',
+      type:'line',
+      source:'step-route',
+      layout:{'line-cap':'round','line-join':'round'},
+      paint:{'line-color':'#d9b67e','line-width':6,'line-opacity':0.18,'line-blur':4}
+    });
+
+    map.addLayer({
+      id:'step-route-line',
+      type:'line',
+      source:'step-route',
+      layout:{'line-cap':'round','line-join':'round'},
+      paint:{'line-color':'#d9b67e','line-width':2.5,'line-dasharray':[2,3]}
+    });
+  }
+}
+}
 
   // ── Cards ──
   function renderWelcome(){if(!cardRef.current)return;cardRef.current.innerHTML='<div class="mv-card"><div class="mv-welcome-pad"><div style="font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--accent)">Le voyage</div><div style="font-family:var(--font-serif);font-style:italic;font-size:24px;margin-top:3px;color:var(--text)">'+T.name+'</div><div class="mv-welcome-line">Un fil d\'or relie chaque étape. Cliquez un jour pour plonger du globe jusqu\'au niveau des rues.</div><div class="mv-legend"><div class="mv-lg-row"><span class="mv-lg-dot" style="background:var(--accent)"></span>Séoul & environs</div><div class="mv-lg-row"><span class="mv-lg-dot" style="background:#c98a3c"></span>Busan, l\'échappée du Sud</div><div class="mv-lg-row"><span class="mv-lg-dot" style="background:var(--card);border-color:var(--faint)"></span>Vols Paris ⇄ Séoul</div></div></div></div>';}

@@ -294,6 +294,15 @@ function AtelierV2() {
     return ['map', 'checklist', 'note'];
   });
   const [done, setDone] = React.useState({});  // checklist coché
+  
+  const reload = () => { if (realTrip) window.SB.loadTrip(realTrip.id).then(t => Store.set({ trip: t })).catch(() => {}); };
+
+  React.useEffect(() => { localStorage.setItem('it_pins', JSON.stringify(pinned)); }, [pinned]);
+
+  const C = palette(mode);
+  const day = T.days[sel];
+  const stt = statusOf(sel, T.todayIndex);
+  const pct = Math.round((T.todayIndex + 1) / T.duration * 100);
   const [editor, setEditor] = React.useState({ open: false, dayId: null, step: null });
   /* ── Auto-image du hero ── */
   const [heroImg, setHeroImg] = React.useState(null);
@@ -319,14 +328,6 @@ function AtelierV2() {
       }
     });
   }, [day.id, day.steps.length]);
-  const reload = () => { if (realTrip) window.SB.loadTrip(realTrip.id).then(t => Store.set({ trip: t })).catch(() => {}); };
-
-  React.useEffect(() => { localStorage.setItem('it_pins', JSON.stringify(pinned)); }, [pinned]);
-
-  const C = palette(mode);
-  const day = T.days[sel];
-  const stt = statusOf(sel, T.todayIndex);
-  const pct = Math.round((T.todayIndex + 1) / T.duration * 100);
   const heroHue = (d) => d.region === 'Busan' ? 28 : d.region === 'Vol' ? 220 : 168;
   const heroL = mode === 'light' ? [0.72, 0.56] : [0.58, 0.4];
 

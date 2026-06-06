@@ -162,7 +162,7 @@ async function fetchAutoImage(query) {
   if (!query || query === 'Journ\u00e9e libre') return null;
 
   /* 1. Unsplash (priorité) */
-  if (UNSPLASH_KEY && UNSPLASH_KEY !== 'A6cXFWLMDJeyJqZhlwijRcvlqq8IvepxwBiYwD95Vmo') {
+  if (UNSPLASH_KEY && UNSPLASH_KEY.length > 10) {
     try {
       var res = await fetch('https://api.unsplash.com/search/photos?query=' + encodeURIComponent(query) + '&per_page=1&orientation=landscape', {
         headers: { 'Authorization': 'Client-ID ' + UNSPLASH_KEY }

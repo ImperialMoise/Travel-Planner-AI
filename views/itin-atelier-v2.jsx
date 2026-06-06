@@ -614,6 +614,7 @@ function AtelierV2() {
             React.createElement('span', { style: { fontFamily: 'var(--font-mono)', fontSize: 11, color: 'rgba(255,255,255,0.9)' } }, (day.weekday || '') + ' ' + fmtDate(day.dateISO))),
           React.createElement('h2', { style: { fontFamily: 'var(--font-serif)', fontSize: 40, lineHeight: '48px', color: '#fff', margin: '0 0 16px' } }, day.title),
           day.note && React.createElement('p', { style: { fontSize: 13.5, lineHeight: '20px', color: 'rgba(255,255,255,0.8)', maxWidth: 640, borderLeft: '2px solid var(--tan)', paddingLeft: 16, marginBottom: 24 } }, day.note))),
+      
       React.createElement('div', { style: { flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', gap: 11 } },
         day.steps.map(function(step, k) { return React.createElement(StepCard, { key: k, s: step }); }),
         React.createElement('button', {
@@ -627,12 +628,14 @@ function AtelierV2() {
             fontFamily: 'inherit', fontSize: 13, fontWeight: 600,
             transition: 'all .2s'
           }
-        }, React.createElement(Icon, { name: 'plus', size: 16 }), 'Ajouter une \u00e9tape')
+        }, React.createElement(Icon, { name: 'plus', size: 16 }), 'Ajouter une étape')
+      )
+    ),
 
     /* COLONNE DROITE */
     React.createElement('aside', { style: s.ctx },
       React.createElement('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' } },
-        React.createElement('div', { style: { fontSize: 11, fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase', color: 'var(--muted)' } }, 'Bo\u00eete \u00e0 outils'),
+        React.createElement('div', { style: { fontSize: 11, fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase', color: 'var(--muted)' } }, 'Boîte à outils'),
         React.createElement('button', { onClick: function() { setEditPins(function(e) { return !e; }); }, style: { border: 'none', background: editPins ? C.accent : 'transparent', color: editPins ? C.accentInk : C.accent, cursor: 'pointer', fontSize: 12, fontWeight: 700, borderRadius: 8, padding: '4px 10px' } }, React.createElement(Icon, { name: 'gear', size: 16 }))),
       React.createElement('div', { style: { flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 13, paddingRight: 2, marginRight: -2 } },
         pinned.map(function(id) { return BLOCKS[id] && React.createElement('div', { key: id }, BLOCKS[id].render()); }),

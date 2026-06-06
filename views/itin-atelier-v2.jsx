@@ -359,25 +359,53 @@ function AtelierV2() {
     );
   }
 
-  /* ——— step card ——— */
+  /* ——— step card (Stitch) ——— */
   function StepCard({ s: step }) {
-    const v = stepView(step);
-    return React.createElement('div', { onClick: () => setEditor({ open: true, dayId: day.id, step }), title: 'Modifier cette étape', style: { display: 'flex', gap: 14, padding: 14, borderRadius: 14, background: C.inset, border: `1px solid ${C.line2}`, cursor: 'pointer' } },
-      React.createElement('div', { style: { width: 58, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center' } },
-        React.createElement('div', { style: { fontFamily: mono, fontSize: 12, color: C.text, background: C.soft, borderRadius: 8, padding: '4px 7px', whiteSpace: 'nowrap' } }, (v.range || '—').split('–')[0]),
-        React.createElement('div', { style: { width: 36, height: 36, borderRadius: 10, background: C.accentSoft, color: C.accent, display: 'grid', placeItems: 'center' } },
-          React.createElement(Icon, { name: v.icon, size: 18 }))),
+    var v = stepView(step);
+    var accentMap = { transport: 'var(--tertiary-soft)', logement: 'var(--accent)', restaurant: 'var(--tan)', activite: 'var(--accent)', autre: 'var(--faint)' };
+    var ac = accentMap[step.type] || 'var(--faint)';
+    var timeText = (v.range || '\u2014').split('\u2013')[0];
+
+    return React.createElement('article', {
+      onClick: function() { setEditor({ open: true, dayId: day.id, step: step }); },
+      style: {
+        background: 'var(--card)', borderRadius: 12,
+        padding: '18px 20px', boxShadow: 'var(--shadow)',
+        border: '1px solid var(--outline-variant)',
+        display: 'flex', gap: 16,
+        position: 'relative', overflow: 'hidden',
+        cursor: 'pointer', transition: 'box-shadow .3s'
+      }
+    },
+      /* Barre d accent a gauche */
+      React.createElement('div', { style: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: ac } }),
+
+      /* Colonne heure + icone */
+      React.createElement('div', { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 60, paddingTop: 2 } },
+        React.createElement('div', { style: { fontFamily: 'var(--font-mono)', fontSize: 11, lineHeight: '14px', fontWeight: 700, color: ac } }, timeText),
+        React.createElement('div', { style: { width: 1, flex: 1, background: 'var(--outline-variant)', margin: '8px 0', minHeight: 12 } }),
+        React.createElement('div', { style: { color: ac } }, React.createElement(Icon, { name: v.icon, size: 20 }))),
+
+      /* Contenu principal */
       React.createElement('div', { style: { flex: 1, minWidth: 0 } },
-        React.createElement('div', { style: { fontSize: 10, fontWeight: 800, letterSpacing: '.1em', textTransform: 'uppercase', color: C.accent } }, v.kind),
+        React.createElement('div', { style: { fontSize: 11, fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase', color: ac, marginBottom: 4 } }, v.kind),
+
         step.type === 'transport' && !step.label
-          ? React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 8, fontSize: 15.5, fontWeight: 700, marginTop: 3, color: C.text } },
-              React.createElement('span', null, step.from), React.createElement(Icon, { name: 'arrowsm', size: 16, style: { color: C.faint } }), React.createElement('span', null, step.to))
-          : React.createElement('div', { style: { fontSize: 15.5, fontWeight: 700, marginTop: 3, color: C.text } }, v.title),
-        v.sub && React.createElement('div', { style: { fontSize: 12.5, color: C.muted, marginTop: 3 } }, v.sub),
-        step.note && React.createElement('div', { style: { fontSize: 12, color: C.faint, marginTop: 5, fontStyle: 'italic' } }, step.note)),
-      React.createElement('div', { style: { display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8, flexShrink: 0 } },
-        v.badge && React.createElement('div', { style: { display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 700, color: C.accent, background: C.accentSoft, borderRadius: 999, padding: '4px 9px' } }, React.createElement(Icon, { name: 'moon', size: 11 }), v.badge),
-        v.range && v.range.includes('–') && React.createElement('div', { style: { fontFamily: mono, fontSize: 11, color: C.muted } }, v.range.split('–')[1]))
+          ? React.createElement('div', { style: { fontFamily: 'var(--font-serif)', fontSize: 20, lineHeight: '28px', color: 'var(--text)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 } },
+              React.createElement('span', null, step.from), React.createElement(Icon, { name: 'arrowsm', size: 16, style: { color: 'var(--faint)' } }), React.createElement('span', null, step.to))
+          : React.createElement('div', { style: { fontFamily: 'var(--font-serif)', fontSize: 20, lineHeight: '28px', color: 'var(--text)', marginBottom: 8 } }, v.title),
+
+        v.sub && React.createElement('p', { style: { fontSize: 13.5, lineHeight: '20px', color: 'var(--muted)', marginBottom: 10 } }, v.sub),
+        step.note && React.createElement('p', { style: { fontSize: 13.5, lineHeight: '20px', color: 'var(--muted)', fontStyle: 'italic', marginBottom: 10 } }, step.note),
+
+        /* Tags metadata */
+        React.createElement('div', { style: { display: 'flex', flexWrap: 'wrap', gap: 8 } },
+          v.badge && React.createElement('span', { style: { display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 10px', borderRadius: 6, background: 'var(--soft)', color: 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: 10 } },
+            React.createElement(Icon, { name: 'moon', size: 12 }), v.badge),
+          step.dur && React.createElement('span', { style: { display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 10px', borderRadius: 6, background: 'var(--soft)', color: 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: 10 } },
+            React.createElement(Icon, { name: 'clock', size: 12 }), step.dur),
+          v.range && v.range.indexOf('\u2013') > -1 && React.createElement('span', { style: { display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 10px', borderRadius: 6, background: 'var(--soft)', color: 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: 10 } },
+            React.createElement(Icon, { name: 'clock', size: 12 }), v.range)))
     );
   }
 
@@ -517,22 +545,35 @@ function AtelierV2() {
 
     /* COLONNE CENTRALE */
     React.createElement('div', { style: { ...s.detail, overflowY: 'auto' } },
-      React.createElement('div', { key: 'hero' + day.n, style: { position: 'relative', height: 190, borderRadius: 18, overflow: 'hidden', flexShrink: 0, background: heroGrad(heroHue(day), mode === 'light'), boxShadow: C.shadow } },
-        React.createElement('image-slot', { id: 'koreahero-day-' + day.n, shape: 'rect', placeholder: 'Déposez une photo \u00b7 ' + day.region, style: { position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block' } }),
-        React.createElement('div', { style: { position: 'absolute', inset: 0, pointerEvents: 'none', background: 'linear-gradient(180deg, rgba(18,30,24,0) 38%, rgba(13,26,20,.74) 100%)' } }),
-        React.createElement('div', { style: { position: 'absolute', right: 14, top: 12, pointerEvents: 'none', fontFamily: mono, fontSize: 9.5, letterSpacing: '.14em', color: 'rgba(255,255,255,.82)', textShadow: '0 1px 6px rgba(0,0,0,.5)' } }, day.hero),
-        React.createElement('div', { style: { position: 'absolute', left: 22, right: 22, bottom: 18, pointerEvents: 'none', color: '#fff' } },
-          React.createElement('div', { style: { display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 700, marginBottom: 7, textShadow: '0 1px 8px rgba(0,0,0,.5)' } },
-            React.createElement('span', { style: { width: 7, height: 7, borderRadius: '50%', background: pillCol } }), pillTxt + ' \u00b7 ' + day.weekday + ' ' + fmtDate(day.dateISO) + ' \u00b7 ' + day.region),
-          React.createElement('div', { style: { display: 'flex', alignItems: 'flex-end', gap: 13 } },
-            React.createElement('div', { style: { fontFamily: serif, fontStyle: 'italic', fontSize: 40, lineHeight: .82, textShadow: '0 2px 16px rgba(0,0,0,.5)' } }, 'J' + day.n),
-            React.createElement('div', { style: { fontFamily: serif, fontStyle: 'italic', fontSize: 26, lineHeight: 1, whiteSpace: 'nowrap', textShadow: '0 2px 14px rgba(0,0,0,.55)' } }, day.title)))),
+      React.createElement('div', { key: 'hero' + day.n, style: {
+        position: 'relative', height: 320,
+        margin: '-20px -24px 24px', borderRadius: '0 0 16px 16px',
+        overflow: 'hidden', flexShrink: 0,
+        background: heroGrad(heroHue(day), mode === 'light'),
+        boxShadow: 'var(--shadow-lg)'
+      } },
+        React.createElement('image-slot', { id: 'koreahero-day-' + day.n, shape: 'rect', placeholder: 'Photo du jour', style: { position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block' } }),
+        React.createElement('div', { style: { position: 'absolute', inset: 0, pointerEvents: 'none', background: 'linear-gradient(to top, rgba(21,48,42,0.9) 0%, rgba(21,48,42,0.4) 40%, transparent 100%)' } }),
+        React.createElement('div', { style: { position: 'absolute', bottom: 0, left: 0, width: '100%', padding: '0 24px', color: '#fff' } },
+          React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 } },
+            React.createElement('span', { style: { display: 'inline-block', padding: '5px 14px', background: 'rgba(254,249,239,0.2)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', borderRadius: 999, border: '1px solid rgba(255,255,255,0.3)', fontSize: 11, fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase', color: '#fff' } }, 'Jour ' + day.n),
+            React.createElement('span', { style: { fontFamily: 'var(--font-mono)', fontSize: 11, color: 'rgba(255,255,255,0.9)' } }, (day.weekday || '') + ' ' + fmtDate(day.dateISO))),
+          React.createElement('h2', { style: { fontFamily: 'var(--font-serif)', fontSize: 40, lineHeight: '48px', color: '#fff', margin: '0 0 16px' } }, day.title),
+          day.note && React.createElement('p', { style: { fontSize: 13.5, lineHeight: '20px', color: 'rgba(255,255,255,0.8)', maxWidth: 640, borderLeft: '2px solid var(--tan)', paddingLeft: 16, marginBottom: 24 } }, day.note))),
       React.createElement('div', { style: { flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', gap: 11 } },
         day.steps.map(function(step, k) { return React.createElement(StepCard, { key: k, s: step }); }),
         React.createElement('button', {
           onClick: function() { setEditor({ open: true, dayId: day.id, step: null }); },
-          style: Object.assign({}, s.ghost, { alignSelf: 'flex-start', borderStyle: 'dashed', background: 'transparent', color: C.muted })
-        }, React.createElement(Icon, { name: 'plus', size: 15 }), 'Ajouter une \u00e9tape'))),
+          style: {
+            width: '100%', marginTop: 16, padding: '16px 0',
+            borderRadius: 12, border: '2px dashed var(--outline-variant)',
+            background: 'rgba(254,249,239,0.5)',
+            color: 'var(--muted)', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            fontFamily: 'inherit', fontSize: 13, fontWeight: 600,
+            transition: 'all .2s'
+          }
+        }, React.createElement(Icon, { name: 'plus', size: 16 }), 'Ajouter une \u00e9tape')
 
     /* COLONNE DROITE */
     React.createElement('aside', { style: s.ctx },

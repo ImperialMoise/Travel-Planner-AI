@@ -287,39 +287,171 @@ function MapView(){
       </div>
 
       {/* ═══ CONTRÔLES (droite) ═══ */}
-      <div style={{position:'absolute',top:14,right:14,zIndex:5,display:'flex',flexDirection:'column',gap:8,alignItems:'flex-end'}}>
-        {/* Vue globale */}
-        <button onClick={sel!=null?showGlobe:fitAll} className="mv-glass" style={{display:'flex',alignItems:'center',gap:7,padding:'8px 14px',border:'none',cursor:'pointer',fontSize:12.5,fontWeight:700,fontFamily:'inherit',color:'var(--muted)',borderRadius:12}}><Icon name="expand" size={14}/>{sel!=null?'Vue globale':'Recentrer'}</button>
+<div style={{position:'absolute',top:14,right:14,zIndex:5,display:'flex',flexDirection:'column',gap:10,alignItems:'stretch',width:148}}>
 
-        {/* Zoom + Compass */}
-        <div className="mv-glass" style={{display:'flex',flexDirection:'column',overflow:'hidden',borderRadius:12}}>
-          <button className="mv-glass-btn" style={{padding:10}} onClick={()=>{spinRef.current=false;mapRef.current?.zoomIn({duration:400});}}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
-          <div style={{height:1,background:'var(--line2)'}}/>
-          <button className="mv-glass-btn" style={{padding:10}} onClick={()=>{spinRef.current=false;mapRef.current?.zoomOut({duration:400});}}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"><path d="M5 12h14"/></svg></button>
-          <div style={{height:1,background:'var(--line2)'}}/>
-          <button className="mv-glass-btn" style={{padding:10}} onClick={()=>mapRef.current?.easeTo({bearing:0,pitch:0,duration:600})}><svg ref={needleRef} width="18" height="18" viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3l3.2 8L12 9.4 8.8 11z" fill="var(--accent)" stroke="var(--accent)" strokeWidth="1.5"/><path d="M12 9.4 8.8 13 12 21l3.2-8z" fill="var(--muted)" stroke="var(--muted)" strokeWidth="1.5"/></svg></button>
+  {/* Recentrer / Vue globale */}
+  <button
+    onClick={sel!=null?showGlobe:fitAll}
+    className="mv-glass"
+    style={{
+      height:44,
+      width:'100%',
+      display:'flex',
+      alignItems:'center',
+      justifyContent:'center',
+      gap:8,
+      padding:'0 14px',
+      border:'none',
+      cursor:'pointer',
+      fontSize:13,
+      fontWeight:700,
+      fontFamily:'inherit',
+      color:'var(--text)',
+      borderRadius:14
+    }}
+  >
+    <Icon name="expand" size={14}/>
+    {sel!=null?'Vue globale':'Recentrer'}
+  </button>
+
+  {/* Bloc principal */}
+  <div className="mv-glass" style={{display:'flex',flexDirection:'column',borderRadius:18,overflow:'hidden',width:'100%'}}>
+
+    <button
+      className="mv-glass-btn"
+      style={{height:44,width:'100%',padding:'0 14px',justifyContent:'center'}}
+      onClick={()=>{spinRef.current=false;mapRef.current?.zoomIn({duration:400});}}
+      title="Zoomer"
+    >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round">
+        <path d="M12 5v14M5 12h14"/>
+      </svg>
+    </button>
+
+    <div style={{height:1,background:'var(--line2)'}}/>
+
+    <button
+      className="mv-glass-btn"
+      style={{height:44,width:'100%',padding:'0 14px',justifyContent:'center'}}
+      onClick={()=>{spinRef.current=false;mapRef.current?.zoomOut({duration:400});}}
+      title="Dézoomer"
+    >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round">
+        <path d="M5 12h14"/>
+      </svg>
+    </button>
+
+    <div style={{height:1,background:'var(--line2)'}}/>
+
+    <button
+      className="mv-glass-btn"
+      style={{height:44,width:'100%',padding:'0 14px',justifyContent:'center'}}
+      onClick={()=>mapRef.current?.easeTo({bearing:0,pitch:0,duration:600})}
+      title="Remettre l’orientation"
+    >
+      <svg ref={needleRef} width="18" height="18" viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 3l3.2 8L12 9.4 8.8 11z" fill="var(--accent)" stroke="var(--accent)" strokeWidth="1.5"/>
+        <path d="M12 9.4 8.8 13 12 21l3.2-8z" fill="var(--muted)" stroke="var(--muted)" strokeWidth="1.5"/>
+      </svg>
+    </button>
+  </div>
+
+  {/* Fond de carte */}
+  <div style={{position:'relative',width:'100%'}}>
+    <button
+      className="mv-glass"
+      style={{
+        height:44,
+        width:'100%',
+        display:'flex',
+        alignItems:'center',
+        justifyContent:'center',
+        gap:8,
+        padding:'0 14px',
+        border:'none',
+        cursor:'pointer',
+        color:layersOpen?'var(--accent)':'var(--text)',
+        borderRadius:14
+      }}
+      onClick={()=>setLayersOpen(p=>!p)}
+      title="Fond de carte"
+    >
+      <Icon name="map" size={16}/>
+      Affichage
+    </button>
+
+    {layersOpen&&(
+      <div className="mv-glass" style={{position:'absolute',top:'calc(100% + 6px)',right:0,width:'100%',padding:8,borderRadius:16}}>
+        <div style={{fontSize:10,fontWeight:800,color:'var(--faint)',textTransform:'uppercase',letterSpacing:'.08em',marginBottom:6,paddingLeft:4}}>
+          Fond de carte
         </div>
-
-        {/* Fond de carte */}
-        <div className="mv-glass" style={{display:'flex',flexDirection:'column',overflow:'hidden',borderRadius:12}}>
-          <button className="mv-glass-btn" style={{padding:10}} onClick={()=>setLayersOpen(p=>!p)} title="Fond de carte"><Icon name="map" size={16} style={{color:layersOpen?'var(--accent)':'var(--muted)'}}/></button>
-        </div>
-        {layersOpen&&(
-          <div className="mv-glass" style={{padding:8,minWidth:130}}>
-            <div style={{fontSize:10,fontWeight:800,color:'var(--faint)',textTransform:'uppercase',letterSpacing:'.08em',marginBottom:6,paddingLeft:4}}>Fond de carte</div>
-            <button className={'mv-glass-btn'+(curStyle==='minimal'?' active':'')} style={{width:'100%',justifyContent:'flex-start'}} onClick={()=>{setCurStyle('minimal');setLayersOpen(false);}}>Plan</button>
-            <button className={'mv-glass-btn'+(curStyle==='sat'?' active':'')} style={{width:'100%',justifyContent:'flex-start'}} onClick={()=>{setCurStyle('sat');setLayersOpen(false);}}>Satellite</button>
-          </div>
-        )}
-
-        {/* Survoler */}
-        <button onClick={()=>{if(tourRef.current.on)stopTour();else startTour();}} className={'mv-glass-btn mv-glass'+(touring?' active':'')} style={{padding:'8px 14px'}}><Icon name="route" size={14}/>{touring?'Stop':'Survoler'}</button>
-
-        {/* Géolocalisation */}
-        <button onClick={geolocate} className="mv-glass" style={{padding:10,borderRadius:12,border:'none',cursor:'pointer',color:'var(--accent)',display:'grid',placeItems:'center'}} title="Ma position"><Icon name="pin" size={16}/></button>
-        {/* Readout */}
-        <div className="mv-glass" style={{padding:'6px 11px',borderRadius:10}} ref={readoutRef}><b style={{color:'var(--accent)'}}>GLOBE</b> <span style={{color:'var(--muted)',fontSize:10.5,fontFamily:'var(--font-mono)'}}>· z1.6</span></div>
+        <button className={'mv-glass-btn'+(curStyle==='minimal'?' active':'')} style={{width:'100%',height:38,justifyContent:'flex-start',padding:'0 12px'}} onClick={()=>{setCurStyle('minimal');setLayersOpen(false);}}>
+          Plan
+        </button>
+        <button className={'mv-glass-btn'+(curStyle==='sat'?' active':'')} style={{width:'100%',height:38,justifyContent:'flex-start',padding:'0 12px'}} onClick={()=>{setCurStyle('sat');setLayersOpen(false);}}>
+          Satellite
+        </button>
       </div>
+    )}
+  </div>
+
+  {/* Survoler */}
+  <button
+    onClick={()=>{if(tourRef.current.on)stopTour();else startTour();}}
+    className={'mv-glass-btn mv-glass'+(touring?' active':'')}
+    style={{
+      height:44,
+      width:'100%',
+      padding:'0 14px',
+      justifyContent:'center',
+      borderRadius:14
+    }}
+  >
+    <Icon name="route" size={14}/>
+    {touring?'Stop':'Survoler'}
+  </button>
+
+  {/* Ma position */}
+  <button
+    onClick={geolocate}
+    className="mv-glass"
+    style={{
+      height:44,
+      width:'100%',
+      border:'none',
+      cursor:'pointer',
+      color:'var(--text)',
+      display:'flex',
+      alignItems:'center',
+      justifyContent:'center',
+      gap:8,
+      borderRadius:14
+    }}
+    title="Ma position"
+  >
+    <Icon name="pin" size={16}/>
+    Position
+  </button>
+
+  {/* Readout */}
+  <div
+    className="mv-glass"
+    style={{
+      minHeight:44,
+      width:'100%',
+      padding:'0 14px',
+      borderRadius:14,
+      display:'flex',
+      alignItems:'center',
+      justifyContent:'center',
+      gap:6
+    }}
+    ref={readoutRef}
+  >
+    <b style={{color:'var(--text)',fontSize:13}}>GLOBE</b>
+    <span style={{color:'var(--muted)',fontSize:12,fontFamily:'var(--font-mono)'}}>· z1.6</span>
+  </div>
+</div>
 
       {/* ═══ LIEU TROUVÉ (bas gauche, par-dessus la day card) ═══ */}
       {foundPlace&&!editorOpen&&(

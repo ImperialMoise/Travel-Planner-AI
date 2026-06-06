@@ -237,7 +237,7 @@ window.StepEditor = StepEditor;
 
 function AtelierV2() {
   // --- 1. CONNEXION À TA BASE DE DONNÉES SUPABASE ---
-  const { trip: realTrip } = Store.useStore();
+  const { trip: realTrip, selectedDayIndex } = Store.useStore();
 
   const T = realTrip ? {
     ...window.TRIP, // On garde les éléments graphiques (avatars, chapitres, carte) de la démo de Claude
@@ -286,8 +286,7 @@ function AtelierV2() {
 
   const { theme = localStorage.getItem('it_theme') || 'light' } = Store.useStore();
   const mode = theme;
-  const [view, setView] = React.useState('itin');
-  const [sel, setSel] = React.useState(T.todayIndex);
+  const sel = Math.min(selectedDayIndex || 0, T.days.length - 1);
   const [mapOpen, setMapOpen] = React.useState(false);
   const [editPins, setEditPins] = React.useState(false);
   const [pinned, setPinned] = React.useState(() => {
@@ -513,72 +512,43 @@ function AtelierV2() {
   const pillCol = stt === 'today' ? C.accent : stt === 'past' ? C.faint : C.muted;
   const unpinned = ORDER.filter(id => !pinned.includes(id));
 
-  return React.createElement('div', { style: s.frame },
-    React.createElement('style', null, `@keyframes itdash{to{stroke-dashoffset:-160}} .it-journey{animation:itdash 9s linear infinite}`),
-    
-    /* TOPBAR DE CLAUDE RESTAURÉE */
-    React.createElement('div', { style: s.top },
-      React.createElement('div', { style: s.brand },
-        React.createElement('div', { style: s.mark }, React.createElement(Icon, { name: 'route', size: 15 })),
-        React.createElement('div', { style: s.wordmark }, 'Atelier')),
-      React.createElement('div', { style: s.seg },
-        React.createElement('button', { style: s.segBtn(view === 'itin'), onClick: () => setView('itin') }, 'Itinéraire'),
-        React.createElement('button', { style: s.segBtn(view === 'recit'), onClick: () => setView('recit') }, 'Synthèse')),
-      React.createElement('div', { style: s.topRight },
-        React.createElement(Avatars, { people: T.participants, size: 30, dark: mode === 'light' }),
-        React.createElement('button', { style: s.ghost, onClick: () => setMapOpen(true) }, React.createElement(Icon, { name: 'map', size: 16, style: { color: C.accent } }), 'Carte de l\'étape'))),
-    
-    /* BODY */
-    React.createElement('div', { style: { flex: 1, overflow: 'hidden', position: 'relative' } },
-      React.createElement('div', { style: s.track(view) },
-        /* ITIN */
-        React.createElement('div', { style: s.panel },
-          React.createElement('aside', { style: s.spine },
-            React.createElement('div', { style: s.spineHead },
-              React.createElement('div', { style: s.kicker }, T.name),
-              React.createElement('div', { style: { fontFamily: serif, fontStyle: 'italic', fontSize: 20, marginTop: 4, color: C.text } }, realTrip ? `${realTrip.days.length} jours` : '15 jours'),
-              React.createElement('div', { style: { fontSize: 12, color: C.muted, marginTop: 3 } }, dayRange(T.startISO, T.endISO))),
-            React.createElement('div', { style: s.spineList },
-              React.createElement('div', { style: { position: 'absolute', left: 30, top: 16, bottom: 16, width: 2, background: C.line2 } }),
-              T.days.map((d, i) => React.createElement(SpineDay, { key: d.n, i })))),
-          
-          /* détail */
-          React.createElement('div', { style: s.detail },
-            React.createElement('div', { key: 'hero' + day.n, style: { position: 'relative', height: 190, borderRadius: 18, overflow: 'hidden', flexShrink: 0, background: heroGrad(heroHue(day), mode === 'light'), boxShadow: C.shadow } },
-              React.createElement('image-slot', { id: 'koreahero-day-' + day.n, shape: 'rect', placeholder: 'Déposez une photo · ' + day.region, style: { position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block' } }),
-              React.createElement('div', { style: { position: 'absolute', inset: 0, pointerEvents: 'none', background: 'linear-gradient(180deg, rgba(18,30,24,0) 38%, rgba(13,26,20,.74) 100%)' } }),
-              React.createElement('div', { style: { position: 'absolute', right: 14, top: 12, pointerEvents: 'none', fontFamily: mono, fontSize: 9.5, letterSpacing: '.14em', color: 'rgba(255,255,255,.82)', textShadow: '0 1px 6px rgba(0,0,0,.5)' } }, day.hero),
-              React.createElement('div', { style: { position: 'absolute', left: 22, right: 22, bottom: 18, pointerEvents: 'none', color: '#fff' } },
-                React.createElement('div', { style: { display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 700, marginBottom: 7, textShadow: '0 1px 8px rgba(0,0,0,.5)' } },
-                  React.createElement('span', { style: { width: 7, height: 7, borderRadius: '50%', background: pillCol } }), `${pillTxt} · ${day.weekday} ${fmtDate(day.dateISO)} · ${day.region}`),
-                React.createElement('div', { style: { display: 'flex', alignItems: 'flex-end', gap: 13 } },
-                  React.createElement('div', { style: { fontFamily: serif, fontStyle: 'italic', fontSize: 40, lineHeight: .82, textShadow: '0 2px 16px rgba(0,0,0,.5)' } }, 'J' + day.n),
-                  React.createElement('div', { style: { fontFamily: serif, fontStyle: 'italic', fontSize: 26, lineHeight: 1, whiteSpace: 'nowrap', textShadow: '0 2px 14px rgba(0,0,0,.55)' } }, day.title)))),
-            React.createElement('div', { style: { flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', gap: 11 } },
-              day.steps.map((step, k) => React.createElement(StepCard, { key: k, s: step })),
-              
-              /* BOUTON AJOUTER RELIÉ À SUPABASE */
-              React.createElement('button', {
-                onClick: () => setEditor({ open: true, dayId: day.id, step: null }),
-                style: { ...s.ghost, alignSelf: 'flex-start', borderStyle: 'dashed', background: 'transparent', color: C.muted }
-              }, React.createElement(Icon, { name: 'plus', size: 15 }), 'Ajouter une étape'))),
-          
-          /* COLONNE ÉPINGLÉE */
-          React.createElement('aside', { style: s.ctx },
-            React.createElement('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' } },
-              React.createElement('div', { style: s.kicker }, 'Épinglé'),
-              React.createElement('button', { onClick: () => setEditPins(e => !e), style: { border: 'none', background: editPins ? C.accent : 'transparent', color: editPins ? C.accentInk : C.accent, cursor: 'pointer', fontSize: 12, fontWeight: 700, borderRadius: 8, padding: '4px 10px' } }, editPins ? 'Terminé' : 'Personnaliser')),
-            React.createElement('div', { style: { flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 13, paddingRight: 2, marginRight: -2 } },
-              pinned.map(id => BLOCKS[id] && React.createElement('div', { key: id }, BLOCKS[id].render())),
-              editPins && unpinned.length > 0 && React.createElement('div', { style: { borderRadius: 14, border: `1px dashed ${C.line}`, padding: 12 } },
-                React.createElement('div', { style: { fontSize: 10.5, fontWeight: 800, letterSpacing: '.1em', textTransform: 'uppercase', color: C.faint, marginBottom: 9 } }, 'Ajouter un bloc'),
-                React.createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: 7 } },
-                  unpinned.map(id => React.createElement('button', { key: id, onClick: () => togglePin(id), style: { display: 'flex', alignItems: 'center', gap: 9, padding: '8px 10px', borderRadius: 10, border: `1px solid ${C.line}`, background: C.inset, color: C.text, cursor: 'pointer', fontSize: 12.5, fontWeight: 600, textAlign: 'left' } },
-                    React.createElement('div', { style: { width: 26, height: 26, borderRadius: 8, background: C.accentSoft, color: C.accent, display: 'grid', placeItems: 'center', flexShrink: 0 } }, React.createElement(Icon, { name: BLOCKS[id].icon, size: 14 })),
-                    React.createElement('span', { style: { flex: 1 } }, BLOCKS[id].label),
-                    React.createElement(Icon, { name: 'plus', size: 14, style: { color: C.faint } })))))) )),
-        /* SYNTHÈSE */
-        React.createElement('div', { style: s.panel }, React.createElement(Synthese, null)))),
+  return React.createElement('div', { style: { flex: 1, display: 'flex', minHeight: 0, overflow: 'hidden', position: 'relative' } },
+    React.createElement('style', null, '@keyframes itdash{to{stroke-dashoffset:-160}} .it-journey{animation:itdash 9s linear infinite}'),
+
+    /* COLONNE CENTRALE */
+    React.createElement('div', { style: { ...s.detail, overflowY: 'auto' } },
+      React.createElement('div', { key: 'hero' + day.n, style: { position: 'relative', height: 190, borderRadius: 18, overflow: 'hidden', flexShrink: 0, background: heroGrad(heroHue(day), mode === 'light'), boxShadow: C.shadow } },
+        React.createElement('image-slot', { id: 'koreahero-day-' + day.n, shape: 'rect', placeholder: 'Déposez une photo \u00b7 ' + day.region, style: { position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block' } }),
+        React.createElement('div', { style: { position: 'absolute', inset: 0, pointerEvents: 'none', background: 'linear-gradient(180deg, rgba(18,30,24,0) 38%, rgba(13,26,20,.74) 100%)' } }),
+        React.createElement('div', { style: { position: 'absolute', right: 14, top: 12, pointerEvents: 'none', fontFamily: mono, fontSize: 9.5, letterSpacing: '.14em', color: 'rgba(255,255,255,.82)', textShadow: '0 1px 6px rgba(0,0,0,.5)' } }, day.hero),
+        React.createElement('div', { style: { position: 'absolute', left: 22, right: 22, bottom: 18, pointerEvents: 'none', color: '#fff' } },
+          React.createElement('div', { style: { display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 700, marginBottom: 7, textShadow: '0 1px 8px rgba(0,0,0,.5)' } },
+            React.createElement('span', { style: { width: 7, height: 7, borderRadius: '50%', background: pillCol } }), pillTxt + ' \u00b7 ' + day.weekday + ' ' + fmtDate(day.dateISO) + ' \u00b7 ' + day.region),
+          React.createElement('div', { style: { display: 'flex', alignItems: 'flex-end', gap: 13 } },
+            React.createElement('div', { style: { fontFamily: serif, fontStyle: 'italic', fontSize: 40, lineHeight: .82, textShadow: '0 2px 16px rgba(0,0,0,.5)' } }, 'J' + day.n),
+            React.createElement('div', { style: { fontFamily: serif, fontStyle: 'italic', fontSize: 26, lineHeight: 1, whiteSpace: 'nowrap', textShadow: '0 2px 14px rgba(0,0,0,.55)' } }, day.title)))),
+      React.createElement('div', { style: { flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', gap: 11 } },
+        day.steps.map(function(step, k) { return React.createElement(StepCard, { key: k, s: step }); }),
+        React.createElement('button', {
+          onClick: function() { setEditor({ open: true, dayId: day.id, step: null }); },
+          style: Object.assign({}, s.ghost, { alignSelf: 'flex-start', borderStyle: 'dashed', background: 'transparent', color: C.muted })
+        }, React.createElement(Icon, { name: 'plus', size: 15 }), 'Ajouter une \u00e9tape'))),
+
+    /* COLONNE DROITE */
+    React.createElement('aside', { style: s.ctx },
+      React.createElement('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' } },
+        React.createElement('div', { style: s.kicker }, '\u00c9pingl\u00e9'),
+        React.createElement('button', { onClick: function() { setEditPins(function(e) { return !e; }); }, style: { border: 'none', background: editPins ? C.accent : 'transparent', color: editPins ? C.accentInk : C.accent, cursor: 'pointer', fontSize: 12, fontWeight: 700, borderRadius: 8, padding: '4px 10px' } }, editPins ? 'Termin\u00e9' : 'Personnaliser')),
+      React.createElement('div', { style: { flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 13, paddingRight: 2, marginRight: -2 } },
+        pinned.map(function(id) { return BLOCKS[id] && React.createElement('div', { key: id }, BLOCKS[id].render()); }),
+        editPins && unpinned.length > 0 && React.createElement('div', { style: { borderRadius: 14, border: '1px dashed ' + C.line, padding: 12 } },
+          React.createElement('div', { style: { fontSize: 10.5, fontWeight: 800, letterSpacing: '.1em', textTransform: 'uppercase', color: C.faint, marginBottom: 9 } }, 'Ajouter un bloc'),
+          React.createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: 7 } },
+            unpinned.map(function(id) { return React.createElement('button', { key: id, onClick: function() { togglePin(id); }, style: { display: 'flex', alignItems: 'center', gap: 9, padding: '8px 10px', borderRadius: 10, border: '1px solid ' + C.line, background: C.inset, color: C.text, cursor: 'pointer', fontSize: 12.5, fontWeight: 600, textAlign: 'left' } },
+              React.createElement('div', { style: { width: 26, height: 26, borderRadius: 8, background: C.accentSoft, color: C.accent, display: 'grid', placeItems: 'center', flexShrink: 0 } }, React.createElement(Icon, { name: BLOCKS[id].icon, size: 14 })),
+              React.createElement('span', { style: { flex: 1 } }, BLOCKS[id].label),
+              React.createElement(Icon, { name: 'plus', size: 14, style: { color: C.faint } })); }))))),
+
     mapOpen && React.createElement(MapOverlay, null),
     React.createElement(StepEditor, {
       open: editor.open,
@@ -586,7 +556,7 @@ function AtelierV2() {
       dayId: editor.dayId,
       step: editor.step,
       stepCount: day.steps.length,
-      onClose: () => setEditor({ open: false, dayId: null, step: null }),
+      onClose: function() { setEditor({ open: false, dayId: null, step: null }); },
       onSaved: reload
     })
   );

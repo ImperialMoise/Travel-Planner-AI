@@ -101,6 +101,9 @@ function MapView(){
   const {trip:realTrip}=Store.useStore();
 
   const [sel,setSel]=React.useState(null);
+  const {selectedDayIndex}=Store.useStore();
+  const firstRender=React.useRef(true);
+  React.useEffect(function(){if(firstRender.current){firstRender.current=false;return;}if(selectedDayIndex!=null&&selectedDayIndex!==sel){doSelect(selectedDayIndex,true);};},[selectedDayIndex]);
   const [curStyle,setCurStyle]=React.useState('minimal');
   const [layersOpen,setLayersOpen]=React.useState(false);
   const [query,setQuery]=React.useState('');
@@ -139,7 +142,7 @@ function MapView(){
 
   // ── Navigation ──
   function flyDay(i){const map=mapRef.current;if(!map)return;const d=T.days[i];map.flyTo({center:d.c,zoom:d.z,pitch:d.region==='Vol'?0:42,bearing:0,duration:2200,curve:1.5,essential:true});}
-  function doSelect(i,fly){spinRef.current=false;setSel(i);const map=mapRef.current;if(!map)return;markersRef.current.day.forEach((dm,k)=>dm.el.classList.toggle('active',k===i));showStepMarkers(map,T.days[i]);renderDayCard(i);if(fly)flyDay(i);}
+  function doSelect(i,fly){spinRef.current=false;setSel(i);Store.set({selectedDayIndex:i});const map=mapRef.current;if(!map)return;markersRef.current.day.forEach((dm,k)=>dm.el.classList.toggle('active',k===i));showStepMarkers(map,T.days[i]);renderDayCard(i);if(fly)flyDay(i);}
   function showGlobe(){spinRef.current=true;setSel(null);clearStepMarkers();markersRef.current.day.forEach(dm=>dm.el.classList.remove('active'));renderWelcome();const map=mapRef.current;if(!map)return;map.flyTo({center:[64,44],zoom:1.6,pitch:0,bearing:0,duration:2400,curve:1.4});setTimeout(()=>{if(spinRef.current)spinGlobe();},2500);}
   function fitAll(){spinRef.current=false;setSel(null);clearStepMarkers();markersRef.current.day.forEach(dm=>dm.el.classList.remove('active'));renderWelcome();const map=mapRef.current;if(!map)return;const b=new maplibregl.LngLatBounds();T.days.forEach(d=>b.extend(d.c));map.fitBounds(b,{padding:90,duration:2000,pitch:0,bearing:0});}
   function spinGlobe(){const map=mapRef.current;if(!map||!spinRef.current||map.getZoom()>3.2)return;const c=map.getCenter();c.lng-=.55;map.easeTo({center:c,duration:1300,easing:t=>t});}
@@ -186,10 +189,8 @@ function MapView(){
   return(
     <>
     <style>{MV_CSS}</style>
-    <div className="mv-frame" style={{flexDirection:'row'}}>
-
-      {/* ═══ SPINE ═══ */}
-      <aside className="mv-spine">
+    {/* ═══ MAP (plein écran, contrôles en overlay) ═══ */}
+      <div className="mv-map-wrap">
         <div style={{padding:'16px 22px 12px',borderBottom:'1px solid var(--line2)'}}>
           <div style={{fontSize:11,fontWeight:700,letterSpacing:'.16em',textTransform:'uppercase',color:'var(--accent)'}}>{T.name}</div>
           <div style={{fontFamily:'var(--font-serif)',fontStyle:'italic',fontSize:20,marginTop:4,color:'var(--text)'}}>{T.days.length} jours</div>
@@ -245,8 +246,7 @@ function MapView(){
         </div>
       </aside>
 
-      {/* ═══ MAP (plein écran, contrôles en overlay) ═══ */}
-      <div className="mv-map-wrap">
+      <div className="mv-map-wrap" style={{flex:1}}>
         <div id="mv-map" ref={mapEl}/>
 
         {/* Top-left : Affichage + Survoler */}
@@ -304,7 +304,6 @@ function MapView(){
         {/* StepEditor */}
         {editorOpen&&foundPlace&&window.StepEditor&&React.createElement(window.StepEditor,{open:true,tripId:realTrip&&realTrip.id,dayId:editorOpen.dayId,step:{type:'activite',label:foundPlace.name,lieu:foundPlace.address,lat:foundPlace.lat,lng:foundPlace.lng},stepCount:editorOpen.stepCount,onClose:onEditorClose,onSaved:onEditorSaved})}
       </div>
-    </div>
     </>
   );
 }

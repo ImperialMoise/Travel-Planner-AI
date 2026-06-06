@@ -32,7 +32,7 @@ function AppShell() {
          !activeTripId ? <NoTripHome /> :
          !trip ? <LoadingTrip /> :
          <>
-           {view !== 'itinerary' && view !== 'map' && <DaySpine />}
+           <DaySpine />
            <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
              {CurrentView ? <CurrentView /> : <div style={{ padding: 40, color: 'var(--muted)' }}>Vue inconnue : {view}</div>}
            </div>

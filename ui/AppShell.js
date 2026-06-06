@@ -47,44 +47,131 @@ function AppShell() {
 
 // ─── Topbar ─────────────────────────────────────────────────
 function DaySpine() {
-  const { trip, selectedDayIndex, view } = Store.useStore();
+  const { trip, selectedDayIndex } = Store.useStore();
   if (!trip || !trip.days) return null;
   const days = trip.days;
-  const accent = 'var(--accent)';
+  const sel = selectedDayIndex || 0;
+
   return (
-    <aside style={{ width: 250, flexShrink: 0, borderRight: '1px solid var(--line)', background: 'var(--card)', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-      <div style={{ padding: '16px 20px 12px', borderBottom: '1px solid var(--line2)' }}>
-        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase', color: accent }}>{trip.name}</div>
-        <div style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: 20, marginTop: 4, color: 'var(--text)' }}>{days.length} jours</div>
-        {trip.startDate && <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 3 }}>{fmtDate(trip.startDate)}</div>}
+    <aside style={{
+      width: 280, flexShrink: 0,
+      borderRight: '1px solid var(--outline-variant)',
+      background: 'var(--inset)',
+      display: 'flex', flexDirection: 'column', minHeight: 0
+    }}>
+      {/* ── En-tête ── */}
+      <div style={{
+        padding: '24px 24px 20px',
+        borderBottom: '1px solid var(--outline-variant)',
+        background: 'var(--soft)'
+      }}>
+        <div style={{
+          fontSize: 11, fontWeight: 700, letterSpacing: '.16em',
+          textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 4
+        }}>{trip.name}</div>
+        <div style={{
+          fontFamily: 'var(--font-serif)', fontSize: 20, lineHeight: '28px',
+          color: 'var(--text)'
+        }}>{days.length} jour{days.length > 1 ? 's' : ''}</div>
+        {trip.startDate && (
+          <div style={{
+            fontFamily: 'var(--font-mono)', fontSize: 11, lineHeight: '14px',
+            color: 'var(--muted)', marginTop: 8,
+            display: 'flex', alignItems: 'center', gap: 6
+          }}>
+            <Icon name="cal" size={13} />
+            {fmtDate(trip.startDate)}
+          </div>
+        )}
       </div>
-      <div style={{ flex: 1, overflowY: 'auto', padding: '8px 12px', position: 'relative' }}>
-        <div style={{ position: 'absolute', left: 28, top: 16, bottom: 16, width: 2, background: 'var(--line2)' }} />
-        {days.map((d, i) => {
-          const on = selectedDayIndex === i;
-          const label = d.title || (d.steps && d.steps.length ? d.steps[0].label || d.steps[0].lieu : '') || '';
-          return (
-            <button key={d.id || i} onClick={() => Store.set({ selectedDayIndex: i })} style={{
-              width: '100%', display: 'flex', alignItems: 'center', gap: 12,
-              padding: '6px 10px 6px 8px', border: 'none', cursor: 'pointer', borderRadius: 10,
-              textAlign: 'left', fontFamily: 'inherit', color: 'var(--text)', marginBottom: 2,
-              background: on ? 'var(--card)' : 'transparent',
-              boxShadow: on ? 'var(--shadow)' : 'none',
-              position: 'relative', transition: 'all .15s'
-            }}>
-              <div style={{ width: 22, display: 'flex', justifyContent: 'center', flexShrink: 0, zIndex: 1 }}>
-                <div style={{ width: on ? 13 : 10, height: on ? 13 : 10, borderRadius: '50%', background: accent, border: '2px solid ' + accent, boxShadow: on ? '0 0 0 4px var(--accent-soft)' : 'none', transition: 'all .16s' }} />
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', gap: 7, alignItems: 'baseline' }}>
-                  <span style={{ fontFamily: 'var(--font-serif)', fontSize: 14.5, color: on ? accent : 'var(--text)' }}>J{i + 1}</span>
-                  <span style={{ fontSize: 12.5, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</span>
+
+      {/* ── Liste des jours ── */}
+      <div style={{
+        flex: 1, overflowY: 'auto', padding: 16, position: 'relative'
+      }}>
+        {/* Ligne verticale de timeline */}
+        <div style={{
+          position: 'absolute', left: 40, top: 36, bottom: 36,
+          width: 1, background: 'var(--outline-variant)', zIndex: 0
+        }} />
+
+        <div style={{
+          display: 'flex', flexDirection: 'column', gap: 24,
+          paddingTop: 8, paddingBottom: 32, position: 'relative'
+        }}>
+          {days.map((d, i) => {
+            const on = sel === i;
+            const past = i < sel;
+            const future = i > sel;
+            const dayTitle = d.title || 'Journ\u00e9e libre';
+            const firstStep = d.steps && d.steps.length ? d.steps[0] : null;
+            const location = firstStep ? (firstStep.lieu || firstStep.label || '') : '';
+
+            /* Styles du cercle selon l'état */
+            const circleBase = {
+              width: 48, height: 48, borderRadius: '50%',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0, position: 'relative', zIndex: 1,
+              transition: 'all .2s ease',
+              fontFamily: 'var(--font-serif)', fontSize: 20, lineHeight: '28px'
+            };
+            let circleStyle;
+            if (on) {
+              circleStyle = { ...circleBase,
+                background: 'var(--petrol)', color: '#ffffff',
+                boxShadow: '0 4px 12px rgba(21,48,42,0.3)',
+                transform: 'scale(1.05)', border: 'none'
+              };
+            } else if (past) {
+              circleStyle = { ...circleBase,
+                background: 'var(--soft)', color: 'var(--faint)',
+                border: '1px solid var(--outline-variant)'
+              };
+            } else {
+              circleStyle = { ...circleBase,
+                background: 'var(--card)', color: 'var(--faint)',
+                border: '1px dashed var(--outline-variant)'
+              };
+            }
+
+            return (
+              <button
+                key={d.id || i}
+                onClick={() => Store.set({ selectedDayIndex: i })}
+                style={{
+                  display: 'flex', alignItems: 'flex-start', gap: 12,
+                  padding: 0, border: 'none', cursor: 'pointer',
+                  background: 'transparent', textAlign: 'left',
+                  fontFamily: 'inherit', position: 'relative',
+                  opacity: future && !on ? 0.7 : 1,
+                  transition: 'opacity .15s'
+                }}
+              >
+                {/* Cercle du jour */}
+                <div style={circleStyle}>J{i + 1}</div>
+
+                {/* Texte */}
+                <div style={{ paddingTop: 4, flex: 1, minWidth: 0 }}>
+                  <div style={{
+                    fontSize: 13, fontWeight: on ? 700 : 600, lineHeight: '18px',
+                    color: on ? 'var(--petrol)' : 'var(--muted)',
+                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
+                  }}>
+                    {d.dateLabel || ''}{d.dateLabel && dayTitle ? ' \u00b7 ' : ''}{dayTitle}
+                  </div>
+                  <div style={{
+                    fontSize: 13.5, lineHeight: '20px',
+                    color: on ? 'var(--text)' : 'var(--faint)',
+                    marginTop: 2,
+                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
+                  }}>
+                    {location || dayTitle}
+                  </div>
                 </div>
-                <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 1 }}>{d.dateLabel || ''}</div>
-              </div>
-            </button>
-          );
-        })}
+              </button>
+            );
+          })}
+        </div>
       </div>
     </aside>
   );

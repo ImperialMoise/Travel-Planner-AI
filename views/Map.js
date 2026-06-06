@@ -453,46 +453,134 @@ function MapView(){
   </div>
 </div>
 
-      {/* ═══ LIEU TROUVÉ (bas gauche, par-dessus la day card) ═══ */}
-      {foundPlace&&!editorOpen&&(
-        <div className="mv-glass" style={{position:'absolute',bottom:16,left:16,zIndex:6,width:320,borderRadius:18,overflow:'hidden',boxShadow:'0 18px 50px rgba(31,46,40,.22)'}}>
-          <div style={{padding:16}}>
-            <div style={{display:'flex',gap:10,alignItems:'flex-start',marginBottom:12}}>
-              <div style={{width:36,height:36,borderRadius:10,background:'var(--accent-soft)',color:'var(--accent)',display:'grid',placeItems:'center',flexShrink:0}}><Icon name="pin" size={17}/></div>
-              <div style={{flex:1,minWidth:0}}>
-                <div style={{fontFamily:'var(--font-serif)',fontStyle:'italic',fontSize:17,color:'var(--text)',lineHeight:1.15}}>{foundPlace.name}</div>
-                <div style={{fontSize:11,color:'var(--muted)',marginTop:2}}>{foundPlace.address}</div>
-              </div>
-              <button onClick={()=>setFoundPlace(null)} style={{border:'none',background:'transparent',color:'var(--faint)',cursor:'pointer',padding:2}}><Icon name="x" size={16}/></button>
-            </div>
-            {!pickingDay?(
-              <button onClick={()=>setPickingDay(true)} style={{width:'100%',border:'none',background:'var(--accent)',color:'var(--accent-ink)',borderRadius:10,padding:'9px 0',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',justifyContent:'center',gap:7}}><Icon name="plus" size={14}/>Ajouter au s{'\u00e9'}jour</button>
-            ):(
-              <div>
-                <div style={{fontSize:10,fontWeight:700,letterSpacing:'.08em',textTransform:'uppercase',color:'var(--faint)',marginBottom:8}}>Choisir le jour</div>
-                <div style={{display:'flex',flexWrap:'wrap',gap:5}}>
-                  {realTrip&&realTrip.days.map((d,i)=>(
-                    <button key={d.id} onClick={()=>openEditorForDay(i)} title={"J"+(i+1)}
-                      style={{width:34,height:34,borderRadius:10,border:'1px solid var(--line)',background:'var(--inset)',color:'var(--text)',fontFamily:'var(--font-serif)',fontSize:14,fontWeight:700,cursor:'pointer',display:'grid',placeItems:'center',transition:'all .12s'}}
-                      onMouseEnter={e=>{e.currentTarget.style.background='var(--accent)';e.currentTarget.style.color='var(--accent-ink)';e.currentTarget.style.borderColor='var(--accent)';}}
-                      onMouseLeave={e=>{e.currentTarget.style.background='var(--inset)';e.currentTarget.style.color='var(--text)';e.currentTarget.style.borderColor='var(--line)';}}
-                    >{i+1}</button>
-                  ))}
-                </div>
-              </div>
-            )}
+      {/* ═══ LIEU TROUVÉ (au-dessus de la day card) ═══ */}
+{foundPlace&&!editorOpen&&(
+  <div
+    className="mv-glass"
+    style={{
+      position:'absolute',
+      bottom:352,
+      left:16,
+      zIndex:6,
+      width:320,
+      borderRadius:18,
+      overflow:'hidden',
+      boxShadow:'0 18px 50px rgba(31,46,40,.22)'
+    }}
+  >
+    <div style={{padding:16}}>
+      <div style={{display:'flex',gap:10,alignItems:'flex-start',marginBottom:12}}>
+        <div style={{width:36,height:36,borderRadius:10,background:'var(--accent-soft)',color:'var(--accent)',display:'grid',placeItems:'center',flexShrink:0}}>
+          <Icon name="pin" size={17}/>
+        </div>
+
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontFamily:'var(--font-serif)',fontStyle:'italic',fontSize:17,color:'var(--text)',lineHeight:1.15}}>
+            {foundPlace.name}
+          </div>
+          <div style={{fontSize:11,color:'var(--muted)',marginTop:2}}>
+            {foundPlace.address}
+          </div>
+        </div>
+
+        <button
+          onClick={()=>setFoundPlace(null)}
+          style={{border:'none',background:'transparent',color:'var(--faint)',cursor:'pointer',padding:2}}
+        >
+          <Icon name="x" size={16}/>
+        </button>
+      </div>
+
+      {!pickingDay?(
+        <button
+          onClick={()=>setPickingDay(true)}
+          style={{
+            width:'100%',
+            border:'none',
+            background:'var(--accent)',
+            color:'var(--accent-ink)',
+            borderRadius:10,
+            padding:'9px 0',
+            fontSize:13,
+            fontWeight:700,
+            cursor:'pointer',
+            fontFamily:'inherit',
+            display:'flex',
+            alignItems:'center',
+            justifyContent:'center',
+            gap:7
+          }}
+        >
+          <Icon name="plus" size={14}/>
+          Ajouter au séjour
+        </button>
+      ):(
+        <div>
+          <div style={{fontSize:10,fontWeight:700,letterSpacing:'.08em',textTransform:'uppercase',color:'var(--faint)',marginBottom:8}}>
+            Choisir le jour
+          </div>
+          <div style={{display:'flex',flexWrap:'wrap',gap:5}}>
+            {realTrip&&realTrip.days.map((d,i)=>(
+              <button
+                key={d.id}
+                onClick={()=>openEditorForDay(i)}
+                title={`J${i+1}`}
+                style={{
+                  width:34,
+                  height:34,
+                  borderRadius:10,
+                  border:'1px solid var(--line)',
+                  background:'var(--inset)',
+                  color:'var(--text)',
+                  fontFamily:'var(--font-serif)',
+                  fontSize:14,
+                  fontWeight:700,
+                  cursor:'pointer',
+                  display:'grid',
+                  placeItems:'center',
+                  transition:'all .12s'
+                }}
+                onMouseEnter={e=>{
+                  e.currentTarget.style.background='var(--accent)';
+                  e.currentTarget.style.color='var(--accent-ink)';
+                  e.currentTarget.style.borderColor='var(--accent)';
+                }}
+                onMouseLeave={e=>{
+                  e.currentTarget.style.background='var(--inset)';
+                  e.currentTarget.style.color='var(--text)';
+                  e.currentTarget.style.borderColor='var(--line)';
+                }}
+              >
+                {i+1}
+              </button>
+            ))}
           </div>
         </div>
       )}
-
-      {/* ═══ CARTE DU JOUR (bas gauche) ═══ */}
-      <div ref={cardRef} style={{position:'absolute',bottom:16,left:16,zIndex:5,display:foundPlace?'none':'block'}}/>
-
-      {/* StepEditor */}
-      {editorOpen&&foundPlace&&window.StepEditor&&React.createElement(window.StepEditor,{open:true,tripId:realTrip&&realTrip.id,dayId:editorOpen.dayId,step:{type:'activite',label:foundPlace.name,lieu:foundPlace.address,lat:foundPlace.lat,lng:foundPlace.lng},stepCount:editorOpen.stepCount,onClose:onEditorClose,onSaved:onEditorSaved})}
     </div>
-    </>
-  );
-}
+  </div>
+)}
+
+      {/* ═══ CARTE DU JOUR (toujours visible) ═══ */}
+<div
+  ref={cardRef}
+  style={{
+    position:'absolute',
+    bottom:16,
+    left:16,
+    zIndex:5
+  }}
+/>
+
+{editorOpen&&foundPlace&&window.StepEditor&&React.createElement(window.StepEditor,{
+  open:true,
+  tripId:realTrip&&realTrip.id,
+  dayId:editorOpen.dayId,
+  step:{type:'activite',label:foundPlace.name,lieu:foundPlace.address,lat:foundPlace.lat,lng:foundPlace.lng},
+  stepCount:editorOpen.stepCount,
+  onClose:onEditorClose,
+  onSaved:onEditorSaved
+})}
+
 window.MapView=MapView;
  

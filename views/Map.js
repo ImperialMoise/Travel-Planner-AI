@@ -453,14 +453,14 @@ function MapView(){
   </div>
 </div>
 
-      {/* ═══ LIEU TROUVÉ (au-dessus de la day card) ═══ */}
-{foundPlace&&!editorOpen&&(
+      {/* ═══ LIEU TROUVÉ (au-dessus de la carte du jour) ═══ */}
+{foundPlace && !editorOpen && (
   <div
     className="mv-glass"
     style={{
       position:'absolute',
-      bottom:352,
       left:16,
+      bottom:352,
       zIndex:6,
       width:320,
       borderRadius:18,
@@ -470,12 +470,31 @@ function MapView(){
   >
     <div style={{padding:16}}>
       <div style={{display:'flex',gap:10,alignItems:'flex-start',marginBottom:12}}>
-        <div style={{width:36,height:36,borderRadius:10,background:'var(--accent-soft)',color:'var(--accent)',display:'grid',placeItems:'center',flexShrink:0}}>
+        <div
+          style={{
+            width:36,
+            height:36,
+            borderRadius:10,
+            background:'var(--accent-soft)',
+            color:'var(--accent)',
+            display:'grid',
+            placeItems:'center',
+            flexShrink:0
+          }}
+        >
           <Icon name="pin" size={17}/>
         </div>
 
         <div style={{flex:1,minWidth:0}}>
-          <div style={{fontFamily:'var(--font-serif)',fontStyle:'italic',fontSize:17,color:'var(--text)',lineHeight:1.15}}>
+          <div
+            style={{
+              fontFamily:'var(--font-serif)',
+              fontStyle:'italic',
+              fontSize:17,
+              color:'var(--text)',
+              lineHeight:1.15
+            }}
+          >
             {foundPlace.name}
           </div>
           <div style={{fontSize:11,color:'var(--muted)',marginTop:2}}>
@@ -491,7 +510,7 @@ function MapView(){
         </button>
       </div>
 
-      {!pickingDay?(
+      {!pickingDay ? (
         <button
           onClick={()=>setPickingDay(true)}
           style={{
@@ -514,13 +533,23 @@ function MapView(){
           <Icon name="plus" size={14}/>
           Ajouter au séjour
         </button>
-      ):(
+      ) : (
         <div>
-          <div style={{fontSize:10,fontWeight:700,letterSpacing:'.08em',textTransform:'uppercase',color:'var(--faint)',marginBottom:8}}>
+          <div
+            style={{
+              fontSize:10,
+              fontWeight:700,
+              letterSpacing:'.08em',
+              textTransform:'uppercase',
+              color:'var(--faint)',
+              marginBottom:8
+            }}
+          >
             Choisir le jour
           </div>
+
           <div style={{display:'flex',flexWrap:'wrap',gap:5}}>
-            {realTrip&&realTrip.days.map((d,i)=>(
+            {realTrip && realTrip.days.map((d,i)=>(
               <button
                 key={d.id}
                 onClick={()=>openEditorForDay(i)}
@@ -561,26 +590,35 @@ function MapView(){
   </div>
 )}
 
-      {/* ═══ CARTE DU JOUR (toujours visible) ═══ */}
+{/* ═══ CARTE DU JOUR (toujours visible) ═══ */}
 <div
   ref={cardRef}
   style={{
     position:'absolute',
-    bottom:16,
     left:16,
+    bottom:16,
     zIndex:5
   }}
 />
 
-{editorOpen&&foundPlace&&window.StepEditor&&React.createElement(window.StepEditor,{
+{editorOpen && foundPlace && window.StepEditor && React.createElement(window.StepEditor,{
   open:true,
-  tripId:realTrip&&realTrip.id,
+  tripId:realTrip && realTrip.id,
   dayId:editorOpen.dayId,
-  step:{type:'activite',label:foundPlace.name,lieu:foundPlace.address,lat:foundPlace.lat,lng:foundPlace.lng},
+  step:{
+    type:'activite',
+    label:foundPlace.name,
+    lieu:foundPlace.address,
+    lat:foundPlace.lat,
+    lng:foundPlace.lng
+  },
   stepCount:editorOpen.stepCount,
   onClose:onEditorClose,
   onSaved:onEditorSaved
 })}
+    </div>
+  );
+}
 
 window.MapView=MapView;
  

@@ -109,9 +109,6 @@ function MapView(){
   const {selectedDayIndex}=Store.useStore();
   const firstRender=React.useRef(true);
   React.useEffect(()=>{if(firstRender.current){firstRender.current=false;return;}if(selectedDayIndex!=null&&selectedDayIndex!==sel){doSelect(selectedDayIndex,true);};},[selectedDayIndex]);
-  const {selectedDayIndex}=Store.useStore();
-  const firstRender=React.useRef(true);
-  React.useEffect(function(){if(firstRender.current){firstRender.current=false;return;}if(selectedDayIndex!=null&&selectedDayIndex!==sel){doSelect(selectedDayIndex,true);};},[selectedDayIndex]);
   const [curStyle,setCurStyle]=React.useState('minimal');
   const [layersOpen,setLayersOpen]=React.useState(false);
   const [query,setQuery]=React.useState('');
@@ -142,7 +139,7 @@ function MapView(){
   // ── Markers ──
   function buildDayMarkers(map){T.days.forEach((d,i)=>{const el=document.createElement('div');el.className='mv-pin '+mvRegClass(d.region);el.innerHTML='<div class="badge">'+d.n+'</div>';el.addEventListener('click',e=>{e.stopPropagation();doSelect(i,true);});const m=new maplibregl.Marker({element:el,anchor:'center'}).setLngLat(d.c).addTo(map);markersRef.current.day.push({m,el});});}
   function clearStepMarkers(){markersRef.current.step.forEach(m=>m.remove());markersRef.current.step=[];const map=mapRef.current;if(map){try{map.removeLayer('step-route-glow');}catch(e){}try{map.removeLayer('step-route-line');}catch(e){}try{map.removeSource('step-route');}catch(e){}}}
-  function showStepMarkers(map,day){clearStepMarkers();var coords=[];var typeCol={transport:'#597b72',logement:'#7c5410',restaurant:'#d9b67e',activite:'#7c5410',autre:'#827567'};day.steps.forEach(function(s,k){if(!s.c)return;coords.push(s.c);var col=typeCol[s.t]||'#7c5410';var el=document.createElement('div');el.style.cssText='width:32px;height:32px;border-radius:50%;background:#fff;border:2.5px solid '+col+';color:'+col+';display:grid;place-items:center;box-shadow:0 3px 10px rgba(0,0,0,.25);cursor:pointer;transition:all .2s;font-family:var(--font-mono);font-size:12px;font-weight:700';el.textContent=String(k+1);el.onmouseover=function(){el.style.transform='scale(1.2)';el.style.background=col;el.style.color='#fff';};el.onmouseout=function(){el.style.transform='none';el.style.background='#fff';el.style.color=col;};el.onclick=function(){if(s.c)map.flyTo({center:s.c,zoom:Math.max(map.getZoom(),15.5),duration:1400});};var m=new maplibregl.Marker({element:el,anchor:'center'}).setLngLat(s.c).addTo(map);markersRef.current.step.push(m);});if(coords.length>1){map.addSource('step-route',{type:'geojson',data:{type:'Feature',geometry:{type:'LineString',coordinates:coords}}});map.addLayer({id:'step-route-glow',type:'line',source:'step-route',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#d9b67e','line-width':6,'line-opacity':0.18,'line-blur':4}});map.addLayer({id:'step-route-line',type:'line',source:'step-route',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#d9b67e','line-width':2.5,'line-dasharray':[2,3]}});}}function showStepMarkers(map,day){clearStepMarkers();day.steps.forEach((s,k)=>{if(!s.c)return;const el=document.createElement('div');el.style.cssText='width:28px;height:28px;border-radius:50%;background:var(--card);border:2px solid var(--accent);color:var(--accent);display:grid;place-items:center;box-shadow:0 3px 8px rgba(0,0,0,.2);cursor:pointer;transition:transform .2s';el.innerHTML=mvSvg(mvStepIcon(s),14);el.onmouseover=()=>el.style.transform='scale(1.15)';el.onmouseout=()=>el.style.transform='none';el.onclick=()=>{if(s.c)map.flyTo({center:s.c,zoom:Math.max(map.getZoom(),15.5),duration:1400});};const m=new maplibregl.Marker({element:el,anchor:'center'}).setLngLat(s.c).addTo(map);markersRef.current.step.push(m);});}
+  function showStepMarkers(map,day){clearStepMarkers();var coords=[];var typeCol={transport:'#597b72',logement:'#7c5410',restaurant:'#d9b67e',activite:'#7c5410',autre:'#827567'};day.steps.forEach(function(s,k){if(!s.c)return;coords.push(s.c);var col=typeCol[s.t]||'#7c5410';var el=document.createElement('div');el.style.cssText='width:32px;height:32px;border-radius:50%;background:#fff;border:2.5px solid '+col+';color:'+col+';display:grid;place-items:center;box-shadow:0 3px 10px rgba(0,0,0,.25);cursor:pointer;transition:all .2s;font-family:var(--font-mono);font-size:12px;font-weight:700';el.textContent=String(k+1);el.onmouseover=function(){el.style.transform='scale(1.2)';el.style.background=col;el.style.color='#fff';};el.onmouseout=function(){el.style.transform='none';el.style.background='#fff';el.style.color=col;};el.onclick=function(){if(s.c)map.flyTo({center:s.c,zoom:Math.max(map.getZoom(),15.5),duration:1400});};var m=new maplibregl.Marker({element:el,anchor:'center'}).setLngLat(s.c).addTo(map);markersRef.current.step.push(m);});if(coords.length>1){map.addSource('step-route',{type:'geojson',data:{type:'Feature',geometry:{type:'LineString',coordinates:coords}}});map.addLayer({id:'step-route-glow',type:'line',source:'step-route',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#d9b67e','line-width':6,'line-opacity':0.18,'line-blur':4}});map.addLayer({id:'step-route-line',type:'line',source:'step-route',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#d9b67e','line-width':2.5,'line-dasharray':[2,3]}});}}
 
   // ── Cards ──
   function renderWelcome(){if(!cardRef.current)return;cardRef.current.innerHTML='<div class="mv-card"><div class="mv-welcome-pad"><div style="font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--accent)">Le voyage</div><div style="font-family:var(--font-serif);font-style:italic;font-size:24px;margin-top:3px;color:var(--text)">'+T.name+'</div><div class="mv-welcome-line">Un fil d\'or relie chaque étape. Cliquez un jour pour plonger du globe jusqu\'au niveau des rues.</div><div class="mv-legend"><div class="mv-lg-row"><span class="mv-lg-dot" style="background:var(--accent)"></span>Séoul & environs</div><div class="mv-lg-row"><span class="mv-lg-dot" style="background:#c98a3c"></span>Busan, l\'échappée du Sud</div><div class="mv-lg-row"><span class="mv-lg-dot" style="background:var(--card);border-color:var(--faint)"></span>Vols Paris ⇄ Séoul</div></div></div></div>';}
@@ -150,7 +147,7 @@ function MapView(){
 
   // ── Navigation ──
   function flyDay(i){const map=mapRef.current;if(!map)return;const d=T.days[i];var pts=d.steps.filter(function(s){return s.c;}).map(function(s){return s.c;});if(pts.length>1){var b=new maplibregl.LngLatBounds();pts.forEach(function(p){b.extend(p);});map.fitBounds(b,{padding:{top:80,bottom:140,left:60,right:60},pitch:42,bearing:0,duration:2200,maxZoom:15.5});}else{map.flyTo({center:d.c,zoom:d.z,pitch:d.region==='Vol'?0:42,bearing:0,duration:2200,curve:1.5,essential:true});}}
-  function doSelect(i,fly){spinRef.current=false;setSel(i);Store.set({selectedDayIndex:i});function doSelect(i,fly){spinRef.current=false;setSel(i);Store.set({selectedDayIndex:i});const map=mapRef.current;if(!map)return;markersRef.current.day.forEach((dm,k)=>dm.el.classList.toggle('active',k===i));showStepMarkers(map,T.days[i]);renderDayCard(i);if(fly)flyDay(i);}
+  function doSelect(i,fly){spinRef.current=false;setSel(i);Store.set({selectedDayIndex:i});function doSelect(i,fly){spinRef.current=false;setSel(i);Store.set({selectedDayIndex:i});function doSelect(i,fly){spinRef.current=false;setSel(i);Store.set({selectedDayIndex:i});const map=mapRef.current;if(!map)return;markersRef.current.day.forEach((dm,k)=>dm.el.classList.toggle('active',k===i));showStepMarkers(map,T.days[i]);renderDayCard(i);if(fly)flyDay(i);}
   function showGlobe(){spinRef.current=true;setSel(null);clearStepMarkers();markersRef.current.day.forEach(dm=>dm.el.classList.remove('active'));renderWelcome();const map=mapRef.current;if(!map)return;map.flyTo({center:[64,44],zoom:1.6,pitch:0,bearing:0,duration:2400,curve:1.4});setTimeout(()=>{if(spinRef.current)spinGlobe();},2500);}
   function fitAll(){spinRef.current=false;setSel(null);clearStepMarkers();markersRef.current.day.forEach(dm=>dm.el.classList.remove('active'));renderWelcome();const map=mapRef.current;if(!map)return;const b=new maplibregl.LngLatBounds();T.days.forEach(d=>b.extend(d.c));map.fitBounds(b,{padding:90,duration:2000,pitch:0,bearing:0});}
   function spinGlobe(){const map=mapRef.current;if(!map||!spinRef.current||map.getZoom()>3.2)return;const c=map.getCenter();c.lng-=.55;map.easeTo({center:c,duration:1300,easing:t=>t});}
@@ -297,68 +294,4 @@ function MapView(){
 }
 window.MapView=MapView;
 
-      {/* ═══ MAP (plein écran, contrôles en overlay) ═══ */}
-      <div className="mv-map-wrap">
-        <div id="mv-map" ref={mapEl}/>
-
-        {/* Top-left : Affichage + Survoler */}
-        <div style={{position:'absolute',top:14,left:14,zIndex:6,display:'flex',gap:8,alignItems:'center'}}>
-          <div style={{position:'relative'}}>
-            <button onClick={()=>setLayersOpen(p=>!p)} style={{display:'inline-flex',alignItems:'center',gap:7,border:'1px solid var(--line)',background:'var(--card)',color:layersOpen?'var(--accent)':'var(--muted)',borderRadius:10,padding:'7px 12px',fontSize:12.5,fontWeight:700,cursor:'pointer',fontFamily:'inherit',boxShadow:'var(--shadow)'}}><Icon name="map" size={14}/>Affichage</button>
-            {layersOpen&&(
-              <div style={{position:'absolute',top:'calc(100% + 6px)',left:0,background:'var(--card)',border:'1px solid var(--line)',borderRadius:14,padding:14,boxShadow:'0 12px 40px rgba(31,46,40,.2)',minWidth:200,zIndex:100}}>
-                <div style={{fontSize:10.5,fontWeight:800,color:'var(--faint)',textTransform:'uppercase',letterSpacing:'.08em',marginBottom:8}}>Fond de carte</div>
-                <div style={{display:'flex',background:'var(--inset)',border:'1px solid var(--line)',borderRadius:10,padding:3,gap:2,marginBottom:10}}>
-                  <button style={segBtn(curStyle==='minimal')} onClick={()=>setCurStyle('minimal')}>Plan</button>
-                  <button style={segBtn(curStyle==='sat')} onClick={()=>setCurStyle('sat')}>Satellite</button>
-                </div>
-              </div>
-            )}
-          </div>
-          <button onClick={()=>{if(tourRef.current.on)stopTour();else startTour();}} style={{display:'inline-flex',alignItems:'center',gap:7,border:'none',background:touring?'var(--accent)':'var(--text)',color:touring?'var(--accent-ink)':'var(--card)',borderRadius:10,padding:'8px 14px',fontSize:12.5,fontWeight:700,cursor:'pointer',fontFamily:'inherit',boxShadow:'var(--shadow)'}}><Icon name="route" size={14}/>{touring?'Stop':'Survoler'}</button>
-        </div>
-
-        {/* Top-center : Recherche */}
-        <div style={{position:'absolute',top:14,left:'50%',transform:'translateX(-50%)',zIndex:7,width:380,maxWidth:'calc(100% - 340px)'}}>
-          <div style={{position:'relative'}}>
-            <input value={query} onChange={e=>doSearch(e.target.value)} placeholder="Rechercher un lieu…" style={{width:'100%',padding:'10px 14px 10px 38px',borderRadius:999,border:'1.5px solid var(--accent)',background:'var(--card)',color:'var(--text)',fontFamily:'inherit',fontSize:13.5,outline:'none',boxShadow:'0 6px 24px rgba(31,46,40,.12)'}}/>
-            <Icon name="pin" size={14} style={{position:'absolute',left:13,top:12,color:'var(--accent)'}}/>
-            {results.length>0&&(
-              <div style={{position:'absolute',top:'calc(100% + 4px)',left:0,right:0,background:'var(--card)',border:'1px solid var(--line)',borderRadius:14,boxShadow:'0 18px 50px rgba(31,46,40,.22)',overflow:'hidden',maxHeight:280,overflowY:'auto',zIndex:200}}>
-                {results.map((f,k)=>(
-                  <button key={k} onClick={()=>pickResult(f)} style={{width:'100%',display:'flex',alignItems:'center',gap:10,padding:'10px 14px',border:'none',borderBottom:'1px solid var(--line2)',background:'transparent',cursor:'pointer',fontFamily:'inherit',textAlign:'left',color:'var(--text)'}} onMouseEnter={e=>e.currentTarget.style.background='var(--inset)'} onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
-                    <div style={{width:28,height:28,borderRadius:8,background:'var(--accent-soft)',color:'var(--accent)',display:'grid',placeItems:'center',flexShrink:0}}><Icon name="pin" size={13}/></div>
-                    <div style={{flex:1,minWidth:0}}><div style={{fontSize:13,fontWeight:700}}>{f.text}</div><div style={{fontSize:11,color:'var(--muted)',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{f.place_name}</div></div>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Top-right : Vue globale + contrôles */}
-        <div style={{position:'absolute',top:14,right:14,zIndex:5,display:'flex',flexDirection:'column',gap:10,alignItems:'flex-end'}}>
-          <button onClick={fitAll} style={{display:'inline-flex',alignItems:'center',gap:7,border:'1px solid var(--line)',background:'var(--card)',color:'var(--muted)',borderRadius:10,padding:'7px 12px',fontSize:12.5,fontWeight:700,cursor:'pointer',fontFamily:'inherit',boxShadow:'var(--shadow)'}}><Icon name="expand" size={14}/>Vue globale</button>
-          <div className="mv-ctrl">
-            <button onClick={()=>{spinRef.current=false;mapRef.current?.zoomIn({duration:400});}}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
-            <button onClick={()=>{spinRef.current=false;mapRef.current?.zoomOut({duration:400});}}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"><path d="M5 12h14"/></svg></button>
-            <button onClick={()=>mapRef.current?.easeTo({bearing:0,pitch:0,duration:600})}><svg ref={needleRef} width="18" height="18" viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3l3.2 8L12 9.4 8.8 11z" fill="var(--accent)" stroke="var(--accent)" strokeWidth="1.5"/><path d="M12 9.4 8.8 13 12 21l3.2-8z" fill="var(--muted)" stroke="var(--muted)" strokeWidth="1.5"/></svg></button>
-          </div>
-          <div className="mv-ctrl">
-            <button onClick={()=>{const p=mapRef.current?.getPitch()>10?0:55;mapRef.current?.easeTo({pitch:p,duration:700});}}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-5 9 5-9 5z"/><path d="M3 9v6l9 5 9-5V9"/></svg></button>
-          </div>
-          <div className="mv-readout" ref={readoutRef}><b>GLOBE</b> · z1.6</div>
-        </div>
-
-        {/* Day card (bas gauche) */}
-        <div ref={cardRef} style={{position:'absolute',bottom:16,left:16,zIndex:5}}/>
-
-        {/* StepEditor */}
-        {editorOpen&&foundPlace&&window.StepEditor&&React.createElement(window.StepEditor,{open:true,tripId:realTrip&&realTrip.id,dayId:editorOpen.dayId,step:{type:'activite',label:foundPlace.name,lieu:foundPlace.address,lat:foundPlace.lat,lng:foundPlace.lng},stepCount:editorOpen.stepCount,onClose:onEditorClose,onSaved:onEditorSaved})}
-      </div>
-    </div>
-    </>
-  );
-}
-window.MapView=MapView;
- 
+     

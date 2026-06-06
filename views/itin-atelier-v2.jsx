@@ -444,9 +444,6 @@ function AtelierV2() {
       React.createElement('div', { style: noPad ? {} : { padding: 16 } }, children));
   }
 
-  var lodging = day.steps.find(function(x) { return x.type === 'logement'; });
-  var transport = day.steps.find(function(x) { return x.type === 'transport'; });
-
   var BLOCKS = {
     map: { label: 'Carte du jour', icon: 'map', render: function() {
       return React.createElement(BlockShell, { id: 'map', title: 'Carte du jour', icon: 'map', iconColor: 'var(--tertiary)', noPad: true },

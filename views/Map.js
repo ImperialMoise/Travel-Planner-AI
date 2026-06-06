@@ -82,6 +82,11 @@ const MV_CSS=`
 .mv-ctrl button+button{border-top:1px solid var(--line2)}
 .mv-readout{font-family:var(--font-mono,ui-monospace);font-size:10.5px;letter-spacing:.04em;color:var(--muted);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:7px 11px;box-shadow:var(--shadow);white-space:nowrap}
 .mv-readout b{color:var(--accent);font-weight:700}
+.mv-glass{background:rgba(254,249,239,0.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(130,117,103,0.15);border-radius:12px;box-shadow:0 2px 8px rgba(82,98,91,0.06)}
+html.dark .mv-glass{background:rgba(21,48,42,0.8);border-color:rgba(255,255,255,0.08)}
+.mv-glass-btn{border:none;background:transparent;color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;padding:8px 14px;font-size:12.5px;font-weight:700;font-family:inherit;transition:all .15s;border-radius:10px;white-space:nowrap}
+.mv-glass-btn:hover{background:var(--accent-soft);color:var(--accent)}
+.mv-glass-btn.active{background:var(--accent);color:var(--accent-ink)}
 `;
 
 /* ═══ TILES ═══ */
@@ -101,6 +106,9 @@ function MapView(){
   const {trip:realTrip}=Store.useStore();
 
   const [sel,setSel]=React.useState(null);
+  const {selectedDayIndex}=Store.useStore();
+  const firstRender=React.useRef(true);
+  React.useEffect(()=>{if(firstRender.current){firstRender.current=false;return;}if(selectedDayIndex!=null&&selectedDayIndex!==sel){doSelect(selectedDayIndex,true);};},[selectedDayIndex]);
   const {selectedDayIndex}=Store.useStore();
   const firstRender=React.useRef(true);
   React.useEffect(function(){if(firstRender.current){firstRender.current=false;return;}if(selectedDayIndex!=null&&selectedDayIndex!==sel){doSelect(selectedDayIndex,true);};},[selectedDayIndex]);
@@ -142,7 +150,7 @@ function MapView(){
 
   // ── Navigation ──
   function flyDay(i){const map=mapRef.current;if(!map)return;const d=T.days[i];map.flyTo({center:d.c,zoom:d.z,pitch:d.region==='Vol'?0:42,bearing:0,duration:2200,curve:1.5,essential:true});}
-  function doSelect(i,fly){spinRef.current=false;setSel(i);Store.set({selectedDayIndex:i});const map=mapRef.current;if(!map)return;markersRef.current.day.forEach((dm,k)=>dm.el.classList.toggle('active',k===i));showStepMarkers(map,T.days[i]);renderDayCard(i);if(fly)flyDay(i);}
+  function doSelect(i,fly){spinRef.current=false;setSel(i);Store.set({selectedDayIndex:i});function doSelect(i,fly){spinRef.current=false;setSel(i);Store.set({selectedDayIndex:i});const map=mapRef.current;if(!map)return;markersRef.current.day.forEach((dm,k)=>dm.el.classList.toggle('active',k===i));showStepMarkers(map,T.days[i]);renderDayCard(i);if(fly)flyDay(i);}
   function showGlobe(){spinRef.current=true;setSel(null);clearStepMarkers();markersRef.current.day.forEach(dm=>dm.el.classList.remove('active'));renderWelcome();const map=mapRef.current;if(!map)return;map.flyTo({center:[64,44],zoom:1.6,pitch:0,bearing:0,duration:2400,curve:1.4});setTimeout(()=>{if(spinRef.current)spinGlobe();},2500);}
   function fitAll(){spinRef.current=false;setSel(null);clearStepMarkers();markersRef.current.day.forEach(dm=>dm.el.classList.remove('active'));renderWelcome();const map=mapRef.current;if(!map)return;const b=new maplibregl.LngLatBounds();T.days.forEach(d=>b.extend(d.c));map.fitBounds(b,{padding:90,duration:2000,pitch:0,bearing:0});}
   function spinGlobe(){const map=mapRef.current;if(!map||!spinRef.current||map.getZoom()>3.2)return;const c=map.getCenter();c.lng-=.55;map.easeTo({center:c,duration:1300,easing:t=>t});}
@@ -189,7 +197,102 @@ function MapView(){
   return(
     <>
     <style>{MV_CSS}</style>
-    <div className="mv-frame" style={{flexDirection:'row'}}>
+    <div className="mv-map-wrap" style={{flex:1}}>
+      <div id="mv-map" ref={mapEl}/>
+
+      {/* ═══ RECHERCHE (centre haut) ═══ */}
+      <div style={{position:'absolute',top:14,left:'50%',transform:'translateX(-50%)',zIndex:7,width:380,maxWidth:'calc(100% - 200px)'}}>
+        <div style={{position:'relative'}}>
+          <input value={query} onChange={e=>doSearch(e.target.value)} placeholder="Rechercher un lieu\u2026" className="mv-glass" style={{width:'100%',padding:'10px 14px 10px 38px',borderRadius:999,color:'var(--text)',fontFamily:'inherit',fontSize:13.5,outline:'none'}}/>
+          <Icon name="pin" size={14} style={{position:'absolute',left:13,top:12,color:'var(--accent)'}}/>
+          {results.length>0&&(
+            <div className="mv-glass" style={{position:'absolute',top:'calc(100% + 4px)',left:0,right:0,borderRadius:14,overflow:'hidden',maxHeight:280,overflowY:'auto',zIndex:200}}>
+              {results.map((f,k)=>(
+                <button key={k} onClick={()=>pickResult(f)} style={{width:'100%',display:'flex',alignItems:'center',gap:10,padding:'10px 14px',border:'none',borderBottom:'1px solid var(--line2)',background:'transparent',cursor:'pointer',fontFamily:'inherit',textAlign:'left',color:'var(--text)'}} onMouseEnter={e=>e.currentTarget.style.background='var(--accent-soft)'} onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                  <div style={{width:28,height:28,borderRadius:8,background:'var(--accent-soft)',color:'var(--accent)',display:'grid',placeItems:'center',flexShrink:0}}><Icon name="pin" size={13}/></div>
+                  <div style={{flex:1,minWidth:0}}><div style={{fontSize:13,fontWeight:700}}>{f.text}</div><div style={{fontSize:11,color:'var(--muted)',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{f.place_name}</div></div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ═══ CONTRÔLES (droite) ═══ */}
+      <div style={{position:'absolute',top:14,right:14,zIndex:5,display:'flex',flexDirection:'column',gap:8,alignItems:'flex-end'}}>
+        {/* Vue globale */}
+        <button onClick={sel!=null?showGlobe:fitAll} className="mv-glass" style={{display:'flex',alignItems:'center',gap:7,padding:'8px 14px',border:'none',cursor:'pointer',fontSize:12.5,fontWeight:700,fontFamily:'inherit',color:'var(--muted)',borderRadius:12}}><Icon name="expand" size={14}/>{sel!=null?'Vue globale':'Recentrer'}</button>
+
+        {/* Zoom + Compass */}
+        <div className="mv-glass" style={{display:'flex',flexDirection:'column',overflow:'hidden',borderRadius:12}}>
+          <button className="mv-glass-btn" style={{padding:10}} onClick={()=>{spinRef.current=false;mapRef.current?.zoomIn({duration:400});}}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+          <div style={{height:1,background:'var(--line2)'}}/>
+          <button className="mv-glass-btn" style={{padding:10}} onClick={()=>{spinRef.current=false;mapRef.current?.zoomOut({duration:400});}}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"><path d="M5 12h14"/></svg></button>
+          <div style={{height:1,background:'var(--line2)'}}/>
+          <button className="mv-glass-btn" style={{padding:10}} onClick={()=>mapRef.current?.easeTo({bearing:0,pitch:0,duration:600})}><svg ref={needleRef} width="18" height="18" viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3l3.2 8L12 9.4 8.8 11z" fill="var(--accent)" stroke="var(--accent)" strokeWidth="1.5"/><path d="M12 9.4 8.8 13 12 21l3.2-8z" fill="var(--muted)" stroke="var(--muted)" strokeWidth="1.5"/></svg></button>
+        </div>
+
+        {/* Fond de carte */}
+        <div className="mv-glass" style={{display:'flex',flexDirection:'column',overflow:'hidden',borderRadius:12}}>
+          <button className="mv-glass-btn" style={{padding:10}} onClick={()=>setLayersOpen(p=>!p)} title="Fond de carte"><Icon name="map" size={16} style={{color:layersOpen?'var(--accent)':'var(--muted)'}}/></button>
+        </div>
+        {layersOpen&&(
+          <div className="mv-glass" style={{padding:8,minWidth:130}}>
+            <div style={{fontSize:10,fontWeight:800,color:'var(--faint)',textTransform:'uppercase',letterSpacing:'.08em',marginBottom:6,paddingLeft:4}}>Fond de carte</div>
+            <button className={'mv-glass-btn'+(curStyle==='minimal'?' active':'')} style={{width:'100%',justifyContent:'flex-start'}} onClick={()=>{setCurStyle('minimal');setLayersOpen(false);}}>Plan</button>
+            <button className={'mv-glass-btn'+(curStyle==='sat'?' active':'')} style={{width:'100%',justifyContent:'flex-start'}} onClick={()=>{setCurStyle('sat');setLayersOpen(false);}}>Satellite</button>
+          </div>
+        )}
+
+        {/* Survoler */}
+        <button onClick={()=>{if(tourRef.current.on)stopTour();else startTour();}} className={'mv-glass-btn mv-glass'+(touring?' active':'')} style={{padding:'8px 14px'}}><Icon name="route" size={14}/>{touring?'Stop':'Survoler'}</button>
+
+        {/* Readout */}
+        <div className="mv-glass" style={{padding:'6px 11px',borderRadius:10}} ref={readoutRef}><b style={{color:'var(--accent)'}}>GLOBE</b> <span style={{color:'var(--muted)',fontSize:10.5,fontFamily:'var(--font-mono)'}}>· z1.6</span></div>
+      </div>
+
+      {/* ═══ LIEU TROUVÉ (bas gauche, par-dessus la day card) ═══ */}
+      {foundPlace&&!editorOpen&&(
+        <div className="mv-glass" style={{position:'absolute',bottom:16,left:16,zIndex:6,width:320,borderRadius:18,overflow:'hidden',boxShadow:'0 18px 50px rgba(31,46,40,.22)'}}>
+          <div style={{padding:16}}>
+            <div style={{display:'flex',gap:10,alignItems:'flex-start',marginBottom:12}}>
+              <div style={{width:36,height:36,borderRadius:10,background:'var(--accent-soft)',color:'var(--accent)',display:'grid',placeItems:'center',flexShrink:0}}><Icon name="pin" size={17}/></div>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontFamily:'var(--font-serif)',fontStyle:'italic',fontSize:17,color:'var(--text)',lineHeight:1.15}}>{foundPlace.name}</div>
+                <div style={{fontSize:11,color:'var(--muted)',marginTop:2}}>{foundPlace.address}</div>
+              </div>
+              <button onClick={()=>setFoundPlace(null)} style={{border:'none',background:'transparent',color:'var(--faint)',cursor:'pointer',padding:2}}><Icon name="x" size={16}/></button>
+            </div>
+            {!pickingDay?(
+              <button onClick={()=>setPickingDay(true)} style={{width:'100%',border:'none',background:'var(--accent)',color:'var(--accent-ink)',borderRadius:10,padding:'9px 0',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',justifyContent:'center',gap:7}}><Icon name="plus" size={14}/>Ajouter au s{'\u00e9'}jour</button>
+            ):(
+              <div>
+                <div style={{fontSize:10,fontWeight:700,letterSpacing:'.08em',textTransform:'uppercase',color:'var(--faint)',marginBottom:8}}>Choisir le jour</div>
+                <div style={{display:'flex',flexWrap:'wrap',gap:5}}>
+                  {realTrip&&realTrip.days.map((d,i)=>(
+                    <button key={d.id} onClick={()=>openEditorForDay(i)} title={"J"+(i+1)}
+                      style={{width:34,height:34,borderRadius:10,border:'1px solid var(--line)',background:'var(--inset)',color:'var(--text)',fontFamily:'var(--font-serif)',fontSize:14,fontWeight:700,cursor:'pointer',display:'grid',placeItems:'center',transition:'all .12s'}}
+                      onMouseEnter={e=>{e.currentTarget.style.background='var(--accent)';e.currentTarget.style.color='var(--accent-ink)';e.currentTarget.style.borderColor='var(--accent)';}}
+                      onMouseLeave={e=>{e.currentTarget.style.background='var(--inset)';e.currentTarget.style.color='var(--text)';e.currentTarget.style.borderColor='var(--line)';}}
+                    >{i+1}</button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ═══ CARTE DU JOUR (bas gauche) ═══ */}
+      <div ref={cardRef} style={{position:'absolute',bottom:16,left:16,zIndex:5,display:foundPlace?'none':'block'}}/>
+
+      {/* StepEditor */}
+      {editorOpen&&foundPlace&&window.StepEditor&&React.createElement(window.StepEditor,{open:true,tripId:realTrip&&realTrip.id,dayId:editorOpen.dayId,step:{type:'activite',label:foundPlace.name,lieu:foundPlace.address,lat:foundPlace.lat,lng:foundPlace.lng},stepCount:editorOpen.stepCount,onClose:onEditorClose,onSaved:onEditorSaved})}
+    </div>
+    </>
+  );
+}
+window.MapView=MapView;
 
       {/* ═══ MAP (plein écran, contrôles en overlay) ═══ */}
       <div className="mv-map-wrap">

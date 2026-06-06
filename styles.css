@@ -1,24 +1,47 @@
 :root {
-  /* Palette 'Light' de l'Atelier v2 */
-  --bg: radial-gradient(1100px 700px at 78% -12%, rgba(180, 132, 62, 0.07), transparent 60%), linear-gradient(180deg, #f4efe5, #efe9dc);
+  /* ═══ Palette Stitch — L'Atelier v2 ═══ */
+
+  /* Surfaces (du plus clair au plus sombre) */
+  --bg: #fef9ef;
   --card: #ffffff;
-  --soft: #f1ebde;
-  --inset: #f6f1e7;
-  --text: #1f2e28;
-  --muted: #5e7068;
-  --faint: #9aa89f;
-  --accent: #b4843e;
-  --accent-soft: rgba(180, 132, 62, 0.13);
+  --inset: #f8f3e9;
+  --soft: #f2ede3;
+  --surface-high: #ede8de;
+  --surface-variant: #e7e2d8;
+
+  /* Texte */
+  --text: #1d1c16;
+  --muted: #504538;
+  --faint: #827567;
+
+  /* Accent principal (brun doré) */
+  --accent: #7c5410;
+  --accent-soft: rgba(124, 84, 16, 0.12);
   --accent-ink: #ffffff;
-  --line: rgba(45, 73, 63, 0.13);
-  --line2: rgba(45, 73, 63, 0.07);
-  --topbar: rgba(224, 216, 200, 0.95);
-  --shadow: 0 3px 14px rgba(31, 46, 40, 0.09);
+
+  /* Accents secondaires */
+  --tan: #d9b67e;
+  --petrol: #15302a;
+  --tertiary: #40625a;
+  --tertiary-soft: #597b72;
+  --success: #5c8a6f;
+  --danger: #c0563f;
+
+  /* Bordures */
+  --line: rgba(212, 196, 179, 0.5);
+  --line2: rgba(212, 196, 179, 0.3);
+  --outline: #827567;
+  --outline-variant: #d4c4b3;
+
+  /* Topbar & ombres */
+  --topbar: #ede8de;
+  --shadow: 0 3px 14px rgba(82, 98, 91, 0.06);
+  --shadow-lg: 0 8px 24px rgba(82, 98, 91, 0.10);
 
   /* Typographies */
   --font-sans: "DM Sans", system-ui, sans-serif;
   --font-serif: "DM Serif Display", Georgia, serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 /* Reset de base */
@@ -654,18 +677,29 @@ body {
 
 /* ═══════ Thème sombre — activé via html.dark ═══════════════ */
 html.dark {
-  --bg: radial-gradient(1100px 700px at 75% -10%, rgba(217,182,126,.06), transparent 60%), linear-gradient(180deg, #15302a, #173a31);
+  --bg: #15302a;
   --card: #21433b;
-  --soft: #2a5046;
   --inset: rgba(0,0,0,.18);
+  --soft: #2a5046;
+  --surface-high: rgba(16,34,28,.97);
+  --surface-variant: rgba(255,255,255,.06);
   --text: #f3ede2;
-  --muted: #9db5ab;
+  --muted: #b9cac2;
   --faint: #6f8a80;
-  --accent: #d9b67e;
-  --accent-soft: rgba(217,182,126,.14);
-  --accent-ink: #15302a;
+  --accent: #f4bd71;
+  --accent-soft: rgba(244,189,113,.14);
+  --accent-ink: #291800;
+  --tan: #d9b67e;
+  --petrol: #0a1e18;
+  --tertiary: #a9cec3;
+  --tertiary-soft: #597b72;
+  --success: #5c8a6f;
+  --danger: #c0563f;
   --line: rgba(255,255,255,.08);
   --line2: rgba(255,255,255,.05);
+  --outline: #6f8a80;
+  --outline-variant: rgba(255,255,255,.12);
   --topbar: rgba(16,34,28,.97);
   --shadow: 0 3px 14px rgba(0,0,0,.3);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,.4);
 }

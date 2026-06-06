@@ -116,105 +116,100 @@ function Topbar() {
 
   return (
     <header style={{
-      height: 60, flexShrink: 0,
-      display: 'flex', alignItems: 'center', gap: 14,
-      padding: '0 18px',
-      borderBottom: '1px solid var(--accent-soft)',
+      height: 64, flexShrink: 0,
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      padding: '0 16px',
       background: 'var(--topbar)',
-      backdropFilter: 'blur(10px)',
-      WebkitBackdropFilter: 'blur(10px)',
+      borderBottom: '1px solid var(--outline-variant)',
       position: 'sticky', top: 0, zIndex: 100
     }}>
-      {/* Logo */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+      {/* ── Gauche : marque + sélecteur voyage ── */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
         <div style={{
-          width: 30, height: 30, borderRadius: 9,
-          background: 'var(--accent)', color: 'var(--bg)',
-          display: 'grid', placeItems: 'center',
-          fontFamily: 'var(--serif)', fontStyle: 'italic', fontSize: 16
-        }}>VP</div>
-        <div style={{ fontFamily: 'var(--serif)', fontStyle: 'italic', fontSize: 18, color: 'var(--accent)' }}>L'Atelier</div>
-      </div>
+          fontFamily: 'var(--font-serif)', fontStyle: 'italic',
+          fontSize: 26, lineHeight: '32px', color: 'var(--accent)'
+        }}>L'Atelier</div>
 
-      {/* Sélecteur voyage */}
-      {user && (
-        <div ref={menuRef} style={{ position: 'relative', marginLeft: 12 }}>
-          <button
-            onClick={() => setTripMenuOpen(o => !o)}
-            style={{
-              background: 'var(--inset)', border: '1px solid var(--line)',
-              color: 'var(--text)', borderRadius: 12,
-              padding: '7px 12px', cursor: 'pointer',
-              display: 'inline-flex', alignItems: 'center', gap: 8,
-              fontSize: 13, fontWeight: 600, fontFamily: 'inherit',
-              maxWidth: 220
-            }}
-          >
-            <Icon name="cal" size={14} style={{ color: 'var(--accent)' }} />
-            <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {trip?.name || (activeTripId ? 'Chargement…' : 'Choisir un voyage')}
-            </span>
-            <Icon name="chevdown" size={14} style={{ color: 'var(--muted)' }} />
-          </button>
-          {tripMenuOpen && (
-            <div style={{
-              position: 'absolute', top: 'calc(100% + 6px)', left: 0,
-              minWidth: 260, maxHeight: 360, overflowY: 'auto',
-              background: 'var(--card)', border: '1px solid var(--line)',
-              borderRadius: 14, padding: 6,
-              boxShadow: 'var(--shadow-lg)', zIndex: 200
-            }}>
-              {trips.length === 0 && (
-                <div style={{ padding: '12px 10px', fontSize: 13, color: 'var(--muted)' }}>
-                  Aucun voyage pour l'instant.
-                </div>
-              )}
-              {trips.map(t => (
+        {user && (
+          <div ref={menuRef} style={{ position: 'relative' }}>
+            <button
+              onClick={() => setTripMenuOpen(o => !o)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                padding: '6px 12px',
+                background: 'var(--inset)',
+                border: '1px solid var(--outline-variant)',
+                borderRadius: 8, cursor: 'pointer',
+                fontSize: 13, fontWeight: 600, fontFamily: 'inherit',
+                color: 'var(--text)', transition: 'background .15s'
+              }}
+            >
+              <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 180 }}>
+                {trip?.name || (activeTripId ? 'Chargement\u2026' : 'Choisir un voyage')}
+              </span>
+              <Icon name="chevdown" size={14} style={{ color: 'var(--faint)' }} />
+            </button>
+
+            {tripMenuOpen && (
+              <div style={{
+                position: 'absolute', top: 'calc(100% + 6px)', left: 0,
+                minWidth: 260, maxHeight: 360, overflowY: 'auto',
+                background: 'var(--card)', border: '1px solid var(--outline-variant)',
+                borderRadius: 14, padding: 6,
+                boxShadow: 'var(--shadow-lg)', zIndex: 200
+              }}>
+                {trips.length === 0 && (
+                  <div style={{ padding: '12px 10px', fontSize: 13, color: 'var(--faint)' }}>
+                    Aucun voyage pour le moment.
+                  </div>
+                )}
+                {trips.map(t => (
+                  <button
+                    key={t.id}
+                    onClick={() => { setTripMenuOpen(false); selectTrip(t.id); }}
+                    style={{
+                      width: '100%', textAlign: 'left',
+                      background: t.id === activeTripId ? 'var(--accent-soft)' : 'transparent',
+                      color: t.id === activeTripId ? 'var(--accent)' : 'var(--text)',
+                      border: 'none', borderRadius: 10,
+                      padding: '9px 10px', cursor: 'pointer',
+                      fontSize: 13, fontWeight: 600, fontFamily: 'inherit',
+                      display: 'flex', alignItems: 'center', gap: 8
+                    }}
+                  >
+                    <Icon name="map" size={13} />
+                    <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.name}</span>
+                    {t.start_date && <span style={{ fontSize: 11, color: 'var(--faint)' }}>{fmtDate(t.start_date)}</span>}
+                  </button>
+                ))}
+                <div style={{ height: 1, background: 'var(--line)', margin: '6px 4px' }} />
                 <button
-                  key={t.id}
-                  onClick={() => { setTripMenuOpen(false); selectTrip(t.id); }}
+                  onClick={() => { setTripMenuOpen(false); setNewTripOpen(true); }}
                   style={{
                     width: '100%', textAlign: 'left',
-                    background: t.id === activeTripId ? 'var(--accent-soft)' : 'transparent',
-                    color: t.id === activeTripId ? 'var(--accent)' : 'var(--text)',
+                    background: 'transparent', color: 'var(--accent)',
                     border: 'none', borderRadius: 10,
                     padding: '9px 10px', cursor: 'pointer',
-                    fontSize: 13, fontWeight: 600, fontFamily: 'inherit',
+                    fontSize: 13, fontWeight: 700, fontFamily: 'inherit',
                     display: 'flex', alignItems: 'center', gap: 8
                   }}
                 >
-                  <Icon name="map" size={13} />
-                  <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.name}</span>
-                  {t.start_date && <span style={{ fontSize: 11, color: 'var(--faint)' }}>{fmtDate(t.start_date)}</span>}
+                  <Icon name="plus" size={13} />
+                  Nouveau voyage
                 </button>
-              ))}
-              <div style={{ height: 1, background: 'var(--line)', margin: '6px 4px' }} />
-              <button
-                onClick={() => { setTripMenuOpen(false); setNewTripOpen(true); }}
-                style={{
-                  width: '100%', textAlign: 'left',
-                  background: 'transparent', color: 'var(--accent)',
-                  border: 'none', borderRadius: 10,
-                  padding: '9px 10px', cursor: 'pointer',
-                  fontSize: 13, fontWeight: 700, fontFamily: 'inherit',
-                  display: 'flex', alignItems: 'center', gap: 8
-                }}
-              >
-                <Icon name="plus" size={13} />
-                Nouveau voyage
-              </button>
-            </div>
-          )}
-        </div>
-      )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
-      {/* NAVIGATION GLOBALE */}
-      <nav style={{ display: 'flex', gap: 2, marginLeft: 20, background: 'var(--inset)', border: '1px solid var(--line)', borderRadius: 999, padding: 3 }}>
+      {/* ── Centre : onglets navigation ── */}
+      <nav style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
         {[
-          { id: 'itinerary', label: 'Plan',   icon: 'route' },
-          { id: 'map',       label: 'Carte',  icon: 'map' },
-          { id: 'budget',    label: 'Budget', icon: 'sparkle' },
-          { id: 'docs',      label: 'Docs',   icon: 'flag' }
+          { id: 'itinerary', label: 'Itin\u00e9raire' },
+          { id: 'map',       label: 'Carte' },
+          { id: 'budget',    label: 'Budget' },
+          { id: 'docs',      label: 'Docs' }
         ].map(it => {
           const on = view === it.id;
           return (
@@ -226,68 +221,72 @@ function Topbar() {
                 background: on ? 'var(--accent)' : 'transparent',
                 color: on ? 'var(--accent-ink)' : 'var(--muted)',
                 cursor: 'pointer',
-                display: 'flex', alignItems: 'center', gap: 7,
-                fontSize: 13, fontWeight: 700, fontFamily: 'inherit',
-                padding: '7px 14px', borderRadius: 999, transition: 'all .2s'
+                fontSize: 13, fontWeight: 600, fontFamily: 'inherit',
+                padding: '8px 16px', borderRadius: 999,
+                transition: 'all .2s'
               }}
             >
-              <Icon name={it.icon} size={14} />
               {it.label}
             </button>
           );
         })}
       </nav>
 
-      <div style={{ flex: 1 }} />
+      {/* ── Droite : outils + compte ── */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        {user ? (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <button
+                onClick={toggleTheme}
+                title={theme === 'dark' ? 'Mode clair' : 'Mode sombre'}
+                style={{
+                  width: 36, height: 36, borderRadius: '50%',
+                  background: 'transparent', border: 'none',
+                  color: 'var(--faint)', cursor: 'pointer',
+                  display: 'grid', placeItems: 'center'
+                }}
+              ><Icon name={theme === 'dark' ? 'sun' : 'moon'} size={18} /></button>
+              <button
+                onClick={() => Store.set({ settingsOpen: true })}
+                title="Param\u00e8tres"
+                style={{
+                  width: 36, height: 36, borderRadius: '50%',
+                  background: 'transparent', border: 'none',
+                  color: 'var(--faint)', cursor: 'pointer',
+                  display: 'grid', placeItems: 'center'
+                }}
+              ><Icon name="gear" size={18} /></button>
+            </div>
 
-      {/* Actions à droite */}
-      {user ? (
-        <>
-          {/* Bouton Clair/Sombre */}
-          <button
-            onClick={toggleTheme}
-            title={theme === 'dark' ? 'Passer en clair' : 'Passer en sombre'}
-            style={{
-              width: 38, height: 38, borderRadius: 11,
-              background: 'var(--inset)', border: '1px solid var(--line)',
-              color: 'var(--accent)', cursor: 'pointer',
-              display: 'grid', placeItems: 'center'
-            }}
-          ><Icon name={theme === 'dark' ? 'sun' : 'moon'} size={16} /></button>
+            <div style={{ width: 1, height: 24, background: 'var(--outline-variant)', margin: '0 4px', opacity: 0.5 }} />
 
-          <button
-            onClick={() => Store.set({ settingsOpen: true })}
-            title="Paramètres"
-            style={{
-              width: 38, height: 38, borderRadius: 11,
-              background: 'var(--inset)', border: '1px solid var(--line)',
-              color: 'var(--text)', cursor: 'pointer',
-              display: 'grid', placeItems: 'center'
-            }}
-          ><Icon name="gear" size={16} /></button>
-          <button
-            onClick={() => Store.set({ settingsOpen: true })}
-            title={pseudo}
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: 8,
-              background: 'var(--accent-soft)', color: 'var(--accent)',
-              border: '1px solid rgba(217,182,126,.3)',
-              padding: '6px 10px 6px 6px', borderRadius: 999,
-              cursor: 'pointer', fontSize: 13, fontWeight: 700, fontFamily: 'inherit'
-            }}
-          >
-            <span style={{
-              width: 26, height: 26, borderRadius: '50%',
-              background: 'var(--accent)', color: 'var(--bg)',
-              display: 'grid', placeItems: 'center',
-              fontSize: 11, fontWeight: 800
-            }}>{initials}</span>
-            <span style={{ whiteSpace: 'nowrap', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis' }}>{pseudo}</span>
-          </button>
-        </>
-      ) : (
-        <Btn variant="primary" icon="user" onClick={() => setAuthOpen(true)}>Connexion</Btn>
-      )}
+            <button
+              onClick={() => Store.set({ settingsOpen: true })}
+              title={pseudo}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                padding: '6px 12px',
+                background: 'transparent',
+                border: '1px solid var(--outline-variant)',
+                borderRadius: 999, cursor: 'pointer',
+                fontSize: 13, fontWeight: 600, fontFamily: 'inherit',
+                color: 'var(--text)', transition: 'background .15s'
+              }}
+            >
+              <span style={{ whiteSpace: 'nowrap', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis' }}>{pseudo}</span>
+              <span style={{
+                width: 26, height: 26, borderRadius: '50%',
+                background: 'var(--accent)', color: 'var(--accent-ink)',
+                display: 'grid', placeItems: 'center',
+                fontSize: 11, fontWeight: 800
+              }}>{initials}</span>
+            </button>
+          </>
+        ) : (
+          <Btn variant="primary" icon="user" onClick={() => setAuthOpen(true)}>Connexion</Btn>
+        )}
+      </div>
 
       {authOpen && <AuthModal onClose={() => setAuthOpen(false)} />}
       {newTripOpen && <NewTripModal onClose={() => setNewTripOpen(false)} />}

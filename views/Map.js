@@ -152,7 +152,7 @@ function MapView(){
     var col=typeCol[s.t]||'#7c5410';
     var el=document.createElement('div');
 
-    el.style.cssText='width:32px;height:32px;border-radius:50%;background:#fff;border:2.5px solid '+col+';color:'+col+';display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(0,0,0,.25);cursor:pointer;transition:transform .2s, background .2s, color .2s;border-box;font-family:var(--font-mono);font-size:12px;font-weight:700;transform-origin:center center;';
+    el.style.cssText='width:32px;height:32px;border-radius:50%;background:#fff;border:2.5px solid '+col+';color:'+col+';display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(0,0,0,.25);cursor:pointer;transition:transform .2s, background .2s, color .2s;box-sizing:border-box;font-family:var(--font-mono);font-size:12px;font-weight:700;transform-origin:center center;';
     el.textContent=String(k+1);
 
     el.onmouseover=function(){
@@ -209,7 +209,6 @@ function MapView(){
       paint:{'line-color':'#d9b67e','line-width':2.5,'line-dasharray':[2,3]}
     });
   }
-}
 }
 
   // ── Cards ──

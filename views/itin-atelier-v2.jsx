@@ -295,6 +295,30 @@ function AtelierV2() {
   });
   const [done, setDone] = React.useState({});  // checklist coché
   const [editor, setEditor] = React.useState({ open: false, dayId: null, step: null });
+  /* ── Auto-image du hero ── */
+  const [heroImg, setHeroImg] = React.useState(null);
+  React.useEffect(function() {
+    setHeroImg(null); // reset pendant le chargement
+    if (!day || !day.id) return;
+    // Chercher dans le cache localStorage
+    var cached = localStorage.getItem('hero_img_' + day.id);
+    if (cached) { try { setHeroImg(JSON.parse(cached)); } catch(e){} return; }
+    // Construire la requête à partir du jour
+    var parts = [];
+    if (day.title && day.title !== 'Journ\u00e9e libre') parts.push(day.title);
+    (day.steps || []).forEach(function(st) {
+      if (st.lieu) parts.push(st.lieu);
+      else if (st.label) parts.push(st.label);
+    });
+    var q = parts.slice(0, 3).join(' ').trim();
+    if (!q) return;
+    fetchAutoImage(q).then(function(result) {
+      if (result && result.url) {
+        setHeroImg(result);
+        localStorage.setItem('hero_img_' + day.id, JSON.stringify(result));
+      }
+    });
+  }, [day.id, day.steps.length]);
   const reload = () => { if (realTrip) window.SB.loadTrip(realTrip.id).then(t => Store.set({ trip: t })).catch(() => {}); };
 
   React.useEffect(() => { localStorage.setItem('it_pins', JSON.stringify(pinned)); }, [pinned]);
@@ -603,14 +627,17 @@ function AtelierV2() {
         background: heroGrad(heroHue(day), mode === 'light'),
         boxShadow: 'var(--shadow-lg)'
       } },
-        React.createElement('image-slot', { id: 'koreahero-day-' + day.n, shape: 'rect', placeholder: 'Photo du jour', style: { position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block' } }),
+        heroImg && React.createElement('div', { style: { position: 'absolute', inset: 0, backgroundImage: 'url(' + heroImg.url + ')', backgroundSize: 'cover', backgroundPosition: 'center', zIndex: 0, transition: 'opacity .6s', opacity: 1 } }),
+        React.createElement('image-slot', { id: 'koreahero-day-' + day.n, shape: 'rect', placeholder: !heroImg ? 'Photo du jour' : '', style: { position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block', zIndex: 1 } }),
         React.createElement('div', { style: { position: 'absolute', inset: 0, pointerEvents: 'none', background: 'linear-gradient(to top, rgba(21,48,42,0.9) 0%, rgba(21,48,42,0.4) 40%, transparent 100%)' } }),
         React.createElement('div', { style: { position: 'absolute', bottom: 0, left: 0, width: '100%', padding: '0 24px', color: '#fff' } },
           React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 } },
             React.createElement('span', { style: { display: 'inline-block', padding: '5px 14px', background: 'rgba(254,249,239,0.2)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', borderRadius: 999, border: '1px solid rgba(255,255,255,0.3)', fontSize: 11, fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase', color: '#fff' } }, 'Jour ' + day.n),
             React.createElement('span', { style: { fontFamily: 'var(--font-mono)', fontSize: 11, color: 'rgba(255,255,255,0.9)' } }, (day.weekday || '') + ' ' + fmtDate(day.dateISO))),
           React.createElement('h2', { style: { fontFamily: 'var(--font-serif)', fontSize: 40, lineHeight: '48px', color: '#fff', margin: '0 0 16px' } }, day.title),
-          day.note && React.createElement('p', { style: { fontSize: 13.5, lineHeight: '20px', color: 'rgba(255,255,255,0.8)', maxWidth: 640, borderLeft: '2px solid var(--tan)', paddingLeft: 16, marginBottom: 24 } }, day.note))),
+          day.note && React.createElement('p', { style: { fontSize: 13.5, lineHeight: '20px', color: 'rgba(255,255,255,0.8)', maxWidth: 640, borderLeft: '2px solid var(--tan)', paddingLeft: 16, marginBottom: 24 } }, day.note),
+          !day.note && React.createElement('div', { style: { marginBottom: 24 } }))),
+        heroImg && heroImg.credit && React.createElement('a', { href: heroImg.link, target: '_blank', rel: 'noopener', style: { position: 'absolute', bottom: 8, right: 12, fontSize: 10, color: 'rgba(255,255,255,0.5)', textDecoration: 'none', zIndex: 5 } }, '\u00a9 ' + heroImg.credit),
       
       React.createElement('div', { style: { flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', gap: 11 } },
         day.steps.map(function(step, k) { return React.createElement(StepCard, { key: k, s: step }); }),

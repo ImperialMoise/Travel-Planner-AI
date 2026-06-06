@@ -155,4 +155,51 @@ function AbstractMap({ points, theme = 'dark', big = false, height = 150, label,
   );
 }
 
-Object.assign(window, { Icon, IT_ICONS, IT_MODE_ICON, IT_TYPE_ICON, IT_TYPE_LABEL, statusOf, fmtDate, dayRange, stepView, Avatars, AbstractMap });
+/* ---- Auto-image (Unsplash + Wikimedia fallback) --------- */
+const UNSPLASH_KEY = 'A6cXFWLMDJeyJqZhlwijRcvlqq8IvepxwBiYwD95Vmo'; // ← remplace par ta clé
+
+async function fetchAutoImage(query) {
+  if (!query || query === 'Journ\u00e9e libre') return null;
+
+  /* 1. Unsplash (priorité) */
+  if (UNSPLASH_KEY && UNSPLASH_KEY !== 'A6cXFWLMDJeyJqZhlwijRcvlqq8IvepxwBiYwD95Vmo') {
+    try {
+      var res = await fetch('https://api.unsplash.com/search/photos?query=' + encodeURIComponent(query) + '&per_page=1&orientation=landscape', {
+        headers: { 'Authorization': 'Client-ID ' + UNSPLASH_KEY }
+      });
+      var data = await res.json();
+      if (data.results && data.results.length > 0) {
+        return {
+          url: data.results[0].urls.regular,
+          credit: data.results[0].user.name,
+          link: data.results[0].user.links.html
+        };
+      }
+    } catch (e) { console.warn('Unsplash err:', e); }
+  }
+
+  /* 2. Wikimedia Commons (fallback gratuit illimité) */
+  try {
+    var res2 = await fetch('https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrnamespace=6&gsrsearch=' + encodeURIComponent(query) + '&gsrlimit=3&prop=imageinfo&iiprop=url|extmetadata&iiurlwidth=1200&format=json&origin=*');
+    var data2 = await res2.json();
+    var pages = data2.query && data2.query.pages;
+    if (pages) {
+      var best = Object.values(pages).find(function(p) {
+        var info = p.imageinfo && p.imageinfo[0];
+        if (!info) return false;
+        var mime = info.extmetadata && info.extmetadata.MIMEType;
+        return !mime || mime.value.indexOf('svg') === -1;
+      });
+      if (best && best.imageinfo && best.imageinfo[0]) {
+        return {
+          url: best.imageinfo[0].thumburl || best.imageinfo[0].url,
+          credit: 'Wikimedia Commons',
+          link: 'https://commons.wikimedia.org'
+        };
+      }
+    }
+  } catch (e) { console.warn('Wikimedia err:', e); }
+
+  return null;
+}
+Object.assign(window, { Icon, IT_ICONS, IT_MODE_ICON, IT_TYPE_ICON, IT_TYPE_LABEL, statusOf, fmtDate, dayRange, stepView, Avatars, AbstractMap, fetchAutoImage });

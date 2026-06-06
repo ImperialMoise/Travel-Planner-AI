@@ -321,7 +321,20 @@ function Toolbox() {
               {unpinned.map(id => {
                 const b = BLOCKS[id]; if (!b) return null;
                 return (
-                  <button key={id} onClick={() => togglePin(id)} style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '8px 10px', borderRadius: 10, border: '1px solid var(--outline-variant)', background: 'var(--inset)', color: 'var(--text)', cursor: 'pointer', fontSize: 12.5, fontWeight: 600, textAlign: 'left', fontFamily: 'inherit' }}></button>
+                  <button key={id} onClick={() => togglePin(id)} style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '8px 10px', borderRadius: 10, border: '1px solid var(--outline-variant)', background: 'var(--inset)', color: 'var(--text)', cursor: 'pointer', fontSize: 12.5, fontWeight: 600, textAlign: 'left', fontFamily: 'inherit' }}>
+                    <div style={{ width: 26, height: 26, borderRadius: 8, background: 'var(--accent-soft)', color: 'var(--accent)', display: 'grid', placeItems: 'center', flexShrink: 0 }}><Icon name={b.icon} size={14} /></div>
+                    <span style={{ flex: 1 }}>{b.label}</span>
+                    <Icon name="plus" size={14} style={{ color: 'var(--faint)' }} />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+    </aside>
+  );
+}
 
 function Topbar() {
   const { user, trips, activeTripId, trip, view, theme = localStorage.getItem('it_theme') || 'light' } = Store.useStore();

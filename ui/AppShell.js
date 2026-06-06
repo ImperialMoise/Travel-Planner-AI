@@ -36,6 +36,7 @@ function AppShell() {
            <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
              {CurrentView ? <CurrentView /> : <div style={{ padding: 40, color: 'var(--muted)' }}>Vue inconnue : {view}</div>}
            </div>
+           <Toolbox />
          </>}
       </main>
                 
@@ -176,6 +177,151 @@ function DaySpine() {
     </aside>
   );
 }
+// ─── Boîte à outils (colonne droite, tous onglets) ──────────
+function Toolbox() {
+  const st = Store.useStore();
+  const trip = st.trip, view = st.view || 'itinerary', selIdx = st.selectedDayIndex || 0;
+  if (!trip || !trip.days || !trip.days.length) return null;
+
+  const day = trip.days[Math.min(selIdx, trip.days.length - 1)] || {};
+  const steps = day.steps || [];
+  const mode = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+
+  const DEFAULTS = {
+    itinerary: ['checklist', 'note', 'stats'],
+    map: ['checklist'],
+    budget: ['stats', 'note'],
+    docs: ['checklist', 'note']
+  };
+
+  function loadPins(v) {
+    try { const s = JSON.parse(localStorage.getItem('atelier_pins_' + v)); return s || DEFAULTS[v] || ['checklist']; }
+    catch(e) { return DEFAULTS[v] || ['checklist']; }
+  }
+
+  const [pinned, setPinned] = React.useState(() => loadPins(view));
+  const [editMode, setEditMode] = React.useState(false);
+  const [done, setDone] = React.useState({});
+
+  React.useEffect(() => { setPinned(loadPins(view)); setEditMode(false); }, [view]);
+
+  function togglePin(id) {
+    setPinned(prev => {
+      const has = prev.indexOf(id) > -1;
+      const next = has ? prev.filter(x => x !== id) : [...prev, id];
+      localStorage.setItem('atelier_pins_' + view, JSON.stringify(next));
+      return next;
+    });
+  }
+
+  const lodging = steps.find(x => x.type === 'logement');
+  const transportStep = steps.find(x => x.type === 'transport');
+  const participants = trip.participants || [{ name: 'Moi', initials: 'ME', hue: 140 }];
+
+  function WidgetShell({ id, title, icon, iconColor, children, noPad }) {
+    return (
+      <div style={{ background: 'var(--card)', borderRadius: 12, boxShadow: '0 2px 8px rgba(82,98,91,0.05)', border: '1px solid var(--outline-variant)', overflow: 'hidden' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderBottom: '1px solid var(--outline-variant)', background: 'var(--soft)' }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Icon name={icon} size={16} style={{ color: iconColor || 'var(--tertiary)' }} />
+            {title}
+          </span>
+          {editMode && <button onClick={() => togglePin(id)} style={{ width: 22, height: 22, borderRadius: 7, border: 'none', cursor: 'pointer', background: 'var(--accent-soft)', color: 'var(--accent)', display: 'grid', placeItems: 'center', fontSize: 15 }}>{'\u00d7'}</button>}
+        </div>
+        <div style={noPad ? {} : { padding: 16 }}>{children}</div>
+      </div>
+    );
+  }
+
+  const BLOCKS = {
+    checklist: { label: '\u00c0 ne pas oublier', icon: 'check', render() {
+      const items = day.todo || [];
+      return (
+        <WidgetShell key="checklist" id="checklist" title={'\u00c0 ne pas oublier'} icon="check" iconColor="var(--accent)">
+          {items.length > 0 ? items.map((t, i) => {
+            const k = selIdx + '_' + i; const ok = done[k];
+            return (
+              <label key={i} onClick={() => setDone(d => ({ ...d, [k]: !d[k] }))} style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', padding: '7px 0', borderBottom: i < items.length - 1 ? '1px solid var(--line2)' : 'none' }}>
+                <div style={{ width: 20, height: 20, borderRadius: 4, flexShrink: 0, border: ok ? 'none' : '1.5px solid var(--outline)', background: ok ? 'var(--accent)' : 'var(--card)', display: 'grid', placeItems: 'center' }}>
+                  {ok && <Icon name="check" size={14} sw={2.4} style={{ color: '#fff' }} />}
+                </div>
+                <span style={{ fontSize: 13.5, color: ok ? 'var(--faint)' : 'var(--text)', textDecoration: ok ? 'line-through' : 'none', opacity: ok ? 0.7 : 1 }}>{t}</span>
+              </label>
+            );
+          }) : <div style={{ fontSize: 13, color: 'var(--faint)', fontStyle: 'italic' }}>Rien de pr{'\u00e9'}vu pour ce jour.</div>}
+        </WidgetShell>
+      );
+    }},
+
+    note: { label: 'Journal du jour', icon: 'sparkle', render() {
+      return (
+        <div key="note" style={{ background: 'var(--soft)', borderRadius: 12, boxShadow: '0 2px 8px rgba(82,98,91,0.05)', border: '1px solid rgba(217,182,126,0.3)', padding: 16, position: 'relative', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', top: 0, right: 0, width: 32, height: 32, background: 'rgba(217,182,126,0.1)', borderRadius: '0 0 0 12px' }} />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Icon name="sparkle" size={16} style={{ color: 'var(--tan)' }} />
+              Journal du jour
+            </span>
+            {editMode && <button onClick={() => togglePin('note')} style={{ width: 22, height: 22, borderRadius: 7, border: 'none', cursor: 'pointer', background: 'var(--accent-soft)', color: 'var(--accent)', display: 'grid', placeItems: 'center', fontSize: 15 }}>{'\u00d7'}</button>}
+          </div>
+          {day.note
+            ? <div style={{ fontSize: 13.5, lineHeight: '20px', color: 'var(--muted)', fontStyle: 'italic' }}>{day.note}</div>
+            : <div style={{ fontSize: 13, color: 'var(--faint)', fontStyle: 'italic' }}>Aucune note pour ce jour.</div>}
+        </div>
+      );
+    }},
+
+    people: { label: 'Voyageurs', icon: 'users', render() {
+      return (
+        <WidgetShell key="people" id="people" title="Voyageurs" icon="users" iconColor="var(--tertiary)">
+          <Avatars people={participants} size={34} dark={mode === 'light'} />
+        </WidgetShell>
+      );
+    }},
+
+    stats: { label: 'Rep\u00e8res du jour', icon: 'route', render() {
+      return (
+        <WidgetShell key="stats" id="stats" title={'Rep\u00e8res du jour'} icon="route" iconColor="var(--accent)">
+          <div style={{ display: 'flex', gap: 10 }}>
+            <div style={{ flex: 1, background: 'var(--inset)', borderRadius: 10, padding: '10px 12px' }}>
+              <div style={{ fontFamily: 'var(--font-serif)', fontSize: 24, lineHeight: 1 }}>{steps.length}</div>
+              <div style={{ fontSize: 10.5, color: 'var(--muted)', marginTop: 3 }}>{steps.length > 1 ? '\u00e9tapes' : '\u00e9tape'}</div>
+            </div>
+            <div style={{ flex: 1, background: 'var(--inset)', borderRadius: 10, padding: '10px 12px' }}>
+              <div style={{ fontFamily: 'var(--font-serif)', fontSize: 24, lineHeight: 1 }}>{transportStep ? '1' : '0'}</div>
+              <div style={{ fontSize: 10.5, color: 'var(--muted)', marginTop: 3 }}>transport</div>
+            </div>
+            <div style={{ flex: 1, background: 'var(--inset)', borderRadius: 10, padding: '10px 12px' }}>
+              <div style={{ fontFamily: 'var(--font-serif)', fontSize: 24, lineHeight: 1 }}>{lodging ? (lodging.nights || 1) : '\u2014'}</div>
+              <div style={{ fontSize: 10.5, color: 'var(--muted)', marginTop: 3 }}>nuits</div>
+            </div>
+          </div>
+        </WidgetShell>
+      );
+    }}
+  };
+
+  const ORDER = ['checklist', 'note', 'stats', 'people'];
+  const unpinned = ORDER.filter(id => pinned.indexOf(id) === -1);
+
+  return (
+    <aside style={{ width: 320, flexShrink: 0, borderLeft: '1px solid var(--outline-variant)', background: 'var(--bg)', display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
+      <div style={{ padding: '16px 16px 8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase', color: 'var(--muted)' }}>Bo{'\u00ee'}te {'\u00e0'} outils</div>
+        <button onClick={() => setEditMode(e => !e)} title={editMode ? 'Termin\u00e9' : 'Personnaliser'} style={{ width: 28, height: 28, borderRadius: '50%', background: editMode ? 'var(--accent)' : 'transparent', border: 'none', cursor: 'pointer', color: editMode ? 'var(--accent-ink)' : 'var(--faint)', display: 'grid', placeItems: 'center' }}>
+          <Icon name="gear" size={16} />
+        </button>
+      </div>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '8px 16px 16px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {pinned.map(id => BLOCKS[id] ? BLOCKS[id].render() : null)}
+        {editMode && unpinned.length > 0 && (
+          <div style={{ borderRadius: 12, border: '1px dashed var(--outline-variant)', padding: 12 }}>
+            <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--faint)', marginBottom: 9 }}>Ajouter un bloc</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+              {unpinned.map(id => {
+                const b = BLOCKS[id]; if (!b) return null;
+                return (
+                  <button key={id} onClick={() => togglePin(id)} style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '8px 10px', borderRadius: 10, border: '1px solid var(--outline-variant)', background: 'var(--inset)', color: 'var(--text)', cursor: 'pointer', fontSize: 12.5, fontWeight: 600, textAlign: 'left', fontFamily: 'inherit' }}></button>
 
 function Topbar() {
   const { user, trips, activeTripId, trip, view, theme = localStorage.getItem('it_theme') || 'light' } = Store.useStore();

@@ -629,22 +629,7 @@ function AtelierV2() {
       )
     ),
 
-    /* COLONNE DROITE */
-    React.createElement('aside', { style: s.ctx },
-      React.createElement('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' } },
-        React.createElement('div', { style: { fontSize: 11, fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase', color: 'var(--muted)' } }, 'Boîte à outils'),
-        React.createElement('button', { onClick: function() { setEditPins(function(e) { return !e; }); }, style: { border: 'none', background: editPins ? C.accent : 'transparent', color: editPins ? C.accentInk : C.accent, cursor: 'pointer', fontSize: 12, fontWeight: 700, borderRadius: 8, padding: '4px 10px' } }, React.createElement(Icon, { name: 'gear', size: 16 }))),
-      React.createElement('div', { style: { flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 13, paddingRight: 2, marginRight: -2 } },
-        pinned.map(function(id) { return BLOCKS[id] && React.createElement('div', { key: id }, BLOCKS[id].render()); }),
-        editPins && unpinned.length > 0 && React.createElement('div', { style: { borderRadius: 14, border: '1px dashed ' + C.line, padding: 12 } },
-          React.createElement('div', { style: { fontSize: 10.5, fontWeight: 800, letterSpacing: '.1em', textTransform: 'uppercase', color: C.faint, marginBottom: 9 } }, 'Ajouter un bloc'),
-          React.createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: 7 } },
-            unpinned.map(function(id) { return React.createElement('button', { key: id, onClick: function() { togglePin(id); }, style: { display: 'flex', alignItems: 'center', gap: 9, padding: '8px 10px', borderRadius: 10, border: '1px solid ' + C.line, background: C.inset, color: C.text, cursor: 'pointer', fontSize: 12.5, fontWeight: 600, textAlign: 'left' } },
-              React.createElement('div', { style: { width: 26, height: 26, borderRadius: 8, background: C.accentSoft, color: C.accent, display: 'grid', placeItems: 'center', flexShrink: 0 } }, React.createElement(Icon, { name: BLOCKS[id].icon, size: 14 })),
-              React.createElement('span', { style: { flex: 1 } }, BLOCKS[id].label),
-              React.createElement(Icon, { name: 'plus', size: 14, style: { color: C.faint } })); }))))),
-
-    mapOpen && React.createElement(MapOverlay, null),
+        mapOpen && React.createElement(MapOverlay, null),
     React.createElement(StepEditor, {
       open: editor.open,
       tripId: realTrip && realTrip.id,

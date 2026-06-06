@@ -55,124 +55,194 @@ function DaySpine() {
 
   return (
     <aside style={{
-      width: 280, flexShrink: 0,
+      width: 300, flexShrink: 0,
       borderRight: '1px solid var(--outline-variant)',
-      background: 'var(--inset)',
-      display: 'flex', flexDirection: 'column', minHeight: 0
+      background: 'var(--bg)',
+      display: 'flex', flexDirection: 'column', minHeight: 0,
+      boxShadow: '4px 0 24px rgba(45,73,63,0.05)'
     }}>
       {/* ── En-tête ── */}
       <div style={{
         padding: '24px 24px 20px',
-        borderBottom: '1px solid var(--outline-variant)',
-        background: 'var(--soft)'
+        borderBottom: '1px solid var(--outline-variant)'
       }}>
         <div style={{
-          fontSize: 11, fontWeight: 700, letterSpacing: '.16em',
-          textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 4
-        }}>{trip.name}</div>
+          fontSize: 11, fontWeight: 700, letterSpacing: '.2em',
+          textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 8
+        }}>{trip.name ? 'Itin\u00e9raire' : 'Voyage'}</div>
         <div style={{
-          fontFamily: 'var(--font-serif)', fontSize: 20, lineHeight: '28px',
-          color: 'var(--text)'
-        }}>{days.length} jour{days.length > 1 ? 's' : ''}</div>
-        {trip.startDate && (
-          <div style={{
-            fontFamily: 'var(--font-mono)', fontSize: 11, lineHeight: '14px',
-            color: 'var(--muted)', marginTop: 8,
-            display: 'flex', alignItems: 'center', gap: 6
-          }}>
-            <Icon name="cal" size={13} />
-            {fmtDate(trip.startDate)}
-          </div>
-        )}
+          fontFamily: 'var(--font-serif)', fontStyle: 'italic',
+          fontSize: 26, lineHeight: '32px', color: 'var(--text)'
+        }}>{trip.name || 'Mon voyage'}</div>
+        <div style={{
+          fontFamily: 'var(--font-sans)', fontSize: 13.5, lineHeight: '20px',
+          color: 'var(--muted)', marginTop: 8,
+          display: 'flex', alignItems: 'center', gap: 8
+        }}>
+          <Icon name="cal" size={16} style={{ color: 'var(--muted)' }} />
+          {days.length} jour{days.length > 1 ? 's' : ''}
+          {trip.startDate ? ' \u00b7 ' + fmtDate(trip.startDate) : ''}
+        </div>
       </div>
 
-      {/* ── Liste des jours ── */}
+      {/* ── Timeline ── */}
       <div style={{
-        flex: 1, overflowY: 'auto', padding: 16, position: 'relative'
+        flex: 1, overflowY: 'auto', padding: '16px 16px 32px',
+        position: 'relative'
       }}>
-        {/* Ligne verticale de timeline */}
-        <div style={{
-          position: 'absolute', left: 40, top: 36, bottom: 36,
-          width: 1, background: 'var(--outline-variant)', zIndex: 0
-        }} />
+        {days.map((d, i) => {
+          const on = i === sel;
+          const past = i < sel;
+          const future = i > sel;
+          const isLast = i === days.length - 1;
+          const dayTitle = d.title || 'Journ\u00e9e libre';
+          const steps = d.steps || [];
 
-        <div style={{
-          display: 'flex', flexDirection: 'column', gap: 24,
-          paddingTop: 8, paddingBottom: 32, position: 'relative'
-        }}>
-          {days.map((d, i) => {
-            const on = sel === i;
-            const past = i < sel;
-            const future = i > sel;
-            const dayTitle = d.title || 'Journ\u00e9e libre';
-            const firstStep = d.steps && d.steps.length ? d.steps[0] : null;
-            const location = firstStep ? (firstStep.lieu || firstStep.label || '') : '';
+          return (
+            <div
+              key={d.id || i}
+              style={{
+                position: 'relative', paddingLeft: 40,
+                marginBottom: isLast ? 0 : on ? 32 : 24,
+                opacity: past && !on ? 0.55 : 1,
+                cursor: 'pointer'
+              }}
+              onClick={() => Store.set({ selectedDayIndex: i })}
+            >
+              {/* Ligne verticale */}
+              {!isLast && (
+                <div style={{
+                  position: 'absolute', left: 18, top: 22, bottom: -24,
+                  width: 2, background: 'var(--outline-variant)', zIndex: 0
+                }} />
+              )}
 
-            /* Styles du cercle selon l'état */
-            const circleBase = {
-              width: 48, height: 48, borderRadius: '50%',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              flexShrink: 0, position: 'relative', zIndex: 1,
-              transition: 'all .2s ease',
-              fontFamily: 'var(--font-serif)', fontSize: 20, lineHeight: '28px'
-            };
-            let circleStyle;
-            if (on) {
-              circleStyle = { ...circleBase,
-                background: 'var(--petrol)', color: '#ffffff',
-                boxShadow: '0 4px 12px rgba(21,48,42,0.3)',
-                transform: 'scale(1.05)', border: 'none'
-              };
-            } else if (past) {
-              circleStyle = { ...circleBase,
-                background: 'var(--soft)', color: 'var(--faint)',
-                border: '1px solid var(--outline-variant)'
-              };
-            } else {
-              circleStyle = { ...circleBase,
-                background: 'var(--card)', color: 'var(--faint)',
-                border: '1px dashed var(--outline-variant)'
-              };
-            }
-
-            return (
-              <button
-                key={d.id || i}
-                onClick={() => Store.set({ selectedDayIndex: i })}
-                style={{
-                  display: 'flex', alignItems: 'flex-start', gap: 12,
-                  padding: 0, border: 'none', cursor: 'pointer',
-                  background: 'transparent', textAlign: 'left',
-                  fontFamily: 'inherit', position: 'relative',
-                  opacity: future && !on ? 0.7 : 1,
-                  transition: 'opacity .15s'
-                }}
-              >
-                {/* Cercle du jour */}
-                <div style={circleStyle}>J{i + 1}</div>
-
-                {/* Texte */}
-                <div style={{ paddingTop: 4, flex: 1, minWidth: 0 }}>
+              {/* Cercle */}
+              {on ? (
+                <div style={{
+                  position: 'absolute', left: 8, top: 0,
+                  width: 24, height: 24, borderRadius: '50%',
+                  background: 'var(--tan)', color: 'var(--petrol)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 10, fontWeight: 700,
+                  boxShadow: '0 2px 8px rgba(217,182,126,0.4)',
+                  zIndex: 1
+                }}>{String(i + 1).padStart(2, '0')}</div>
+              ) : past ? (
+                <div style={{
+                  position: 'absolute', left: 12, top: 4,
+                  width: 16, height: 16, borderRadius: '50%',
+                  background: 'var(--bg)',
+                  border: '2px solid var(--outline-variant)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  zIndex: 1
+                }}>
                   <div style={{
-                    fontSize: 13, fontWeight: on ? 700 : 600, lineHeight: '18px',
-                    color: on ? 'var(--petrol)' : 'var(--muted)',
-                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
-                  }}>
-                    {d.dateLabel || ''}{d.dateLabel && dayTitle ? ' \u00b7 ' : ''}{dayTitle}
-                  </div>
-                  <div style={{
-                    fontSize: 13.5, lineHeight: '20px',
-                    color: on ? 'var(--text)' : 'var(--faint)',
-                    marginTop: 2,
-                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
-                  }}>
-                    {location || dayTitle}
-                  </div>
+                    width: 6, height: 6, borderRadius: '50%',
+                    background: 'var(--outline-variant)'
+                  }} />
                 </div>
-              </button>
-            );
-          })}
-        </div>
+              ) : (
+                <div style={{
+                  position: 'absolute', left: 12, top: 4,
+                  width: 16, height: 16, borderRadius: '50%',
+                  background: 'var(--bg)',
+                  border: '2px solid var(--outline-variant)',
+                  zIndex: 1
+                }} />
+              )}
+
+              {/* Contenu */}
+              <div>
+                {on ? (
+                  <div style={{
+                    fontSize: 11, fontWeight: 700, letterSpacing: '.16em',
+                    textTransform: 'uppercase', color: 'var(--accent)',
+                    marginBottom: 2
+                  }}>{"Aujourd\u0027hui"}</div>
+                ) : (
+                  <div style={{
+                    fontFamily: 'var(--font-mono)', fontSize: 11, lineHeight: '14px',
+                    textTransform: 'uppercase', letterSpacing: '.1em',
+                    color: past ? 'var(--muted)' : 'var(--faint)',
+                    marginBottom: 2
+                  }}>Jour {i + 1}</div>
+                )}
+
+                <div style={{
+                  fontFamily: 'var(--font-serif)', fontSize: 20, lineHeight: '28px',
+                  color: 'var(--text)'
+                }}>{dayTitle}</div>
+
+                {/* Détails des étapes pour le jour actif */}
+                {on && steps.length > 0 && (
+                  <div style={{
+                    display: 'flex', flexDirection: 'column', gap: 10, marginTop: 12
+                  }}>
+                    {steps.slice(0, 3).map((st, k) => {
+                      const v = stepView(st);
+                      return (
+                        <div key={k} style={{
+                          padding: '12px 14px',
+                          background: 'var(--surface-high)',
+                          borderRadius: 12,
+                          border: '1px solid rgba(217,182,126,0.3)',
+                          boxShadow: '0 1px 4px rgba(82,98,91,0.04)'
+                        }}>
+                          <div style={{
+                            display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6
+                          }}>
+                            <Icon name={v.icon} size={16} style={{ color: 'var(--accent)' }} />
+                            {v.range && (
+                              <span style={{
+                                fontFamily: 'var(--font-mono)', fontSize: 11,
+                                color: 'var(--accent)', fontWeight: 700
+                              }}>{(v.range || '').split('\u2013')[0]}</span>
+                            )}
+                          </div>
+                          <div style={{
+                            fontSize: 15.5, fontWeight: 700, lineHeight: '22px',
+                            color: 'var(--text)'
+                          }}>{v.title || st.label || st.lieu || 'Sans titre'}</div>
+                          {v.sub && (
+                            <div style={{
+                              fontSize: 13.5, lineHeight: '20px',
+                              color: 'var(--muted)', marginTop: 2
+                            }}>{v.sub}</div>
+                          )}
+                        </div>
+                      );
+                    })}
+                    {steps.length > 3 && (
+                      <div style={{
+                        fontSize: 12, color: 'var(--faint)', fontWeight: 600,
+                        paddingLeft: 4
+                      }}>+ {steps.length - 3} {'\u00e9tape'}{steps.length - 3 > 1 ? 's' : ''}</div>
+                    )}
+                  </div>
+                )}
+
+                {/* Résumé transport pour les jours non-actifs */}
+                {!on && steps.length > 0 && (() => {
+                  const transport = steps.find(st => st.type === 'transport');
+                  if (!transport) return null;
+                  const v = stepView(transport);
+                  return (
+                    <div style={{
+                      display: 'flex', alignItems: 'center', gap: 8,
+                      marginTop: 6, paddingLeft: 2
+                    }}>
+                      <Icon name={v.icon} size={16} style={{ color: 'var(--muted)' }} />
+                      <span style={{
+                        fontSize: 13.5, color: 'var(--muted)'
+                      }}>{v.title || (transport.from + ' \u2192 ' + transport.to)}</span>
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </aside>
   );

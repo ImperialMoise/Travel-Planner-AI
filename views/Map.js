@@ -189,64 +189,10 @@ function MapView(){
   return(
     <>
     <style>{MV_CSS}</style>
-    {/* ═══ MAP (plein écran, contrôles en overlay) ═══ */}
+    <div className="mv-frame" style={{flexDirection:'row'}}>
+
+      {/* ═══ MAP (plein écran, contrôles en overlay) ═══ */}
       <div className="mv-map-wrap">
-        <div style={{padding:'16px 22px 12px',borderBottom:'1px solid var(--line2)'}}>
-          <div style={{fontSize:11,fontWeight:700,letterSpacing:'.16em',textTransform:'uppercase',color:'var(--accent)'}}>{T.name}</div>
-          <div style={{fontFamily:'var(--font-serif)',fontStyle:'italic',fontSize:20,marginTop:4,color:'var(--text)'}}>{T.days.length} jours</div>
-          <div style={{fontSize:12,color:'var(--muted)',marginTop:3}}>{T.dates}</div>
-        </div>
-
-        {/* Fiche lieu trouvé (dans la spine) */}
-        {foundPlace&&!editorOpen&&(
-          <div style={{padding:14,borderBottom:'1px solid var(--line)'}}>
-            <div style={{display:'flex',gap:10,alignItems:'flex-start',marginBottom:10}}>
-              <div style={{width:36,height:36,borderRadius:10,background:'var(--accent-soft)',color:'var(--accent)',display:'grid',placeItems:'center',flexShrink:0}}><Icon name="pin" size={17}/></div>
-              <div style={{flex:1,minWidth:0}}>
-                <div style={{fontFamily:'var(--font-serif)',fontStyle:'italic',fontSize:17,color:'var(--text)',lineHeight:1.15}}>{foundPlace.name}</div>
-                <div style={{fontSize:11,color:'var(--muted)',marginTop:2}}>{foundPlace.address}</div>
-              </div>
-              <button onClick={()=>setFoundPlace(null)} style={{border:'none',background:'transparent',color:'var(--faint)',cursor:'pointer',padding:2}}><Icon name="x" size={16}/></button>
-            </div>
-            {!pickingDay?(
-              <button onClick={()=>setPickingDay(true)} style={{width:'100%',border:'none',background:'var(--accent)',color:'var(--accent-ink)',borderRadius:10,padding:'9px 0',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',justifyContent:'center',gap:7}}><Icon name="plus" size={14}/>Ajouter au séjour</button>
-            ):(
-              <div>
-                <div style={{fontSize:10,fontWeight:700,letterSpacing:'.08em',textTransform:'uppercase',color:'var(--faint)',marginBottom:8}}>Choisir le jour</div>
-                <div style={{display:'flex',flexWrap:'wrap',gap:5}}>
-                  {realTrip&&realTrip.days.map((d,i)=>(
-                    <button key={d.id} onClick={()=>openEditorForDay(i)} title={"J"+(i+1)+" · "+(d.dateLabel||'')}
-                      style={{width:34,height:34,borderRadius:10,border:'1px solid var(--line)',background:'var(--inset)',color:'var(--text)',fontFamily:'var(--font-serif)',fontSize:14,fontWeight:700,cursor:'pointer',display:'grid',placeItems:'center',transition:'all .12s'}}
-                      onMouseEnter={e=>{e.currentTarget.style.background='var(--accent)';e.currentTarget.style.color='var(--accent-ink)';e.currentTarget.style.borderColor='var(--accent)';}}
-                      onMouseLeave={e=>{e.currentTarget.style.background='var(--inset)';e.currentTarget.style.color='var(--text)';e.currentTarget.style.borderColor='var(--line)';}}
-                    >{i+1}</button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        <div className="mv-spine-list">
-          <div className="mv-spine-line"/>
-          {T.days.map((d,i)=>{const on=sel===i;return(
-            <button key={i} onClick={()=>doSelect(i,true)} style={{width:'100%',display:'flex',alignItems:'center',gap:13,padding:'5px 12px 5px 8px',border:'none',cursor:'pointer',borderRadius:10,textAlign:'left',fontFamily:'inherit',color:'var(--text)',background:on?'var(--card)':'transparent',boxShadow:on?'var(--shadow)':'none',marginBottom:2,position:'relative',transition:'all .16s'}}>
-              <div style={{width:22,display:'flex',justifyContent:'center',flexShrink:0,zIndex:1}}>
-                <div style={{width:on?13:10,height:on?13:10,borderRadius:'50%',background:d.region==='Busan'?'#c98a3c':'var(--accent)',border:'2px solid '+(d.region==='Busan'?'#c98a3c':'var(--accent)'),boxShadow:on?'0 0 0 4px var(--accent-soft)':'none',transition:'all .16s'}}/>
-              </div>
-              <div style={{flex:1,minWidth:0}}>
-                <div style={{display:'flex',alignItems:'baseline',gap:7}}>
-                  <span style={{fontFamily:'var(--font-serif)',fontSize:14.5,color:on?'var(--accent)':'var(--text)'}}>J{d.n}</span>
-                  <span style={{fontSize:12.5,fontWeight:600,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{d.city}</span>
-                </div>
-                <div style={{fontSize:10,color:'var(--muted)',marginTop:1}}>{d.wd} {mvFmtDate(d.date)}</div>
-              </div>
-            </button>
-          );})}
-        </div>
-      </aside>
-
-      <div className="mv-map-wrap" style={{flex:1}}>
         <div id="mv-map" ref={mapEl}/>
 
         {/* Top-left : Affichage + Survoler */}
@@ -304,6 +250,7 @@ function MapView(){
         {/* StepEditor */}
         {editorOpen&&foundPlace&&window.StepEditor&&React.createElement(window.StepEditor,{open:true,tripId:realTrip&&realTrip.id,dayId:editorOpen.dayId,step:{type:'activite',label:foundPlace.name,lieu:foundPlace.address,lat:foundPlace.lat,lng:foundPlace.lng},stepCount:editorOpen.stepCount,onClose:onEditorClose,onSaved:onEditorSaved})}
       </div>
+    </div>
     </>
   );
 }

@@ -31,6 +31,8 @@ function mvRegClass(r){return r==='Busan'?'mv-r-busan':r==='Vol'?'mv-r-vol':'mv-
 function gcPoints(a,b,n){n=n||80;const R=d=>d*Math.PI/180,D=r=>r*180/Math.PI;const la1=R(a[1]),lo1=R(a[0]),la2=R(b[1]),lo2=R(b[0]);const d=2*Math.asin(Math.sqrt(Math.sin((la2-la1)/2)**2+Math.cos(la1)*Math.cos(la2)*Math.sin((lo2-lo1)/2)**2));if(d===0)return[a,b];const pts=[];for(let i=0;i<=n;i++){const f=i/n;const A=Math.sin((1-f)*d)/Math.sin(d),B=Math.sin(f*d)/Math.sin(d);const x=A*Math.cos(la1)*Math.cos(lo1)+B*Math.cos(la2)*Math.cos(lo2);const y=A*Math.cos(la1)*Math.sin(lo1)+B*Math.cos(la2)*Math.sin(lo2);const z=A*Math.sin(la1)+B*Math.sin(la2);pts.push([D(Math.atan2(y,x)),D(Math.atan2(z,Math.sqrt(x*x+y*y)))]);}return pts;}
 function gcDist(a,b){const R=6371,r=d=>d*Math.PI/180;const dLa=r(b[1]-a[1]),dLo=r(b[0]-a[0]);const s=Math.sin(dLa/2)**2+Math.cos(r(a[1]))*Math.cos(r(b[1]))*Math.sin(dLo/2)**2;return 2*R*Math.asin(Math.sqrt(s));}
 const MONTHS_MAP=['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+function fmtDuration(sec){if(sec<60)return '< 1 min';if(sec<3600)return Math.round(sec/60)+' min';var h=Math.floor(sec/3600),m=Math.round((sec%3600)/60);return h+'h'+(m>0?String(m).padStart(2,'0'):'');}
+function fmtDistKm(m){if(m<1000)return Math.round(m)+' m';return (m/1000).toFixed(1)+' km';}
 function mvFmtDate(iso){const d=new Date(iso);return d.getDate()+' '+MONTHS_MAP[d.getMonth()];}
 
 /* ═══ CSS ═══ */
@@ -141,13 +143,79 @@ function MapView(){
   function clearStepMarkers(){markersRef.current.step.forEach(m=>m.remove());markersRef.current.step=[];const map=mapRef.current;if(map){try{map.removeLayer('step-route-glow');}catch(e){}try{map.removeLayer('step-route-line');}catch(e){}try{map.removeSource('step-route');}catch(e){}}}
   function showStepMarkers(map,day){
     clearStepMarkers();
-    var coords=[];
-    day.steps.forEach(function(s){if(s.c)coords.push(s.c);});
-    if(coords.length>1){
-      map.addSource('step-route',{type:'geojson',data:{type:'Feature',geometry:{type:'LineString',coordinates:coords}}});
-      map.addLayer({id:'step-route-glow',type:'line',source:'step-route',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#d9b67e','line-width':6,'line-opacity':0.18,'line-blur':4}});
-      map.addLayer({id:'step-route-line',type:'line',source:'step-route',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#d9b67e','line-width':2.5,'line-dasharray':[2,3]}});
-    }
+    var withCoords=[];
+    day.steps.forEach(function(s,k){if(s.c)withCoords.push({s:s,k:k});});
+    if(!withCoords.length)return;
+    var coords=withCoords.map(function(w){return w.s.c;});
+    var typeCol={transport:'var(--tertiary-soft)',logement:'var(--accent)',restaurant:'var(--tan)',activite:'var(--accent)',autre:'var(--faint)'};
+
+    /* ── Marqueurs d'étape ── */
+    withCoords.forEach(function(w,idx){
+      var s=w.s;
+      var label=s.l||'';
+      var el=document.createElement('div');
+      el.style.cssText='position:relative;cursor:pointer;';
+
+      /* Pastille numérotée */
+      var dot=document.createElement('div');
+      dot.style.cssText='width:24px;height:24px;border-radius:50%;background:var(--card);border:2.5px solid var(--accent);color:var(--accent);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:11px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.2);transition:all .2s;';
+      if(s.t==='transport')dot.style.borderColor='var(--tertiary-soft)';
+      if(s.t==='restaurant')dot.style.borderColor='var(--tan)';
+      dot.textContent=String(idx+1);
+      el.appendChild(dot);
+
+      /* Tooltip (nom de l'étape) */
+      var tip=document.createElement('div');
+      tip.style.cssText='position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);white-space:nowrap;padding:5px 10px;border-radius:8px;font-size:11px;font-weight:700;color:var(--text);pointer-events:none;opacity:0;transition:opacity .2s;z-index:10;';
+      tip.className='mv-glass';
+      tip.textContent=label;
+      el.appendChild(tip);
+
+      el.onmouseenter=function(){dot.style.transform='scale(1.25)';dot.style.background='var(--accent)';dot.style.color='var(--accent-ink)';tip.style.opacity='1';};
+      el.onmouseleave=function(){dot.style.transform='none';dot.style.background='var(--card)';dot.style.color='var(--accent)';tip.style.opacity='0';};
+      el.onclick=function(e){e.stopPropagation();if(s.c)map.flyTo({center:s.c,zoom:Math.max(map.getZoom(),16),duration:1200});};
+
+      var m=new maplibregl.Marker({element:el,anchor:'center'}).setLngLat(s.c).addTo(map);
+      markersRef.current.step.push(m);
+    });
+
+    if(coords.length<2)return;
+
+    /* ── Tracé droit immédiat (fallback) ── */
+    map.addSource('step-route',{type:'geojson',data:{type:'Feature',geometry:{type:'LineString',coordinates:coords}}});
+    map.addLayer({id:'step-route-glow',type:'line',source:'step-route',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#d9b67e','line-width':5,'line-opacity':0.15,'line-blur':3}});
+    map.addLayer({id:'step-route-line',type:'line',source:'step-route',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#d9b67e','line-width':2.5,'line-opacity':0.9}});
+
+    /* ── Route réelle + temps de trajet (API directions) ── */
+    var coordStr=coords.map(function(c){return c[0]+','+c[1];}).join(';');
+    fetch('https://api.maptiler.com/directions/v1/driving/'+coordStr+'?key='+MT_KEY+'&geometries=geojson&overview=full')
+      .then(function(r){return r.json();})
+      .then(function(data){
+        if(!data.routes||!data.routes[0])return;
+        var route=data.routes[0];
+
+        /* Remplacer le tracé droit par la route réelle */
+        var src=map.getSource('step-route');
+        if(src)src.setData({type:'Feature',geometry:route.geometry});
+
+        /* Labels temps/distance entre chaque paire d'étapes */
+        if(!route.legs)return;
+        route.legs.forEach(function(leg,i){
+          if(i>=coords.length-1)return;
+          var mid=[
+            (coords[i][0]+coords[i+1][0])/2,
+            (coords[i][1]+coords[i+1][1])/2
+          ];
+          var labelEl=document.createElement('div');
+          labelEl.className='mv-glass';
+          labelEl.style.cssText='padding:4px 10px;border-radius:999px;font-size:10.5px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:5px;white-space:nowrap;pointer-events:none;';
+          labelEl.innerHTML='<span style="color:var(--accent)">'+fmtDuration(leg.duration)+'</span><span style="color:var(--faint)">\u00b7 '+fmtDistKm(leg.distance)+'</span>';
+
+          var labelM=new maplibregl.Marker({element:labelEl,anchor:'center'}).setLngLat(mid).addTo(map);
+          markersRef.current.step.push(labelM);
+        });
+      })
+      .catch(function(e){console.warn('Directions API err:',e);});
   }
 
   // ── Cards ──

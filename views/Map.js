@@ -227,8 +227,6 @@ function MapView(){
           markersRef.current.step.push(pm);
         });
       })+'</div></div></div>';
-
-      .catch(function(e){console.warn('Directions:',e);});
   }
 
   // ── Cards ──

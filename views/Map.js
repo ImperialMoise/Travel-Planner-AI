@@ -55,7 +55,10 @@ const MV_CSS=`
 .mv-card .mv-hero-pill{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:700;margin-bottom:5px;text-shadow:0 1px 6px rgba(0,0,0,.5)}
 .mv-card .mv-hj{font-family:var(--font-serif);font-style:italic;font-size:28px;line-height:.82;text-shadow:0 2px 12px rgba(0,0,0,.5)}
 .mv-card .mv-hn{font-family:var(--font-serif);font-style:italic;font-size:17.5px;line-height:1.05;text-shadow:0 2px 10px rgba(0,0,0,.55)}
-.mv-card-body{padding:13px 15px 15px}
+.mv-card-body{padding:13px 15px 15px;max-height:220px;overflow-y:auto}
+.mv-card-body.expanded{max-height:none}
+.mv-card-body::-webkit-scrollbar{width:3px}
+.mv-card-body::-webkit-scrollbar-thumb{background:var(--outline-variant);border-radius:3px}
 .mv-card-note{font-size:12px;color:var(--muted);font-style:italic;line-height:1.5;margin-bottom:11px}
 .mv-step-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line2);cursor:pointer}
 .mv-step-row:last-child{border-bottom:none}
@@ -229,7 +232,7 @@ function MapView(){
 
   // ── Cards ──
   function renderWelcome(){if(!cardRef.current)return;cardRef.current.innerHTML='<div class="mv-card"><div class="mv-welcome-pad"><div style="font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--accent)">Le voyage</div><div style="font-family:var(--font-serif);font-style:italic;font-size:24px;margin-top:3px;color:var(--text)">'+T.name+'</div><div class="mv-welcome-line">Un fil d\'or relie chaque étape. Cliquez un jour pour plonger du globe jusqu\'au niveau des rues.</div><div class="mv-legend"><div class="mv-lg-row"><span class="mv-lg-dot" style="background:var(--accent)"></span>Séoul & environs</div><div class="mv-lg-row"><span class="mv-lg-dot" style="background:#c98a3c"></span>Busan, l\'échappée du Sud</div><div class="mv-lg-row"><span class="mv-lg-dot" style="background:var(--card);border-color:var(--faint)"></span>Vols Paris ⇄ Séoul</div></div></div></div>';}
-  function renderDayCard(i){if(!cardRef.current)return;const d=T.days[i];const rc=mvRegClass(d.region);const pc=d.region==='Busan'?'#c98a3c':d.region==='Vol'?'var(--faint)':'var(--accent)';let rows='';d.steps.forEach((s,k)=>{rows+='<div class="mv-step-row" data-si="'+k+'"><div class="mv-step-ic">'+mvSvg(mvStepIcon(s),16)+'</div><div style="flex:1;min-width:0"><div class="mv-step-name">'+s.l+'</div><div class="mv-step-sub">'+(s.s||'')+'</div></div><div class="mv-step-time">'+(s.time||'')+'</div></div>';});cardRef.current.innerHTML='<div class="mv-card '+rc+'"><div class="mv-hero"><div class="mv-hero-ov"></div><div class="mv-hero-tag">'+d.tag+'</div><div class="mv-hero-cap"><div class="mv-hero-pill"><span class="pdot" style="background:'+pc+'"></span>'+d.wd+' '+mvFmtDate(d.date)+' · '+d.region+'</div><div style="display:flex;align-items:flex-end;gap:9px"><span class="mv-hj">J'+d.n+'</span><span class="mv-hn">'+d.title+'</span></div></div></div><div class="mv-card-body">'+(d.note?'<div class="mv-card-note">'+d.note+'</div>':'')+rows+'<div class="mv-card-foot"><button id="mv-fly-btn">'+mvSvg('route',14)+'Recadrer</button></div></div></div>';const map=mapRef.current;cardRef.current.querySelectorAll('.mv-step-row').forEach(r=>{r.addEventListener('click',()=>{const s=d.steps[+r.dataset.si];if(s.c&&map)map.flyTo({center:s.c,zoom:Math.max(map.getZoom(),15.5),duration:1400});});});const fb=document.getElementById('mv-fly-btn');if(fb)fb.addEventListener('click',()=>flyDay(i));/* Auto-image */if(window.fetchAutoImage){var imgKey='hero_img_mv_'+i;var cached=localStorage.getItem(imgKey);function applyImg(url){var hero=cardRef.current&&cardRef.current.querySelector('.mv-hero');if(hero){hero.style.backgroundImage='url('+url+')';hero.style.backgroundSize='cover';hero.style.backgroundPosition='center';}}if(cached){try{applyImg(JSON.parse(cached).url);}catch(e){}}else{var q=d.title+(d.region&&d.region!=='Vol'?' '+d.region:'');fetchAutoImage(q).then(function(result){if(result&&result.url){localStorage.setItem(imgKey,JSON.stringify(result));applyImg(result.url);}});}}}
+  function renderDayCard(i){if(!cardRef.current)return;const d=T.days[i];const rc=mvRegClass(d.region);const pc=d.region==='Busan'?'#c98a3c':d.region==='Vol'?'var(--faint)':'var(--accent)';let rows='';d.steps.forEach((s,k)=>{rows+='<div class="mv-step-row" data-si="'+k+'"><div class="mv-step-ic">'+mvSvg(mvStepIcon(s),16)+'</div><div style="flex:1;min-width:0"><div class="mv-step-name">'+s.l+'</div><div class="mv-step-sub">'+(s.s||'')+'</div></div><div class="mv-step-time">'+(s.time||'')+'</div></div>';});cardRef.current.innerHTML='<div class="mv-card '+rc+'"><div class="mv-hero"><div class="mv-hero-ov"></div><div class="mv-hero-tag">'+d.tag+'</div><div class="mv-hero-cap"><div class="mv-hero-pill"><span class="pdot" style="background:'+pc+'"></span>'+d.wd+' '+mvFmtDate(d.date)+' · '+d.region+'</div><div style="display:flex;align-items:flex-end;gap:9px"><span class="mv-hj">J'+d.n+'</span><span class="mv-hn">'+d.title+'</span></div></div></div><div class="mv-card-body">'+(d.note?'<div class="mv-card-note">'+d.note+'</div>':'')+rows+'<div class="mv-card-foot"><button id="mv-fly-btn">'+mvSvg('route',14)+'Recadrer</button>'+(d.steps.length>3?'<button id="mv-expand-btn">'+mvSvg('chevdown',12)+'Tout voir ('+d.steps.length+')</button>':'')+'</div>'</div></div>';const map=mapRef.current;cardRef.current.querySelectorAll('.mv-step-row').forEach(r=>{r.addEventListener('click',()=>{const s=d.steps[+r.dataset.si];if(s.c&&map)map.flyTo({center:s.c,zoom:Math.max(map.getZoom(),15.5),duration:1400});});});const fb=document.getElementById('mv-fly-btn');if(fb)fb.addEventListener('click',()=>flyDay(i));const eb=document.getElementById('mv-expand-btn');const cbody=cardRef.current.querySelector('.mv-card-body');if(eb&&cbody){eb.addEventListener('click',function(){var ex=cbody.classList.toggle('expanded');eb.innerHTML=ex?(mvSvg('chevdown',12)+'Replier'):(mvSvg('chevdown',12)+'Tout voir ('+d.steps.length+')');if(ex)eb.querySelector('svg').style.transform='rotate(180deg)';});}/* Auto-image */if(window.fetchAutoImage){var imgKey='hero_img_mv_'+i;var cached=localStorage.getItem(imgKey);function applyImg(url){var hero=cardRef.current&&cardRef.current.querySelector('.mv-hero');if(hero){hero.style.backgroundImage='url('+url+')';hero.style.backgroundSize='cover';hero.style.backgroundPosition='center';}}if(cached){try{applyImg(JSON.parse(cached).url);}catch(e){}}else{var q=d.title+(d.region&&d.region!=='Vol'?' '+d.region:'');fetchAutoImage(q).then(function(result){if(result&&result.url){localStorage.setItem(imgKey,JSON.stringify(result));applyImg(result.url);}});}}}
 
   // ── Navigation ──
   function flyDay(i){const map=mapRef.current;if(!map)return;const d=T.days[i];var pts=d.steps.filter(function(s){return s.c;}).map(function(s){return s.c;});if(pts.length>1){var b=new maplibregl.LngLatBounds();pts.forEach(function(p){b.extend(p);});map.fitBounds(b,{padding:{top:80,bottom:140,left:60,right:60},pitch:42,bearing:0,duration:2200,maxZoom:15.5});}else{map.flyTo({center:d.c,zoom:d.z,pitch:d.region==='Vol'?0:42,bearing:0,duration:2200,curve:1.5,essential:true});}}
@@ -269,6 +272,38 @@ function MapView(){
 
   if(!trip)return null;
   const segBtn=(on)=>({border:'none',cursor:'pointer',padding:'7px 14px',borderRadius:9,fontSize:12.5,fontWeight:700,fontFamily:'inherit',background:on?'var(--accent)':'transparent',color:on?'var(--accent-ink)':'var(--muted)',transition:'all .15s'});
+
+  /* ── Route calculée depuis la Toolbox ── */
+  const {mapRoute}=Store.useStore();
+  const prevRouteRef=React.useRef(null);
+  React.useEffect(()=>{
+    const map=mapRef.current;
+    if(!map||!mapRoute||mapRoute===prevRouteRef.current)return;
+    prevRouteRef.current=mapRoute;
+    /* Nettoyer l'ancienne route calculée */
+    try{map.removeLayer('calc-route-glow');}catch(e){}
+    try{map.removeLayer('calc-route-line');}catch(e){}
+    try{map.removeSource('calc-route');}catch(e){}
+    /* Marqueurs A et B */
+    if(window._calcMarkers){window._calcMarkers.forEach(function(m){m.remove();});} window._calcMarkers=[];
+    function makeLabel(text,col,coords){
+      var el=document.createElement('div');
+      el.style.cssText='padding:5px 12px;border-radius:999px;font-size:11px;font-weight:700;color:#fff;background:'+col+';box-shadow:0 2px 8px rgba(0,0,0,.2);';
+      el.textContent=text;
+      var m=new maplibregl.Marker({element:el,anchor:'center'}).setLngLat(coords).addTo(map);
+      window._calcMarkers.push(m);
+    }
+    makeLabel('A','#597b72',mapRoute.from);
+    makeLabel('B','#7c5410',mapRoute.to);
+    /* Dessiner la route */
+    map.addSource('calc-route',{type:'geojson',data:{type:'Feature',geometry:mapRoute.geometry}});
+    map.addLayer({id:'calc-route-glow',type:'line',source:'calc-route',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#597b72','line-width':8,'line-opacity':0.15,'line-blur':4}});
+    map.addLayer({id:'calc-route-line',type:'line',source:'calc-route',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#597b72','line-width':3.5,'line-opacity':0.9}});
+    /* Cadrer la vue */
+    var b=new maplibregl.LngLatBounds();b.extend(mapRoute.from);b.extend(mapRoute.to);
+    spinRef.current=false;
+    map.fitBounds(b,{padding:{top:80,bottom:80,left:60,right:60},duration:1800,maxZoom:15});
+  },[mapRoute]);
 
   // Curseur pointeur sur les POIs
   React.useEffect(()=>{

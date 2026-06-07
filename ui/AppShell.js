@@ -259,7 +259,7 @@ function Toolbox() {
 
   const DEFAULTS = {
     itinerary: ['checklist', 'note', 'stats'],
-    map: ['checklist'],
+    map: ['calc', 'checklist'],
     budget: ['stats', 'note'],
     docs: ['checklist', 'note']
   };
@@ -272,6 +272,56 @@ function Toolbox() {
   const [pinned, setPinned] = React.useState(() => loadPins(view));
   const [editMode, setEditMode] = React.useState(false);
   const [done, setDone] = React.useState({});
+  /* ── Calculateur d'itinéraire ── */
+  const [calcFrom, setCalcFrom] = React.useState('');
+  const [calcTo, setCalcTo] = React.useState('');
+  const [calcFromCoords, setCalcFromCoords] = React.useState(null);
+  const [calcToCoords, setCalcToCoords] = React.useState(null);
+  const [calcMode, setCalcMode] = React.useState('driving');
+  const [calcResult, setCalcResult] = React.useState(null);
+  const [calcBusy, setCalcBusy] = React.useState(false);
+
+  function calcUseMyPos(which) {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(function(pos) {
+      var c = [pos.coords.longitude, pos.coords.latitude];
+      if (which === 'from') { setCalcFrom('Ma position'); setCalcFromCoords(c); }
+      else { setCalcTo('Ma position'); setCalcToCoords(c); }
+    }, function() { alert('Impossible de vous localiser.'); }, { enableHighAccuracy: true, timeout: 8000 });
+  }
+
+  async function calcGeocode(text) {
+    var r = await fetch('https://api.maptiler.com/geocoding/' + encodeURIComponent(text) + '.json?key=08IwMKKAkP3BQJss5poF&language=fr&limit=1');
+    var j = await r.json();
+    if (j.features && j.features[0]) return j.features[0].center;
+    return null;
+  }
+
+  async function calcRoute() {
+    if (!calcFrom.trim() || !calcTo.trim()) return;
+    setCalcBusy(true); setCalcResult(null);
+    try {
+      var from = calcFromCoords || (await calcGeocode(calcFrom));
+      var to = calcToCoords || (await calcGeocode(calcTo));
+      if (!from || !to) { alert('Lieu introuvable.'); setCalcBusy(false); return; }
+      setCalcFromCoords(from); setCalcToCoords(to);
+      var mode = calcMode === 'transit' ? 'driving' : calcMode;
+      var r = await fetch('https://api.maptiler.com/directions/v1/' + mode + '/' + from[0] + ',' + from[1] + ';' + to[0] + ',' + to[1] + '?key=08IwMKKAkP3BQJss5poF&geometries=geojson&overview=full');
+      var data = await r.json();
+      if (!data.routes || !data.routes[0]) { alert('Aucun itin\u00e9raire trouv\u00e9.'); setCalcBusy(false); return; }
+      var route = data.routes[0];
+      var dur = route.duration;
+      var dist = route.distance;
+      setCalcResult({ duration: dur, distance: dist, geometry: route.geometry, from: from, to: to, mode: calcMode });
+    } catch (e) { alert('Erreur : ' + e.message); }
+    setCalcBusy(false);
+  }
+
+  function calcShowOnMap() {
+    if (!calcResult) return;
+    Store.set({ mapRoute: calcResult });
+    Store.set({ view: 'map' });
+  }
 
   React.useEffect(() => { setPinned(loadPins(view)); setEditMode(false); }, [view]);
 
@@ -349,6 +399,128 @@ function Toolbox() {
       );
     }},
 
+    calc: { label: 'Itin\u00e9raire', icon: 'route', render() {
+      var modes = [
+        { id: 'driving', label: 'Voiture', icon: 'car' },
+        { id: 'walking', label: '\u00c0 pied', icon: 'walk' },
+        { id: 'cycling', label: 'V\u00e9lo', icon: 'route' }
+      ];
+      var durTxt = '';
+      var distTxt = '';
+      if (calcResult) {
+        var d = calcResult.duration;
+        var m = calcResult.distance;
+        durTxt = d < 60 ? '< 1 min' : d < 3600 ? Math.round(d / 60) + ' min' : Math.floor(d / 3600) + 'h' + String(Math.round((d % 3600) / 60)).padStart(2, '0');
+        distTxt = m < 1000 ? Math.round(m) + ' m' : (m / 1000).toFixed(1) + ' km';
+      }
+      return (
+        <WidgetShell key="calc" id="calc" title={'Itin\u00e9raire'} icon="route" iconColor="var(--tertiary)">
+          {/* Point A */}
+          <div style={{ marginBottom: 10 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--faint)', marginBottom: 4 }}>D{'\u00e9'}part</div>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <input
+                value={calcFrom}
+                onChange={e => { setCalcFrom(e.target.value); setCalcFromCoords(null); setCalcResult(null); }}
+                placeholder="Adresse, lieu..."
+                style={{ flex: 1, padding: '8px 10px', borderRadius: 8, border: '1px solid var(--outline-variant)', background: 'var(--inset)', color: 'var(--text)', fontFamily: 'inherit', fontSize: 13, outline: 'none' }}
+              />
+              <button
+                onClick={() => calcUseMyPos('from')}
+                title="Ma position"
+                style={{ width: 34, height: 34, borderRadius: 8, border: '1px solid var(--outline-variant)', background: 'var(--inset)', color: 'var(--accent)', cursor: 'pointer', display: 'grid', placeItems: 'center', flexShrink: 0 }}
+              ><Icon name="pin" size={14} /></button>
+            </div>
+          </div>
+
+          {/* Point B */}
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--faint)', marginBottom: 4 }}>Arriv{'\u00e9'}e</div>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <input
+                value={calcTo}
+                onChange={e => { setCalcTo(e.target.value); setCalcToCoords(null); setCalcResult(null); }}
+                placeholder="Adresse, lieu..."
+                style={{ flex: 1, padding: '8px 10px', borderRadius: 8, border: '1px solid var(--outline-variant)', background: 'var(--inset)', color: 'var(--text)', fontFamily: 'inherit', fontSize: 13, outline: 'none' }}
+              />
+              <button
+                onClick={() => calcUseMyPos('to')}
+                title="Ma position"
+                style={{ width: 34, height: 34, borderRadius: 8, border: '1px solid var(--outline-variant)', background: 'var(--inset)', color: 'var(--accent)', cursor: 'pointer', display: 'grid', placeItems: 'center', flexShrink: 0 }}
+              ><Icon name="pin" size={14} /></button>
+            </div>
+          </div>
+
+          {/* Mode de transport */}
+          <div style={{ display: 'flex', gap: 4, marginBottom: 12 }}>
+            {modes.map(m => (
+              <button
+                key={m.id}
+                onClick={() => { setCalcMode(m.id); setCalcResult(null); }}
+                style={{
+                  flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
+                  padding: '8px 4px', borderRadius: 10, cursor: 'pointer',
+                  border: calcMode === m.id ? '2px solid var(--accent)' : '1px solid var(--outline-variant)',
+                  background: calcMode === m.id ? 'var(--accent-soft)' : 'var(--inset)',
+                  color: calcMode === m.id ? 'var(--accent)' : 'var(--muted)',
+                  fontSize: 10, fontWeight: 700, fontFamily: 'inherit'
+                }}
+              >
+                <Icon name={m.icon} size={16} />
+                {m.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Bouton calculer */}
+          <button
+            onClick={calcRoute}
+            disabled={calcBusy || !calcFrom.trim() || !calcTo.trim()}
+            style={{
+              width: '100%', padding: '10px 0', borderRadius: 10,
+              border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+              fontSize: 13, fontWeight: 700,
+              background: (!calcFrom.trim() || !calcTo.trim()) ? 'var(--outline-variant)' : 'var(--accent)',
+              color: (!calcFrom.trim() || !calcTo.trim()) ? 'var(--faint)' : 'var(--accent-ink)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              transition: 'all .2s'
+            }}
+          >
+            <Icon name="route" size={14} />
+            {calcBusy ? 'Calcul en cours\u2026' : 'Calculer'}
+          </button>
+
+          {/* Résultat */}
+          {calcResult && (
+            <div style={{ marginTop: 12 }}>
+              <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
+                <div style={{ flex: 1, background: 'var(--inset)', borderRadius: 10, padding: '10px 12px', textAlign: 'center' }}>
+                  <div style={{ fontFamily: 'var(--font-serif)', fontSize: 22, lineHeight: 1, color: 'var(--accent)' }}>{durTxt}</div>
+                  <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 4 }}>dur{'\u00e9'}e</div>
+                </div>
+                <div style={{ flex: 1, background: 'var(--inset)', borderRadius: 10, padding: '10px 12px', textAlign: 'center' }}>
+                  <div style={{ fontFamily: 'var(--font-serif)', fontSize: 22, lineHeight: 1, color: 'var(--text)' }}>{distTxt}</div>
+                  <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 4 }}>distance</div>
+                </div>
+              </div>
+              <button
+                onClick={calcShowOnMap}
+                style={{
+                  width: '100%', padding: '10px 0', borderRadius: 10,
+                  border: '1px solid var(--accent)', cursor: 'pointer', fontFamily: 'inherit',
+                  fontSize: 13, fontWeight: 700,
+                  background: 'transparent', color: 'var(--accent)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
+                }}
+              >
+                <Icon name="map" size={14} />
+                Afficher sur la carte
+              </button>
+            </div>
+          )}
+        </WidgetShell>
+      );
+    }},
     stats: { label: 'Rep\u00e8res du jour', icon: 'route', render() {
       return (
         <WidgetShell key="stats" id="stats" title={'Rep\u00e8res du jour'} icon="route" iconColor="var(--accent)">
@@ -371,7 +543,7 @@ function Toolbox() {
     }}
   };
 
-  const ORDER = ['checklist', 'note', 'stats', 'people'];
+  const ORDER = ['calc', 'checklist', 'note', 'stats', 'people'];
   const unpinned = ORDER.filter(id => pinned.indexOf(id) === -1);
 
   return (

@@ -153,7 +153,7 @@ function MapView(){
   }
 
   // ── Markers ──
-  function buildDayMarkers(map){T.days.forEach((d,i)=>{const el=document.createElement('div');el.className='mv-pin '+mvRegClass(d.region);el.innerHTML='<div class="badge">'+d.n+'</div>';el.addEventListener('click',e=>{e.stopPropagation();doSelect(i,true);});const m=new maplibregl.Marker({element:el,anchor:'center'}).setLngLat(d.c).addTo(map);markersRef.current.day.push({m,el});});}
+  function buildDayMarkers(map){T.days.forEach((d,i)=>{const el=document.createElement('div');el.className='mv-pin '+mvRegClass(d.region);el.innerHTML='<div class="badge">'+d.n+'</div>';el.addEventListener('click',e=>{e.stopPropagation();var pick=Store.get().mapPickMode;if(pick){Store.set({mapPickResult:{field:pick,text:d.city+' (J'+d.n+')',coords:d.c},mapPickMode:null});return;}doSelect(i,true);});const m=new maplibregl.Marker({element:el,anchor:'center'}).setLngLat(d.c).addTo(map);markersRef.current.day.push({m,el});});}
   function clearStepMarkers(){markersRef.current.step.forEach(m=>m.remove());markersRef.current.step=[];const map=mapRef.current;if(map){try{map.removeLayer('step-route-glow');}catch(e){}try{map.removeLayer('step-route-line');}catch(e){}try{map.removeSource('step-route');}catch(e){}}}
   function showStepMarkers(map,day){
     clearStepMarkers();
@@ -186,7 +186,7 @@ function MapView(){
       lbl.textContent=s.l||'';
       pin.appendChild(lbl);
 
-      pin.onclick=function(e){e.stopPropagation();map.flyTo({center:s.c,zoom:Math.max(map.getZoom(),16),duration:1200});};
+      pin.onclick=function(e){e.stopPropagation();var pick=Store.get().mapPickMode;if(pick){Store.set({mapPickResult:{field:pick,text:s.l||'Point',coords:s.c},mapPickMode:null});return;}map.flyTo({center:s.c,zoom:Math.max(map.getZoom(),16),duration:1200});};
 
       var m=new maplibregl.Marker({element:pin,anchor:'center'}).setLngLat(s.c).addTo(map);
       markersRef.current.step.push(m);
@@ -196,13 +196,13 @@ function MapView(){
 
     /* ── Tracé droit (instantané) ── */
     map.addSource('step-route',{type:'geojson',data:{type:'Feature',geometry:{type:'LineString',coordinates:coords}}});
-    map.addLayer({id:'step-route-glow',type:'line',source:'step-route',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#d9b67e','line-width':7,'line-opacity':0.12,'line-blur':4}});
-    map.addLayer({id:'step-route-line',type:'line',source:'step-route',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#b4843e','line-width':2.5,'line-opacity':0.85}});
+    map.addLayer({id:'step-route-glow',type:'line',source:'step-route',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#e67e22','line-width':12,'line-opacity':0.25,'line-blur':5}});
+    map.addLayer({id:'step-route-line',type:'line',source:'step-route',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#e67e22','line-width':4.5,'line-opacity':0.95}});
 
     /* ── Route réelle + pilules temps/distance ── */
     var pairMode=coords.length<=6?'driving':'driving';
     var coordStr=coords.map(function(c){return c[0]+','+c[1];}).join(';');
-    fetch('https://router.project-osrm.org/route/v1/car/'+coordStr+'?overview=full&geometries=geojson')
+    fetch('https://routing.openstreetmap.de/routed-foot/route/v1/driving/'+coordStr+'?overview=full&geometries=geojson')
       .then(function(r){return r.json();})
       .then(function(data){
         if(!data.routes||!data.routes[0])return;
@@ -310,12 +310,12 @@ function MapView(){
       var m=new maplibregl.Marker({element:el,anchor:'center'}).setLngLat(coords).addTo(map);
       window._calcMarkers.push(m);
     }
-    makeLabel('A','#597b72',mapRoute.from);
-    makeLabel('B','#7c5410',mapRoute.to);
+    makeLabel('A','#2563eb',mapRoute.from);
+    makeLabel('B','#dc2626',mapRoute.to);
     /* Dessiner la route */
     map.addSource('calc-route',{type:'geojson',data:{type:'Feature',geometry:mapRoute.geometry}});
-    map.addLayer({id:'calc-route-glow',type:'line',source:'calc-route',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#597b72','line-width':8,'line-opacity':0.15,'line-blur':4}});
-    map.addLayer({id:'calc-route-line',type:'line',source:'calc-route',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#597b72','line-width':3.5,'line-opacity':0.9}});
+    map.addLayer({id:'calc-route-glow',type:'line',source:'calc-route',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#2563eb','line-width':14,'line-opacity':0.2,'line-blur':6}});
+    map.addLayer({id:'calc-route-line',type:'line',source:'calc-route',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#2563eb','line-width':5,'line-opacity':0.9}});
     /* Cadrer la vue */
     var b=new maplibregl.LngLatBounds();b.extend(mapRoute.from);b.extend(mapRoute.to);
     spinRef.current=false;

@@ -393,8 +393,8 @@ function Toolbox() {
       }
       var allPts = [from].concat(resolvedStops).concat([to]);
       var coordStr = allPts.map(function(c) { return c[0] + ',' + c[1]; }).join(';');
-      var osrmMode = { driving: 'car', walking: 'foot', cycling: 'bicycle' }[calcMode] || 'car';
-      var r = await fetch('https://router.project-osrm.org/route/v1/' + osrmMode + '/' + coordStr + '?overview=full&geometries=geojson');
+      var osrmServer = { driving: 'routed-car', walking: 'routed-foot', cycling: 'routed-bike' }[calcMode] || 'routed-car';
+      var r = await fetch('https://routing.openstreetmap.de/' + osrmServer + '/route/v1/driving/' + coordStr + '?overview=full&geometries=geojson');
       var data = await r.json();
       if (!data.routes || !data.routes[0]) { alert('Aucun itin\u00e9raire trouv\u00e9.'); setCalcBusy(false); return; }
       var route = data.routes[0];

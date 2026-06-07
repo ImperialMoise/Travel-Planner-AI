@@ -78,6 +78,17 @@ const MV_CSS=`
 .mv-r-vol .badge{background:var(--faint)}
 .mv-pin:hover .badge{transform:scale(1.14)}
 .mv-pin.active .badge{transform:scale(1.22);box-shadow:0 0 0 5px var(--accent-soft),0 6px 16px rgba(0,0,0,.32)}
+.mv-pin.faded{opacity:.35;pointer-events:none;transition:opacity .5s}
+.mv-pin.faded .badge{transform:scale(.85)}
+.mv-step-pin{display:flex;flex-direction:column;align-items:center;cursor:pointer;pointer-events:auto}
+.mv-step-dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono,ui-monospace);font-size:12px;font-weight:700;box-shadow:0 2px 10px rgba(0,0,0,.25);transition:all .25s ease;position:relative}
+.mv-step-dot::after{content:'';position:absolute;inset:-4px;border-radius:50%;border:2px solid transparent;transition:border-color .25s}
+.mv-step-pin:hover .mv-step-dot{transform:scale(1.15)}
+.mv-step-pin:hover .mv-step-dot::after{border-color:var(--accent)}
+.mv-step-label{margin-top:4px;padding:3px 8px;border-radius:6px;font-size:10.5px;font-weight:700;color:var(--text);max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;opacity:0;transition:opacity .2s;pointer-events:none}
+.mv-step-pin:hover .mv-step-label{opacity:1}
+.mv-time-pill{padding:4px 10px;border-radius:999px;font-size:10px;font-weight:700;display:flex;align-items:center;gap:4px;white-space:nowrap;pointer-events:none;box-shadow:0 2px 8px rgba(0,0,0,.1)}
+@keyframes routeFlow{to{line-dashoffset:-20px}}
 .mv-ctrl{display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:13px;box-shadow:var(--shadow);overflow:hidden}
 .mv-ctrl button{width:42px;height:42px;border:none;background:transparent;color:var(--text);cursor:pointer;display:grid;place-items:center}
 .mv-ctrl button:hover{background:var(--accent-soft);color:var(--accent)}
@@ -144,78 +155,76 @@ function MapView(){
   function showStepMarkers(map,day){
     clearStepMarkers();
     var withCoords=[];
-    day.steps.forEach(function(s,k){if(s.c)withCoords.push({s:s,k:k});});
+    day.steps.forEach(function(s,k){if(s.c)withCoords.push({s:s,idx:k});});
     if(!withCoords.length)return;
     var coords=withCoords.map(function(w){return w.s.c;});
-    var typeCol={transport:'var(--tertiary-soft)',logement:'var(--accent)',restaurant:'var(--tan)',activite:'var(--accent)',autre:'var(--faint)'};
+    var borderCol={transport:'#597b72',logement:'#7c5410',restaurant:'#d9b67e',activite:'#7c5410',autre:'#827567'};
+    var bgCol={transport:'#edf5f2',logement:'#fdf6ec',restaurant:'#fdf3e0',activite:'#fdf6ec',autre:'#f2f0ed'};
 
     /* ── Marqueurs d'étape ── */
-    withCoords.forEach(function(w,idx){
+    withCoords.forEach(function(w,i){
       var s=w.s;
-      var label=s.l||'';
-      var el=document.createElement('div');
-      el.style.cssText='position:relative;cursor:pointer;';
+      var bc=borderCol[s.t]||'#7c5410';
+      var bg=bgCol[s.t]||'#fdf6ec';
 
-      /* Pastille numérotée */
+      var pin=document.createElement('div');
+      pin.className='mv-step-pin';
+
       var dot=document.createElement('div');
-      dot.style.cssText='width:24px;height:24px;border-radius:50%;background:var(--card);border:2.5px solid var(--accent);color:var(--accent);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:11px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.2);transition:all .2s;';
-      if(s.t==='transport')dot.style.borderColor='var(--tertiary-soft)';
-      if(s.t==='restaurant')dot.style.borderColor='var(--tan)';
-      dot.textContent=String(idx+1);
-      el.appendChild(dot);
+      dot.className='mv-step-dot';
+      dot.style.background=bg;
+      dot.style.border='2.5px solid '+bc;
+      dot.style.color=bc;
+      dot.textContent=String(i+1);
+      pin.appendChild(dot);
 
-      /* Tooltip (nom de l'étape) */
-      var tip=document.createElement('div');
-      tip.style.cssText='position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);white-space:nowrap;padding:5px 10px;border-radius:8px;font-size:11px;font-weight:700;color:var(--text);pointer-events:none;opacity:0;transition:opacity .2s;z-index:10;';
-      tip.className='mv-glass';
-      tip.textContent=label;
-      el.appendChild(tip);
+      var lbl=document.createElement('div');
+      lbl.className='mv-step-label mv-glass';
+      lbl.textContent=s.l||'';
+      pin.appendChild(lbl);
 
-      el.onmouseenter=function(){dot.style.transform='scale(1.25)';dot.style.background='var(--accent)';dot.style.color='var(--accent-ink)';tip.style.opacity='1';};
-      el.onmouseleave=function(){dot.style.transform='none';dot.style.background='var(--card)';dot.style.color='var(--accent)';tip.style.opacity='0';};
-      el.onclick=function(e){e.stopPropagation();if(s.c)map.flyTo({center:s.c,zoom:Math.max(map.getZoom(),16),duration:1200});};
+      pin.onclick=function(e){e.stopPropagation();map.flyTo({center:s.c,zoom:Math.max(map.getZoom(),16),duration:1200});};
 
-      var m=new maplibregl.Marker({element:el,anchor:'center'}).setLngLat(s.c).addTo(map);
+      var m=new maplibregl.Marker({element:pin,anchor:'center'}).setLngLat(s.c).addTo(map);
       markersRef.current.step.push(m);
     });
 
     if(coords.length<2)return;
 
-    /* ── Tracé droit immédiat (fallback) ── */
+    /* ── Tracé droit (instantané) ── */
     map.addSource('step-route',{type:'geojson',data:{type:'Feature',geometry:{type:'LineString',coordinates:coords}}});
-    map.addLayer({id:'step-route-glow',type:'line',source:'step-route',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#d9b67e','line-width':5,'line-opacity':0.15,'line-blur':3}});
-    map.addLayer({id:'step-route-line',type:'line',source:'step-route',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#d9b67e','line-width':2.5,'line-opacity':0.9}});
+    map.addLayer({id:'step-route-glow',type:'line',source:'step-route',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#d9b67e','line-width':7,'line-opacity':0.12,'line-blur':4}});
+    map.addLayer({id:'step-route-line',type:'line',source:'step-route',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#b4843e','line-width':2.5,'line-opacity':0.85}});
 
-    /* ── Route réelle + temps de trajet (API directions) ── */
+    /* ── Route réelle + pilules temps/distance ── */
+    var pairMode=coords.length<=6?'driving':'driving';
     var coordStr=coords.map(function(c){return c[0]+','+c[1];}).join(';');
-    fetch('https://api.maptiler.com/directions/v1/driving/'+coordStr+'?key='+MT_KEY+'&geometries=geojson&overview=full')
+    fetch('https://api.maptiler.com/directions/v1/'+pairMode+'/'+coordStr+'?key='+MT_KEY+'&geometries=geojson&overview=full&steps=false')
       .then(function(r){return r.json();})
       .then(function(data){
         if(!data.routes||!data.routes[0])return;
         var route=data.routes[0];
 
-        /* Remplacer le tracé droit par la route réelle */
+        /* Remplacer le tracé droit par la vraie route */
         var src=map.getSource('step-route');
         if(src)src.setData({type:'Feature',geometry:route.geometry});
 
-        /* Labels temps/distance entre chaque paire d'étapes */
+        /* Pilules temps + distance entre chaque paire */
         if(!route.legs)return;
         route.legs.forEach(function(leg,i){
           if(i>=coords.length-1)return;
-          var mid=[
-            (coords[i][0]+coords[i+1][0])/2,
-            (coords[i][1]+coords[i+1][1])/2
-          ];
-          var labelEl=document.createElement('div');
-          labelEl.className='mv-glass';
-          labelEl.style.cssText='padding:4px 10px;border-radius:999px;font-size:10.5px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:5px;white-space:nowrap;pointer-events:none;';
-          labelEl.innerHTML='<span style="color:var(--accent)">'+fmtDuration(leg.duration)+'</span><span style="color:var(--faint)">\u00b7 '+fmtDistKm(leg.distance)+'</span>';
-
-          var labelM=new maplibregl.Marker({element:labelEl,anchor:'center'}).setLngLat(mid).addTo(map);
-          markersRef.current.step.push(labelM);
+          var mid=[(coords[i][0]+coords[i+1][0])/2,(coords[i][1]+coords[i+1][1])/2];
+          var pill=document.createElement('div');
+          pill.className='mv-time-pill mv-glass';
+          var dur=leg.duration;var dist=leg.distance;
+          var durTxt=dur<60?'< 1 min':dur<3600?Math.round(dur/60)+' min':Math.floor(dur/3600)+'h'+String(Math.round((dur%3600)/60)).padStart(2,'0');
+          var distTxt=dist<1000?Math.round(dist)+' m':(dist/1000).toFixed(1)+' km';
+          pill.innerHTML='<span style="color:var(--accent)">'+durTxt+'</span><span style="color:var(--faint)">\u00b7</span><span style="color:var(--muted)">'+distTxt+'</span>';
+          var pm=new maplibregl.Marker({element:pill,anchor:'center'}).setLngLat(mid).addTo(map);
+          markersRef.current.step.push(pm);
         });
       })
-      .catch(function(e){console.warn('Directions API err:',e);});
+      .catch(function(e){console.warn('Directions:',e);});
   }
 
   // ── Cards ──
@@ -224,9 +233,9 @@ function MapView(){
 
   // ── Navigation ──
   function flyDay(i){const map=mapRef.current;if(!map)return;const d=T.days[i];var pts=d.steps.filter(function(s){return s.c;}).map(function(s){return s.c;});if(pts.length>1){var b=new maplibregl.LngLatBounds();pts.forEach(function(p){b.extend(p);});map.fitBounds(b,{padding:{top:80,bottom:140,left:60,right:60},pitch:42,bearing:0,duration:2200,maxZoom:15.5});}else{map.flyTo({center:d.c,zoom:d.z,pitch:d.region==='Vol'?0:42,bearing:0,duration:2200,curve:1.5,essential:true});}}
-  function doSelect(i,fly){spinRef.current=false;setSel(i);Store.set({selectedDayIndex:i});const map=mapRef.current;if(!map)return;markersRef.current.day.forEach((dm,k)=>dm.el.classList.toggle('active',k===i));showStepMarkers(map,T.days[i]);renderDayCard(i);if(fly)flyDay(i);}
-  function showGlobe(){spinRef.current=true;setSel(null);clearStepMarkers();markersRef.current.day.forEach(dm=>dm.el.classList.remove('active'));renderWelcome();const map=mapRef.current;if(!map)return;map.flyTo({center:[64,44],zoom:1.6,pitch:0,bearing:0,duration:2400,curve:1.4});setTimeout(()=>{if(spinRef.current)spinGlobe();},2500);}
-  function fitAll(){spinRef.current=false;setSel(null);clearStepMarkers();markersRef.current.day.forEach(dm=>dm.el.classList.remove('active'));renderWelcome();const map=mapRef.current;if(!map)return;const b=new maplibregl.LngLatBounds();T.days.forEach(d=>b.extend(d.c));map.fitBounds(b,{padding:90,duration:2000,pitch:0,bearing:0});}
+  function doSelect(i,fly){spinRef.current=false;setSel(i);Store.set({selectedDayIndex:i});const map=mapRef.current;if(!map)return;markersRef.current.day.forEach((dm,k)=>{dm.el.classList.toggle('active',k===i);dm.el.classList.toggle('faded',k!==i);});showStepMarkers(map,T.days[i]);renderDayCard(i);if(fly)flyDay(i);}
+  function showGlobe(){spinRef.current=true;setSel(null);clearStepMarkers();markersRef.current.day.forEach(dm=>{dm.el.classList.remove('active');dm.el.classList.remove('faded');});renderWelcome();const map=mapRef.current;if(!map)return;map.flyTo({center:[64,44],zoom:1.6,pitch:0,bearing:0,duration:2400,curve:1.4});setTimeout(()=>{if(spinRef.current)spinGlobe();},2500);}
+  function fitAll(){spinRef.current=false;setSel(null);clearStepMarkers();markersRef.current.day.forEach(dm=>{dm.el.classList.remove('active');dm.el.classList.remove('faded');});renderWelcome();const map=mapRef.current;if(!map)return;const b=new maplibregl.LngLatBounds();T.days.forEach(d=>b.extend(d.c));map.fitBounds(b,{padding:90,duration:2000,pitch:0,bearing:0});}
   function spinGlobe(){const map=mapRef.current;if(!map||!spinRef.current||map.getZoom()>3.2)return;const c=map.getCenter();c.lng-=.55;map.easeTo({center:c,duration:1300,easing:t=>t});}
 
   // ── Tour ──

@@ -202,7 +202,7 @@ function MapView(){
     /* ── Route réelle + pilules temps/distance ── */
     var pairMode=coords.length<=6?'driving':'driving';
     var coordStr=coords.map(function(c){return c[0]+','+c[1];}).join(';');
-    fetch('https://api.maptiler.com/directions/v1/'+pairMode+'/'+coordStr+'?key='+MT_KEY+'&geometries=geojson&overview=full&steps=false')
+    fetch('https://router.project-osrm.org/route/v1/car/'+coordStr+'?overview=full&geometries=geojson')
       .then(function(r){return r.json();})
       .then(function(data){
         if(!data.routes||!data.routes[0])return;

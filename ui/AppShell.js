@@ -3,6 +3,64 @@
 // Topbar (logo + sélecteur voyage + actions) + zone de vue.
 // ════════════════════════════════════════════════════════════
 
+// ─── Écran d'erreur ─────────────────────────────────────────
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error: error };
+  }
+  componentDidCatch(error, info) {
+    console.error('ErrorBoundary:', error, info);
+  }
+  render() {
+    if (!this.state.hasError) return this.props.children;
+    return React.createElement('div', { style: {
+      minHeight: '100vh', display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      background: 'radial-gradient(circle at center, var(--bg), var(--soft))',
+      padding: 24, textAlign: 'center'
+    } },
+      /* Compass SVG */
+      React.createElement('div', { style: { marginBottom: 48, opacity: 0.9, color: 'var(--petrol)', animation: 'errSpin 80s linear infinite' } },
+        React.createElement('svg', { width: 160, height: 160, viewBox: '0 0 160 160', fill: 'none', stroke: 'currentColor', strokeWidth: 1, strokeLinecap: 'round', strokeLinejoin: 'round' },
+          React.createElement('circle', { cx: 80, cy: 80, r: 75, strokeOpacity: 0.3 }),
+          React.createElement('circle', { cx: 80, cy: 80, r: 70 }),
+          React.createElement('circle', { cx: 80, cy: 80, r: 62, strokeDasharray: '2 6', strokeOpacity: 0.7 }),
+          React.createElement('path', { d: 'M80 5V25M80 135V155M5 80H25M135 80H155', strokeWidth: 1.5 }),
+          React.createElement('path', { d: 'M80 15L88 80L80 145L72 80Z', fill: 'currentColor', fillOpacity: 0.05, strokeWidth: 0.5 }),
+          React.createElement('path', { d: 'M80 15L88 80L80 80Z', fill: 'currentColor', fillOpacity: 0.8, stroke: 'none' }),
+          React.createElement('path', { d: 'M80 145L72 80L80 80Z', fill: 'currentColor', fillOpacity: 0.1, stroke: 'none' }),
+          React.createElement('circle', { cx: 80, cy: 80, r: 8, fill: 'var(--bg)', strokeWidth: 1.5 }),
+          React.createElement('circle', { cx: 80, cy: 80, r: 3, fill: 'currentColor' }))),
+      /* Texte */
+      React.createElement('div', { style: { fontSize: 11, fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 8 } }, 'Interruption de voyage'),
+      React.createElement('div', { style: { fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: 40, lineHeight: '48px', color: 'var(--petrol)', marginBottom: 16 } }, "L\u2019Atelier fait une pause"),
+      React.createElement('p', { style: { fontSize: 15.5, lineHeight: '22px', color: 'var(--muted)', maxWidth: 480, marginBottom: 32 } },
+        "Nous rencontrons un l\u00e9ger contretemps. Nos artisans travaillent \u00e0 r\u00e9tablir la connexion."),
+      /* Boutons */
+      React.createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: 12, width: 280 } },
+        React.createElement('button', { onClick: function() { window.location.reload(); }, style: {
+          width: '100%', padding: '14px 0', borderRadius: 999, border: 'none', cursor: 'pointer',
+          background: 'var(--tan)', color: 'var(--petrol)',
+          fontSize: 13, fontWeight: 600, fontFamily: 'inherit',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          boxShadow: '0 2px 8px rgba(0,0,0,.1)'
+        } }, '\u21bb Recharger la page'),
+        React.createElement('button', { onClick: function() { this.setState({ hasError: false, error: null }); }.bind(this), style: {
+          width: '100%', padding: '14px 0', borderRadius: 999, cursor: 'pointer',
+          background: 'transparent', color: 'var(--outline)',
+          border: '1px solid var(--outline-variant)',
+          fontSize: 13, fontWeight: 600, fontFamily: 'inherit',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
+        } }, 'Retenter sans recharger'))
+    );
+  }
+}
+window.ErrorBoundary = ErrorBoundary;
+
 function AppShell() {
   const { user, authReady, view, trips, activeTripId, trip, toast, settingsOpen } = Store.useStore();
 
@@ -335,8 +393,8 @@ function Toolbox() {
       }
       var allPts = [from].concat(resolvedStops).concat([to]);
       var coordStr = allPts.map(function(c) { return c[0] + ',' + c[1]; }).join(';');
-      var apiMode = calcMode === 'transit' ? 'driving' : calcMode;
-      var r = await fetch('https://api.maptiler.com/directions/v1/' + apiMode + '/' + coordStr + '?key=08IwMKKAkP3BQJss5poF&geometries=geojson&overview=full');
+      var osrmMode = { driving: 'car', walking: 'foot', cycling: 'bicycle' }[calcMode] || 'car';
+      var r = await fetch('https://router.project-osrm.org/route/v1/' + osrmMode + '/' + coordStr + '?overview=full&geometries=geojson');
       var data = await r.json();
       if (!data.routes || !data.routes[0]) { alert('Aucun itin\u00e9raire trouv\u00e9.'); setCalcBusy(false); return; }
       var route = data.routes[0];

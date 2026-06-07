@@ -71,5 +71,5 @@
   const root = document.getElementById('root');
   root.innerHTML = '';
   const reactRoot = ReactDOM.createRoot(root);
-  reactRoot.render(React.createElement(window.AppShell));
+  reactRoot.render(React.createElement(window.ErrorBoundary, null, React.createElement(window.AppShell)));
 })();

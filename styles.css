@@ -703,3 +703,5 @@ html.dark {
   --shadow: 0 3px 14px rgba(0,0,0,.3);
   --shadow-lg: 0 8px 24px rgba(0,0,0,.4);
 }
+
+@keyframes errSpin { to { transform: rotate(360deg); } }

@@ -140,11 +140,15 @@ function MapView(){
   function buildDayMarkers(map){T.days.forEach((d,i)=>{const el=document.createElement('div');el.className='mv-pin '+mvRegClass(d.region);el.innerHTML='<div class="badge">'+d.n+'</div>';el.addEventListener('click',e=>{e.stopPropagation();doSelect(i,true);});const m=new maplibregl.Marker({element:el,anchor:'center'}).setLngLat(d.c).addTo(map);markersRef.current.day.push({m,el});});}
   function clearStepMarkers(){markersRef.current.step.forEach(m=>m.remove());markersRef.current.step=[];const map=mapRef.current;if(map){try{map.removeLayer('step-route-glow');}catch(e){}try{map.removeLayer('step-route-line');}catch(e){}try{map.removeSource('step-route');}catch(e){}}}
   function showStepMarkers(map,day){
-  clearStepMarkers();
-  var coords=[];
-  var typeCol={transport:'#597b72',logement:'#7c5410',restaurant:'#d9b67e',activite:'#7c5410',autre:'#827567'};
-
-  day.steps.forEach(function(s,k){
+    clearStepMarkers();
+    var coords=[];
+    day.steps.forEach(function(s){if(s.c)coords.push(s.c);});
+    if(coords.length>1){
+      map.addSource('step-route',{type:'geojson',data:{type:'Feature',geometry:{type:'LineString',coordinates:coords}}});
+      map.addLayer({id:'step-route-glow',type:'line',source:'step-route',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#d9b67e','line-width':6,'line-opacity':0.18,'line-blur':4}});
+      map.addLayer({id:'step-route-line',type:'line',source:'step-route',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#d9b67e','line-width':2.5,'line-dasharray':[2,3]}});
+    }
+  }
     if(!s.c)return;
 
     coords.push(s.c);

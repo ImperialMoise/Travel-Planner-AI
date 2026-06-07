@@ -277,9 +277,25 @@ function Toolbox() {
   const [calcTo, setCalcTo] = React.useState('');
   const [calcFromCoords, setCalcFromCoords] = React.useState(null);
   const [calcToCoords, setCalcToCoords] = React.useState(null);
+  const [calcStops, setCalcStops] = React.useState([]);
   const [calcMode, setCalcMode] = React.useState('driving');
   const [calcResult, setCalcResult] = React.useState(null);
   const [calcBusy, setCalcBusy] = React.useState(false);
+  const [calcSugg, setCalcSugg] = React.useState({ field: null, items: [] });
+  const calcSearchRef = React.useRef(null);
+
+  function calcAutocomplete(text, fieldId) {
+    clearTimeout(calcSearchRef.current);
+    setCalcSugg({ field: null, items: [] });
+    if (!text || text.length < 2) return;
+    calcSearchRef.current = setTimeout(async () => {
+      try {
+        const r = await fetch('https://api.maptiler.com/geocoding/' + encodeURIComponent(text) + '.json?key=08IwMKKAkP3BQJss5poF&language=fr&limit=5');
+        const j = await r.json();
+        if (j.features && j.features.length) setCalcSugg({ field: fieldId, items: j.features });
+      } catch (e) {}
+    }, 350);
+  }
 
   function calcUseMyPos(which) {
     if (!navigator.geolocation) return;
@@ -305,22 +321,41 @@ function Toolbox() {
       var to = calcToCoords || (await calcGeocode(calcTo));
       if (!from || !to) { alert('Lieu introuvable.'); setCalcBusy(false); return; }
       setCalcFromCoords(from); setCalcToCoords(to);
-      var mode = calcMode === 'transit' ? 'driving' : calcMode;
-      var r = await fetch('https://api.maptiler.com/directions/v1/' + mode + '/' + from[0] + ',' + from[1] + ';' + to[0] + ',' + to[1] + '?key=08IwMKKAkP3BQJss5poF&geometries=geojson&overview=full');
+      // Résoudre les étapes intermédiaires
+      var resolvedStops = [];
+      for (var si = 0; si < calcStops.length; si++) {
+        var st = calcStops[si];
+        if (!st.text.trim()) continue;
+        var sc = st.coords || (await calcGeocode(st.text));
+        if (sc) resolvedStops.push(sc);
+      }
+      var allPts = [from].concat(resolvedStops).concat([to]);
+      var coordStr = allPts.map(function(c) { return c[0] + ',' + c[1]; }).join(';');
+      var apiMode = calcMode === 'transit' ? 'driving' : calcMode;
+      var r = await fetch('https://api.maptiler.com/directions/v1/' + apiMode + '/' + coordStr + '?key=08IwMKKAkP3BQJss5poF&geometries=geojson&overview=full');
       var data = await r.json();
       if (!data.routes || !data.routes[0]) { alert('Aucun itin\u00e9raire trouv\u00e9.'); setCalcBusy(false); return; }
       var route = data.routes[0];
-      var dur = route.duration;
-      var dist = route.distance;
-      setCalcResult({ duration: dur, distance: dist, geometry: route.geometry, from: from, to: to, mode: calcMode });
+      setCalcResult({ duration: route.duration, distance: route.distance, geometry: route.geometry, from: from, to: to, stops: resolvedStops, mode: calcMode });
     } catch (e) { alert('Erreur : ' + e.message); }
     setCalcBusy(false);
   }
 
   function calcShowOnMap() {
     if (!calcResult) return;
-    Store.set({ mapRoute: calcResult });
-    Store.set({ view: 'map' });
+    Store.set({ mapRoute: calcResult, view: 'map' });
+  }
+
+  function calcOpenGoogleMaps() {
+    if (!calcResult) return;
+    var origin = calcResult.from[1] + ',' + calcResult.from[0];
+    var dest = calcResult.to[1] + ',' + calcResult.to[0];
+    var gMode = { driving: 'driving', walking: 'walking', cycling: 'bicycling' }[calcResult.mode] || 'driving';
+    var url = 'https://www.google.com/maps/dir/?api=1&origin=' + origin + '&destination=' + dest + '&travelmode=' + gMode;
+    if (calcResult.stops && calcResult.stops.length > 0) {
+      url += '&waypoints=' + calcResult.stops.map(function(s) { return s[1] + ',' + s[0]; }).join('|');
+    }
+    window.open(url, '_blank');
   }
 
   React.useEffect(() => { setPinned(loadPins(view)); setEditMode(false); }, [view]);
@@ -405,89 +440,107 @@ function Toolbox() {
         { id: 'walking', label: '\u00c0 pied', icon: 'walk' },
         { id: 'cycling', label: 'V\u00e9lo', icon: 'route' }
       ];
-      var durTxt = '';
-      var distTxt = '';
+      var durTxt = '', distTxt = '';
       if (calcResult) {
-        var d = calcResult.duration;
-        var m = calcResult.distance;
+        var d = calcResult.duration, m = calcResult.distance;
         durTxt = d < 60 ? '< 1 min' : d < 3600 ? Math.round(d / 60) + ' min' : Math.floor(d / 3600) + 'h' + String(Math.round((d % 3600) / 60)).padStart(2, '0');
         distTxt = m < 1000 ? Math.round(m) + ' m' : (m / 1000).toFixed(1) + ' km';
       }
+
+      var inputStyle = { flex: 1, padding: '8px 10px', borderRadius: 8, border: '1px solid var(--outline-variant)', background: 'var(--inset)', color: 'var(--text)', fontFamily: 'inherit', fontSize: 13, outline: 'none' };
+      var gpsBtn = { width: 34, height: 34, borderRadius: 8, border: '1px solid var(--outline-variant)', background: 'var(--inset)', color: 'var(--accent)', cursor: 'pointer', display: 'grid', placeItems: 'center', flexShrink: 0 };
+
+      function renderSuggestions(fieldId, onPick) {
+        if (calcSugg.field !== fieldId || !calcSugg.items.length) return null;
+        return (
+          <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, borderRadius: 10, overflow: 'hidden', marginTop: 4, border: '1px solid var(--outline-variant)', background: 'var(--card)', boxShadow: 'var(--shadow-lg)', maxHeight: 180, overflowY: 'auto' }}>
+            {calcSugg.items.map((f, k) => (
+              <button key={k} onClick={() => { onPick(f.place_name || f.text, f.center); setCalcSugg({ field: null, items: [] }); }}
+                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', border: 'none', borderBottom: '1px solid var(--line2)', background: 'transparent', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left', color: 'var(--text)', fontSize: 12 }}
+                onMouseEnter={e => e.currentTarget.style.background = 'var(--accent-soft)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                <Icon name="pin" size={12} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+                <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.place_name || f.text}</span>
+              </button>
+            ))}
+          </div>
+        );
+      }
+
       return (
         <WidgetShell key="calc" id="calc" title={'Itin\u00e9raire'} icon="route" iconColor="var(--tertiary)">
           {/* Point A */}
-          <div style={{ marginBottom: 10 }}>
+          <div style={{ marginBottom: 10, position: 'relative' }}>
             <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--faint)', marginBottom: 4 }}>D{'\u00e9'}part</div>
             <div style={{ display: 'flex', gap: 6 }}>
-              <input
-                value={calcFrom}
-                onChange={e => { setCalcFrom(e.target.value); setCalcFromCoords(null); setCalcResult(null); }}
-                placeholder="Adresse, lieu..."
-                style={{ flex: 1, padding: '8px 10px', borderRadius: 8, border: '1px solid var(--outline-variant)', background: 'var(--inset)', color: 'var(--text)', fontFamily: 'inherit', fontSize: 13, outline: 'none' }}
-              />
-              <button
-                onClick={() => calcUseMyPos('from')}
-                title="Ma position"
-                style={{ width: 34, height: 34, borderRadius: 8, border: '1px solid var(--outline-variant)', background: 'var(--inset)', color: 'var(--accent)', cursor: 'pointer', display: 'grid', placeItems: 'center', flexShrink: 0 }}
-              ><Icon name="pin" size={14} /></button>
+              <input value={calcFrom}
+                onChange={e => { setCalcFrom(e.target.value); setCalcFromCoords(null); setCalcResult(null); calcAutocomplete(e.target.value, 'from'); }}
+                onFocus={e => { if (e.target.value.length >= 2) calcAutocomplete(e.target.value, 'from'); }}
+                placeholder="Adresse, lieu..." style={inputStyle} />
+              <button onClick={() => calcUseMyPos('from')} title="Ma position" style={gpsBtn}><Icon name="pin" size={14} /></button>
             </div>
+            {renderSuggestions('from', (text, coords) => { setCalcFrom(text); setCalcFromCoords(coords); })}
           </div>
+
+          {/* Étapes intermédiaires */}
+          {calcStops.map((stop, idx) => (
+            <div key={idx} style={{ marginBottom: 10, position: 'relative' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--faint)', marginBottom: 4 }}>{'\u00c9'}tape {idx + 1}</div>
+                <button onClick={() => setCalcStops(s => s.filter((_, i) => i !== idx))}
+                  style={{ border: 'none', background: 'transparent', color: 'var(--faint)', cursor: 'pointer', fontSize: 14, lineHeight: 1, padding: 2 }}>{'\u00d7'}</button>
+              </div>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <input value={stop.text}
+                  onChange={e => { var v = e.target.value; setCalcStops(s => s.map((st, i) => i === idx ? { text: v, coords: null } : st)); setCalcResult(null); calcAutocomplete(v, 'stop-' + idx); }}
+                  onFocus={e => { if (e.target.value.length >= 2) calcAutocomplete(e.target.value, 'stop-' + idx); }}
+                  placeholder="Adresse, lieu..." style={inputStyle} />
+                <button onClick={() => calcUseMyPos('stop-' + idx)} title="Ma position" style={gpsBtn}><Icon name="pin" size={14} /></button>
+              </div>
+              {renderSuggestions('stop-' + idx, (text, coords) => { setCalcStops(s => s.map((st, i) => i === idx ? { text: text, coords: coords } : st)); })}
+            </div>
+          ))}
+
+          {/* Bouton ajouter étape */}
+          <button onClick={() => { setCalcStops(s => [...s, { text: '', coords: null }]); setCalcResult(null); }}
+            style={{ width: '100%', padding: '6px 0', marginBottom: 12, borderRadius: 8, border: '1px dashed var(--outline-variant)', background: 'transparent', color: 'var(--muted)', cursor: 'pointer', fontFamily: 'inherit', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+            <Icon name="plus" size={12} /> Ajouter une {'\u00e9'}tape
+          </button>
 
           {/* Point B */}
-          <div style={{ marginBottom: 12 }}>
+          <div style={{ marginBottom: 12, position: 'relative' }}>
             <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--faint)', marginBottom: 4 }}>Arriv{'\u00e9'}e</div>
             <div style={{ display: 'flex', gap: 6 }}>
-              <input
-                value={calcTo}
-                onChange={e => { setCalcTo(e.target.value); setCalcToCoords(null); setCalcResult(null); }}
-                placeholder="Adresse, lieu..."
-                style={{ flex: 1, padding: '8px 10px', borderRadius: 8, border: '1px solid var(--outline-variant)', background: 'var(--inset)', color: 'var(--text)', fontFamily: 'inherit', fontSize: 13, outline: 'none' }}
-              />
-              <button
-                onClick={() => calcUseMyPos('to')}
-                title="Ma position"
-                style={{ width: 34, height: 34, borderRadius: 8, border: '1px solid var(--outline-variant)', background: 'var(--inset)', color: 'var(--accent)', cursor: 'pointer', display: 'grid', placeItems: 'center', flexShrink: 0 }}
-              ><Icon name="pin" size={14} /></button>
+              <input value={calcTo}
+                onChange={e => { setCalcTo(e.target.value); setCalcToCoords(null); setCalcResult(null); calcAutocomplete(e.target.value, 'to'); }}
+                onFocus={e => { if (e.target.value.length >= 2) calcAutocomplete(e.target.value, 'to'); }}
+                placeholder="Adresse, lieu..." style={inputStyle} />
+              <button onClick={() => calcUseMyPos('to')} title="Ma position" style={gpsBtn}><Icon name="pin" size={14} /></button>
             </div>
+            {renderSuggestions('to', (text, coords) => { setCalcTo(text); setCalcToCoords(coords); })}
           </div>
 
-          {/* Mode de transport */}
+          {/* Mode */}
           <div style={{ display: 'flex', gap: 4, marginBottom: 12 }}>
             {modes.map(m => (
-              <button
-                key={m.id}
-                onClick={() => { setCalcMode(m.id); setCalcResult(null); }}
-                style={{
-                  flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
-                  padding: '8px 4px', borderRadius: 10, cursor: 'pointer',
+              <button key={m.id} onClick={() => { setCalcMode(m.id); setCalcResult(null); }}
+                style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '8px 4px', borderRadius: 10, cursor: 'pointer',
                   border: calcMode === m.id ? '2px solid var(--accent)' : '1px solid var(--outline-variant)',
                   background: calcMode === m.id ? 'var(--accent-soft)' : 'var(--inset)',
-                  color: calcMode === m.id ? 'var(--accent)' : 'var(--muted)',
-                  fontSize: 10, fontWeight: 700, fontFamily: 'inherit'
-                }}
-              >
-                <Icon name={m.icon} size={16} />
-                {m.label}
+                  color: calcMode === m.id ? 'var(--accent)' : 'var(--muted)', fontSize: 10, fontWeight: 700, fontFamily: 'inherit' }}>
+                <Icon name={m.icon} size={16} />{m.label}
               </button>
             ))}
           </div>
 
-          {/* Bouton calculer */}
-          <button
-            onClick={calcRoute}
-            disabled={calcBusy || !calcFrom.trim() || !calcTo.trim()}
-            style={{
-              width: '100%', padding: '10px 0', borderRadius: 10,
-              border: 'none', cursor: 'pointer', fontFamily: 'inherit',
-              fontSize: 13, fontWeight: 700,
+          {/* Calculer */}
+          <button onClick={calcRoute} disabled={calcBusy || !calcFrom.trim() || !calcTo.trim()}
+            style={{ width: '100%', padding: '10px 0', borderRadius: 10, border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, fontWeight: 700,
               background: (!calcFrom.trim() || !calcTo.trim()) ? 'var(--outline-variant)' : 'var(--accent)',
               color: (!calcFrom.trim() || !calcTo.trim()) ? 'var(--faint)' : 'var(--accent-ink)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              transition: 'all .2s'
-            }}
-          >
-            <Icon name="route" size={14} />
-            {calcBusy ? 'Calcul en cours\u2026' : 'Calculer'}
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, transition: 'all .2s' }}>
+            <Icon name="route" size={14} />{calcBusy ? 'Calcul\u2026' : 'Calculer'}
           </button>
 
           {/* Résultat */}
@@ -503,19 +556,18 @@ function Toolbox() {
                   <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 4 }}>distance</div>
                 </div>
               </div>
-              <button
-                onClick={calcShowOnMap}
-                style={{
-                  width: '100%', padding: '10px 0', borderRadius: 10,
-                  border: '1px solid var(--accent)', cursor: 'pointer', fontFamily: 'inherit',
-                  fontSize: 13, fontWeight: 700,
-                  background: 'transparent', color: 'var(--accent)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
-                }}
-              >
-                <Icon name="map" size={14} />
-                Afficher sur la carte
-              </button>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button onClick={calcShowOnMap}
+                  style={{ flex: 1, padding: '10px 0', borderRadius: 10, border: '1px solid var(--accent)', cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, fontWeight: 700,
+                    background: 'transparent', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                  <Icon name="map" size={13} />Voir sur carte
+                </button>
+                <button onClick={calcOpenGoogleMaps}
+                  style={{ flex: 1, padding: '10px 0', borderRadius: 10, border: '1px solid var(--outline-variant)', cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, fontWeight: 700,
+                    background: 'var(--inset)', color: 'var(--text)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                  <Icon name="arrow" size={13} />Ouvrir Maps
+                </button>
+              </div>
             </div>
           )}
         </WidgetShell>

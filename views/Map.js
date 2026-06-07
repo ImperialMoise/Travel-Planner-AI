@@ -617,6 +617,7 @@ function MapView(){
   onSaved:onEditorSaved
 })}
     </div>
+    </>
   );
 }
 

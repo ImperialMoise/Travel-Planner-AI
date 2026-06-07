@@ -260,7 +260,25 @@ function MapView(){
     map.on('style.load',()=>{applyGlobe(map);addRoutes(map);map.getStyle().layers.forEach(l=>{if(l.type==='symbol'&&map.getLayoutProperty(l.id,'text-field')){try{map.setLayoutProperty(l.id,'text-field',['coalesce',['get','name:fr'],['get','name:latin'],['get','name']]);}catch(e){}}});});
     let inited=false;function initContent(){if(inited)return;inited=true;buildDayMarkers(map);setTimeout(spinGlobe,400);}
     map.on('load',initContent);setTimeout(initContent,3000);
-    map.on('click',e=>{const fs=map.queryRenderedFeatures(e.point).filter(f=>f.layer.type==='symbol'&&(f.properties.name||f.properties['name:fr']));if(!fs.length)return;const f=fs[0];const name=f.properties['name:fr']||f.properties['name:latin']||f.properties.name||'';if(!name)return;const cls=f.properties.class||f.properties.subclass||'';setFoundPlace({name,address:cls?cls.charAt(0).toUpperCase()+cls.slice(1).replace(/_/g,' '):'',lat:e.lngLat.lat,lng:e.lngLat.lng});setPickingDay(false);setEditorOpen(null);map.flyTo({center:[e.lngLat.lng,e.lngLat.lat],zoom:Math.max(map.getZoom(),15),duration:800});});
+    map.on('click',e=>{
+      /* Mode pick pour le calculateur d'itinéraire */
+      var pick=Store.get().mapPickMode;
+      if(pick){
+        var lat=e.lngLat.lat,lng=e.lngLat.lng;
+        /* Reverse geocode pour avoir le nom */
+        fetch('https://api.maptiler.com/geocoding/'+lng+','+lat+'.json?key='+MT_KEY+'&language=fr&limit=1')
+          .then(function(r){return r.json();})
+          .then(function(j){
+            var name=(j.features&&j.features[0])?(j.features[0].place_name||j.features[0].text):(lat.toFixed(4)+', '+lng.toFixed(4));
+            Store.set({mapPickResult:{field:pick,text:name,coords:[lng,lat]},mapPickMode:null});
+          })
+          .catch(function(){
+            Store.set({mapPickResult:{field:pick,text:lat.toFixed(4)+', '+lng.toFixed(4),coords:[lng,lat]},mapPickMode:null});
+          });
+        return;
+      }
+      const fs=map.queryRenderedFeatures(e.point).filter(f=>f.layer.type==='symbol'&&(f.properties.name||f.properties['name:fr']));if(!fs.length)return;const f=fs[0];const name=f.properties['name:fr']||f.properties['name:latin']||f.properties.name||'';if(!name)return;const cls=f.properties.class||f.properties.subclass||'';setFoundPlace({name,address:cls?cls.charAt(0).toUpperCase()+cls.slice(1).replace(/_/g,' '):'',lat:e.lngLat.lat,lng:e.lngLat.lng});setPickingDay(false);setEditorOpen(null);map.flyTo({center:[e.lngLat.lng,e.lngLat.lat],zoom:Math.max(map.getZoom(),15),duration:800});
+    });
     map.on('moveend',()=>{if(spinRef.current&&map.getZoom()<=3.2)setTimeout(spinGlobe,0);});
     ['dragstart','mousedown','touchstart','wheel'].forEach(ev=>map.on(ev,()=>{spinRef.current=false;}));
     map.on('move',()=>{const c=map.getCenter(),z=map.getZoom();if(readoutRef.current){if(z<3.4)readoutRef.current.innerHTML='<b>GLOBE</b> · z'+z.toFixed(1);else{const ns=c.lat>=0?'N':'S',ew=c.lng>=0?'E':'O';readoutRef.current.innerHTML='<b>'+Math.abs(c.lat).toFixed(3)+'°'+ns+'</b> · '+Math.abs(c.lng).toFixed(3)+'°'+ew+' · z'+z.toFixed(1);}}if(needleRef.current)needleRef.current.style.transform='rotate('+(-map.getBearing())+'deg)';});
@@ -304,6 +322,13 @@ function MapView(){
     map.fitBounds(b,{padding:{top:80,bottom:80,left:60,right:60},duration:1800,maxZoom:15});
   },[mapRoute]);
 
+  /* ── Mode pick : curseur + bannière ── */
+  const {mapPickMode: pickMode}=Store.useStore();
+  React.useEffect(()=>{
+    const map=mapRef.current;if(!map)return;
+    if(pickMode){map.getCanvas().style.cursor='crosshair';}
+    else{map.getCanvas().style.cursor='';}
+  },[pickMode]);
   // Curseur pointeur sur les POIs
   React.useEffect(()=>{
     const map=mapRef.current;if(!map)return;
@@ -317,6 +342,19 @@ function MapView(){
     <style>{MV_CSS}</style>
     <div className="mv-map-wrap" style={{flex:1}}>
       <div id="mv-map" ref={mapEl}/>
+      {/* Bannière mode pick */}
+      {pickMode && (
+        <div className="mv-glass" style={{
+          position:'absolute', top:14, left:'50%', transform:'translateX(-50%)', zIndex:20,
+          padding:'10px 20px', borderRadius:999, display:'flex', alignItems:'center', gap:10,
+          fontSize:13, fontWeight:700, color:'var(--accent)',
+          boxShadow:'0 4px 20px rgba(0,0,0,.12)'
+        }}>
+          <Icon name="pin" size={16}/>
+          Cliquez sur la carte pour choisir un point
+          <button onClick={()=>Store.set({mapPickMode:null})} style={{border:'none',background:'transparent',color:'var(--faint)',cursor:'pointer',padding:2,marginLeft:4}}><Icon name="x" size={14}/></button>
+        </div>
+      )}
 
       {/* ═══ RECHERCHE (centre haut) ═══ */}
       <div style={{position:'absolute',top:14,left:'50%',transform:'translateX(-50%)',zIndex:7,width:380,maxWidth:'calc(100% - 200px)'}}>

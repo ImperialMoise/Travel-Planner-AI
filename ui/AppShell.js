@@ -284,6 +284,10 @@ function Toolbox() {
   const [calcSugg, setCalcSugg] = React.useState({ field: null, items: [] });
   const calcSearchRef = React.useRef(null);
 
+  function calcPickFromMap(fieldId) {
+    Store.set({ mapPickMode: fieldId, view: 'map' });
+  }
+
   function calcAutocomplete(text, fieldId) {
     clearTimeout(calcSearchRef.current);
     setCalcSugg({ field: null, items: [] });
@@ -359,6 +363,20 @@ function Toolbox() {
   }
 
   React.useEffect(() => { setPinned(loadPins(view)); setEditMode(false); }, [view]);
+  /* Recevoir le résultat du pick carte */
+  const { mapPickResult } = Store.useStore();
+  React.useEffect(() => {
+    if (!mapPickResult) return;
+    var f = mapPickResult.field, t = mapPickResult.text, c = mapPickResult.coords;
+    if (f === 'from') { setCalcFrom(t); setCalcFromCoords(c); }
+    else if (f === 'to') { setCalcTo(t); setCalcToCoords(c); }
+    else if (f && f.startsWith('stop-')) {
+      var idx = parseInt(f.split('-')[1]);
+      setCalcStops(s => s.map((st, i) => i === idx ? { text: t, coords: c } : st));
+    }
+    setCalcResult(null);
+    Store.set({ mapPickResult: null });
+  }, [mapPickResult]);
 
   function togglePin(id) {
     setPinned(prev => {
@@ -479,6 +497,7 @@ function Toolbox() {
                 onFocus={e => { if (e.target.value.length >= 2) calcAutocomplete(e.target.value, 'from'); }}
                 placeholder="Adresse, lieu..." style={inputStyle} />
               <button onClick={() => calcUseMyPos('from')} title="Ma position" style={gpsBtn}><Icon name="pin" size={14} /></button>
+              <button onClick={() => calcPickFromMap('from')} title="Choisir sur la carte" style={gpsBtn}><Icon name="map" size={14} /></button>
             </div>
             {renderSuggestions('from', (text, coords) => { setCalcFrom(text); setCalcFromCoords(coords); })}
           </div>
@@ -497,6 +516,7 @@ function Toolbox() {
                   onFocus={e => { if (e.target.value.length >= 2) calcAutocomplete(e.target.value, 'stop-' + idx); }}
                   placeholder="Adresse, lieu..." style={inputStyle} />
                 <button onClick={() => calcUseMyPos('stop-' + idx)} title="Ma position" style={gpsBtn}><Icon name="pin" size={14} /></button>
+                <button onClick={() => calcPickFromMap('stop-' + idx)} title="Choisir sur la carte" style={gpsBtn}><Icon name="map" size={14} /></button>
               </div>
               {renderSuggestions('stop-' + idx, (text, coords) => { setCalcStops(s => s.map((st, i) => i === idx ? { text: text, coords: coords } : st)); })}
             </div>
@@ -517,6 +537,7 @@ function Toolbox() {
                 onFocus={e => { if (e.target.value.length >= 2) calcAutocomplete(e.target.value, 'to'); }}
                 placeholder="Adresse, lieu..." style={inputStyle} />
               <button onClick={() => calcUseMyPos('to')} title="Ma position" style={gpsBtn}><Icon name="pin" size={14} /></button>
+              <button onClick={() => calcPickFromMap('to')} title="Choisir sur la carte" style={gpsBtn}><Icon name="map" size={14} /></button>
             </div>
             {renderSuggestions('to', (text, coords) => { setCalcTo(text); setCalcToCoords(coords); })}
           </div>

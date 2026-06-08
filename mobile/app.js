@@ -758,14 +758,14 @@ function budgetTabs(active = 'overview') {
   ];
 
   return `
-    <div class="budget-tabs ${active === 'overview' ? 'overview-tabs' : ''}" role="tablist" aria-label="Vue budget">
+    <div class="seg-control" role="tablist" aria-label="Vue budget">
       ${tabs.map(tab => `
         <button
-          class="${active === tab.id ? 'active' : ''}"
+          class="seg-control-btn ${active === tab.id ? 'active' : ''}"
           type="button"
           role="tab"
           aria-selected="${active === tab.id ? 'true' : 'false'}"
-          ${tab.action ? `data-action="${tab.action}"` : ''}
+          data-action="${tab.action}"
         >${tab.label}</button>
       `).join('')}
     </div>
@@ -775,52 +775,46 @@ function budgetTabs(active = 'overview') {
 function renderBudget() {
   app.innerHTML = `
     <div class="mobile-shell">
-      <section class="budget-sticky">
-        ${topbar()}
+      ${topbar()}
 
-        <div class="budget-summary">
-          <span class="kicker">Budget total</span>
-          <strong>570,00 €</strong>
-          <div class="budget-per-person">
-            <span>285,00 € / pers.</span>
-            <div class="avatar-stack" aria-label="Participants">
-              <span>M</span>
-              <span>Ma</span>
-            </div>
-          </div>
-        </div>
-
+      <main class="budget-v2-main">
         ${budgetTabs('expenses')}
-      </section>
 
-      <main class="budget-main">
+        <button class="expense-add-btn" type="button" data-action="new-expense">
+          <span class="material-symbols-outlined">add_circle</span>
+          <span>Ajouter une dépense</span>
+        </button>
+
         ${expenses.map(group => `
-          <section class="expense-group">
-            <h2 class="kicker">${group.group}</h2>
-            <div class="expense-list">
+          <section class="expense-group-v2">
+            <h3 class="kicker">${group.group}</h3>
+            <div class="expense-list-v2">
               ${group.items.map(item => `
-                <article class="expense-card">
-                  <div class="expense-left">
-                    <span class="expense-icon ${item.tone}">${item.icon}</span>
-                    <div>
-                      <h3>${item.title}</h3>
-                      <p>Payé par ${item.payer}</p>
-                    </div>
+                <article class="expense-row">
+                  <span class="expense-row-icon ${item.tone}">
+                    <span class="material-symbols-outlined">${
+                      item.icon === '🍴' ? 'restaurant' :
+                      item.icon === '▣' ? 'directions_bus' :
+                      item.icon === '☕' ? 'local_cafe' :
+                      item.icon === '▰' ? 'museum' :
+                      item.icon === '✈' ? 'flight' :
+                      item.icon === '◉' ? 'local_activity' :
+                      item.icon === '◒' ? 'shopping_bag' :
+                      item.icon === '▤' ? 'hotel' : 'receipt'
+                    }</span>
+                  </span>
+                  <div class="expense-row-info">
+                    <h4>${item.title}</h4>
+                    <p>Payé par ${item.payer}</p>
                   </div>
-                  <strong>${item.amount}</strong>
+                  <strong class="expense-row-amount">${item.amount}</strong>
                 </article>
               `).join('')}
             </div>
           </section>
         `).join('')}
-
-        <div class="budget-empty">
-          <span aria-hidden="true">▤</span>
-          <p>Aucune autre dépense ce mois-ci.</p>
-        </div>
       </main>
 
-      <button class="budget-fab" type="button" data-action="new-expense" aria-label="Ajouter une dépense">+</button>
       ${bottomNav('budget')}
     </div>
   `;
@@ -914,48 +908,45 @@ function renderBudgetOverview() {
     <div class="mobile-shell">
       ${topbar()}
 
-      <main class="budget-overview-main">
+      <main class="budget-v2-main">
         ${budgetTabs('overview')}
 
-        <section class="budget-overview-card" aria-label="Résumé du budget">
-          <div class="budget-pattern" aria-hidden="true"></div>
-          <div class="budget-overview-content">
+        <div class="budget-summary-card">
+          <div class="budget-summary-dots" aria-hidden="true"></div>
+          <div class="budget-summary-inner">
             <span class="kicker">Budget Total</span>
-            <h2>570,00 €</h2>
+            <h2 class="budget-total">570,00 €</h2>
 
-            <div class="donut-wrap" aria-label="Graphique du budget restant et dépensé">
-              <svg class="donut" viewBox="0 0 36 36" role="img" aria-labelledby="budget-donut-title">
-                <title id="budget-donut-title">Répartition du budget</title>
-                <path class="donut-ring" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                <path class="donut-segment primary" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                <path class="donut-segment tertiary" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                <path class="donut-segment accent" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+            <div class="donut-container">
+              <svg class="donut-svg" viewBox="0 0 36 36">
+                <path class="donut-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                <path class="donut-seg seg-primary" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" style="stroke-dasharray: 45 100;" />
+                <path class="donut-seg seg-tertiary" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" style="stroke-dasharray: 30 100; stroke-dashoffset: -45;" />
+                <path class="donut-seg seg-accent" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" style="stroke-dasharray: 15 100; stroke-dashoffset: -75;" />
               </svg>
               <div class="donut-center">
-                <span>Reste</span>
-                <strong>120 €</strong>
+                <span class="donut-label">Reste</span>
+                <strong class="donut-value">120 €</strong>
               </div>
             </div>
           </div>
-        </section>
+        </div>
 
-        <section class="budget-repartition" aria-labelledby="budget-repartition-title">
-          <h3 id="budget-repartition-title">Répartition</h3>
-          <div class="budget-category-list">
-            ${budgetCategories.map(category => `
-              <article class="budget-category-card">
-                <span class="budget-category-icon ${category.tone}" aria-hidden="true">
-                  <span class="material-symbols-outlined">${category.icon}</span>
-                </span>
-                <div>
-                  <h4>${category.label}</h4>
-                  <p>${category.percent}</p>
-                </div>
-                <strong>${category.amount}</strong>
-              </article>
-            `).join('')}
-          </div>
-        </section>
+        <h3 class="budget-section-title">Répartition</h3>
+        <div class="budget-cat-list">
+          ${budgetCategories.map(cat => `
+            <article class="budget-cat-row">
+              <span class="budget-cat-icon ${cat.tone}">
+                <span class="material-symbols-outlined">${cat.icon}</span>
+              </span>
+              <div class="budget-cat-info">
+                <h4>${cat.label}</h4>
+                <p>${cat.percent}</p>
+              </div>
+              <strong class="budget-cat-amount">${cat.amount}</strong>
+            </article>
+          `).join('')}
+        </div>
       </main>
 
       ${bottomNav('budget')}
@@ -967,69 +958,70 @@ function renderBudgetOverview() {
 function renderBudgetBalance() {
   app.innerHTML = `
     <div class="mobile-shell">
-      <section class="budget-sticky balance-sticky">
-        ${topbar()}
+      ${topbar()}
 
-        <div class="budget-summary balance-summary">
-          <span class="kicker">Budget Total</span>
-          <strong>2 048,00 €</strong>
-          <div class="budget-per-person">
-            <span>1 024,00 € / pers.</span>
-            <div class="avatar-stack" aria-label="Participants">
-              <span>M</span>
-              <span>Ma</span>
+      <main class="budget-v2-main">
+        ${budgetTabs('balance')}
+
+        <div class="balance-cards">
+          ${budgetBalances.map(person => {
+            const isPositive = person.tone === 'positive';
+            return `
+              <div class="balance-person-card">
+                <div class="balance-person-header">
+                  <div class="balance-person-id">
+                    <span class="balance-avatar ${person.tone}">${person.initials}</span>
+                    <span class="balance-person-name">${person.name}</span>
+                  </div>
+                  <div class="balance-person-amounts">
+                    <strong class="balance-main-amount ${person.tone}">${isPositive ? 'Reçoit' : 'Doit'} ${person.balance.replace('+ ', '').replace('- ', '')}</strong>
+                    <span class="balance-paid">Payé : ${person.paid}</span>
+                  </div>
+                </div>
+                <div class="balance-bars">
+                  <div class="balance-bar-row">
+                    <span class="material-symbols-outlined">directions_car</span>
+                    <div class="balance-bar-track"><div class="balance-bar-fill" style="width: ${isPositive ? '40%' : '0%'}"></div></div>
+                    <span class="balance-bar-pct">${isPositive ? '40%' : '0%'}</span>
+                  </div>
+                  <div class="balance-bar-row">
+                    <span class="material-symbols-outlined">hotel</span>
+                    <div class="balance-bar-track"><div class="balance-bar-fill" style="width: ${isPositive ? '35%' : '0%'}"></div></div>
+                    <span class="balance-bar-pct">${isPositive ? '35%' : '0%'}</span>
+                  </div>
+                  <div class="balance-bar-row">
+                    <span class="material-symbols-outlined">restaurant</span>
+                    <div class="balance-bar-track"><div class="balance-bar-fill" style="width: ${isPositive ? '25%' : '0%'}"></div></div>
+                    <span class="balance-bar-pct">${isPositive ? '25%' : '0%'}</span>
+                  </div>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+
+        <h3 class="budget-section-title">Détails des remboursements</h3>
+        <div class="settlement-detail-card">
+          <div class="settlement-detail-row">
+            <div class="settlement-detail-info">
+              <strong>Location Voiture</strong>
+              <span>Payé par ${budgetSettlement.to}</span>
             </div>
+            <span class="settlement-detail-amount">+180,00 €</span>
+          </div>
+          <div class="settlement-detail-row">
+            <div class="settlement-detail-info">
+              <strong>Hôtel Paris</strong>
+              <span>Payé par ${budgetSettlement.to}</span>
+            </div>
+            <span class="settlement-detail-amount">+270,00 €</span>
           </div>
         </div>
 
-        ${budgetTabs('balance')}
-      </section>
-
-      <main class="budget-balance-main">
-        <section class="balance-section" aria-labelledby="balances-title">
-          <h2 class="kicker" id="balances-title">Bilans individuels</h2>
-          <div class="balance-list">
-            ${budgetBalances.map(person => `
-              <article class="balance-card">
-                <div class="balance-person">
-                  <span class="balance-avatar">${person.initials}</span>
-                  <div>
-                    <h3>${person.name}</h3>
-                    <p>A payé ${person.paid}</p>
-                  </div>
-                </div>
-                <strong class="balance-amount ${person.tone}">${person.balance}</strong>
-              </article>
-            `).join('')}
-          </div>
-        </section>
-
-        <section class="settlement-section" aria-labelledby="settlement-title">
-          <h2 id="settlement-title">Remboursements à faire</h2>
-          <article class="settlement-card">
-            <div class="settlement-flow">
-              <div class="settlement-person">
-                <span class="balance-avatar">${budgetSettlement.fromInitials}</span>
-                <span>${budgetSettlement.from}</span>
-              </div>
-
-              <div class="settlement-arrow" aria-label="${budgetSettlement.from} doit ${budgetSettlement.amount} à ${budgetSettlement.to}">
-                <strong>${budgetSettlement.amount}</strong>
-                <span aria-hidden="true"></span>
-              </div>
-
-              <div class="settlement-person">
-                <span class="balance-avatar">${budgetSettlement.toInitials}</span>
-                <span>${budgetSettlement.to}</span>
-              </div>
-            </div>
-
-            <button class="settlement-button" type="button" data-action="settlement-settled">
-              <span class="material-symbols-outlined" aria-hidden="true">check_circle</span>
-              <span>Marquer comme réglé</span>
-            </button>
-          </article>
-        </section>
+        <button class="settle-debt-btn" type="button" data-action="settlement-settled">
+          <span class="material-symbols-outlined">payments</span>
+          <span>Solder la dette</span>
+        </button>
       </main>
 
       ${bottomNav('budget')}

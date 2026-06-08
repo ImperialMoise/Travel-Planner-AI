@@ -573,6 +573,14 @@ button {
   color: var(--outline-variant);
 }
 
+.date-label,
+.date-value,
+.date-icon {
+  position: relative;
+  z-index: 2;
+  pointer-events: none;
+}
+
 .date-icon {
   position: absolute;
   right: 24px;
@@ -1332,10 +1340,10 @@ button {
 .interactive-date input[type="date"] {
   position: absolute;
   inset: 0;
-  z-index: 2;
+  z-index: 1;
   width: 100%;
   height: 100%;
-  opacity: 0.01;
+  opacity: 0;
   cursor: pointer;
   color: transparent;
   background: transparent;

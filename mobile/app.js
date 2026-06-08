@@ -41,14 +41,16 @@ async function initMobileData() {
   }
 }
 
-async function refreshMobileTrips() {
+async function refreshMobileTrips(activeTripId = null) {
   if (!window.SB || !mobileUser) return;
 
   mobileTrips = await window.SB.listMyTrips();
 
-  if (mobileTrips.length && !activeTrip) {
-    activeTrip = await window.SB.loadTrip(mobileTrips[0].id);
-  }
+  const tripToLoad = activeTripId
+    ? mobileTrips.find(trip => trip.id === activeTripId)
+    : mobileTrips[0];
+
+  activeTrip = tripToLoad ? await window.SB.loadTrip(tripToLoad.id) : null;
 }
 
 const trips = [
@@ -478,7 +480,7 @@ function topbar() {
         <span class="material-symbols-outlined" aria-hidden="true">menu</span>
       </button>
       <h1 class="topbar-title" data-action="home" style="cursor:pointer">L'Atelier</h1>
-      <button class="icon-button" type="button" aria-label="Ouvrir le profil">
+      <button class="icon-button" type="button" data-action="account" aria-label="Ouvrir le profil">
         <span class="material-symbols-outlined" aria-hidden="true">account_circle</span>
       </button>
     </header>
@@ -506,6 +508,9 @@ function bottomNav(active = 'plan') {
 }
 
 function renderHome() {
+  const realTrips = mobileTrips || [];
+  const nextTrip = activeTrip || null;
+
   app.innerHTML = `
     <div class="mobile-shell">
       ${topbar()}
@@ -519,12 +524,12 @@ function renderHome() {
         <section class="next-trip-card" aria-label="Prochain départ" data-action="itinerary" style="cursor:pointer">
           <div class="next-trip-content">
             <span class="badge">Prochain départ</span>
-            <h3 class="next-trip-title">Kyoto, Japon</h3>
+            <h3 class="next-trip-title">${escapeHtml(nextTrip?.name || 'Aucun voyage')}</h3>
             <div>
               <div class="next-trip-row">
                 <div class="date-row">
                   <span class="countdown">J-12</span>
-                  <span class="mono">14 – 28 Nov.</span>
+                  <span class="mono">${nextTrip?.startDate ? formatDateLabel(nextTrip.startDate, '') : 'Créez votre premier voyage'}</span>
                 </div>
                 <span class="mono percent">80%</span>
               </div>
@@ -544,17 +549,17 @@ function renderHome() {
             <a href="#" aria-label="Voir tous les voyages">Tout voir</a>
           </div>
           <div class="trip-strip">
-            ${trips.map(trip => `
+            ${realTrips.length ? realTrips.map(trip => `
               <article class="trip-card ${trip.past ? 'past' : ''}" data-action="itinerary" style="cursor:pointer">
                 <div class="trip-image" style="background-image: url('${trip.image}')">
                   <span class="trip-status">${trip.status}</span>
                 </div>
                 <div class="trip-body">
-                  <h4>${trip.title}</h4>
-                  <div class="trip-date mono">▣ ${trip.date}</div>
+                  <h4>${escapeHtml(trip.name)}</h4>
+                  <div class="trip-date mono">${trip.start_date ? formatDateLabel(trip.start_date, '') : 'Sans date'}</div>
                 </div>
               </article>
-            `).join('')}
+            `).join('') : '<p class="companion-empty">Aucun voyage pour le moment.</p>'}
           </div>
         </section>
       </main>
@@ -642,6 +647,99 @@ function renderMap() {
   `;
 }
 
+function renderAuth() {
+  app.innerHTML = `
+    <div class="mobile-shell create-shell">
+      <header class="topbar bordered create-topbar">
+        <button class="icon-button" type="button" data-action="home" aria-label="Retour">×</button>
+        <h1 class="topbar-title">Connexion</h1>
+        <span></span>
+      </header>
+
+      <main class="create-main">
+        <section class="create-hero">
+          <h2>Bienvenue dans<br>L'Atelier</h2>
+          <p>Connectez-vous pour retrouver vos voyages.</p>
+        </section>
+
+        <form class="create-form" data-auth-form>
+          <div class="field-group">
+            <label class="kicker" for="auth-email">Email</label>
+            <div class="input-shell">
+              <span class="material-symbols-outlined form-icon" aria-hidden="true">mail</span>
+              <input id="auth-email" type="email" placeholder="vous@email.com" autocomplete="email">
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label class="kicker" for="auth-password">Mot de passe</label>
+            <div class="input-shell">
+              <span class="material-symbols-outlined form-icon" aria-hidden="true">lock</span>
+              <input id="auth-password" type="password" placeholder="••••••••" autocomplete="current-password">
+            </div>
+          </div>
+        </form>
+      </main>
+
+      <div class="create-bottom">
+        <button class="primary-action" type="button" data-action="login">
+          Se connecter
+          <span aria-hidden="true">→</span>
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function renderAccount() {
+  const name = mobileUser?.user_metadata?.display_name || mobileUser?.email?.split('@')[0] || 'Voyageur';
+
+  app.innerHTML = `
+    <div class="mobile-shell">
+      ${topbar()}
+
+      <main class="home-main">
+        <section class="home-hero">
+          <p class="kicker">Mon compte</p>
+          <h2 class="hero-title">${escapeHtml(name)}</h2>
+          <p class="docs-subtitle">${escapeHtml(mobileUser?.email || '')}</p>
+        </section>
+
+        <section>
+          <div class="section-heading">
+            <h3>Mes Voyages</h3>
+          </div>
+
+          <div class="docs-grid">
+            ${mobileTrips.length ? mobileTrips.map(trip => `
+              <button class="docs-file-row" type="button" data-trip-id="${trip.id}" data-action="open-trip">
+                <span class="material-symbols-outlined docs-file-type-icon">flight_takeoff</span>
+                <div class="docs-file-info">
+                  <span class="docs-file-name">${escapeHtml(trip.name)}</span>
+                  <span class="docs-file-meta">${trip.start_date ? formatDateLabel(trip.start_date, '') : 'Sans date'}</span>
+                </div>
+                <span class="material-symbols-outlined docs-file-more">chevron_right</span>
+              </button>
+            `).join('') : '<span class="companion-empty">Aucun voyage pour le moment.</span>'}
+          </div>
+        </section>
+
+        <button class="create-adventure" type="button" data-action="create-trip">
+          <span class="plus">+</span>
+          <span>Créer une nouvelle aventure</span>
+        </button>
+
+        <button class="create-adventure" type="button" data-action="logout">
+          <span class="material-symbols-outlined">logout</span>
+          <span>Déconnexion</span>
+        </button>
+      </main>
+
+      ${bottomNav('plan')}
+    </div>
+  `;
+}
+
 function renderCreateTrip() {
   const draft = getTripDraft();
   const companions = draft.companions || [];
@@ -719,23 +817,38 @@ function renderCreateTrip() {
 function initCreateTripControls() {
   initAutocompleteOnPage();
 
-  document.querySelectorAll('.interactive-date input[type="date"]').forEach(input => {
-    input.addEventListener('click', event => {
-      event.stopPropagation();
-    });
+  document.querySelectorAll('.interactive-date').forEach(card => {
+    const input = card.querySelector('input[type="date"]');
+    if (!input) return;
 
-    const card = input.closest('.interactive-date');
-    if (!card) return;
+    card.addEventListener('click', event => {
+      event.preventDefault();
 
-    card.addEventListener('click', () => {
+      input.focus();
+
       if (typeof input.showPicker === 'function') {
         input.showPicker();
-      } else {
-        input.focus();
-        input.click();
       }
     });
   });
+
+  const addFriendButton = document.querySelector('[data-action="add-friend"]');
+  if (addFriendButton) {
+    addFriendButton.addEventListener('click', event => {
+      event.preventDefault();
+      event.stopPropagation();
+      handleAddFriend();
+    });
+  }
+
+  const companionInput = document.querySelector('#companion-name');
+  if (companionInput) {
+    companionInput.addEventListener('keydown', event => {
+      if (event.key !== 'Enter') return;
+      event.preventDefault();
+      handleAddFriend();
+    });
+  }
 }
 
 function renderItinerary() {
@@ -1439,6 +1552,33 @@ function handleSaveExpense() {
   navigate('budget');
 }
 
+async function handleLogin() {
+  const email = document.querySelector('#auth-email')?.value.trim();
+  const password = document.querySelector('#auth-password')?.value;
+
+  if (!email || !password) {
+    alert('Email et mot de passe requis.');
+    return;
+  }
+
+  try {
+    await window.SB.signIn(email, password);
+    mobileUser = await window.SB.getUser();
+    await refreshMobileTrips();
+    navigate('account');
+  } catch (error) {
+    alert('Erreur connexion : ' + (error.message || error));
+  }
+}
+
+async function handleLogout() {
+  await window.SB.signOut();
+  mobileUser = null;
+  mobileTrips = [];
+  activeTrip = null;
+  navigate('home');
+}
+
 function handleAddFriend() {
   const input = document.querySelector('#companion-name');
   const name = input?.value.trim();
@@ -1468,8 +1608,7 @@ async function handleCreateBoard() {
       days: getTripDurationDays(draft.startDate, draft.endDate)
     });
 
-    await refreshMobileTrips();
-    activeTrip = await window.SB.loadTrip(trip.id);
+    await refreshMobileTrips(trip.id);
 
     navigate('itinerary');
   } catch (error) {
@@ -1509,7 +1648,13 @@ function handleAddStepToProgram() {
 }
 
 function navigate(route) {
-  if (route === 'create-trip') {
+  if (route === 'auth') {
+    window.location.hash = 'auth';
+    renderAuth();
+  } else if (route === 'account') {
+    window.location.hash = 'account';
+    renderAccount();
+  } else if (route === 'create-trip') {
     window.location.hash = 'create-trip';
     renderCreateTrip();
   } else if (route === 'budget-overview') {
@@ -1555,6 +1700,21 @@ function navigate(route) {
 window.addEventListener('click', event => {
   const action = event.target.closest('[data-action]')?.dataset.action;
   if (!action) return;
+
+    if (action === 'account') {
+    navigate(mobileUser ? 'account' : 'auth');
+    return;
+  }
+
+  if (action === 'login') {
+    handleLogin();
+    return;
+  }
+
+  if (action === 'logout') {
+    handleLogout();
+    return;
+  }
 
   if (action === 'add-friend') {
     handleAddFriend();
@@ -1608,6 +1768,8 @@ window.addEventListener('click', event => {
 });
 
 window.addEventListener('hashchange', () => {
+  if (window.location.hash === '#auth') renderAuth();
+  else if (window.location.hash === '#account') renderAccount();
   if (window.location.hash === '#create-trip') renderCreateTrip();
   else if (window.location.hash === '#budget-overview') renderBudgetOverview();
   else if (window.location.hash === '#budget') renderBudget();
@@ -1690,7 +1852,9 @@ window.addEventListener('change', event => {
 });
 
 initMobileData().then(() => {
-  if (window.location.hash === '#create-trip') renderCreateTrip();
+  if (window.location.hash === '#auth') renderAuth();
+  else if (window.location.hash === '#account') renderAccount();
+  else if (window.location.hash === '#create-trip') renderCreateTrip();
   else if (window.location.hash === '#budget-overview') renderBudgetOverview();
   else if (window.location.hash === '#budget') renderBudget();
   else if (window.location.hash === '#budget-balance') renderBudgetBalance();

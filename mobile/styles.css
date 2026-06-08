@@ -2916,3 +2916,35 @@ button {
     font-size: 12px;
   }
 }
+
+/* === PAGE DOCUMENTS === */
+.docs-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
+.docs-empty {
+  text-align: center;
+  color: var(--muted);
+}
+
+.docs-empty-icon {
+  font-size: 48px;
+  color: var(--faint);
+  margin-bottom: 16px;
+}
+
+.docs-empty h2 {
+  font-family: var(--font-serif);
+  font-size: 22px;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.docs-empty p {
+  font-size: 14px;
+  line-height: 1.5;
+}

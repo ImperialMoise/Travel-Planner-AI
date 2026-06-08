@@ -317,6 +317,20 @@ function getNewStepFormData() {
   return Object.fromEntries(new FormData(form).entries());
 }
 
+function topbar() {
+  return `
+    <header class="topbar">
+      <button class="icon-button" type="button" aria-label="Ouvrir le menu">
+        <span class="material-symbols-outlined" aria-hidden="true">menu</span>
+      </button>
+      <h1 class="topbar-title" data-action="home" style="cursor:pointer">L'Atelier</h1>
+      <button class="icon-button" type="button" aria-label="Ouvrir le profil">
+        <span class="material-symbols-outlined" aria-hidden="true">account_circle</span>
+      </button>
+    </header>
+  `;
+}
+
 function bottomNav(active = 'plan') {
   const items = [
     { route: 'itinerary', id: 'plan', icon: 'event_note', label: 'Plan' },
@@ -340,11 +354,7 @@ function bottomNav(active = 'plan') {
 function renderHome() {
   app.innerHTML = `
     <div class="mobile-shell">
-      <header class="topbar">
-        <button class="icon-button secondary" aria-label="Ouvrir le menu">☰</button>
-        <h1 class="topbar-title">L'Atelier</h1>
-        <button class="icon-button secondary" aria-label="Ouvrir le profil">●</button>
-      </header>
+      ${topbar()}
 
       <main class="home-main">
         <section class="home-hero">
@@ -404,6 +414,7 @@ function renderHome() {
 function renderMap() {
   app.innerHTML = `
     <div class="mobile-shell map-shell">
+      ${topbar()}
       <main class="map-screen" aria-label="Carte du voyage à Séoul">
         <div class="map-background" data-location="Seoul, South Korea">
           <div class="map-overlay" aria-hidden="true"></div>
@@ -559,15 +570,7 @@ function renderItinerary() {
 
   app.innerHTML = `
     <div class="mobile-shell itinerary-shell">
-      <header class="topbar itinerary-topbar">
-        <button class="icon-button" type="button" data-action="home" aria-label="Retour à l'accueil">
-          <span class="material-symbols-outlined" aria-hidden="true">travel_explore</span>
-        </button>
-        <h1 class="topbar-title">L'Atelier</h1>
-        <button class="icon-button" type="button" aria-label="Options itinéraire">
-          <span class="material-symbols-outlined" aria-hidden="true">expand_more</span>
-        </button>
-      </header>
+      ${topbar()}
 
       <main class="itinerary-main">
         <section class="itinerary-hero" aria-label="Itinéraire du jour 6">
@@ -773,11 +776,7 @@ function renderBudget() {
   app.innerHTML = `
     <div class="mobile-shell">
       <section class="budget-sticky">
-        <header class="topbar budget-topbar">
-          <button class="icon-button" type="button" data-action="home" aria-label="Retour au plan">⌘</button>
-          <h1 class="topbar-title">L'Atelier</h1>
-          <button class="icon-button" type="button" aria-label="Options budget">⌄</button>
-        </header>
+        ${topbar()}
 
         <div class="budget-summary">
           <span class="kicker">Budget total</span>
@@ -913,15 +912,7 @@ function renderNewExpense() {
 function renderBudgetOverview() {
   app.innerHTML = `
     <div class="mobile-shell">
-      <header class="topbar budget-overview-topbar">
-        <button class="icon-button" type="button" data-action="home" aria-label="Ouvrir le menu">
-          <span class="material-symbols-outlined" aria-hidden="true">menu</span>
-        </button>
-        <h1 class="topbar-title">L'Atelier</h1>
-        <button class="icon-button" type="button" aria-label="Ouvrir le profil">
-          <span class="material-symbols-outlined" aria-hidden="true">account_circle</span>
-        </button>
-      </header>
+      ${topbar()}
 
       <main class="budget-overview-main">
         ${budgetTabs('overview')}
@@ -977,11 +968,7 @@ function renderBudgetBalance() {
   app.innerHTML = `
     <div class="mobile-shell">
       <section class="budget-sticky balance-sticky">
-        <header class="topbar budget-topbar">
-          <button class="icon-button" type="button" data-action="home" aria-label="Retour au plan">⌘</button>
-          <h1 class="topbar-title">L'Atelier</h1>
-          <button class="icon-button" type="button" aria-label="Options budget">⌄</button>
-        </header>
+        ${topbar()}
 
         <div class="budget-summary balance-summary">
           <span class="kicker">Budget Total</span>
@@ -1050,6 +1037,23 @@ function renderBudgetBalance() {
   `;
 }
 
+function renderDocs() {
+  app.innerHTML = `
+    <div class="mobile-shell">
+      ${topbar()}
+
+      <main class="docs-main">
+        <section class="docs-empty">
+          <span class="material-symbols-outlined docs-empty-icon" aria-hidden="true">description</span>
+          <h2>Documents</h2>
+          <p>Vos documents de voyage apparaîtront ici.</p>
+        </section>
+      </main>
+
+      ${bottomNav('docs')}
+    </div>
+  `;
+}
 
 function handleSaveExpense() {
   const amountInput = document.querySelector('#expense-amount');
@@ -1148,8 +1152,8 @@ function navigate(route) {
     window.location.hash = 'map';
     renderMap();
   } else if (route === 'docs') {
-    window.location.hash = '';
-    renderHome();
+    window.location.hash = 'docs';
+    renderDocs();
   } else {
     window.location.hash = '';
     renderHome();
@@ -1203,8 +1207,10 @@ window.addEventListener('hashchange', () => {
   else if (window.location.hash === '#new-expense') renderNewExpense();
   else if (window.location.hash === '#map') renderMap();
   else if (window.location.hash === '#activity-detail') renderActivityDetail();
+  else if (window.location.hash === '#docs') renderDocs();
   else if (window.location.hash === '#itinerary') renderItinerary();
   else if (window.location.hash === '#new-step') renderNewStep();
+  else if (window.location.hash === '#docs') renderDocs();
   else renderHome();
 });
 

@@ -33,11 +33,45 @@ const expenses = [
   }
 ];
 
+const expenseCategories = [
+  { id: 'meal', label: 'Repas', icon: 'restaurant', tone: 'tertiary', emoji: '🍴' },
+  { id: 'transport', label: 'Transport', icon: 'directions_car', tone: 'primary', emoji: '▣' },
+  { id: 'hotel', label: 'Hôtel', icon: 'local_hotel', tone: 'neutral', emoji: '▤' },
+  { id: 'activity', label: 'Activités', icon: 'local_activity', tone: 'tertiary', emoji: '◉' },
+  { id: 'shopping', label: 'Achats', icon: 'shopping_bag', tone: 'secondary', emoji: '◒' },
+  { id: 'coffee', label: 'Café', icon: 'local_cafe', tone: 'tertiary', emoji: '☕' },
+  { id: 'flight', label: 'Vols', icon: 'flight', tone: 'primary', emoji: '✈' },
+  { id: 'other', label: 'Autre', icon: 'add', tone: 'neutral', emoji: '＋' }
+];
+
+let selectedExpenseCategory = 'meal';
+let selectedExpensePayer = 'me';
+let selectedExpenseSplit = 'equal';
+
 const budgetCategories = [
   { label: 'Transport', percent: '45% du budget', amount: '256,50 €', icon: 'flight', tone: 'primary' },
   { label: 'Logement', percent: '30% du budget', amount: '171,00 €', icon: 'hotel', tone: 'tertiary' },
   { label: 'Repas', percent: '15% du budget', amount: '85,50 €', icon: 'restaurant', tone: 'accent' },
   { label: 'Autres', percent: '10% du budget', amount: '57,00 €', icon: 'more_horiz', tone: 'neutral' }
+];
+
+const budgetBalances = [
+  { name: 'Mathis', paid: '1 250,00 €', balance: '+ 226,00 €', tone: 'positive', initials: 'M' },
+  { name: 'Margot', paid: '798,00 €', balance: '- 226,00 €', tone: 'negative', initials: 'Ma' }
+];
+
+const budgetSettlement = {
+  from: 'Margot',
+  fromInitials: 'Ma',
+  to: 'Mathis',
+  toInitials: 'M',
+  amount: '226,00 €'
+};
+
+const mapMarkers = [
+  { icon: 'hotel', label: 'Hôtel', top: '32%', left: '24%', active: false },
+  { icon: 'tour', label: 'DMZ Tour', top: '50%', left: '66%', active: true },
+  { icon: 'restaurant', label: 'Restaurant', top: '67%', left: '50%', active: false }
 ];
 
 const itinerarySteps = [
@@ -366,6 +400,83 @@ function renderHome() {
   `;
 }
 
+
+function renderMap() {
+  app.innerHTML = `
+    <div class="mobile-shell map-shell">
+      <main class="map-screen" aria-label="Carte du voyage à Séoul">
+        <div class="map-background" data-location="Seoul, South Korea">
+          <div class="map-overlay" aria-hidden="true"></div>
+
+          ${mapMarkers.map(marker => `
+            <button
+              class="map-marker ${marker.active ? 'active' : ''}"
+              type="button"
+              aria-label="${marker.label}"
+              style="--marker-top: ${marker.top}; --marker-left: ${marker.left};"
+            >
+              <span class="material-symbols-outlined" aria-hidden="true">${marker.icon}</span>
+            </button>
+          `).join('')}
+        </div>
+
+        <div class="map-search-panel glass-panel">
+          <span class="material-symbols-outlined" aria-hidden="true">search</span>
+          <input type="search" placeholder="Rechercher un lieu, une étape..." aria-label="Rechercher sur la carte">
+          <button type="button" aria-label="Filtrer la carte">
+            <span class="material-symbols-outlined" aria-hidden="true">filter_list</span>
+          </button>
+        </div>
+
+        <div class="map-controls" aria-label="Contrôles de la carte">
+          <div class="glass-panel map-zoom-controls">
+            <button type="button" aria-label="Zoomer">
+              <span class="material-symbols-outlined" aria-hidden="true">add</span>
+            </button>
+            <button type="button" aria-label="Dézoomer">
+              <span class="material-symbols-outlined" aria-hidden="true">remove</span>
+            </button>
+          </div>
+          <button class="glass-panel" type="button" aria-label="Me localiser">
+            <span class="material-symbols-outlined filled" aria-hidden="true">my_location</span>
+          </button>
+          <button class="glass-panel" type="button" aria-label="Calques">
+            <span class="material-symbols-outlined" aria-hidden="true">layers</span>
+          </button>
+        </div>
+
+        <article class="map-summary-card glass-panel" id="summary-card">
+          <div class="map-summary-accent" aria-hidden="true"></div>
+          <div class="map-summary-header">
+            <div>
+              <span class="kicker">Jour 6 • Aujourd'hui</span>
+              <h1>Exploration de la DMZ</h1>
+            </div>
+            <button type="button" data-action="toggle-map-summary" aria-label="Réduire le résumé de la journée">
+              <span class="material-symbols-outlined" aria-hidden="true">keyboard_arrow_down</span>
+            </button>
+          </div>
+          <div class="map-summary-body">
+            <div class="map-summary-image" aria-hidden="true"></div>
+            <div>
+              <p>
+                <span class="material-symbols-outlined" aria-hidden="true">schedule</span>
+                <span>08:00 - Départ en bus</span>
+              </p>
+              <p>
+                <span class="material-symbols-outlined" aria-hidden="true">location_on</span>
+                <span>Imjingak Park</span>
+              </p>
+            </div>
+          </div>
+        </article>
+      </main>
+
+      ${bottomNav('map')}
+    </div>
+  `;
+}
+
 function renderCreateTrip() {
   const draft = getTripDraft();
   const companions = draft.companions || [];
@@ -470,7 +581,7 @@ function renderItinerary() {
 
         <section class="timeline" aria-label="Programme de la journée">
           ${itinerarySteps.map(step => `
-            <article class="timeline-item">
+            <article class="timeline-item ${step.type === 'Activité' ? 'clickable' : ''}" ${step.type === 'Activité' ? 'data-action="activity-detail" tabindex="0" role="button" aria-label="Ouvrir le détail de Sanctuaire Meiji"' : ''}>
               <span class="timeline-pin ${step.tone}">
                 <span class="material-symbols-outlined" aria-hidden="true">${step.icon}</span>
               </span>
@@ -500,6 +611,95 @@ function renderItinerary() {
   `;
 }
 
+
+function renderActivityDetail() {
+  app.innerHTML = `
+    <div class="mobile-shell activity-detail-shell">
+      <header class="activity-detail-topbar glass-panel">
+        <button type="button" data-action="itinerary" aria-label="Retour au programme">
+          <span class="material-symbols-outlined" aria-hidden="true">arrow_back</span>
+        </button>
+        <div>
+          <button type="button" aria-label="Modifier l'activité">
+            <span class="material-symbols-outlined" aria-hidden="true">edit</span>
+          </button>
+          <button type="button" aria-label="Plus d'options">
+            <span class="material-symbols-outlined" aria-hidden="true">more_vert</span>
+          </button>
+        </div>
+      </header>
+
+      <section class="activity-hero" aria-label="Sanctuaire Meiji">
+        <div class="activity-hero-image" aria-hidden="true"></div>
+        <div class="activity-hero-overlay" aria-hidden="true"></div>
+        <div class="activity-hero-content">
+          <span class="kicker">Activité Culturelle</span>
+          <h1>Sanctuaire Meiji</h1>
+        </div>
+      </section>
+
+      <main class="activity-detail-main">
+        <section class="activity-info-grid" aria-label="Informations clés">
+          <article class="activity-info-card">
+            <span class="activity-info-icon material-symbols-outlined" aria-hidden="true">schedule</span>
+            <div>
+              <span class="kicker">Heure</span>
+              <strong>10:00</strong>
+            </div>
+          </article>
+          <article class="activity-info-card">
+            <span class="activity-info-icon material-symbols-outlined" aria-hidden="true">hourglass_top</span>
+            <div>
+              <span class="kicker">Durée</span>
+              <strong>2 heures</strong>
+            </div>
+          </article>
+        </section>
+
+        <section class="activity-section" aria-labelledby="activity-location-title">
+          <h2 id="activity-location-title">
+            <span class="material-symbols-outlined" aria-hidden="true">location_on</span>
+            <span>Lieu</span>
+          </h2>
+          <div class="activity-location-card">
+            <div>
+              <strong>Shibuya, Tokyo</strong>
+              <p>1-1 Yoyogikamizonocho</p>
+            </div>
+            <button type="button" data-action="map">
+              <span>Voir sur la carte</span>
+              <span class="material-symbols-outlined" aria-hidden="true">map</span>
+            </button>
+          </div>
+        </section>
+
+        <section class="activity-section" aria-labelledby="activity-notes-title">
+          <h2 id="activity-notes-title">
+            <span class="material-symbols-outlined" aria-hidden="true">edit_note</span>
+            <span>Notes de Voyage</span>
+          </h2>
+          <article class="activity-notes-card">
+            <span class="quote-icon material-symbols-outlined" aria-hidden="true">format_quote</span>
+            <p>Arriver tôt, de préférence juste après l'ouverture, pour éviter les foules massives et profiter du calme de la forêt qui entoure le sanctuaire. La marche depuis la gare de Harajuku à travers l'allée des cèdres est particulièrement apaisante.</p>
+            <p>Ne pas oublier d'observer les barils de saké (Kazaridaru) offerts au sanctuaire, situés le long du chemin principal. C'est un excellent point photo. Prévoir des chaussures confortables car les allées de gravier peuvent être fatigantes.</p>
+            <div class="activity-tags" aria-label="Tags">
+              <span>#calme</span>
+              <span>#photo</span>
+              <span>#culture</span>
+            </div>
+          </article>
+        </section>
+
+        <section class="activity-gallery" aria-label="Galerie de l'activité">
+          <div class="activity-gallery-item sake" aria-label="Barils de saké"></div>
+          <div class="activity-gallery-item ema" aria-label="Plaques Ema"></div>
+        </section>
+      </main>
+
+      ${bottomNav('plan')}
+    </div>
+  `;
+}
 
 function renderNewStep() {
   const activeCategory = stepFieldSets[selectedStepCategory] ? selectedStepCategory : 'transport';
@@ -551,7 +751,7 @@ function budgetTabs(active = 'overview') {
   const tabs = [
     { id: 'overview', label: 'Aperçu', action: 'budget-overview' },
     { id: 'expenses', label: 'Dépenses', action: 'budget' },
-    { id: 'balance', label: 'Équilibre' }
+    { id: 'balance', label: 'Équilibre', action: 'budget-balance' }
   ];
 
   return `
@@ -621,12 +821,94 @@ function renderBudget() {
         </div>
       </main>
 
-      <button class="budget-fab" type="button" aria-label="Ajouter une dépense">+</button>
+      <button class="budget-fab" type="button" data-action="new-expense" aria-label="Ajouter une dépense">+</button>
       ${bottomNav('budget')}
     </div>
   `;
 }
 
+
+function renderNewExpense() {
+  const activeCategory = expenseCategories.find(category => category.id === selectedExpenseCategory) || expenseCategories[0];
+  const payerLabel = selectedExpensePayer === 'partner' ? 'Partenaire' : selectedExpensePayer === 'common' ? 'Fonds Commun' : 'Moi';
+
+  app.innerHTML = `
+    <div class="mobile-shell new-expense-shell">
+      <header class="new-expense-header">
+        <button type="button" data-action="budget" aria-label="Fermer">
+          <span class="material-symbols-outlined" aria-hidden="true">close</span>
+        </button>
+        <span class="kicker">Nouvelle dépense</span>
+        <button type="button" data-action="save-expense">Enregistrer</button>
+      </header>
+
+      <main class="new-expense-main">
+        <section class="expense-amount-section" aria-labelledby="expense-amount-title">
+          <h1 class="kicker" id="expense-amount-title">Montant</h1>
+          <label class="expense-amount-input">
+            <span>€</span>
+            <input id="expense-amount" type="text" inputmode="decimal" value="142.50" placeholder="0.00" aria-label="Montant de la dépense">
+          </label>
+        </section>
+
+        <section class="new-expense-section" aria-labelledby="expense-category-title">
+          <h2 class="kicker" id="expense-category-title">Catégorie</h2>
+          <div class="expense-category-grid">
+            ${expenseCategories.map(category => `
+              <button class="expense-category-button ${activeCategory.id === category.id ? 'active' : ''} ${category.id === 'other' ? 'other' : ''}" type="button" data-expense-category="${category.id}">
+                <span class="material-symbols-outlined ${activeCategory.id === category.id ? 'filled' : ''}" aria-hidden="true">${category.icon}</span>
+                <span>${category.label}</span>
+              </button>
+            `).join('')}
+          </div>
+        </section>
+
+        <section class="new-expense-section" aria-labelledby="expense-payer-title">
+          <h2 class="kicker" id="expense-payer-title">Qui a payé ?</h2>
+          <div class="expense-segmented" role="group" aria-label="Payeur sélectionné : ${payerLabel}">
+            <button class="${selectedExpensePayer === 'me' ? 'active' : ''}" type="button" data-expense-payer="me"><span>S</span>Moi</button>
+            <button class="${selectedExpensePayer === 'partner' ? 'active' : ''}" type="button" data-expense-payer="partner"><span>C</span>Partenaire</button>
+            <button class="${selectedExpensePayer === 'common' ? 'active' : ''}" type="button" data-expense-payer="common">Fonds Commun</button>
+          </div>
+        </section>
+
+        <section class="new-expense-section" aria-labelledby="expense-split-title">
+          <h2 class="kicker" id="expense-split-title">Pour qui ?</h2>
+          <div class="expense-split-list">
+            <button class="expense-split-card ${selectedExpenseSplit === 'equal' ? 'active' : ''}" type="button" data-expense-split="equal">
+              <span class="split-avatars"><span>S</span><span>C</span></span>
+              <strong>Partagé équitablement</strong>
+              <span class="material-symbols-outlined" aria-hidden="true">${selectedExpenseSplit === 'equal' ? 'check_circle' : 'radio_button_unchecked'}</span>
+            </button>
+            <button class="expense-split-card ${selectedExpenseSplit === 'me' ? 'active' : ''}" type="button" data-expense-split="me">
+              <span class="split-avatars solo"><span>S</span></span>
+              <strong>Seulement moi</strong>
+              <span class="material-symbols-outlined" aria-hidden="true">${selectedExpenseSplit === 'me' ? 'check_circle' : 'radio_button_unchecked'}</span>
+            </button>
+          </div>
+        </section>
+
+        <section class="new-expense-section expense-fields" aria-label="Date et note">
+          <label>
+            <span class="material-symbols-outlined" aria-hidden="true">calendar_today</span>
+            <input id="expense-date" type="text" value="Aujourd'hui, 14 oct." placeholder="Date">
+          </label>
+          <label>
+            <span class="material-symbols-outlined" aria-hidden="true">notes</span>
+            <textarea id="expense-note" rows="2" placeholder="Ajouter une note... (ex: Dîner au Chateaubriand)"></textarea>
+          </label>
+        </section>
+      </main>
+
+      <div class="new-expense-bottom">
+        <button class="primary-action" type="button" data-action="save-expense">
+          <span class="material-symbols-outlined" aria-hidden="true">add_circle</span>
+          <span>Ajouter la dépense</span>
+        </button>
+      </div>
+    </div>
+  `;
+}
 
 function renderBudgetOverview() {
   app.innerHTML = `
@@ -690,6 +972,105 @@ function renderBudgetOverview() {
   `;
 }
 
+
+function renderBudgetBalance() {
+  app.innerHTML = `
+    <div class="mobile-shell">
+      <section class="budget-sticky balance-sticky">
+        <header class="topbar budget-topbar">
+          <button class="icon-button" type="button" data-action="home" aria-label="Retour au plan">⌘</button>
+          <h1 class="topbar-title">L'Atelier</h1>
+          <button class="icon-button" type="button" aria-label="Options budget">⌄</button>
+        </header>
+
+        <div class="budget-summary balance-summary">
+          <span class="kicker">Budget Total</span>
+          <strong>2 048,00 €</strong>
+          <div class="budget-per-person">
+            <span>1 024,00 € / pers.</span>
+            <div class="avatar-stack" aria-label="Participants">
+              <span>M</span>
+              <span>Ma</span>
+            </div>
+          </div>
+        </div>
+
+        ${budgetTabs('balance')}
+      </section>
+
+      <main class="budget-balance-main">
+        <section class="balance-section" aria-labelledby="balances-title">
+          <h2 class="kicker" id="balances-title">Bilans individuels</h2>
+          <div class="balance-list">
+            ${budgetBalances.map(person => `
+              <article class="balance-card">
+                <div class="balance-person">
+                  <span class="balance-avatar">${person.initials}</span>
+                  <div>
+                    <h3>${person.name}</h3>
+                    <p>A payé ${person.paid}</p>
+                  </div>
+                </div>
+                <strong class="balance-amount ${person.tone}">${person.balance}</strong>
+              </article>
+            `).join('')}
+          </div>
+        </section>
+
+        <section class="settlement-section" aria-labelledby="settlement-title">
+          <h2 id="settlement-title">Remboursements à faire</h2>
+          <article class="settlement-card">
+            <div class="settlement-flow">
+              <div class="settlement-person">
+                <span class="balance-avatar">${budgetSettlement.fromInitials}</span>
+                <span>${budgetSettlement.from}</span>
+              </div>
+
+              <div class="settlement-arrow" aria-label="${budgetSettlement.from} doit ${budgetSettlement.amount} à ${budgetSettlement.to}">
+                <strong>${budgetSettlement.amount}</strong>
+                <span aria-hidden="true"></span>
+              </div>
+
+              <div class="settlement-person">
+                <span class="balance-avatar">${budgetSettlement.toInitials}</span>
+                <span>${budgetSettlement.to}</span>
+              </div>
+            </div>
+
+            <button class="settlement-button" type="button" data-action="settlement-settled">
+              <span class="material-symbols-outlined" aria-hidden="true">check_circle</span>
+              <span>Marquer comme réglé</span>
+            </button>
+          </article>
+        </section>
+      </main>
+
+      ${bottomNav('budget')}
+    </div>
+  `;
+}
+
+
+function handleSaveExpense() {
+  const amountInput = document.querySelector('#expense-amount');
+  const noteInput = document.querySelector('#expense-note');
+  const activeCategory = expenseCategories.find(category => category.id === selectedExpenseCategory) || expenseCategories[0];
+  const amount = amountInput?.value.trim() || '0.00';
+  const normalizedAmount = amount.replace('.', ',');
+  const note = noteInput?.value.trim();
+  const payer = selectedExpensePayer === 'partner' ? 'Partenaire' : selectedExpensePayer === 'common' ? 'Fonds commun' : 'Moi';
+
+  expenses[0].items.unshift({
+    title: note || activeCategory.label,
+    payer,
+    amount: `- ${normalizedAmount} €`,
+    icon: activeCategory.emoji,
+    tone: activeCategory.tone
+  });
+
+  navigate('budget');
+}
+
 function handleAddFriend() {
   const input = document.querySelector('#companion-name');
   const name = input?.value.trim();
@@ -748,13 +1129,25 @@ function navigate(route) {
   } else if (route === 'budget') {
     window.location.hash = 'budget';
     renderBudget();
+  } else if (route === 'budget-balance') {
+    window.location.hash = 'budget-balance';
+    renderBudgetBalance();
+  } else if (route === 'new-expense') {
+    window.location.hash = 'new-expense';
+    renderNewExpense();
   } else if (route === 'itinerary') {
     window.location.hash = 'itinerary';
     renderItinerary();
   } else if (route === 'new-step') {
     window.location.hash = 'new-step';
     renderNewStep();
-  } else if (route === 'map' || route === 'docs') {
+  } else if (route === 'activity-detail') {
+    window.location.hash = 'activity-detail';
+    renderActivityDetail();
+  } else if (route === 'map') {
+    window.location.hash = 'map';
+    renderMap();
+  } else if (route === 'docs') {
     window.location.hash = '';
     renderHome();
   } else {
@@ -782,6 +1175,23 @@ window.addEventListener('click', event => {
     return;
   }
 
+  if (action === 'save-expense') {
+    handleSaveExpense();
+    return;
+  }
+
+  if (action === 'settlement-settled') {
+    event.target.closest('.settlement-card')?.classList.add('settled');
+    const buttonLabel = event.target.closest('button')?.querySelector('span:last-child');
+    if (buttonLabel) buttonLabel.textContent = 'Remboursement réglé';
+    return;
+  }
+
+  if (action === 'toggle-map-summary') {
+    event.target.closest('.map-summary-card')?.classList.toggle('collapsed');
+    return;
+  }
+
   navigate(action);
 });
 
@@ -789,6 +1199,10 @@ window.addEventListener('hashchange', () => {
   if (window.location.hash === '#create-trip') renderCreateTrip();
   else if (window.location.hash === '#budget-overview') renderBudgetOverview();
   else if (window.location.hash === '#budget') renderBudget();
+  else if (window.location.hash === '#budget-balance') renderBudgetBalance();
+  else if (window.location.hash === '#new-expense') renderNewExpense();
+  else if (window.location.hash === '#map') renderMap();
+  else if (window.location.hash === '#activity-detail') renderActivityDetail();
   else if (window.location.hash === '#itinerary') renderItinerary();
   else if (window.location.hash === '#new-step') renderNewStep();
   else renderHome();
@@ -800,6 +1214,38 @@ window.addEventListener('click', event => {
 
   selectedStepCategory = categoryButton.dataset.category || 'transport';
   renderNewStep();
+});
+
+
+window.addEventListener('click', event => {
+  const categoryButton = event.target.closest('[data-expense-category]');
+  if (categoryButton) {
+    selectedExpenseCategory = categoryButton.dataset.expenseCategory || 'meal';
+    renderNewExpense();
+    return;
+  }
+
+  const payerButton = event.target.closest('[data-expense-payer]');
+  if (payerButton) {
+    selectedExpensePayer = payerButton.dataset.expensePayer || 'me';
+    renderNewExpense();
+    return;
+  }
+
+  const splitButton = event.target.closest('[data-expense-split]');
+  if (splitButton) {
+    selectedExpenseSplit = splitButton.dataset.expenseSplit || 'equal';
+    renderNewExpense();
+  }
+});
+
+window.addEventListener('keydown', event => {
+  if (event.key !== 'Enter' && event.key !== ' ') return;
+  const detailTrigger = event.target.closest('[data-action="activity-detail"]');
+  if (!detailTrigger) return;
+
+  event.preventDefault();
+  navigate('activity-detail');
 });
 
 window.addEventListener('change', event => {
@@ -819,6 +1265,10 @@ window.addEventListener('change', event => {
 if (window.location.hash === '#create-trip') renderCreateTrip();
 else if (window.location.hash === '#budget-overview') renderBudgetOverview();
 else if (window.location.hash === '#budget') renderBudget();
+else if (window.location.hash === '#budget-balance') renderBudgetBalance();
+else if (window.location.hash === '#new-expense') renderNewExpense();
+else if (window.location.hash === '#map') renderMap();
+else if (window.location.hash === '#activity-detail') renderActivityDetail();
 else if (window.location.hash === '#itinerary') renderItinerary();
 else if (window.location.hash === '#new-step') renderNewStep();
 else renderHome();

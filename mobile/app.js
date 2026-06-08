@@ -557,9 +557,17 @@ function renderHome() {
                  <span class="trip-status">En préparation</span>
                 </div>
                 <div class="trip-body">
-                  <h4>${escapeHtml(trip.name)}</h4>
-                  <div class="trip-date mono">${trip.start_date ? formatDateLabel(trip.start_date, '') : 'Sans date'}</div>
-                </div>
+  <h4>${escapeHtml(trip.name)}</h4>
+  <div class="trip-date mono">${trip.start_date ? formatDateLabel(trip.start_date, '') : 'Sans date'}</div>
+  <div class="item-actions">
+    <button class="icon-mini" type="button" data-action="rename-trip" data-trip-id="${trip.id}" aria-label="Renommer le voyage">
+      <span class="material-symbols-outlined">edit</span>
+    </button>
+    <button class="icon-mini danger" type="button" data-action="delete-trip" data-trip-id="${trip.id}" aria-label="Supprimer le voyage">
+      <span class="material-symbols-outlined">close</span>
+    </button>
+  </div>
+</div>
               </article>
             `).join('') : '<p class="companion-empty">Aucun voyage pour le moment.</p>'}
           </div>
@@ -731,18 +739,6 @@ function renderAccount() {
           <span>Créer une nouvelle aventure</span>
         </button>
 
-        ${activeTrip ? `
-  <button class="create-adventure" type="button" data-action="rename-trip">
-    <span class="material-symbols-outlined">edit</span>
-    <span>Renommer le voyage actif</span>
-  </button>
-
-  <button class="create-adventure" type="button" data-action="delete-trip">
-    <span class="material-symbols-outlined">delete</span>
-    <span>Supprimer le voyage actif</span>
-  </button>
-` : ''}
-
         <button class="create-adventure" type="button" data-action="logout">
           <span class="material-symbols-outlined">logout</span>
           <span>Déconnexion</span>
@@ -893,7 +889,7 @@ function renderItinerary() {
         </section>
 
         <section class="timeline" aria-label="Programme de la journée">
-          ${itinerarySteps.map(step => `
+          ${itinerarySteps.map((step, stepIndex) => `
             <article class="timeline-item ${step.type === 'Activité' ? 'clickable' : ''}" ${step.type === 'Activité' ? 'data-action="activity-detail" tabindex="0" role="button" aria-label="Ouvrir le détail de Sanctuaire Meiji"' : ''}>
               <span class="timeline-pin ${step.tone}">
                 <span class="material-symbols-outlined" aria-hidden="true">${step.icon}</span>
@@ -904,6 +900,14 @@ function renderItinerary() {
                   <span class="kicker">${step.type}</span>
                   <h3>${step.title}</h3>
                   <p>${step.description}</p>
+<div class="item-actions">
+  <button class="icon-mini" type="button" data-action="edit-step" data-step-index="${stepIndex}" aria-label="Modifier l'étape">
+    <span class="material-symbols-outlined">edit</span>
+  </button>
+  <button class="icon-mini danger" type="button" data-action="delete-step" data-step-index="${stepIndex}" aria-label="Supprimer l'étape">
+    <span class="material-symbols-outlined">close</span>
+  </button>
+</div>
                 </div>
               </div>
             </article>
@@ -1096,11 +1100,11 @@ function renderBudget() {
           <span>Ajouter une dépense</span>
         </button>
 
-        ${expenses.map(group => `
+        ${expenses.map((group, groupIndex) => `
           <section class="expense-group-v2">
             <h3 class="kicker">${group.group}</h3>
             <div class="expense-list-v2">
-              ${group.items.map(item => `
+              ${group.items.map((item, itemIndex) => `
                 <article class="expense-row">
                   <span class="expense-row-icon ${item.tone}">
                     <span class="material-symbols-outlined">${
@@ -1118,7 +1122,17 @@ function renderBudget() {
                     <h4>${item.title}</h4>
                     <p>Payé par ${item.payer}</p>
                   </div>
-                  <strong class="expense-row-amount">${item.amount}</strong>
+                  <div class="expense-row-actions">
+  <strong class="expense-row-amount">${item.amount}</strong>
+  <div class="item-actions">
+    <button class="icon-mini" type="button" data-action="edit-expense" data-group-index="${groupIndex}" data-item-index="${itemIndex}" aria-label="Modifier la dépense">
+      <span class="material-symbols-outlined">edit</span>
+    </button>
+    <button class="icon-mini danger" type="button" data-action="delete-expense" data-group-index="${groupIndex}" data-item-index="${itemIndex}" aria-label="Supprimer la dépense">
+      <span class="material-symbols-outlined">close</span>
+    </button>
+  </div>
+</div>
                 </article>
               `).join('')}
             </div>
@@ -1546,6 +1560,33 @@ function renderDocDetail() {
   `;
 }
 
+function handleEditExpense(groupIndex, itemIndex) {
+  const item = expenses[groupIndex]?.items[itemIndex];
+  if (!item) return;
+
+  const title = prompt('Nom de la dépense :', item.title);
+  if (!title || !title.trim()) return;
+
+  const amount = prompt('Montant :', item.amount.replace(/[^0-9,.]/g, ''));
+  if (!amount || !amount.trim()) return;
+
+  item.title = title.trim();
+  item.amount = `- ${amount.replace('.', ',')} €`;
+
+  renderBudget();
+}
+
+function handleDeleteExpense(groupIndex, itemIndex) {
+  const item = expenses[groupIndex]?.items[itemIndex];
+  if (!item) return;
+
+  const ok = confirm(`Supprimer "${item.title}" ?`);
+  if (!ok) return;
+
+  expenses[groupIndex].items.splice(itemIndex, 1);
+  renderBudget();
+}
+
 function handleSaveExpense() {
   const amountInput = document.querySelector('#expense-amount');
   const noteInput = document.querySelector('#expense-note');
@@ -1637,27 +1678,59 @@ async function handleOpenTrip(tripId) {
   navigate('itinerary');
 }
 
-async function handleRenameTrip() {
-  if (!activeTrip) return;
+async function handleRenameTrip(tripId = activeTrip?.id) {
+  if (!tripId) return;
 
-  const name = prompt('Nouveau nom du voyage :', activeTrip.name || '');
+  const trip = mobileTrips.find(item => item.id === tripId) || activeTrip;
+  const name = prompt('Nouveau nom du voyage :', trip?.name || '');
   if (!name || !name.trim()) return;
 
-  await window.SB.updateTrip(activeTrip.id, { name: name.trim() });
-  await refreshMobileTrips(activeTrip.id);
-  renderAccount();
+  await window.SB.updateTrip(tripId, { name: name.trim() });
+  await refreshMobileTrips(tripId);
+  renderHome();
 }
 
-async function handleDeleteTrip() {
-  if (!activeTrip) return;
+async function handleDeleteTrip(tripId = activeTrip?.id) {
+  if (!tripId) return;
 
-  const ok = confirm(`Supprimer "${activeTrip.name}" ?`);
+  const trip = mobileTrips.find(item => item.id === tripId) || activeTrip;
+  const ok = confirm(`Supprimer "${trip?.name || 'ce voyage'}" ?`);
   if (!ok) return;
 
-  await window.SB.deleteTrip(activeTrip.id);
-  activeTrip = null;
+  await window.SB.deleteTrip(tripId);
+
+  if (activeTrip?.id === tripId) activeTrip = null;
+
   await refreshMobileTrips();
-  navigate('home');
+  renderHome();
+}
+
+function handleEditStep(stepIndex) {
+  const step = itinerarySteps[stepIndex];
+  if (!step) return;
+
+  const title = prompt("Nom de l'étape :", step.title);
+  if (!title || !title.trim()) return;
+
+  const time = prompt("Heure :", step.time || '');
+  const description = prompt("Description :", step.description || '');
+
+  step.title = title.trim();
+  step.time = time?.trim() || step.time;
+  step.description = description?.trim() || step.description;
+
+  renderItinerary();
+}
+
+function handleDeleteStep(stepIndex) {
+  const step = itinerarySteps[stepIndex];
+  if (!step) return;
+
+  const ok = confirm(`Supprimer "${step.title}" ?`);
+  if (!ok) return;
+
+  itinerarySteps.splice(stepIndex, 1);
+  renderItinerary();
 }
 
 function handleAddStepToProgram() {
@@ -1777,12 +1850,14 @@ window.addEventListener('click', event => {
 }
 
 if (action === 'rename-trip') {
-  handleRenameTrip();
+  const tripId = event.target.closest('[data-trip-id]')?.dataset.tripId;
+  handleRenameTrip(tripId);
   return;
 }
 
 if (action === 'delete-trip') {
-  handleDeleteTrip();
+  const tripId = event.target.closest('[data-trip-id]')?.dataset.tripId;
+  handleDeleteTrip(tripId);
   return;
 }
 
@@ -1795,6 +1870,30 @@ if (action === 'delete-trip') {
     handleSaveExpense();
     return;
   }
+
+  if (action === 'edit-expense') {
+  const button = event.target.closest('[data-group-index][data-item-index]');
+  handleEditExpense(Number(button.dataset.groupIndex), Number(button.dataset.itemIndex));
+  return;
+}
+
+if (action === 'delete-expense') {
+  const button = event.target.closest('[data-group-index][data-item-index]');
+  handleDeleteExpense(Number(button.dataset.groupIndex), Number(button.dataset.itemIndex));
+  return;
+}
+
+if (action === 'edit-step') {
+  const stepIndex = Number(event.target.closest('[data-step-index]')?.dataset.stepIndex);
+  handleEditStep(stepIndex);
+  return;
+}
+
+if (action === 'delete-step') {
+  const stepIndex = Number(event.target.closest('[data-step-index]')?.dataset.stepIndex);
+  handleDeleteStep(stepIndex);
+  return;
+}
 
   if (action === 'add-doc-folder') {
     const name = prompt('Nom du nouveau dossier :');

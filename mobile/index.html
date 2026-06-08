@@ -14,13 +14,25 @@
   <div id="app"></div>
 
 <script type="module">
-  import * as SB from '../web/lib/supabase.js';
-  window.SB = SB;
-  window.dispatchEvent(new Event('sb-ready'));
+  async function bootMobileApp() {
+    try {
+      window.SB = await import('./lib/supabase.js');
+    } catch (error) {
+      console.error('Supabase mobile import failed:', error);
+      window.SB = null;
+    }
 
-  const script = document.createElement('script');
-  script.src = 'app.js';
-  document.body.appendChild(script);
+    window.dispatchEvent(new Event('sb-ready'));
+
+    const script = document.createElement('script');
+    script.src = 'app.js';
+    script.onerror = () => {
+      document.getElementById('app').innerHTML = '<p style="padding:24px;font-family:sans-serif">Erreur de chargement app.js</p>';
+    };
+    document.body.appendChild(script);
+  }
+
+  bootMobileApp();
 </script>
 </body>
 </html>

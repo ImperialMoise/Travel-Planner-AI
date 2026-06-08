@@ -10,7 +10,12 @@ const ICONS = {
   home: '⌂',
   map: '⌖',
   budget: '◫',
-  docs: '☷'
+  docs: '☷',
+  close: '×',
+  location: '⌖',
+  calendarMonth: '▦',
+  personAdd: '♁',
+  arrowRight: '→'
 };
 
 export default function AppIcon({ name, size = 22, color = colors.onSurfaceVariant, style }) {

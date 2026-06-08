@@ -3,9 +3,9 @@ import { Pressable, StyleSheet, Text } from 'react-native';
 import AppIcon from './AppIcon';
 import { colors, radii } from '../theme/tokens';
 
-export default function CreateAdventureButton() {
+export default function CreateAdventureButton({ onPress }) {
   return (
-    <Pressable accessibilityRole="button" style={styles.button}>
+    <Pressable accessibilityRole="button" onPress={onPress} style={styles.button}>
       <AppIcon name="add" size={26} color={colors.mutedGreen} />
       <Text style={styles.label}>Créer une nouvelle aventure</Text>
     </Pressable>

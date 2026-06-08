@@ -10,6 +10,7 @@ export const colors = {
   onSurfaceVariant: '#504538',
   mutedGreen: '#5e7068',
   primary: '#7c5410',
+  onPrimary: '#ffffff',
   primaryFixed: '#ffddb3',
   tertiaryContainer: '#597b72',
   petrolDark: '#15302a'
@@ -49,6 +50,13 @@ export const shadows = {
     shadowColor: '#2d493f',
     shadowOffset: { width: 0, height: -3 },
     shadowOpacity: 0.1,
+    shadowRadius: 14,
+    elevation: 8
+  },
+  action: {
+    shadowColor: '#7c5410',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
     shadowRadius: 14,
     elevation: 8
   }

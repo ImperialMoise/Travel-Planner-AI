@@ -8,7 +8,7 @@ import TripCard from '../components/TripCard';
 import { nextTrip, trips } from '../data/homeMock';
 import { colors, fonts, spacing } from '../theme/tokens';
 
-export default function HomeScreen() {
+export default function HomeScreen({ onCreateTrip }) {
   return (
     <View style={styles.screen}>
       <TopAppBar />
@@ -26,7 +26,7 @@ export default function HomeScreen() {
         </View>
 
         <View style={styles.createSection}>
-          <CreateAdventureButton />
+          <CreateAdventureButton onPress={onCreateTrip} />
         </View>
 
         <View style={styles.tripsHeader}>

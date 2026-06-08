@@ -68,6 +68,47 @@ const budgetSettlement = {
   amount: '226,00 €'
 };
 
+const docCategories = [
+  {
+    id: 'flights',
+    label: 'Billets d\'avion',
+    icon: 'flight',
+    tone: 'primary',
+    files: [
+      { name: 'E-Ticket_AirFrance_AF123.pdf', type: 'pdf', date: '12 Oct', size: '1.2 MB' },
+      { name: 'Carte_Embarquement_Retour.png', type: 'image', date: '14 Oct', size: '850 KB' }
+    ]
+  },
+  {
+    id: 'hotels',
+    label: 'Hébergements',
+    icon: 'hotel',
+    tone: 'accent',
+    files: [
+      { name: 'Booking_Riad_Marrakech.pdf', type: 'pdf', date: '10 Oct', size: '2.1 MB' }
+    ]
+  },
+  {
+    id: 'identity',
+    label: 'Identité',
+    icon: 'badge',
+    tone: 'secondary',
+    files: [
+      { name: 'Passeport_Marie.jpg', type: 'image', date: '05 Sep', size: '1.5 MB' },
+      { name: 'Passeport_Jean.jpg', type: 'image', date: '05 Sep', size: '1.4 MB' }
+    ]
+  },
+  {
+    id: 'insurance',
+    label: 'Assurances',
+    icon: 'health_and_safety',
+    tone: 'tertiary',
+    files: [
+      { name: 'Attestation_Rapatriement.pdf', type: 'pdf', date: '15 Sep', size: '500 KB' }
+    ]
+  }
+];
+
 const mapMarkers = [
   { icon: 'hotel', label: 'Hôtel', top: '32%', left: '24%', active: false },
   { icon: 'tour', label: 'DMZ Tour', top: '50%', left: '66%', active: true },
@@ -1034,15 +1075,195 @@ function renderDocs() {
     <div class="mobile-shell">
       ${topbar()}
 
-      <main class="docs-main">
-        <section class="docs-empty">
-          <span class="material-symbols-outlined docs-empty-icon" aria-hidden="true">description</span>
-          <h2>Documents</h2>
-          <p>Vos documents de voyage apparaîtront ici.</p>
-        </section>
+      <main class="docs-main-v2">
+        <div class="docs-header">
+          <span class="kicker">Coffre-fort Numérique</span>
+          <h2 class="docs-title">Documents de Voyage</h2>
+          <p class="docs-subtitle">Vos documents essentiels centralisés et sécurisés.</p>
+        </div>
+
+        <div class="docs-security-banner">
+          <span class="material-symbols-outlined filled">verified_user</span>
+          <div>
+            <strong>Stockage Sécurisé</strong>
+            <p>Documents chiffrés. Synchronisez avant le départ pour un accès hors ligne.</p>
+          </div>
+        </div>
+
+        <div class="docs-actions">
+          <button class="docs-action-primary" type="button">
+            <span class="material-symbols-outlined">upload_file</span>
+            <span>Ajouter</span>
+          </button>
+          <button class="docs-action-secondary" type="button" data-action="doc-scanner">
+            <span class="material-symbols-outlined">photo_camera</span>
+            <span>Scanner</span>
+          </button>
+        </div>
+
+        <div class="docs-grid">
+          ${docCategories.map(cat => `
+            <div class="docs-category-card">
+              <div class="docs-category-header">
+                <div class="docs-category-icon ${cat.tone}">
+                  <span class="material-symbols-outlined">${cat.icon}</span>
+                </div>
+                <h3>${cat.label}</h3>
+                <span class="docs-file-count">${cat.files.length} fichier${cat.files.length > 1 ? 's' : ''}</span>
+              </div>
+              <div class="docs-file-list">
+                ${cat.files.map(file => `
+                  <button class="docs-file-row" type="button" data-action="doc-detail">
+                    <span class="material-symbols-outlined docs-file-type-icon ${file.type === 'pdf' ? 'pdf' : 'img'}">${file.type === 'pdf' ? 'picture_as_pdf' : 'image'}</span>
+                    <div class="docs-file-info">
+                      <span class="docs-file-name">${file.name}</span>
+                      <span class="docs-file-meta">Ajouté le ${file.date} • ${file.size}</span>
+                    </div>
+                    <span class="material-symbols-outlined docs-file-more">chevron_right</span>
+                  </button>
+                `).join('')}
+              </div>
+            </div>
+          `).join('')}
+
+          <button class="docs-add-folder" type="button">
+            <span class="material-symbols-outlined">create_new_folder</span>
+            <strong>Nouveau Dossier</strong>
+            <span>Créer une catégorie</span>
+          </button>
+        </div>
       </main>
 
       ${bottomNav('docs')}
+    </div>
+  `;
+}
+
+function renderDocScanner() {
+  app.innerHTML = `
+    <div class="mobile-shell scanner-shell">
+      <header class="scanner-topbar">
+        <button class="scanner-btn" type="button" data-action="docs" aria-label="Annuler">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+        <h1 class="topbar-title">L'Atelier</h1>
+        <button class="scanner-btn" type="button" aria-label="Aide">
+          <span class="material-symbols-outlined">help_outline</span>
+        </button>
+      </header>
+
+      <main class="scanner-viewport">
+        <div class="scanner-bg"></div>
+        <div class="scanner-mask"></div>
+        <div class="scanner-frame">
+          <span class="corner tl"></span>
+          <span class="corner tr"></span>
+          <span class="corner bl"></span>
+          <span class="corner br"></span>
+          <div class="scanner-detected">
+            <span>DOCUMENT DÉTECTÉ</span>
+          </div>
+        </div>
+
+        <div class="scanner-controls">
+          <div class="scanner-options">
+            <button type="button"><span class="material-symbols-outlined filled">flash_auto</span><span>Auto</span></button>
+            <button type="button" class="active"><span class="material-symbols-outlined filled">auto_awesome</span><span>Auto-Bords</span></button>
+            <button type="button"><span class="material-symbols-outlined">description</span><span>Type</span></button>
+          </div>
+
+          <div class="scanner-capture-row">
+            <button class="scanner-gallery" type="button">
+              <span class="material-symbols-outlined">photo_library</span>
+            </button>
+            <button class="scanner-shutter" type="button" aria-label="Capturer">
+              <span class="shutter-ring"></span>
+            </button>
+            <button class="scanner-done" type="button" data-action="docs">
+              <span class="material-symbols-outlined">check</span>
+            </button>
+          </div>
+
+          <p class="scanner-hint">Maintenez l'appareil stable au-dessus du document.</p>
+        </div>
+      </main>
+    </div>
+  `;
+}
+
+function renderDocDetail() {
+  app.innerHTML = `
+    <div class="mobile-shell doc-detail-shell">
+      <header class="doc-detail-topbar">
+        <button type="button" data-action="docs" aria-label="Retour">
+          <span class="material-symbols-outlined">arrow_back</span>
+        </button>
+        <div class="doc-detail-title">
+          <strong>E-Ticket_AF_Paris_Tokyo.pdf</strong>
+          <span>1.2 MB • PDF</span>
+        </div>
+        <button type="button" aria-label="Options">
+          <span class="material-symbols-outlined">more_vert</span>
+        </button>
+      </header>
+
+      <main class="doc-detail-viewer">
+        <div class="ticket-card">
+          <div class="ticket-header">
+            <div>
+              <h2>Air France</h2>
+              <p>First Class E-Ticket</p>
+            </div>
+            <div class="ticket-icon">
+              <span class="material-symbols-outlined">flight</span>
+            </div>
+          </div>
+
+          <div class="ticket-body">
+            <div class="ticket-route">
+              <div class="ticket-airport">
+                <span class="ticket-code">CDG</span>
+                <span class="ticket-city">Paris</span>
+              </div>
+              <div class="ticket-line">
+                <span class="material-symbols-outlined">flight_takeoff</span>
+                <span class="ticket-duration">12H 45M</span>
+              </div>
+              <div class="ticket-airport right">
+                <span class="ticket-code">HND</span>
+                <span class="ticket-city">Tokyo</span>
+              </div>
+            </div>
+
+            <div class="ticket-details">
+              <div><span class="kicker">Passager</span><strong>Alexandre Dubois</strong></div>
+              <div><span class="kicker">Vol</span><strong class="mono">AF 276</strong></div>
+              <div><span class="kicker">Date</span><strong>14 Nov 2023</strong></div>
+              <div><span class="kicker">Embarquement</span><strong class="boarding-time">22:45</strong></div>
+              <div><span class="kicker">Terminal / Porte</span><strong>2E / K34</strong></div>
+              <div><span class="kicker">Siège</span><strong>02A</strong></div>
+            </div>
+
+            <div class="ticket-perforation"></div>
+
+            <div class="ticket-qr">
+              <span class="kicker">Scanner à la porte</span>
+              <div class="qr-placeholder">
+                <span class="material-symbols-outlined">qr_code_2</span>
+              </div>
+              <span class="ticket-barcode">01384028394820</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="doc-page-indicator">1 / 1</div>
+      </main>
+
+      <footer class="doc-detail-actions">
+        <button type="button"><span class="material-symbols-outlined">ios_share</span><span>Partager</span></button>
+        <button type="button" class="primary-doc-action"><span class="material-symbols-outlined">download</span><span>Télécharger</span></button>
+        <button type="button" class="danger"><span class="material-symbols-outlined">delete</span><span>Supprimer</span></button>
+      </footer>
     </div>
   `;
 }
@@ -1146,6 +1367,12 @@ function navigate(route) {
   } else if (route === 'docs') {
     window.location.hash = 'docs';
     renderDocs();
+  } else if (route === 'doc-scanner') {
+    window.location.hash = 'doc-scanner';
+    renderDocScanner();
+  } else if (route === 'doc-detail') {
+    window.location.hash = 'doc-detail';
+    renderDocDetail();
   } else {
     window.location.hash = '';
     renderHome();
@@ -1203,6 +1430,8 @@ window.addEventListener('hashchange', () => {
   else if (window.location.hash === '#itinerary') renderItinerary();
   else if (window.location.hash === '#new-step') renderNewStep();
   else if (window.location.hash === '#docs') renderDocs();
+  else if (window.location.hash === '#doc-scanner') renderDocScanner();
+  else if (window.location.hash === '#doc-detail') renderDocDetail();
   else renderHome();
 });
 

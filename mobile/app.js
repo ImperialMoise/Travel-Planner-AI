@@ -4,6 +4,7 @@ let mobileUser = null;
 let mobileTrips = [];
 let activeTrip = null;
 let mobileReady = false;
+let showAllTrips = false;
 
 async function waitForSupabase() {
   if (window.SB) return window.SB;
@@ -550,9 +551,11 @@ function renderHome() {
         <section>
           <div class="section-heading">
             <h3>Mes Voyages</h3>
-            <a href="#" aria-label="Voir tous les voyages">Tout voir</a>
+            <button class="section-link" type="button" data-action="toggle-all-trips">
+  ${showAllTrips ? 'Réduire' : 'Tout voir'}
+</button>
           </div>
-          <div class="trip-strip">
+          <div class="trip-strip ${showAllTrips ? 'expanded' : ''}">
             ${realTrips.length ? realTrips.map(trip => `
               <article class="trip-card" data-action="open-trip" data-trip-id="${trip.id}" style="cursor:pointer">
                  <div class="trip-image" style="background-image: url('https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=900&auto=format&fit=crop')">
@@ -1147,19 +1150,52 @@ function renderBudget() {
   `;
 }
 
+function getBudgetPeople() {
+  const participants = activeTrip?.participants || [];
+
+  if (participants.length) {
+    return participants.map(person => ({
+      id: person.id,
+      name: person.name
+    }));
+  }
+
+  return [
+    { id: 'me', name: 'Moi' },
+    { id: 'partner', name: 'Partenaire' }
+  ];
+}
+
+function getInitial(name = '') {
+  return name.trim().charAt(0).toUpperCase() || '?';
+}
+
+async function handleAddBudgetPerson() {
+  const name = prompt('Nom de la personne :');
+  if (!name || !name.trim()) return;
+
+  if (activeTrip?.id && window.SB?.addParticipant) {
+    await window.SB.addParticipant(activeTrip.id, name.trim(), activeTrip.participants?.length || 0);
+    await refreshMobileTrips(activeTrip.id);
+  }
+
+  renderNewExpense();
+}
 
 function renderNewExpense() {
-    const editingItem = editingExpenseGroupIndex !== null && editingExpenseItemIndex !== null
+  const people = getBudgetPeople();
+  const activeCategory = expenseCategories.find(category => category.id === selectedExpenseCategory) || expenseCategories[0];
+
+  const editingItem = editingExpenseGroupIndex !== null && editingExpenseItemIndex !== null
     ? expenses[editingExpenseGroupIndex]?.items[editingExpenseItemIndex]
     : null;
 
   const editingAmount = editingItem
     ? editingItem.amount.replace(/[^0-9,.]/g, '').replace(',', '.')
-    : '142.50';
+    : '';
 
-  const editingNote = editingItem?.title || '';
-  const activeCategory = expenseCategories.find(category => category.id === selectedExpenseCategory) || expenseCategories[0];
-  const payerLabel = selectedExpensePayer === 'partner' ? 'Partenaire' : selectedExpensePayer === 'common' ? 'Fonds Commun' : 'Moi';
+  const editingTitle = editingItem?.title || '';
+  const editingNote = editingItem?.note || '';
 
   app.innerHTML = `
     <div class="mobile-shell new-expense-shell">
@@ -1172,14 +1208,6 @@ function renderNewExpense() {
       </header>
 
       <main class="new-expense-main">
-        <section class="expense-amount-section" aria-labelledby="expense-amount-title">
-          <h1 class="kicker" id="expense-amount-title">Montant</h1>
-          <label class="expense-amount-input">
-            <span>€</span>
-            <input id="expense-amount" type="text" inputmode="decimal" value="${editingAmount}" placeholder="0.00" aria-label="Montant de la dépense">
-          </label>
-        </section>
-
         <section class="new-expense-section" aria-labelledby="expense-category-title">
           <h2 class="kicker" id="expense-category-title">Catégorie</h2>
           <div class="expense-category-grid">
@@ -1192,12 +1220,34 @@ function renderNewExpense() {
           </div>
         </section>
 
+        <section class="new-expense-section expense-fields" aria-label="Nom de la dépense">
+          <label>
+            <span class="material-symbols-outlined" aria-hidden="true">edit_note</span>
+            <input id="expense-title" type="text" value="${escapeHtml(editingTitle)}" placeholder="Nom de la dépense">
+          </label>
+        </section>
+
+        <section class="expense-amount-section compact" aria-labelledby="expense-amount-title">
+          <h2 class="kicker" id="expense-amount-title">Montant</h2>
+          <label class="expense-amount-input">
+            <span>€</span>
+            <input id="expense-amount" type="text" inputmode="decimal" value="${editingAmount}" placeholder="0.00" aria-label="Montant de la dépense">
+          </label>
+        </section>
+
         <section class="new-expense-section" aria-labelledby="expense-payer-title">
           <h2 class="kicker" id="expense-payer-title">Qui a payé ?</h2>
-          <div class="expense-segmented" role="group" aria-label="Payeur sélectionné : ${payerLabel}">
-            <button class="${selectedExpensePayer === 'me' ? 'active' : ''}" type="button" data-expense-payer="me"><span>S</span>Moi</button>
-            <button class="${selectedExpensePayer === 'partner' ? 'active' : ''}" type="button" data-expense-payer="partner"><span>C</span>Partenaire</button>
-            <button class="${selectedExpensePayer === 'common' ? 'active' : ''}" type="button" data-expense-payer="common">Fonds Commun</button>
+          <div class="expense-people-grid">
+            ${people.map(person => `
+              <button class="expense-person-pill ${selectedExpensePayer === person.id ? 'active' : ''}" type="button" data-expense-payer="${person.id}">
+                <span>${getInitial(person.name)}</span>
+                ${escapeHtml(person.name)}
+              </button>
+            `).join('')}
+            <button class="expense-person-pill ${selectedExpensePayer === 'common' ? 'active' : ''}" type="button" data-expense-payer="common">
+              <span>€</span>
+              Fonds commun
+            </button>
           </div>
         </section>
 
@@ -1205,14 +1255,25 @@ function renderNewExpense() {
           <h2 class="kicker" id="expense-split-title">Pour qui ?</h2>
           <div class="expense-split-list">
             <button class="expense-split-card ${selectedExpenseSplit === 'equal' ? 'active' : ''}" type="button" data-expense-split="equal">
-              <span class="split-avatars"><span>S</span><span>C</span></span>
+              <span class="split-avatars">
+                ${people.slice(0, 4).map(person => `<span>${getInitial(person.name)}</span>`).join('')}
+              </span>
               <strong>Partagé équitablement</strong>
               <span class="material-symbols-outlined" aria-hidden="true">${selectedExpenseSplit === 'equal' ? 'check_circle' : 'radio_button_unchecked'}</span>
             </button>
-            <button class="expense-split-card ${selectedExpenseSplit === 'me' ? 'active' : ''}" type="button" data-expense-split="me">
-              <span class="split-avatars solo"><span>S</span></span>
-              <strong>Seulement moi</strong>
-              <span class="material-symbols-outlined" aria-hidden="true">${selectedExpenseSplit === 'me' ? 'check_circle' : 'radio_button_unchecked'}</span>
+
+            ${people.map(person => `
+              <button class="expense-split-card ${selectedExpenseSplit === person.id ? 'active' : ''}" type="button" data-expense-split="${person.id}">
+                <span class="split-avatars solo"><span>${getInitial(person.name)}</span></span>
+                <strong>${escapeHtml(person.name)}</strong>
+                <span class="material-symbols-outlined" aria-hidden="true">${selectedExpenseSplit === person.id ? 'check_circle' : 'radio_button_unchecked'}</span>
+              </button>
+            `).join('')}
+
+            <button class="expense-split-card add-person" type="button" data-action="add-budget-person">
+              <span class="material-symbols-outlined">person_add</span>
+              <strong>Ajouter quelqu’un</strong>
+              <span class="material-symbols-outlined">add</span>
             </button>
           </div>
         </section>
@@ -1220,18 +1281,18 @@ function renderNewExpense() {
         <section class="new-expense-section expense-fields" aria-label="Date et note">
           <label>
             <span class="material-symbols-outlined" aria-hidden="true">calendar_today</span>
-            <input id="expense-date" type="text" value="Aujourd'hui, 14 oct." placeholder="Date">
+            <input id="expense-date" type="date">
           </label>
           <label>
             <span class="material-symbols-outlined" aria-hidden="true">notes</span>
-            <textarea id="expense-note" rows="2" placeholder="Ajouter une note... (ex: Dîner au Chateaubriand)">${escapeHtml(editingNote)}</textarea>
+            <textarea id="expense-note" rows="2" placeholder="Note optionnelle">${escapeHtml(editingNote)}</textarea>
           </label>
         </section>
       </main>
 
       <div class="new-expense-bottom">
         <button class="primary-action" type="button" data-action="save-expense">
-          <span class="material-symbols-outlined" aria-hidden="true">add_circle</span>
+          <span class="material-symbols-outlined" aria-hidden="true">${editingItem ? 'check_circle' : 'add_circle'}</span>
           <span>${editingItem ? 'Enregistrer les modifications' : 'Ajouter la dépense'}</span>
         </button>
       </div>
@@ -1594,15 +1655,20 @@ function handleDeleteExpense(groupIndex, itemIndex) {
 
 function handleSaveExpense() {
   const amountInput = document.querySelector('#expense-amount');
-  const noteInput = document.querySelector('#expense-note');
+  const title = titleInput?.value.trim();
+  const note = noteInput?.value.trim();
+  const people = getBudgetPeople();
+  const selectedPayer = people.find(person => person.id === selectedExpensePayer);
+  const titleInput = document.querySelector('#expense-title');
   const activeCategory = expenseCategories.find(category => category.id === selectedExpenseCategory) || expenseCategories[0];
   const amount = amountInput?.value.trim() || '0.00';
   const normalizedAmount = amount.replace('.', ',');
   const note = noteInput?.value.trim();
-  const payer = selectedExpensePayer === 'partner' ? 'Partenaire' : selectedExpensePayer === 'common' ? 'Fonds commun' : 'Moi';
+  const payer = selectedExpensePayer === 'common' ? 'Fonds commun' : selectedPayer?.name || 'Moi';
 
   const expenseData = {
-  title: note || activeCategory.label,
+  title: title || activeCategory.label,
+  note,
   payer,
   amount: `- ${normalizedAmount} €`,
   icon: activeCategory.emoji,
@@ -1856,6 +1922,12 @@ window.addEventListener('click', event => {
     return;
   }
 
+  if (action === 'toggle-all-trips') {
+  showAllTrips = !showAllTrips;
+  renderHome();
+  return;
+}
+
   if (action === 'open-trip') {
   const tripId = event.target.closest('[data-trip-id]')?.dataset.tripId;
   handleOpenTrip(tripId);
@@ -1883,6 +1955,11 @@ if (action === 'delete-trip') {
     handleSaveExpense();
     return;
   }
+
+  if (action === 'add-budget-person') {
+  handleAddBudgetPerson();
+  return;
+}
 
   if (action === 'edit-expense') {
   const button = event.target.closest('[data-group-index][data-item-index]');

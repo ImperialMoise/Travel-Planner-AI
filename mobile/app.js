@@ -102,6 +102,8 @@ const expenseCategories = [
 let selectedExpenseCategory = 'meal';
 let selectedExpensePayer = 'me';
 let selectedExpenseSplit = 'equal';
+let editingExpenseGroupIndex = null;
+let editingExpenseItemIndex = null;
 
 const budgetCategories = [
   { label: 'Transport', percent: '45% du budget', amount: '256,50 €', icon: 'flight', tone: 'primary' },
@@ -1147,6 +1149,15 @@ function renderBudget() {
 
 
 function renderNewExpense() {
+    const editingItem = editingExpenseGroupIndex !== null && editingExpenseItemIndex !== null
+    ? expenses[editingExpenseGroupIndex]?.items[editingExpenseItemIndex]
+    : null;
+
+  const editingAmount = editingItem
+    ? editingItem.amount.replace(/[^0-9,.]/g, '').replace(',', '.')
+    : '142.50';
+
+  const editingNote = editingItem?.title || '';
   const activeCategory = expenseCategories.find(category => category.id === selectedExpenseCategory) || expenseCategories[0];
   const payerLabel = selectedExpensePayer === 'partner' ? 'Partenaire' : selectedExpensePayer === 'common' ? 'Fonds Commun' : 'Moi';
 
@@ -1156,7 +1167,7 @@ function renderNewExpense() {
         <button type="button" data-action="budget" aria-label="Fermer">
           <span class="material-symbols-outlined" aria-hidden="true">close</span>
         </button>
-        <span class="kicker">Nouvelle dépense</span>
+        <span class="kicker">${editingItem ? 'Modifier la dépense' : 'Nouvelle dépense'}</span>
         <button type="button" data-action="save-expense">Enregistrer</button>
       </header>
 
@@ -1165,7 +1176,7 @@ function renderNewExpense() {
           <h1 class="kicker" id="expense-amount-title">Montant</h1>
           <label class="expense-amount-input">
             <span>€</span>
-            <input id="expense-amount" type="text" inputmode="decimal" value="142.50" placeholder="0.00" aria-label="Montant de la dépense">
+            <input id="expense-amount" type="text" inputmode="decimal" value="${editingAmount}" placeholder="0.00" aria-label="Montant de la dépense">
           </label>
         </section>
 
@@ -1213,7 +1224,7 @@ function renderNewExpense() {
           </label>
           <label>
             <span class="material-symbols-outlined" aria-hidden="true">notes</span>
-            <textarea id="expense-note" rows="2" placeholder="Ajouter une note... (ex: Dîner au Chateaubriand)"></textarea>
+            <textarea id="expense-note" rows="2" placeholder="Ajouter une note... (ex: Dîner au Chateaubriand)">${escapeHtml(editingNote)}</textarea>
           </label>
         </section>
       </main>
@@ -1221,7 +1232,7 @@ function renderNewExpense() {
       <div class="new-expense-bottom">
         <button class="primary-action" type="button" data-action="save-expense">
           <span class="material-symbols-outlined" aria-hidden="true">add_circle</span>
-          <span>Ajouter la dépense</span>
+          <span>${editingItem ? 'Enregistrer les modifications' : 'Ajouter la dépense'}</span>
         </button>
       </div>
     </div>
@@ -1564,16 +1575,10 @@ function handleEditExpense(groupIndex, itemIndex) {
   const item = expenses[groupIndex]?.items[itemIndex];
   if (!item) return;
 
-  const title = prompt('Nom de la dépense :', item.title);
-  if (!title || !title.trim()) return;
+  editingExpenseGroupIndex = groupIndex;
+  editingExpenseItemIndex = itemIndex;
 
-  const amount = prompt('Montant :', item.amount.replace(/[^0-9,.]/g, ''));
-  if (!amount || !amount.trim()) return;
-
-  item.title = title.trim();
-  item.amount = `- ${amount.replace('.', ',')} €`;
-
-  renderBudget();
+  navigate('new-expense');
 }
 
 function handleDeleteExpense(groupIndex, itemIndex) {
@@ -1596,15 +1601,23 @@ function handleSaveExpense() {
   const note = noteInput?.value.trim();
   const payer = selectedExpensePayer === 'partner' ? 'Partenaire' : selectedExpensePayer === 'common' ? 'Fonds commun' : 'Moi';
 
-  expenses[0].items.unshift({
-    title: note || activeCategory.label,
-    payer,
-    amount: `- ${normalizedAmount} €`,
-    icon: activeCategory.emoji,
-    tone: activeCategory.tone
-  });
+  const expenseData = {
+  title: note || activeCategory.label,
+  payer,
+  amount: `- ${normalizedAmount} €`,
+  icon: activeCategory.emoji,
+  tone: activeCategory.tone
+};
 
-  navigate('budget');
+if (editingExpenseGroupIndex !== null && editingExpenseItemIndex !== null) {
+  expenses[editingExpenseGroupIndex].items[editingExpenseItemIndex] = expenseData;
+  editingExpenseGroupIndex = null;
+  editingExpenseItemIndex = null;
+} else {
+  expenses[0].items.unshift(expenseData);
+}
+
+navigate('budget');
 }
 
 async function handleLogin() {

@@ -7,7 +7,9 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "start:tunnel": "expo start --tunnel",
+    "start:clear": "expo start --tunnel --clear"
   },
   "dependencies": {
     "expo": "~56.0.0",

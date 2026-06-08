@@ -14,10 +14,16 @@ Depuis un environnement en ligne comme GitHub Codespaces :
 ```bash
 cd mobile
 npm install
-npm start
+npm run start:tunnel
 ```
 
-Ensuite, scanner le QR code avec Expo Go sur le téléphone.
+Ensuite, scanner le QR code avec Expo Go sur le téléphone. Le mode `tunnel` est recommandé depuis GitHub Codespaces, car le téléphone n'est généralement pas sur le même réseau local que le serveur Expo lancé dans le cloud.
+
+Si Expo Go garde une ancienne erreur en cache, relancer avec :
+
+```bash
+npm run start:clear
+```
 
 ## Notes de conversion Stitch → React Native
 

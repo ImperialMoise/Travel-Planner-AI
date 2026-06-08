@@ -1,5 +1,56 @@
 const app = document.getElementById('app');
 
+let mobileUser = null;
+let mobileTrips = [];
+let activeTrip = null;
+let mobileReady = false;
+
+async function waitForSupabase() {
+  if (window.SB) return;
+  await new Promise(resolve => window.addEventListener('sb-ready', resolve, { once: true }));
+}
+
+function getTripDurationDays(startDate, endDate) {
+  if (!startDate) return 1;
+  if (!endDate) return 1;
+
+  const start = new Date(`${startDate}T00:00:00`);
+  const end = new Date(`${endDate}T00:00:00`);
+  const diff = Math.round((end - start) / 86400000) + 1;
+
+  return Math.max(1, diff || 1);
+}
+
+async function initMobileData() {
+  await waitForSupabase();
+
+  try {
+    mobileUser = await window.SB.getUser();
+
+    if (mobileUser) {
+      mobileTrips = await window.SB.listMyTrips();
+
+      if (mobileTrips.length) {
+        activeTrip = await window.SB.loadTrip(mobileTrips[0].id);
+      }
+    }
+  } catch (error) {
+    console.warn('Mobile Supabase init error:', error);
+  } finally {
+    mobileReady = true;
+  }
+}
+
+async function refreshMobileTrips() {
+  if (!window.SB || !mobileUser) return;
+
+  mobileTrips = await window.SB.listMyTrips();
+
+  if (mobileTrips.length && !activeTrip) {
+    activeTrip = await window.SB.loadTrip(mobileTrips[0].id);
+  }
+}
+
 const trips = [
   {
     title: 'Paris Printemps',
@@ -689,10 +740,16 @@ function initCreateTripControls() {
 
 function renderItinerary() {
   const draft = getTripDraft();
-  const title = draft.destination || 'Frontière du Nord';
-  const period = draft.startDate
-    ? `${formatDateLabel(draft.startDate, '')}${draft.endDate ? ` – ${formatDateLabel(draft.endDate, '')}` : ''}`
-    : 'Jour 6 • 14 Octobre';
+  const trip = activeTrip;
+  const firstDay = trip?.days?.[0];
+  const lastDay = trip?.days?.[trip.days.length - 1];
+
+  const title = trip?.name || draft.destination || 'Frontière du Nord';
+  const period = trip?.startDate
+    ? `${formatDateLabel(firstDay?.dateISO || trip.startDate, '')}${lastDay?.dateISO ? ` – ${formatDateLabel(lastDay.dateISO, '')}` : ''}`
+    : draft.startDate
+      ? `${formatDateLabel(draft.startDate, '')}${draft.endDate ? ` – ${formatDateLabel(draft.endDate, '')}` : ''}`
+      : 'Jour 6 • 14 Octobre';
 
   app.innerHTML = `
     <div class="mobile-shell itinerary-shell">
@@ -1394,10 +1451,30 @@ function handleAddFriend() {
   initCreateTripControls();
 }
 
-function handleCreateBoard() {
+async function handleCreateBoard() {
   const draft = getCreateTripFormData();
   saveTripDraft(draft);
-  navigate('itinerary');
+
+  if (!window.SB || !mobileUser) {
+    alert("Connectez-vous d'abord sur la version desktop, puis revenez sur mobile.");
+    navigate('itinerary');
+    return;
+  }
+
+  try {
+    const trip = await window.SB.createTrip({
+      name: draft.destination || 'Nouveau voyage',
+      startDate: draft.startDate || null,
+      days: getTripDurationDays(draft.startDate, draft.endDate)
+    });
+
+    await refreshMobileTrips();
+    activeTrip = await window.SB.loadTrip(trip.id);
+
+    navigate('itinerary');
+  } catch (error) {
+    alert('Erreur création voyage : ' + (error.message || error));
+  }
 }
 
 function handleAddStepToProgram() {
@@ -1610,13 +1687,15 @@ window.addEventListener('change', event => {
   label.classList.toggle('muted', !input.value && input.id === 'end-date');
 });
 
-if (window.location.hash === '#create-trip') renderCreateTrip();
-else if (window.location.hash === '#budget-overview') renderBudgetOverview();
-else if (window.location.hash === '#budget') renderBudget();
-else if (window.location.hash === '#budget-balance') renderBudgetBalance();
-else if (window.location.hash === '#new-expense') renderNewExpense();
-else if (window.location.hash === '#map') renderMap();
-else if (window.location.hash === '#activity-detail') renderActivityDetail();
-else if (window.location.hash === '#itinerary') renderItinerary();
-else if (window.location.hash === '#new-step') renderNewStep();
-else renderHome();
+initMobileData().then(() => {
+  if (window.location.hash === '#create-trip') renderCreateTrip();
+  else if (window.location.hash === '#budget-overview') renderBudgetOverview();
+  else if (window.location.hash === '#budget') renderBudget();
+  else if (window.location.hash === '#budget-balance') renderBudgetBalance();
+  else if (window.location.hash === '#new-expense') renderNewExpense();
+  else if (window.location.hash === '#map') renderMap();
+  else if (window.location.hash === '#activity-detail') renderActivityDetail();
+  else if (window.location.hash === '#itinerary') renderItinerary();
+  else if (window.location.hash === '#new-step') renderNewStep();
+  else renderHome();
+});

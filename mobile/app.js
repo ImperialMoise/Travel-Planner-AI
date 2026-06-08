@@ -1665,6 +1665,8 @@ window.addEventListener('submit', event => {
     handleAddFriend();
   }
 });
+
+window.addEventListener('keydown', event => {
   if (event.key !== 'Enter' && event.key !== ' ') return;
   const detailTrigger = event.target.closest('[data-action="activity-detail"]');
   if (!detailTrigger) return;

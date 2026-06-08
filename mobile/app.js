@@ -609,7 +609,7 @@ function renderCreateTrip() {
           <p>Laissez-vous guider par l'inspiration.</p>
         </section>
 
-        <form class="create-form">
+        <form class="create-form" data-create-form>
           <div class="field-group">
             <label class="kicker" for="destination">Destination</label>
             <div class="input-shell">
@@ -662,7 +662,29 @@ function renderCreateTrip() {
       </div>
     </div>
   `;
+    initCreateTripControls();
+}
+
+function initCreateTripControls() {
   initAutocompleteOnPage();
+
+  document.querySelectorAll('.interactive-date input[type="date"]').forEach(input => {
+    input.addEventListener('click', event => {
+      event.stopPropagation();
+    });
+
+    const card = input.closest('.interactive-date');
+    if (!card) return;
+
+    card.addEventListener('click', () => {
+      if (typeof input.showPicker === 'function') {
+        input.showPicker();
+      } else {
+        input.focus();
+        input.click();
+      }
+    });
+  });
 }
 
 function renderItinerary() {
@@ -1368,8 +1390,8 @@ function handleAddFriend() {
   const draft = getCreateTripFormData();
   if (!draft.companions.includes(name)) draft.companions.push(name);
   saveTripDraft(draft);
-  renderCreateTrip();
-  initAddressAutocomplete('#destination');
+    renderCreateTrip();
+  initCreateTripControls();
 }
 
 function handleCreateBoard() {
@@ -1556,7 +1578,16 @@ window.addEventListener('click', event => {
   }
 });
 
-window.addEventListener('keydown', event => {
+window.addEventListener('submit', event => {
+  const form = event.target.closest?.('[data-create-form]');
+  if (!form) return;
+
+  event.preventDefault();
+
+  if (document.activeElement?.id === 'companion-name') {
+    handleAddFriend();
+  }
+});
   if (event.key !== 'Enter' && event.key !== ' ') return;
   const detailTrigger = event.target.closest('[data-action="activity-detail"]');
   if (!detailTrigger) return;

@@ -22,6 +22,11 @@
   window.SB = SB;
   window.dispatchEvent(new Event('sb-ready'));
 </script>
+<script type="module">
+  import * as SB from '../web/lib/supabase.js';
+  window.SB = SB;
+  window.dispatchEvent(new Event('sb-ready'));
+</script>
 <script src="app.js"></script>
 </body>
 </html>

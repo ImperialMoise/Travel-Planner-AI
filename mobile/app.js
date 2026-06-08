@@ -550,9 +550,9 @@ function renderHome() {
           </div>
           <div class="trip-strip">
             ${realTrips.length ? realTrips.map(trip => `
-              <article class="trip-card ${trip.past ? 'past' : ''}" data-action="itinerary" style="cursor:pointer">
-                <div class="trip-image" style="background-image: url('${trip.image}')">
-                  <span class="trip-status">${trip.status}</span>
+              <article class="trip-card" data-action="itinerary" style="cursor:pointer">
+                 <div class="trip-image" style="background-image: url('https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=900&auto=format&fit=crop')">
+                 <span class="trip-status">En préparation</span>
                 </div>
                 <div class="trip-body">
                   <h4>${escapeHtml(trip.name)}</h4>
@@ -1770,7 +1770,7 @@ window.addEventListener('click', event => {
 window.addEventListener('hashchange', () => {
   if (window.location.hash === '#auth') renderAuth();
   else if (window.location.hash === '#account') renderAccount();
-  if (window.location.hash === '#create-trip') renderCreateTrip();
+  else if (window.location.hash === '#create-trip') renderCreateTrip();
   else if (window.location.hash === '#budget-overview') renderBudgetOverview();
   else if (window.location.hash === '#budget') renderBudget();
   else if (window.location.hash === '#budget-balance') renderBudgetBalance();

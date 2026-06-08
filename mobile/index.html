@@ -12,21 +12,15 @@
 </head>
 <body>
   <div id="app"></div>
-    <script type="module">
-    import * as SB from '../web/lib/supabase.js';
-    window.SB = SB;
-    window.dispatchEvent(new Event('sb-ready'));
-  </script>
-  <script type="module">
-  import * as SB from '../web/lib/supabase.js';
-  window.SB = SB;
-  window.dispatchEvent(new Event('sb-ready'));
-</script>
+
 <script type="module">
   import * as SB from '../web/lib/supabase.js';
   window.SB = SB;
   window.dispatchEvent(new Event('sb-ready'));
+
+  const script = document.createElement('script');
+  script.src = 'app.js';
+  document.body.appendChild(script);
 </script>
-<script src="app.js"></script>
 </body>
 </html>

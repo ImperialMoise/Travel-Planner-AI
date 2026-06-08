@@ -128,6 +128,23 @@ export async function loadTrip(tripId) {
   };
 }
 
+export async function updateTrip(tripId, patch) {
+  const row = {};
+
+  if (patch.name !== undefined) row.name = patch.name;
+  if (patch.startDate !== undefined) row.start_date = patch.startDate || null;
+
+  const { data, error } = await sb
+    .from('trips')
+    .update(row)
+    .eq('id', tripId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
 export async function deleteTrip(tripId) {
   const { error } = await sb.from('trips').delete().eq('id', tripId);
   if (error) throw error;

@@ -6,8 +6,13 @@ let activeTrip = null;
 let mobileReady = false;
 
 async function waitForSupabase() {
-  if (window.SB) return;
-  await new Promise(resolve => window.addEventListener('sb-ready', resolve, { once: true }));
+  if (window.SB) return window.SB;
+
+  await new Promise(resolve => {
+    window.addEventListener('sb-ready', resolve, { once: true });
+  });
+
+  return window.SB;
 }
 
 function getTripDurationDays(startDate, endDate) {
@@ -22,18 +27,18 @@ function getTripDurationDays(startDate, endDate) {
 }
 
 async function initMobileData() {
-  await waitForSupabase();
+  const SB = await waitForSupabase();
 
   try {
-    mobileUser = await window.SB.getUser();
+    mobileUser = await SB.getUser();
 
-    if (mobileUser) {
-      mobileTrips = await window.SB.listMyTrips();
-
-      if (mobileTrips.length) {
-        activeTrip = await window.SB.loadTrip(mobileTrips[0].id);
-      }
+    if (!mobileUser) {
+      mobileTrips = [];
+      activeTrip = null;
+      return;
     }
+
+    await refreshMobileTrips();
   } catch (error) {
     console.warn('Mobile Supabase init error:', error);
   } finally {
@@ -46,11 +51,8 @@ async function refreshMobileTrips(activeTripId = null) {
 
   mobileTrips = await window.SB.listMyTrips();
 
-  const tripToLoad = activeTripId
-    ? mobileTrips.find(trip => trip.id === activeTripId)
-    : mobileTrips[0];
-
-  activeTrip = tripToLoad ? await window.SB.loadTrip(tripToLoad.id) : null;
+  const selectedId = activeTripId || activeTrip?.id || mobileTrips[0]?.id;
+  activeTrip = selectedId ? await window.SB.loadTrip(selectedId) : null;
 }
 
 const trips = [
@@ -550,7 +552,7 @@ function renderHome() {
           </div>
           <div class="trip-strip">
             ${realTrips.length ? realTrips.map(trip => `
-              <article class="trip-card" data-action="itinerary" style="cursor:pointer">
+              <article class="trip-card" data-action="open-trip" data-trip-id="${trip.id}" style="cursor:pointer">
                  <div class="trip-image" style="background-image: url('https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=900&auto=format&fit=crop')">
                  <span class="trip-status">En préparation</span>
                 </div>
@@ -728,6 +730,18 @@ function renderAccount() {
           <span class="plus">+</span>
           <span>Créer une nouvelle aventure</span>
         </button>
+
+        ${activeTrip ? `
+  <button class="create-adventure" type="button" data-action="rename-trip">
+    <span class="material-symbols-outlined">edit</span>
+    <span>Renommer le voyage actif</span>
+  </button>
+
+  <button class="create-adventure" type="button" data-action="delete-trip">
+    <span class="material-symbols-outlined">delete</span>
+    <span>Supprimer le voyage actif</span>
+  </button>
+` : ''}
 
         <button class="create-adventure" type="button" data-action="logout">
           <span class="material-symbols-outlined">logout</span>
@@ -1596,8 +1610,8 @@ async function handleCreateBoard() {
   saveTripDraft(draft);
 
   if (!window.SB || !mobileUser) {
-    alert("Connectez-vous d'abord sur la version desktop, puis revenez sur mobile.");
-    navigate('itinerary');
+    alert("Connectez-vous d'abord.");
+    navigate('auth');
     return;
   }
 
@@ -1614,6 +1628,36 @@ async function handleCreateBoard() {
   } catch (error) {
     alert('Erreur création voyage : ' + (error.message || error));
   }
+}
+
+async function handleOpenTrip(tripId) {
+  if (!tripId || !window.SB) return;
+
+  activeTrip = await window.SB.loadTrip(tripId);
+  navigate('itinerary');
+}
+
+async function handleRenameTrip() {
+  if (!activeTrip) return;
+
+  const name = prompt('Nouveau nom du voyage :', activeTrip.name || '');
+  if (!name || !name.trim()) return;
+
+  await window.SB.updateTrip(activeTrip.id, { name: name.trim() });
+  await refreshMobileTrips(activeTrip.id);
+  renderAccount();
+}
+
+async function handleDeleteTrip() {
+  if (!activeTrip) return;
+
+  const ok = confirm(`Supprimer "${activeTrip.name}" ?`);
+  if (!ok) return;
+
+  await window.SB.deleteTrip(activeTrip.id);
+  activeTrip = null;
+  await refreshMobileTrips();
+  navigate('home');
 }
 
 function handleAddStepToProgram() {
@@ -1675,7 +1719,7 @@ function navigate(route) {
   } else if (route === 'new-step') {
     window.location.hash = 'new-step';
     renderNewStep();
-    initAddressAutocomplete('[name="departure"], [name="arrival"], [name="location"]');
+    initAutocompleteOnPage();
   } else if (route === 'activity-detail') {
     window.location.hash = 'activity-detail';
     renderActivityDetail();
@@ -1725,6 +1769,22 @@ window.addEventListener('click', event => {
     handleCreateBoard();
     return;
   }
+
+  if (action === 'open-trip') {
+  const tripId = event.target.closest('[data-trip-id]')?.dataset.tripId;
+  handleOpenTrip(tripId);
+  return;
+}
+
+if (action === 'rename-trip') {
+  handleRenameTrip();
+  return;
+}
+
+if (action === 'delete-trip') {
+  handleDeleteTrip();
+  return;
+}
 
   if (action === 'add-step-to-program') {
     handleAddStepToProgram();

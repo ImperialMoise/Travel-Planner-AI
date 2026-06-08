@@ -166,7 +166,7 @@ const stepFieldSets = {
     fallbackDescription: 'Logement ajouté au programme.',
     fields: [
       { name: 'title', icon: 'bed', placeholder: "Nom de l'hôtel / logement", type: 'text' },
-      { name: 'location', icon: 'location_on', placeholder: 'Adresse / Lieu', type: 'text' },
+      { name: 'location', icon: 'location_on', placeholder: 'Adresse / Lieu', type: 'text', autocomplete: true },
       { name: 'time', icon: 'schedule', type: 'time', value: '15:00', aria: 'Heure de check-in' },
       { name: 'notes', icon: 'notes', placeholder: 'Code, réservation, contact...', textarea: true }
     ]
@@ -180,7 +180,7 @@ const stepFieldSets = {
     fallbackDescription: 'Activité ajoutée au programme.',
     fields: [
       { name: 'title', icon: 'local_activity', placeholder: "Nom de l'activité (ex: Musée, Randonnée)", type: 'text' },
-      { name: 'location', icon: 'location_on', placeholder: 'Lieu', type: 'text' },
+      { name: 'location', icon: 'location_on', placeholder: 'Adresse / Lieu', type: 'text', autocomplete: true },
       { name: 'time', icon: 'schedule', type: 'time', value: '09:00', aria: 'Heure de début', compact: true },
       { name: 'duration', icon: 'timer', placeholder: 'Durée (ex: 2h)', type: 'text', compact: true },
       { name: 'notes', icon: 'notes', placeholder: 'Numéro de réservation, notes ou détails importants...', textarea: true }
@@ -195,7 +195,7 @@ const stepFieldSets = {
     fallbackDescription: 'Restaurant ajouté au programme.',
     fields: [
       { name: 'title', icon: 'restaurant', placeholder: 'Nom du restaurant', type: 'text' },
-      { name: 'location', icon: 'location_on', placeholder: 'Adresse / Lieu', type: 'text' },
+      { name: 'location', icon: 'location_on', placeholder: 'Adresse / Lieu', type: 'text', autocomplete: true },
       { name: 'time', icon: 'schedule', type: 'time', value: '20:00', aria: 'Heure de réservation' },
       { name: 'notes', icon: 'notes', placeholder: 'Numéro de réservation, notes ou détails importants...', textarea: true }
     ]
@@ -210,70 +210,64 @@ function icon(symbol, className = '') {
 
 const MAPTILER_KEY = '08IwMKKAkP3BQJss5poF';
 
-function initAddressAutocomplete(inputSelector) {
+function attachAutocomplete(input) {
+  if (!input || input.dataset.acReady) return;
+  input.dataset.acReady = 'true';
+
+  const wrapper = input.closest('.input-shell') || input.closest('.step-input') || input.parentElement;
+  wrapper.style.position = 'relative';
+
+  const dropdown = document.createElement('div');
+  dropdown.className = 'ac-dropdown';
+  wrapper.appendChild(dropdown);
+
+  let timer = null;
+
+  input.addEventListener('input', () => {
+    clearTimeout(timer);
+    const q = input.value.trim();
+    if (q.length < 2) { dropdown.innerHTML = ''; dropdown.style.display = 'none'; return; }
+
+    timer = setTimeout(async () => {
+      try {
+        const url = 'https://api.maptiler.com/geocoding/' + encodeURIComponent(q) + '.json?key=' + MAPTILER_KEY + '&language=fr&limit=5';
+        const res = await fetch(url);
+        const data = await res.json();
+        if (!data.features || !data.features.length) { dropdown.style.display = 'none'; return; }
+
+        dropdown.style.display = 'block';
+        dropdown.innerHTML = data.features.map((f, i) => 
+          '<button class="ac-item" type="button" data-idx="' + i + '">' +
+          '<span class="material-symbols-outlined">location_on</span>' +
+          '<span>' + escapeHtml(f.place_name) + '</span>' +
+          '</button>'
+        ).join('');
+
+        dropdown.querySelectorAll('.ac-item').forEach((btn, i) => {
+          btn.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            const feat = data.features[i];
+            input.value = feat.place_name;
+            input.dataset.lat = feat.center[1];
+            input.dataset.lng = feat.center[0];
+            dropdown.style.display = 'none';
+          });
+        });
+      } catch (err) {
+        console.warn('Geocoding error:', err);
+      }
+    }, 350);
+  });
+
+  input.addEventListener('blur', () => {
+    setTimeout(() => { dropdown.style.display = 'none'; }, 200);
+  });
+}
+
+function initAutocompleteOnPage() {
   setTimeout(() => {
-    const inputs = document.querySelectorAll(inputSelector);
-    inputs.forEach(input => {
-      if (input.dataset.acInit) return;
-      input.dataset.acInit = 'true';
-
-      let dropdown = document.createElement('div');
-      dropdown.className = 'ac-dropdown';
-      input.parentElement.style.position = 'relative';
-      input.parentElement.appendChild(dropdown);
-
-      let debounce = null;
-
-      input.addEventListener('input', () => {
-        clearTimeout(debounce);
-        const query = input.value.trim();
-        if (query.length < 2) { dropdown.innerHTML = ''; dropdown.style.display = 'none'; return; }
-
-        debounce = setTimeout(async () => {
-          try {
-            const resp = await fetch(
-              `https://api.maptiler.com/geocoding/${encodeURIComponent(query)}.json?key=${MAPTILER_KEY}&language=fr&limit=5`
-            );
-            const data = await resp.json();
-            if (!data.features || !data.features.length) {
-              dropdown.innerHTML = '';
-              dropdown.style.display = 'none';
-              return;
-            }
-
-            dropdown.style.display = 'block';
-            dropdown.innerHTML = data.features.map(f => `
-              <button class="ac-item" type="button" data-name="${escapeHtml(f.place_name)}" data-lng="${f.center[0]}" data-lat="${f.center[1]}">
-                <span class="material-symbols-outlined">location_on</span>
-                <span>${escapeHtml(f.place_name)}</span>
-              </button>
-            `).join('');
-
-            dropdown.querySelectorAll('.ac-item').forEach(btn => {
-              btn.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                input.value = btn.dataset.name;
-                input.dataset.lat = btn.dataset.lat;
-                input.dataset.lng = btn.dataset.lng;
-                dropdown.innerHTML = '';
-                dropdown.style.display = 'none';
-                input.dispatchEvent(new Event('change', { bubbles: true }));
-              });
-            });
-          } catch (err) {
-            console.error('Autocomplete error:', err);
-          }
-        }, 300);
-      });
-
-      document.addEventListener('click', (e) => {
-        if (!input.contains(e.target) && !dropdown.contains(e.target)) {
-          dropdown.style.display = 'none';
-        }
-      });
-    });
-  }, 100);
+    document.querySelectorAll('[data-autocomplete]').forEach(input => attachAutocomplete(input));
+  }, 150);
 }
 
 function escapeHtml(value = '') {
@@ -318,7 +312,7 @@ function getCreateTripFormData() {
 }
 
 function renderStepField(field) {
-  const common = `name="${field.name}" ${field.aria ? `aria-label="${field.aria}"` : ''}`;
+  const common = `name="${field.name}" ${field.aria ? `aria-label="${field.aria}"` : ''} ${field.autocomplete ? 'data-autocomplete' : ''}`;
   const control = field.textarea
     ? `<textarea ${common} rows="3" placeholder="${field.placeholder}"></textarea>`
     : `<input ${common} type="${field.type || 'text'}" ${field.value ? `value="${field.value}"` : ''} ${field.placeholder ? `placeholder="${field.placeholder}"` : ''}>`;
@@ -349,7 +343,7 @@ function renderTransportStepFields() {
       <div class="transport-grid">
         <label class="step-input compact place">
           <span class="material-symbols-outlined" aria-hidden="true">location_on</span>
-          <input name="departure" type="text" placeholder="Gare de départ...">
+          <input name="departure" type="text" placeholder="Gare de départ..." data-autocomplete>
         </label>
         <label class="step-input compact time-only">
           <input name="time" type="time" value="08:00" aria-label="Heure de départ">
@@ -362,7 +356,7 @@ function renderTransportStepFields() {
       <div class="transport-grid">
         <label class="step-input compact place">
           <span class="material-symbols-outlined" aria-hidden="true">location_on</span>
-          <input name="arrival" type="text" placeholder="Gare d'arrivée...">
+          <input name="arrival" type="text" placeholder="Gare d'arrivée..." data-autocomplete>
         </label>
         <label class="step-input compact time-only">
           <input name="arrivalTime" type="time" value="10:30" aria-label="Heure d'arrivée">
@@ -471,7 +465,7 @@ function renderHome() {
           <h2 class="hero-title">Où commence votre prochaine escale ?</h2>
         </section>
 
-        <section class="next-trip-card" aria-label="Prochain départ">
+        <section class="next-trip-card" aria-label="Prochain départ" data-action="itinerary" style="cursor:pointer">
           <div class="next-trip-content">
             <span class="badge">Prochain départ</span>
             <h3 class="next-trip-title">Kyoto, Japon</h3>
@@ -500,7 +494,7 @@ function renderHome() {
           </div>
           <div class="trip-strip">
             ${trips.map(trip => `
-              <article class="trip-card ${trip.past ? 'past' : ''}">
+              <article class="trip-card ${trip.past ? 'past' : ''}" data-action="itinerary" style="cursor:pointer">
                 <div class="trip-image" style="background-image: url('${trip.image}')">
                   <span class="trip-status">${trip.status}</span>
                 </div>
@@ -620,7 +614,7 @@ function renderCreateTrip() {
             <label class="kicker" for="destination">Destination</label>
             <div class="input-shell">
               <span class="material-symbols-outlined form-icon" aria-hidden="true">location_on</span>
-              <input id="destination" type="text" placeholder="Ex: Kyoto, Japon" autocomplete="off" value="${escapeHtml(draft.destination || '')}">
+              <input id="destination" type="text" placeholder="Ex: Kyoto, Japon" autocomplete="off" data-autocomplete value="${escapeHtml(draft.destination || '')}">
             </div>
           </div>
 
@@ -668,6 +662,7 @@ function renderCreateTrip() {
       </div>
     </div>
   `;
+  initAutocompleteOnPage();
 }
 
 function renderItinerary() {
@@ -856,6 +851,7 @@ function renderNewStep() {
       </div>
     </div>
   `;
+  initAutocompleteOnPage();
 }
 
 

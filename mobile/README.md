@@ -25,6 +25,20 @@ Si Expo Go garde une ancienne erreur en cache, relancer avec :
 npm run start:clear
 ```
 
+## Dépannage Expo Go
+
+### Erreur `"main" has not been registered`
+
+L'application utilise `registerRootComponent(App)` dans `App.js` pour enregistrer explicitement le composant racine quand Expo lance le projet depuis Codespaces. Après une mise à jour de ce fichier, relancer Expo avec le cache vidé :
+
+```bash
+npx expo start --tunnel --clear
+```
+
+### Erreur React Native DevTools `libatk-1.0.so.0`
+
+Cette erreur vient d'une bibliothèque graphique absente dans Codespaces. Elle concerne l'installation des DevTools, pas le rendu de l'app dans Expo Go. Le QR code peut quand même fonctionner.
+
 ## Notes de conversion Stitch → React Native
 
 - Les classes Tailwind ont été converties en `StyleSheet` React Native.

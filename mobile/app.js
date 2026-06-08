@@ -33,6 +33,13 @@ const expenses = [
   }
 ];
 
+const budgetCategories = [
+  { label: 'Transport', percent: '45% du budget', amount: '256,50 €', icon: 'flight', tone: 'primary' },
+  { label: 'Logement', percent: '30% du budget', amount: '171,00 €', icon: 'hotel', tone: 'tertiary' },
+  { label: 'Repas', percent: '15% du budget', amount: '85,50 €', icon: 'restaurant', tone: 'accent' },
+  { label: 'Autres', percent: '10% du budget', amount: '57,00 €', icon: 'more_horiz', tone: 'neutral' }
+];
+
 const itinerarySteps = [
   {
     time: '08:00',
@@ -55,19 +62,232 @@ const itinerarySteps = [
 const stepCategories = [
   { id: 'transport', label: 'Transport', icon: 'directions_car' },
   { id: 'lodging', label: 'Logement', icon: 'bed' },
-  { id: 'activity', label: 'Activité', icon: 'attractions', active: true },
+  { id: 'activity', label: 'Activité', icon: 'attractions' },
   { id: 'restaurant', label: 'Restaurant', icon: 'restaurant' }
 ];
 
+const transportModeLabels = {
+  train: 'Train',
+  avion: 'Avion',
+  bus: 'Bus',
+  voiture: 'Voiture'
+};
+
+const stepFieldSets = {
+  transport: {
+    type: 'Transport',
+    timelineIcon: 'directions_car',
+    sectionTitle: 'Détails du transport',
+    defaultTime: '08:00',
+    fallbackTitle: 'Nouveau transport',
+    fallbackDescription: 'Trajet ajouté au programme.'
+  },
+  lodging: {
+    type: 'Logement',
+    timelineIcon: 'bed',
+    sectionTitle: 'Détails du logement',
+    defaultTime: '15:00',
+    fallbackTitle: 'Nouveau logement',
+    fallbackDescription: 'Logement ajouté au programme.',
+    fields: [
+      { name: 'title', icon: 'bed', placeholder: "Nom de l'hôtel / logement", type: 'text' },
+      { name: 'location', icon: 'location_on', placeholder: 'Adresse / Lieu', type: 'text' },
+      { name: 'time', icon: 'schedule', type: 'time', value: '15:00', aria: 'Heure de check-in' },
+      { name: 'notes', icon: 'notes', placeholder: 'Code, réservation, contact...', textarea: true }
+    ]
+  },
+  activity: {
+    type: 'Activité',
+    timelineIcon: 'attractions',
+    sectionTitle: "Détails de l'étape",
+    defaultTime: '09:00',
+    fallbackTitle: 'Nouvelle activité',
+    fallbackDescription: 'Activité ajoutée au programme.',
+    fields: [
+      { name: 'title', icon: 'local_activity', placeholder: "Nom de l'activité (ex: Musée, Randonnée)", type: 'text' },
+      { name: 'location', icon: 'location_on', placeholder: 'Lieu', type: 'text' },
+      { name: 'time', icon: 'schedule', type: 'time', value: '09:00', aria: 'Heure de début', compact: true },
+      { name: 'duration', icon: 'timer', placeholder: 'Durée (ex: 2h)', type: 'text', compact: true },
+      { name: 'notes', icon: 'notes', placeholder: 'Numéro de réservation, notes ou détails importants...', textarea: true }
+    ]
+  },
+  restaurant: {
+    type: 'Restaurant',
+    timelineIcon: 'restaurant',
+    sectionTitle: "Détails de l'étape",
+    defaultTime: '20:00',
+    fallbackTitle: 'Nouveau restaurant',
+    fallbackDescription: 'Restaurant ajouté au programme.',
+    fields: [
+      { name: 'title', icon: 'restaurant', placeholder: 'Nom du restaurant', type: 'text' },
+      { name: 'location', icon: 'location_on', placeholder: 'Adresse / Lieu', type: 'text' },
+      { name: 'time', icon: 'schedule', type: 'time', value: '20:00', aria: 'Heure de réservation' },
+      { name: 'notes', icon: 'notes', placeholder: 'Numéro de réservation, notes ou détails importants...', textarea: true }
+    ]
+  }
+};
+
+let selectedStepCategory = 'transport';
+
 function icon(symbol, className = '') {
   return `<span class="${className}" aria-hidden="true">${symbol}</span>`;
+}
+
+function escapeHtml(value = '') {
+  return String(value).replace(/[&<>"']/g, character => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;'
+  }[character]));
+}
+
+function getTripDraft() {
+  try {
+    return JSON.parse(localStorage.getItem('atelierTripDraft')) || {};
+  } catch {
+    return {};
+  }
+}
+
+function saveTripDraft(draft) {
+  localStorage.setItem('atelierTripDraft', JSON.stringify(draft));
+}
+
+function formatDateLabel(value, fallback) {
+  if (!value) return fallback;
+  const date = new Date(`${value}T00:00:00`);
+  return new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: 'short' }).format(date);
+}
+
+function getCreateTripFormData() {
+  const companions = [...document.querySelectorAll('[data-companion-chip]')]
+    .map(chip => chip.dataset.companionName)
+    .filter(Boolean);
+
+  return {
+    destination: document.querySelector('#destination')?.value.trim() || '',
+    startDate: document.querySelector('#start-date')?.value || '',
+    endDate: document.querySelector('#end-date')?.value || '',
+    companions
+  };
+}
+
+function renderStepField(field) {
+  const common = `name="${field.name}" ${field.aria ? `aria-label="${field.aria}"` : ''}`;
+  const control = field.textarea
+    ? `<textarea ${common} rows="3" placeholder="${field.placeholder}"></textarea>`
+    : `<input ${common} type="${field.type || 'text'}" ${field.value ? `value="${field.value}"` : ''} ${field.placeholder ? `placeholder="${field.placeholder}"` : ''}>`;
+
+  return `
+    <label class="step-input ${field.compact ? 'compact' : 'full'} ${field.textarea ? 'textarea' : ''}">
+      <span class="material-symbols-outlined" aria-hidden="true">${field.icon}</span>
+      ${control}
+    </label>
+  `;
+}
+
+function renderTransportStepFields() {
+  return `
+    <label class="step-input select full">
+      <span class="material-symbols-outlined" aria-hidden="true">directions_transit</span>
+      <select name="mode" aria-label="Mode de transport">
+        <option value="train">Train</option>
+        <option value="avion">Avion</option>
+        <option value="bus">Bus</option>
+        <option value="voiture">Voiture</option>
+      </select>
+      <span class="material-symbols-outlined select-arrow" aria-hidden="true">expand_more</span>
+    </label>
+
+    <div class="transport-subgroup">
+      <span class="transport-subtitle">Départ</span>
+      <div class="transport-grid">
+        <label class="step-input compact place">
+          <span class="material-symbols-outlined" aria-hidden="true">location_on</span>
+          <input name="departure" type="text" placeholder="Gare de départ...">
+        </label>
+        <label class="step-input compact time-only">
+          <input name="time" type="time" value="08:00" aria-label="Heure de départ">
+        </label>
+      </div>
+    </div>
+
+    <div class="transport-subgroup">
+      <span class="transport-subtitle">Arrivée</span>
+      <div class="transport-grid">
+        <label class="step-input compact place">
+          <span class="material-symbols-outlined" aria-hidden="true">location_on</span>
+          <input name="arrival" type="text" placeholder="Gare d'arrivée...">
+        </label>
+        <label class="step-input compact time-only">
+          <input name="arrivalTime" type="time" value="10:30" aria-label="Heure d'arrivée">
+        </label>
+      </div>
+      <label class="step-checkbox">
+        <input name="nextDay" type="checkbox" value="yes">
+        <span>Arrivée le lendemain</span>
+      </label>
+    </div>
+
+    <div class="step-form-grid">
+      <label class="step-input compact">
+        <span class="material-symbols-outlined" aria-hidden="true">confirmation_number</span>
+        <input name="reference" type="text" placeholder="Référence (ex: AF267)">
+      </label>
+      <label class="step-input compact">
+        <span class="material-symbols-outlined" aria-hidden="true">alt_route</span>
+        <input name="stopover" type="text" placeholder="Escale (optionnel)">
+      </label>
+    </div>
+
+    <label class="step-input textarea full">
+      <span class="material-symbols-outlined" aria-hidden="true">notes</span>
+      <textarea name="notes" rows="3" placeholder="Notes ou détails importants..."></textarea>
+    </label>
+  `;
+}
+
+function renderStepFields(categoryId = selectedStepCategory) {
+  if (categoryId === 'transport') return renderTransportStepFields();
+
+  const fields = stepFieldSets[categoryId]?.fields || stepFieldSets.restaurant.fields;
+  const output = [];
+
+  for (let index = 0; index < fields.length; index += 1) {
+    const field = fields[index];
+    const nextField = fields[index + 1];
+
+    if (field.compact && nextField?.compact) {
+      output.push(`
+        <div class="step-form-grid">
+          ${renderStepField(field)}
+          ${renderStepField(nextField)}
+        </div>
+      `);
+      index += 1;
+      continue;
+    }
+
+    output.push(renderStepField(field));
+  }
+
+  return output.join('');
+}
+
+function getNewStepFormData() {
+  const form = document.querySelector('[data-step-form]');
+  if (!form) return {};
+
+  return Object.fromEntries(new FormData(form).entries());
 }
 
 function bottomNav(active = 'plan') {
   const items = [
     { route: 'itinerary', id: 'plan', icon: 'event_note', label: 'Plan' },
     { route: 'map', id: 'map', icon: 'map', label: 'Carte' },
-    { route: 'budget', id: 'budget', icon: 'payments', label: 'Budget' },
+    { route: 'budget-overview', id: 'budget', icon: 'payments', label: 'Budget' },
     { route: 'docs', id: 'docs', icon: 'description', label: 'Documents' }
   ];
 
@@ -147,6 +367,9 @@ function renderHome() {
 }
 
 function renderCreateTrip() {
+  const draft = getTripDraft();
+  const companions = draft.companions || [];
+
   app.innerHTML = `
     <div class="mobile-shell create-shell">
       <header class="topbar bordered create-topbar">
@@ -166,38 +389,48 @@ function renderCreateTrip() {
             <label class="kicker" for="destination">Destination</label>
             <div class="input-shell">
               <span class="material-symbols-outlined form-icon" aria-hidden="true">location_on</span>
-              <input id="destination" type="text" placeholder="Ex: Kyoto, Japon" autocomplete="off">
+              <input id="destination" type="text" placeholder="Ex: Kyoto, Japon" autocomplete="off" value="${escapeHtml(draft.destination || '')}">
             </div>
           </div>
 
           <div class="field-group">
             <span class="kicker">Période du voyage</span>
             <div class="date-grid">
-              <button class="date-card" type="button">
+              <label class="date-card interactive-date">
                 <span class="date-label">Début</span>
-                <span class="date-value">Sélectionner</span>
+                <span class="date-value" data-date-label="start">${formatDateLabel(draft.startDate, 'Sélectionner')}</span>
                 <span class="material-symbols-outlined date-icon" aria-hidden="true">calendar_today</span>
-              </button>
-              <button class="date-card" type="button">
+                <input id="start-date" type="date" value="${escapeHtml(draft.startDate || '')}" aria-label="Date de début">
+              </label>
+              <label class="date-card interactive-date">
                 <span class="date-label">Fin</span>
-                <span class="date-value muted">Optionnel</span>
+                <span class="date-value ${draft.endDate ? '' : 'muted'}" data-date-label="end">${formatDateLabel(draft.endDate, 'Optionnel')}</span>
                 <span class="material-symbols-outlined date-icon" aria-hidden="true">calendar_month</span>
-              </button>
+                <input id="end-date" type="date" value="${escapeHtml(draft.endDate || '')}" aria-label="Date de fin">
+              </label>
             </div>
           </div>
 
           <div class="field-group">
             <span class="kicker">Compagnons de route</span>
-            <button class="companions" type="button">
-              <span class="material-symbols-outlined" aria-hidden="true">person_add</span>
-              <span>Ajouter des amis (optionnel)</span>
-            </button>
+            <div class="companions-panel">
+              <div class="companions-input-row">
+                <span class="material-symbols-outlined" aria-hidden="true">person_add</span>
+                <input id="companion-name" type="text" placeholder="Nom d'un ami" autocomplete="off">
+                <button type="button" data-action="add-friend">Ajouter</button>
+              </div>
+              <div class="companion-list" aria-live="polite">
+                ${companions.length ? companions.map(name => `
+                  <span class="companion-chip" data-companion-chip data-companion-name="${escapeHtml(name)}">${escapeHtml(name)}</span>
+                `).join('') : '<span class="companion-empty">Aucun ami ajouté pour le moment.</span>'}
+              </div>
+            </div>
           </div>
         </form>
       </main>
 
       <div class="create-bottom">
-        <button class="primary-action" type="button">
+        <button class="primary-action" type="button" data-action="create-board">
           Créer le carnet de bord
           <span aria-hidden="true">→</span>
         </button>
@@ -206,8 +439,13 @@ function renderCreateTrip() {
   `;
 }
 
-
 function renderItinerary() {
+  const draft = getTripDraft();
+  const title = draft.destination || 'Frontière du Nord';
+  const period = draft.startDate
+    ? `${formatDateLabel(draft.startDate, '')}${draft.endDate ? ` – ${formatDateLabel(draft.endDate, '')}` : ''}`
+    : 'Jour 6 • 14 Octobre';
+
   app.innerHTML = `
     <div class="mobile-shell itinerary-shell">
       <header class="topbar itinerary-topbar">
@@ -225,8 +463,8 @@ function renderItinerary() {
           <img src="https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1200&auto=format&fit=crop" alt="Paysage de montagnes verdoyantes" loading="lazy">
           <div class="itinerary-hero-overlay"></div>
           <div class="itinerary-hero-content">
-            <span class="kicker">Jour 6 • 14 Octobre</span>
-            <h2>Frontière du Nord</h2>
+            <span class="kicker">${escapeHtml(period)}</span>
+            <h2>${escapeHtml(title)}</h2>
           </div>
         </section>
 
@@ -264,6 +502,9 @@ function renderItinerary() {
 
 
 function renderNewStep() {
+  const activeCategory = stepFieldSets[selectedStepCategory] ? selectedStepCategory : 'transport';
+  const config = stepFieldSets[activeCategory] || stepFieldSets.transport;
+
   app.innerHTML = `
     <div class="mobile-shell new-step-shell">
       <header class="new-step-header">
@@ -279,7 +520,7 @@ function renderNewStep() {
           <h2 class="kicker">Catégorie</h2>
           <div class="category-grid" role="list" aria-label="Catégories d'étape">
             ${stepCategories.map(category => `
-              <button class="category-card ${category.active ? 'active' : ''}" type="button" data-category="${category.id}" aria-pressed="${category.active ? 'true' : 'false'}">
+              <button class="category-card ${activeCategory === category.id ? 'active' : ''}" type="button" data-category="${category.id}" aria-pressed="${activeCategory === category.id ? 'true' : 'false'}">
                 <span class="material-symbols-outlined" aria-hidden="true">${category.icon}</span>
                 <span>${category.label}</span>
               </button>
@@ -288,44 +529,42 @@ function renderNewStep() {
         </section>
 
         <section class="new-step-section">
-          <h2 class="kicker">Détails de l'étape</h2>
-          <form class="step-form">
-            <label class="step-input full">
-              <span class="material-symbols-outlined" aria-hidden="true">local_activity</span>
-              <input type="text" placeholder="Nom de l'activité (ex: Musée, Randonnée)">
-            </label>
-
-            <label class="step-input full">
-              <span class="material-symbols-outlined" aria-hidden="true">location_on</span>
-              <input type="text" placeholder="Lieu">
-            </label>
-
-            <div class="step-form-grid">
-              <label class="step-input compact">
-                <span class="material-symbols-outlined" aria-hidden="true">schedule</span>
-                <input type="time" value="09:00" aria-label="Heure de début">
-              </label>
-
-              <label class="step-input compact">
-                <span class="material-symbols-outlined" aria-hidden="true">timer</span>
-                <input type="text" placeholder="Durée (ex: 2h)" aria-label="Durée estimée">
-              </label>
-            </div>
-
-            <label class="step-input textarea full">
-              <span class="material-symbols-outlined" aria-hidden="true">notes</span>
-              <textarea rows="3" placeholder="Numéro de réservation, notes ou détails importants..."></textarea>
-            </label>
+          <h2 class="kicker">${config.sectionTitle || "Détails de l'étape"}</h2>
+          <form class="step-form" data-step-form>
+            ${renderStepFields(activeCategory)}
           </form>
         </section>
       </main>
 
       <div class="new-step-bottom">
-        <button class="primary-action" type="button">
+        <button class="primary-action" type="button" data-action="add-step-to-program">
           <span class="material-symbols-outlined" aria-hidden="true">add</span>
           <span>Ajouter au programme</span>
         </button>
       </div>
+    </div>
+  `;
+}
+
+
+function budgetTabs(active = 'overview') {
+  const tabs = [
+    { id: 'overview', label: 'Aperçu', action: 'budget-overview' },
+    { id: 'expenses', label: 'Dépenses', action: 'budget' },
+    { id: 'balance', label: 'Équilibre' }
+  ];
+
+  return `
+    <div class="budget-tabs ${active === 'overview' ? 'overview-tabs' : ''}" role="tablist" aria-label="Vue budget">
+      ${tabs.map(tab => `
+        <button
+          class="${active === tab.id ? 'active' : ''}"
+          type="button"
+          role="tab"
+          aria-selected="${active === tab.id ? 'true' : 'false'}"
+          ${tab.action ? `data-action="${tab.action}"` : ''}
+        >${tab.label}</button>
+      `).join('')}
     </div>
   `;
 }
@@ -352,11 +591,7 @@ function renderBudget() {
           </div>
         </div>
 
-        <div class="budget-tabs" role="tablist" aria-label="Vue budget">
-          <button type="button">Aperçu</button>
-          <button class="active" type="button">Dépenses</button>
-          <button type="button">Équilibre</button>
-        </div>
+        ${budgetTabs('expenses')}
       </section>
 
       <main class="budget-main">
@@ -392,10 +627,124 @@ function renderBudget() {
   `;
 }
 
+
+function renderBudgetOverview() {
+  app.innerHTML = `
+    <div class="mobile-shell">
+      <header class="topbar budget-overview-topbar">
+        <button class="icon-button" type="button" data-action="home" aria-label="Ouvrir le menu">
+          <span class="material-symbols-outlined" aria-hidden="true">menu</span>
+        </button>
+        <h1 class="topbar-title">L'Atelier</h1>
+        <button class="icon-button" type="button" aria-label="Ouvrir le profil">
+          <span class="material-symbols-outlined" aria-hidden="true">account_circle</span>
+        </button>
+      </header>
+
+      <main class="budget-overview-main">
+        ${budgetTabs('overview')}
+
+        <section class="budget-overview-card" aria-label="Résumé du budget">
+          <div class="budget-pattern" aria-hidden="true"></div>
+          <div class="budget-overview-content">
+            <span class="kicker">Budget Total</span>
+            <h2>570,00 €</h2>
+
+            <div class="donut-wrap" aria-label="Graphique du budget restant et dépensé">
+              <svg class="donut" viewBox="0 0 36 36" role="img" aria-labelledby="budget-donut-title">
+                <title id="budget-donut-title">Répartition du budget</title>
+                <path class="donut-ring" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                <path class="donut-segment primary" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                <path class="donut-segment tertiary" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                <path class="donut-segment accent" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+              </svg>
+              <div class="donut-center">
+                <span>Reste</span>
+                <strong>120 €</strong>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="budget-repartition" aria-labelledby="budget-repartition-title">
+          <h3 id="budget-repartition-title">Répartition</h3>
+          <div class="budget-category-list">
+            ${budgetCategories.map(category => `
+              <article class="budget-category-card">
+                <span class="budget-category-icon ${category.tone}" aria-hidden="true">
+                  <span class="material-symbols-outlined">${category.icon}</span>
+                </span>
+                <div>
+                  <h4>${category.label}</h4>
+                  <p>${category.percent}</p>
+                </div>
+                <strong>${category.amount}</strong>
+              </article>
+            `).join('')}
+          </div>
+        </section>
+      </main>
+
+      ${bottomNav('budget')}
+    </div>
+  `;
+}
+
+function handleAddFriend() {
+  const input = document.querySelector('#companion-name');
+  const name = input?.value.trim();
+  if (!name) return;
+
+  const draft = getCreateTripFormData();
+  if (!draft.companions.includes(name)) draft.companions.push(name);
+  saveTripDraft(draft);
+  renderCreateTrip();
+}
+
+function handleCreateBoard() {
+  const draft = getCreateTripFormData();
+  saveTripDraft(draft);
+  navigate('itinerary');
+}
+
+function handleAddStepToProgram() {
+  const data = getNewStepFormData();
+  const config = stepFieldSets[selectedStepCategory] || stepFieldSets.transport;
+  let title = data.title?.trim() || config.fallbackTitle;
+  let descriptionParts = [data.location?.trim(), data.duration?.trim(), data.notes?.trim()].filter(Boolean);
+
+  if (selectedStepCategory === 'transport') {
+    const mode = transportModeLabels[data.mode] || 'Transport';
+    const departure = data.departure?.trim();
+    const arrival = data.arrival?.trim();
+    title = departure || arrival ? `${mode} ${departure || 'Départ'} → ${arrival || 'Arrivée'}` : mode;
+    descriptionParts = [
+      data.arrivalTime ? `Arrivée ${data.arrivalTime}${data.nextDay ? ' +1 jour' : ''}` : '',
+      data.reference?.trim() ? `Réf. ${data.reference.trim()}` : '',
+      data.stopover?.trim() ? `Escale ${data.stopover.trim()}` : '',
+      data.notes?.trim()
+    ].filter(Boolean);
+  }
+
+  itinerarySteps.push({
+    time: data.time || config.defaultTime || '09:00',
+    type: config.type,
+    title,
+    description: descriptionParts.join(' • ') || config.fallbackDescription,
+    icon: config.timelineIcon,
+    tone: selectedStepCategory === 'restaurant' ? 'accent' : 'petrol'
+  });
+
+  navigate('itinerary');
+}
+
 function navigate(route) {
   if (route === 'create-trip') {
     window.location.hash = 'create-trip';
     renderCreateTrip();
+  } else if (route === 'budget-overview') {
+    window.location.hash = 'budget-overview';
+    renderBudgetOverview();
   } else if (route === 'budget') {
     window.location.hash = 'budget';
     renderBudget();
@@ -417,11 +766,28 @@ function navigate(route) {
 window.addEventListener('click', event => {
   const action = event.target.closest('[data-action]')?.dataset.action;
   if (!action) return;
+
+  if (action === 'add-friend') {
+    handleAddFriend();
+    return;
+  }
+
+  if (action === 'create-board') {
+    handleCreateBoard();
+    return;
+  }
+
+  if (action === 'add-step-to-program') {
+    handleAddStepToProgram();
+    return;
+  }
+
   navigate(action);
 });
 
 window.addEventListener('hashchange', () => {
   if (window.location.hash === '#create-trip') renderCreateTrip();
+  else if (window.location.hash === '#budget-overview') renderBudgetOverview();
   else if (window.location.hash === '#budget') renderBudget();
   else if (window.location.hash === '#itinerary') renderItinerary();
   else if (window.location.hash === '#new-step') renderNewStep();
@@ -432,13 +798,26 @@ window.addEventListener('click', event => {
   const categoryButton = event.target.closest('[data-category]');
   if (!categoryButton) return;
 
-  document.querySelectorAll('[data-category]').forEach(button => {
-    button.classList.toggle('active', button === categoryButton);
-    button.setAttribute('aria-pressed', button === categoryButton ? 'true' : 'false');
-  });
+  selectedStepCategory = categoryButton.dataset.category || 'transport';
+  renderNewStep();
+});
+
+window.addEventListener('change', event => {
+  const input = event.target;
+  if (!(input instanceof HTMLInputElement)) return;
+  if (input.id !== 'start-date' && input.id !== 'end-date') return;
+
+  const draft = getCreateTripFormData();
+  saveTripDraft(draft);
+  const label = document.querySelector(`[data-date-label="${input.id === 'start-date' ? 'start' : 'end'}"]`);
+  if (!label) return;
+
+  label.textContent = formatDateLabel(input.value, input.id === 'start-date' ? 'Sélectionner' : 'Optionnel');
+  label.classList.toggle('muted', !input.value && input.id === 'end-date');
 });
 
 if (window.location.hash === '#create-trip') renderCreateTrip();
+else if (window.location.hash === '#budget-overview') renderBudgetOverview();
 else if (window.location.hash === '#budget') renderBudget();
 else if (window.location.hash === '#itinerary') renderItinerary();
 else if (window.location.hash === '#new-step') renderNewStep();

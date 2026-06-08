@@ -1663,7 +1663,6 @@ function handleSaveExpense() {
   const activeCategory = expenseCategories.find(category => category.id === selectedExpenseCategory) || expenseCategories[0];
   const amount = amountInput?.value.trim() || '0.00';
   const normalizedAmount = amount.replace('.', ',');
-  const note = noteInput?.value.trim();
   const payer = selectedExpensePayer === 'common' ? 'Fonds commun' : selectedPayer?.name || 'Moi';
 
   const expenseData = {

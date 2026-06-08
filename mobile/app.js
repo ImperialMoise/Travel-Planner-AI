@@ -208,6 +208,74 @@ function icon(symbol, className = '') {
   return `<span class="${className}" aria-hidden="true">${symbol}</span>`;
 }
 
+const MAPTILER_KEY = '08IwMKKAkP3BQJss5poF';
+
+function initAddressAutocomplete(inputSelector) {
+  setTimeout(() => {
+    const inputs = document.querySelectorAll(inputSelector);
+    inputs.forEach(input => {
+      if (input.dataset.acInit) return;
+      input.dataset.acInit = 'true';
+
+      let dropdown = document.createElement('div');
+      dropdown.className = 'ac-dropdown';
+      input.parentElement.style.position = 'relative';
+      input.parentElement.appendChild(dropdown);
+
+      let debounce = null;
+
+      input.addEventListener('input', () => {
+        clearTimeout(debounce);
+        const query = input.value.trim();
+        if (query.length < 2) { dropdown.innerHTML = ''; dropdown.style.display = 'none'; return; }
+
+        debounce = setTimeout(async () => {
+          try {
+            const resp = await fetch(
+              `https://api.maptiler.com/geocoding/${encodeURIComponent(query)}.json?key=${MAPTILER_KEY}&language=fr&limit=5`
+            );
+            const data = await resp.json();
+            if (!data.features || !data.features.length) {
+              dropdown.innerHTML = '';
+              dropdown.style.display = 'none';
+              return;
+            }
+
+            dropdown.style.display = 'block';
+            dropdown.innerHTML = data.features.map(f => `
+              <button class="ac-item" type="button" data-name="${escapeHtml(f.place_name)}" data-lng="${f.center[0]}" data-lat="${f.center[1]}">
+                <span class="material-symbols-outlined">location_on</span>
+                <span>${escapeHtml(f.place_name)}</span>
+              </button>
+            `).join('');
+
+            dropdown.querySelectorAll('.ac-item').forEach(btn => {
+              btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                input.value = btn.dataset.name;
+                input.dataset.lat = btn.dataset.lat;
+                input.dataset.lng = btn.dataset.lng;
+                dropdown.innerHTML = '';
+                dropdown.style.display = 'none';
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+              });
+            });
+          } catch (err) {
+            console.error('Autocomplete error:', err);
+          }
+        }, 300);
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!input.contains(e.target) && !dropdown.contains(e.target)) {
+          dropdown.style.display = 'none';
+        }
+      });
+    });
+  }, 100);
+}
+
 function escapeHtml(value = '') {
   return String(value).replace(/[&<>"']/g, character => ({
     '&': '&amp;',
@@ -956,7 +1024,7 @@ function renderBudgetOverview() {
           <div class="budget-summary-dots" aria-hidden="true"></div>
           <div class="budget-summary-inner">
             <span class="kicker">Budget Total</span>
-            <h2 class="budget-total">570,00 €</h2>
+            <h2 class="budget-total">${formattedTotal}</h2>
 
             <div class="donut-container">
               <svg class="donut-svg" viewBox="0 0 36 36">
@@ -966,9 +1034,9 @@ function renderBudgetOverview() {
                 <path class="donut-seg seg-accent" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" style="stroke-dasharray: 15 100; stroke-dashoffset: -75;" />
               </svg>
               <div class="donut-center">
-                <span class="donut-label">Reste</span>
-                <strong class="donut-value">120 €</strong>
-              </div>
+              <span>Total</span>
+              <strong>${formattedTotal}</strong>
+            </div>
             </div>
           </div>
         </div>
@@ -994,6 +1062,14 @@ function renderBudgetOverview() {
     </div>
   `;
 }
+
+const totalExpenses = expenses.reduce((sum, group) =>
+    sum + group.items.reduce((s, item) => {
+      const num = parseFloat(item.amount.replace(/[^0-9.,]/g, '').replace(',', '.'));
+      return s + (isNaN(num) ? 0 : num);
+    }, 0)
+  , 0);
+  const formattedTotal = totalExpenses.toFixed(2).replace('.', ',') + ' €';
 
 
 function renderBudgetBalance() {
@@ -1126,7 +1202,7 @@ function renderDocs() {
             </div>
           `).join('')}
 
-          <button class="docs-add-folder" type="button">
+          <button class="docs-add-folder" type="button" data-action="add-doc-folder">
             <span class="material-symbols-outlined">create_new_folder</span>
             <strong>Nouveau Dossier</strong>
             <span>Créer une catégorie</span>
@@ -1297,6 +1373,7 @@ function handleAddFriend() {
   if (!draft.companions.includes(name)) draft.companions.push(name);
   saveTripDraft(draft);
   renderCreateTrip();
+  initAddressAutocomplete('#destination');
 }
 
 function handleCreateBoard() {
@@ -1358,6 +1435,7 @@ function navigate(route) {
   } else if (route === 'new-step') {
     window.location.hash = 'new-step';
     renderNewStep();
+    initAddressAutocomplete('[name="departure"], [name="arrival"], [name="location"]');
   } else if (route === 'activity-detail') {
     window.location.hash = 'activity-detail';
     renderActivityDetail();
@@ -1400,6 +1478,22 @@ window.addEventListener('click', event => {
 
   if (action === 'save-expense') {
     handleSaveExpense();
+    return;
+  }
+
+  if (action === 'add-doc-folder') {
+    const name = prompt('Nom du nouveau dossier :');
+    if (name && name.trim()) {
+      const icon = prompt('Icône Material (ex: directions_car, receipt, luggage) :') || 'folder';
+      docCategories.push({
+        id: 'custom-' + Date.now(),
+        label: name.trim(),
+        icon: icon.trim(),
+        tone: 'secondary',
+        files: []
+      });
+      renderDocs();
+    }
     return;
   }
 

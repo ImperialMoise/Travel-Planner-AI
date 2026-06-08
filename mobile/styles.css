@@ -1577,21 +1577,21 @@ button {
 }
 
 .donut-segment.primary {
-  stroke: var(--primary);
+  stroke: #7c5410;
   stroke-dasharray: 45 100;
   stroke-dashoffset: 0;
   animation: donutPrimary 850ms ease-out forwards;
 }
 
 .donut-segment.tertiary {
-  stroke: var(--tertiary-container);
+  stroke: #3a7d6e;
   stroke-dasharray: 30 100;
   stroke-dashoffset: -45;
   animation: donutTertiary 850ms 150ms ease-out forwards;
 }
 
 .donut-segment.accent {
-  stroke: var(--tan-accent);
+  stroke: #c0563f;
   stroke-dasharray: 15 100;
   stroke-dashoffset: -75;
   animation: donutAccent 850ms 300ms ease-out forwards;
@@ -1689,13 +1689,13 @@ button {
 }
 
 .budget-category-icon.tertiary {
-  background: rgba(89, 123, 114, 0.1);
-  color: var(--tertiary-container);
+  background: rgba(58, 125, 110, 0.1);
+  color: #3a7d6e;
 }
 
 .budget-category-icon.accent {
-  background: rgba(217, 182, 126, 0.2);
-  color: var(--surface-tint);
+  background: rgba(192, 86, 63, 0.1);
+  color: #c0563f;
 }
 
 .budget-category-icon.neutral {
@@ -4181,4 +4181,64 @@ button {
 .doc-detail-actions button.danger:active .material-symbols-outlined {
   background: rgba(186,26,26,0.1);
   color: var(--error-red);
+}
+
+/* ═══════════════════════════════════════════
+   ADDRESS AUTOCOMPLETE
+   ═══════════════════════════════════════════ */
+
+.ac-dropdown {
+  display: none;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  z-index: 100;
+  margin-top: 4px;
+  border-radius: 14px;
+  background: var(--surface-container-lowest);
+  border: 1px solid var(--faint-border);
+  box-shadow: 0 8px 30px rgba(45,73,63,0.12);
+  overflow: hidden;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.ac-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 0;
+  background: transparent;
+  color: var(--on-surface);
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  line-height: 20px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.ac-item + .ac-item {
+  border-top: 1px solid var(--faint-border);
+}
+
+.ac-item:active {
+  background: var(--surface-container);
+}
+
+.ac-item .material-symbols-outlined {
+  color: var(--primary);
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.ac-item span:last-child {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

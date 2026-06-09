@@ -328,6 +328,7 @@ let mobileMapMarkers = [];
 let mobileMapSearchTimer = null;
 let mobileMapStyle = 'plan';
 let mobileMapSelectedPlace = null;
+let showAllMobileMapSteps = false;
 let mobileMapDestinationMarker = null;
 
 function attachAutocomplete(input) {
@@ -915,6 +916,8 @@ function renderMap() {
   destroyMobileMap();
 
   const steps = getMobileMapSteps();
+  const visibleMapSteps = showAllMobileMapSteps ? steps : steps.slice(0, 6);
+  const hiddenMapStepsCount = Math.max(0, steps.length - visibleMapSteps.length);
   const tripName = activeTrip?.name || getTripDraft().destination || 'Votre voyage';
 
   app.innerHTML = `
@@ -973,12 +976,14 @@ function renderMap() {
             </button>
           </div>
 
-                    <div class="mobile-map-step-list">
+          <div class="mobile-map-step-list">
             ${
               steps.length
                 ? `
-                  ${steps.slice(0, 6).map((step, index) => `
-                    <button class="mobile-map-step" type="button" data-action="map-focus-step" data-step-index="${index}">
+                  ${visibleMapSteps.map((step) => {
+                    const realIndex = steps.indexOf(step);
+                    return `
+                    <button class="mobile-map-step" type="button" data-action="map-focus-step" data-step-index="${realIndex}">
                       <span class="material-symbols-outlined" aria-hidden="true">${getMobileMapStepIcon(step)}</span>
 
                       <div>
@@ -987,13 +992,14 @@ function renderMap() {
                       </div>
 
                       <em>${escapeHtml(step.time || '')}</em>
-                    </button>
-                  `).join('')}
+                   </button>
+                  `;
+                  }).join('')}
 
                   ${steps.length > 6 ? `
-                    <p class="mobile-map-more">
-                      + ${steps.length - 6} autre${steps.length - 6 > 1 ? 's' : ''} point${steps.length - 6 > 1 ? 's' : ''} sur la carte
-                    </p>
+                    <button class="mobile-map-more" type="button" data-action="toggle-map-steps">
+                      ${showAllMobileMapSteps ? 'Réduire' : `Voir ${hiddenMapStepsCount} autre${hiddenMapStepsCount > 1 ? 's' : ''} point${hiddenMapStepsCount > 1 ? 's' : ''}`}
+                    </button>
                   ` : ''}
                 `
                 : `
@@ -3876,6 +3882,12 @@ if (action === 'delete-step') {
       () => alert('Impossible de vous localiser.'),
       { enableHighAccuracy: true, timeout: 8000 }
     );
+    return;
+  }
+
+    if (action === 'toggle-map-steps') {
+    showAllMobileMapSteps = !showAllMobileMapSteps;
+    renderMap();
     return;
   }
 

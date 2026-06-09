@@ -2409,11 +2409,15 @@ button {
 }
 
 .mobile-map-more {
-  margin: 4px 0 0;
-  color: var(--secondary);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  line-height: 14px;
+  min-height: 38px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--surface-container);
+  color: var(--primary);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 800;
   text-align: center;
 }
 

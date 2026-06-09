@@ -314,6 +314,7 @@ const stepFieldSets = {
 };
 
 let selectedStepCategory = 'transport';
+let editingStepDraft = null;
 let transportStopoverUid = 0;
 let editingStepDraft = null;
 
@@ -330,6 +331,10 @@ let mobileMapStyle = 'plan';
 let mobileMapSelectedPlace = null;
 let mobileMapSelectedPlaceType = 'activity';
 let mobileMapSelectedDayIndex = 0;
+let mobileMapFocusedStepIndex = null;
+let mobileMapPanelDayIndex = null;
+let mobileMapTourTimer = null;
+let mobileMapTouring = false;
 let showAllMobileMapSteps = false;
 let mobileMapDestinationMarker = null;
 
@@ -921,6 +926,7 @@ function clearMobileMapMarkers() {
 }
 
 function destroyMobileMap() {
+  stopMobileMapTour();
   clearMobileMapMarkers();
 
   if (mobileMapInstance) {
@@ -934,8 +940,9 @@ function renderMap() {
 
   const steps = getMobileMapSteps();
   const unlocatedSteps = getMobileMapUnlocatedSteps();
-  const visibleMapSteps = showAllMobileMapSteps ? steps : steps.slice(0, 6);
-  const hiddenMapStepsCount = Math.max(0, steps.length - visibleMapSteps.length);
+  const panelSteps = getMobileMapPanelSteps();
+  const visibleMapSteps = showAllMobileMapSteps ? panelSteps : panelSteps.slice(0, 6);
+  const hiddenMapStepsCount = Math.max(0, panelSteps.length - visibleMapSteps.length);
   const tripName = activeTrip?.name || getTripDraft().destination || 'Votre voyage';
 
   app.innerHTML = `
@@ -964,6 +971,11 @@ function renderMap() {
             <span class="material-symbols-outlined" aria-hidden="true">layers</span>
           </button>
 
+          <button class="glass-panel mobile-map-tour-button" type="button" data-action="map-tour" aria-label="Survoler les points">
+            <span class="material-symbols-outlined" aria-hidden="true">route</span>
+            <span>Survoler</span>
+          </button>
+
           <div class="glass-panel mobile-map-zoom">
             <button type="button" data-action="map-zoom-in" aria-label="Zoomer">
               <span class="material-symbols-outlined" aria-hidden="true">add</span>
@@ -979,7 +991,7 @@ function renderMap() {
           <div class="map-summary-header">
             <div>
               <span class="kicker">${escapeHtml(tripName)}</span>
-              <h1>${steps.length ? `${steps.length} point${steps.length > 1 ? 's' : ''} sur la carte` : 'Destination du voyage'}</h1>
+              <h1>${panelSteps.length ? `${panelSteps.length} point${panelSteps.length > 1 ? 's' : ''} ${mobileMapPanelDayIndex === null ? 'sur la carte' : `jour ${mobileMapPanelDayIndex + 1}`}` : 'Destination du voyage'}</h1>
             </div>
 
             <button type="button" data-action="toggle-map-summary" aria-label="Réduire le résumé">
@@ -987,8 +999,32 @@ function renderMap() {
             </button>
           </div>
 
+                    ${activeTrip?.days?.length ? `
+            <div class="mobile-map-day-tabs">
+              <button
+                type="button"
+                class="${mobileMapPanelDayIndex === null ? 'active' : ''}"
+                data-action="map-panel-day"
+                data-panel-day="all"
+              >
+                Tout
+              </button>
+
+              ${activeTrip.days.map((day, index) => `
+                <button
+                  type="button"
+                  class="${mobileMapPanelDayIndex === index ? 'active' : ''}"
+                  data-action="map-panel-day"
+                  data-panel-day="${index}"
+                >
+                  J${index + 1}
+                </button>
+              `).join('')}
+            </div>
+          ` : ''}
+
           <div class="mobile-map-card-actions">
-            <button type="button" data-action="map-fit">
+            <button type="button" data-action="map-fit-panel">
               <span class="material-symbols-outlined" aria-hidden="true">center_focus_strong</span>
               <span>Recadrer</span>
             </button>
@@ -996,7 +1032,7 @@ function renderMap() {
 
           <div class="mobile-map-step-list">
             ${
-              steps.length
+              panelSteps.length
                 ? `
                   ${visibleMapSteps.map((step) => {
                     const realIndex = steps.indexOf(step);
@@ -1015,7 +1051,7 @@ function renderMap() {
                     `;
                   }).join('')}
 
-                  ${steps.length > 6 ? `
+                  ${panelSteps.length > 6 ? `
                     <button class="mobile-map-more" type="button" data-action="toggle-map-steps">
                       ${showAllMobileMapSteps ? 'Réduire' : `Voir ${hiddenMapStepsCount} autre${hiddenMapStepsCount > 1 ? 's' : ''} point${hiddenMapStepsCount > 1 ? 's' : ''}`}
                     </button>
@@ -1219,6 +1255,48 @@ function renderMobileMapMarkers() {
   });
 }
 
+function getMobileMapPanelSteps() {
+  const steps = getMobileMapSteps();
+
+  if (mobileMapPanelDayIndex === null) {
+    return steps;
+  }
+
+  return steps.filter(step => step.dayIndex === mobileMapPanelDayIndex);
+}
+
+function fitMobileMapToPanelDay() {
+  if (!mobileMapInstance) return;
+
+  const steps = getMobileMapPanelSteps();
+
+  if (!steps.length) {
+    fitMobileMapToSteps();
+    return;
+  }
+
+  if (steps.length === 1) {
+    mobileMapInstance.flyTo({
+      center: [steps[0].lng, steps[0].lat],
+      zoom: 15,
+      duration: 900
+    });
+    return;
+  }
+
+  const bounds = new maplibregl.LngLatBounds();
+
+  steps.forEach(step => {
+    bounds.extend([step.lng, step.lat]);
+  });
+
+  mobileMapInstance.fitBounds(bounds, {
+    padding: { top: 110, right: 70, bottom: 250, left: 70 },
+    duration: 900,
+    maxZoom: 15
+  });
+}
+
 function fitMobileMapToSteps() {
   if (!mobileMapInstance) return;
 
@@ -1253,6 +1331,8 @@ function focusMobileMapStep(index) {
 
   const step = getMobileMapSteps()[index];
   if (!step) return;
+    mobileMapFocusedStepIndex = index;
+  renderMobileMapFocusedStepCard(step, index);
 
     document.querySelectorAll('.mobile-map-marker').forEach((marker, markerIndex) => {
     marker.classList.toggle('active', markerIndex === index);
@@ -1449,6 +1529,97 @@ async function locateMobileMapStep(index) {
     renderMobileMapSelectedPlace();
   } catch (error) {
     alert('Erreur localisation : ' + (error.message || error));
+  }
+}
+
+function renderMobileMapFocusedStepCard(step, index) {
+  let card = document.querySelector('#mobile-map-focused-step-card');
+
+  if (!card) {
+    card = document.createElement('article');
+    card.id = 'mobile-map-focused-step-card';
+    card.className = 'mobile-map-focused-step-card glass-panel';
+    document.querySelector('.mobile-real-map-screen')?.appendChild(card);
+  }
+
+  card.innerHTML = `
+    <div>
+      <span class="kicker">Étape sélectionnée</span>
+      <h2>${escapeHtml(step.label || step.title || 'Étape')}</h2>
+      <p>${escapeHtml(step.lieu || step.place || step.dayTitle || '')}</p>
+    </div>
+
+    <div class="mobile-map-focused-actions">
+      <button type="button" data-action="map-show-focused-step">
+        <span class="material-symbols-outlined" aria-hidden="true">my_location</span>
+        <span>Voir</span>
+      </button>
+
+      <button type="button" data-action="map-edit-focused-step">
+        <span class="material-symbols-outlined" aria-hidden="true">edit</span>
+        <span>Modifier</span>
+      </button>
+
+      <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${step.lat},${step.lng}`)}" target="_blank" rel="noopener">
+        <span class="material-symbols-outlined" aria-hidden="true">open_in_new</span>
+        <span>Maps</span>
+      </a>
+    </div>
+  `;
+}
+
+function stopMobileMapTour() {
+  mobileMapTouring = false;
+
+  if (mobileMapTourTimer) {
+    clearTimeout(mobileMapTourTimer);
+    mobileMapTourTimer = null;
+  }
+
+  const button = document.querySelector('[data-action="map-tour"] span:last-child');
+  if (button) button.textContent = 'Survoler';
+}
+
+function startMobileMapTour() {
+  const steps = getMobileMapSteps();
+
+  if (!steps.length) {
+    alert('Aucun point à survoler pour le moment.');
+    return;
+  }
+
+  stopMobileMapTour();
+
+  mobileMapTouring = true;
+
+  const button = document.querySelector('[data-action="map-tour"] span:last-child');
+  if (button) button.textContent = 'Stop';
+
+  let index = 0;
+
+  const next = () => {
+    if (!mobileMapTouring) return;
+
+    focusMobileMapStep(index);
+
+    index += 1;
+
+    if (index >= steps.length) {
+      mobileMapTourTimer = setTimeout(stopMobileMapTour, 1400);
+      return;
+    }
+
+    mobileMapTourTimer = setTimeout(next, 1800);
+  };
+
+  next();
+}
+
+function toggleMobileMapTour() {
+  if (mobileMapTouring) {
+    stopMobileMapTour();
+  } else {
+    startMobileMapTour();
   }
 }
 
@@ -3981,8 +4152,21 @@ if (action === 'delete-step') {
     return;
   }
 
-  if (action === 'map-fit') {
+    if (action === 'map-fit') {
     fitMobileMapToSteps();
+    return;
+  }
+
+  if (action === 'map-fit-panel') {
+    fitMobileMapToPanelDay();
+    return;
+  }
+
+  if (action === 'map-panel-day') {
+    const value = event.target.closest('[data-panel-day]')?.dataset.panelDay;
+    mobileMapPanelDayIndex = value === 'all' ? null : Number(value);
+    showAllMobileMapSteps = false;
+    renderMap();
     return;
   }
 
@@ -3993,6 +4177,11 @@ if (action === 'delete-step') {
 
   if (action === 'map-zoom-out') {
     mobileMapInstance?.zoomOut();
+    return;
+  }
+
+    if (action === 'map-tour') {
+    toggleMobileMapTour();
     return;
   }
 
@@ -4049,6 +4238,28 @@ if (action === 'delete-step') {
   if (action === 'map-focus-step') {
     const index = Number(event.target.closest('[data-step-index]')?.dataset.stepIndex);
     focusMobileMapStep(index);
+    return;
+  }
+
+    if (action === 'map-show-focused-step') {
+    if (mobileMapFocusedStepIndex !== null) {
+      focusMobileMapStep(mobileMapFocusedStepIndex);
+    }
+    return;
+  }
+
+  if (action === 'map-edit-focused-step') {
+    const step = getMobileMapSteps()[mobileMapFocusedStepIndex];
+    if (!step) return;
+
+    editingStepDraft = {
+      ...step,
+      stepIndex: step.stepIndex,
+      dayIndex: step.dayIndex
+    };
+
+    selectedStepCategory = step.type || 'activity';
+    navigate('new-step');
     return;
   }
 

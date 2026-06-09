@@ -522,6 +522,81 @@ function getNewStepFormData() {
   return Object.fromEntries(new FormData(form).entries());
 }
 
+function getStepCategoryConfig(type = '') {
+  return stepFieldSets[type] || stepFieldSets.restaurant;
+}
+
+function getStepTypeLabel(type = '') {
+  const category = stepCategories.find(item => item.id === type);
+  return category?.label || 'Étape';
+}
+
+function getStepTimelineIcon(type = '') {
+  const config = getStepCategoryConfig(type);
+  return config.timelineIcon || 'place';
+}
+
+function getStepTimelineTone(type = '') {
+  return type === 'restaurant' ? 'accent' : 'petrol';
+}
+
+function getStepDisplayTitle(step) {
+  if (!step) return 'Étape';
+
+  if (step.label) return step.label;
+
+  if (step.type === 'transport') {
+    const mode = transportModeLabels[step.transportType] || 'Transport';
+    const departure = step.depart || 'Départ';
+    const arrival = step.arrivee || 'Arrivée';
+
+    return `${mode} ${departure} → ${arrival}`;
+  }
+
+  return getStepTypeLabel(step.type);
+}
+
+function getStepDisplayDescription(step) {
+  if (!step) return '';
+
+  const parts = [];
+
+  if (step.lieu) parts.push(step.lieu);
+  if (step.duree) parts.push(step.duree);
+  if (step.timeEnd) parts.push(`Fin ${step.timeEnd}`);
+  if (step.nextDay) parts.push('Arrivée le lendemain');
+  if (step.ref) parts.push(`Réf. ${step.ref}`);
+  if (step.note) parts.push(step.note);
+
+  return parts.filter(Boolean).join(' • ');
+}
+
+function getCurrentTimelineSteps() {
+  const firstDay = activeTrip?.days?.[0];
+
+  if (firstDay?.steps?.length) {
+    return firstDay.steps.map(step => ({
+      id: step.id,
+      time: step.time || '09:00',
+      type: getStepTypeLabel(step.type),
+      title: getStepDisplayTitle(step),
+      description: getStepDisplayDescription(step) || 'Détail à compléter',
+      icon: getStepTimelineIcon(step.type),
+      tone: getStepTimelineTone(step.type),
+      synced: true
+    }));
+  }
+
+  return itinerarySteps.map(step => ({
+    ...step,
+    synced: false
+  }));
+}
+
+function getActiveTripDayForNewStep() {
+  return activeTrip?.days?.[0] || null;
+}
+
 function topbar() {
   return `
     <header class="topbar">
@@ -936,16 +1011,15 @@ function initCreateTripControls() {
 
 function renderItinerary() {
   const draft = getTripDraft();
-  const trip = activeTrip;
-  const firstDay = trip?.days?.[0];
-  const lastDay = trip?.days?.[trip.days.length - 1];
+  const timelineSteps = getCurrentTimelineSteps();
 
-  const title = trip?.name || draft.destination || 'Frontière du Nord';
-  const period = trip?.startDate
-    ? `${formatDateLabel(firstDay?.dateISO || trip.startDate, '')}${lastDay?.dateISO ? ` – ${formatDateLabel(lastDay.dateISO, '')}` : ''}`
+  const title = activeTrip?.name || draft.destination || 'Frontière du Nord';
+
+  const period = activeTrip?.startDate
+    ? formatDateLabel(activeTrip.startDate, '')
     : draft.startDate
       ? `${formatDateLabel(draft.startDate, '')}${draft.endDate ? ` – ${formatDateLabel(draft.endDate, '')}` : ''}`
-      : 'Jour 6 • 14 Octobre';
+      : 'Jour 1';
 
   app.innerHTML = `
     <div class="mobile-shell itinerary-shell">
@@ -962,7 +1036,7 @@ function renderItinerary() {
         </section>
 
         <section class="timeline" aria-label="Programme de la journée">
-          ${itinerarySteps.map((step, stepIndex) => `
+          ${timelineSteps.map(step, stepIndex) => `
             <article class="timeline-item ${step.type === 'Activité' ? 'clickable' : ''}" ${step.type === 'Activité' ? 'data-action="activity-detail" tabindex="0" role="button" aria-label="Ouvrir le détail de Sanctuaire Meiji"' : ''}>
               <span class="timeline-pin ${step.tone}">
                 <span class="material-symbols-outlined" aria-hidden="true">${step.icon}</span>
@@ -988,10 +1062,10 @@ function renderItinerary() {
 
           <div class="timeline-add">
             <span class="timeline-dot" aria-hidden="true"></span>
-            <button type="button" data-action="new-step">
-              <span class="material-symbols-outlined" aria-hidden="true">add</span>
-              <span>Ajouter une étape</span>
-            </button>
+            <button type="button" data-action="${activeTrip?.id ? 'new-step' : 'create-trip'}">
+  <span class="material-symbols-outlined" aria-hidden="true">add</span>
+  <span>${activeTrip?.id ? 'Ajouter une étape' : 'Créer un voyage d’abord'}</span>
+</button>
           </div>
         </section>
       </main>
@@ -1944,9 +2018,10 @@ function handleDeleteStep(stepIndex) {
   renderItinerary();
 }
 
-function handleAddStepToProgram() {
+async function handleAddStepToProgram() {
   const data = getNewStepFormData();
   const config = stepFieldSets[selectedStepCategory] || stepFieldSets.transport;
+
   let title = data.title?.trim() || config.fallbackTitle;
   let descriptionParts = [data.location?.trim(), data.duration?.trim(), data.notes?.trim()].filter(Boolean);
 
@@ -1954,7 +2029,11 @@ function handleAddStepToProgram() {
     const mode = transportModeLabels[data.mode] || 'Transport';
     const departure = data.departure?.trim();
     const arrival = data.arrival?.trim();
-    title = departure || arrival ? `${mode} ${departure || 'Départ'} → ${arrival || 'Arrivée'}` : mode;
+
+    title = departure || arrival
+      ? `${mode} ${departure || 'Départ'} → ${arrival || 'Arrivée'}`
+      : mode;
+
     descriptionParts = [
       data.arrivalTime ? `Arrivée ${data.arrivalTime}${data.nextDay ? ' +1 jour' : ''}` : '',
       data.reference?.trim() ? `Réf. ${data.reference.trim()}` : '',
@@ -1963,15 +2042,54 @@ function handleAddStepToProgram() {
     ].filter(Boolean);
   }
 
-  itinerarySteps.push({
+  const localStep = {
     time: data.time || config.defaultTime || '09:00',
     type: config.type,
     title,
     description: descriptionParts.join(' • ') || config.fallbackDescription,
     icon: config.timelineIcon,
     tone: selectedStepCategory === 'restaurant' ? 'accent' : 'petrol'
-  });
+  };
 
+  const activeDay = getActiveTripDayForNewStep();
+
+  if (activeTrip?.id && activeDay?.id && window.SB?.saveStep) {
+    try {
+      const stepIndex = activeDay.steps?.length || 0;
+
+      await window.SB.saveStep(activeTrip.id, activeDay.id, {
+        stepIndex,
+        type: selectedStepCategory,
+        label: title,
+        lieu: data.location?.trim() || '',
+        time: data.time || config.defaultTime || '09:00',
+        timeEnd: data.arrivalTime || '',
+        transportType: data.mode || '',
+        depart: data.departure?.trim() || '',
+        arrivee: data.arrival?.trim() || '',
+        duree: data.duration?.trim() || '',
+        nextDay: data.nextDay === 'yes',
+        escales: data.stopover?.trim() ? [data.stopover.trim()] : [],
+        ref: data.reference?.trim() || '',
+        note: data.notes?.trim() || '',
+        amount: 0,
+        paidBy: ''
+      });
+
+      await refreshMobileTrips(activeTrip.id);
+
+      selectedStepCategory = 'transport';
+      navigate('itinerary');
+      return;
+    } catch (error) {
+      alert('Erreur sauvegarde étape : ' + (error.message || error));
+      return;
+    }
+  }
+
+  itinerarySteps.push(localStep);
+
+  selectedStepCategory = 'transport';
   navigate('itinerary');
 }
 

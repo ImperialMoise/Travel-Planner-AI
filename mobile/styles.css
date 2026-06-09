@@ -5386,3 +5386,125 @@ button {
     justify-content: flex-end;
   }
 }
+
+.expense-v2-shell {
+  padding-bottom: 76px;
+}
+
+.expense-v2-header {
+  height: 56px;
+}
+
+.expense-v2-main {
+  padding: 14px 14px 18px;
+  gap: 14px;
+}
+
+.expense-v2-kicker {
+  margin-bottom: 6px;
+  font-size: 10px;
+  line-height: 13px;
+  letter-spacing: 0.14em;
+}
+
+.expense-v2-amount-section {
+  gap: 3px;
+  padding-top: 0;
+}
+
+.expense-v2-amount-input span,
+.expense-v2-amount-input input {
+  font-size: 27px;
+  line-height: 32px;
+}
+
+.expense-v2-amount-input input {
+  width: 120px;
+}
+
+.expense-v2-title-input {
+  min-height: 38px;
+  margin-top: 8px;
+  padding: 8px 10px;
+}
+
+.expense-v2-section {
+  gap: 6px;
+}
+
+.expense-v2-category-grid {
+  gap: 8px;
+}
+
+.expense-v2-category {
+  min-height: 48px;
+  border-radius: 11px;
+  padding: 6px 4px;
+  gap: 4px;
+}
+
+.expense-v2-category span:first-child {
+  font-size: 20px;
+}
+
+.expense-v2-category span:last-child {
+  font-size: 10px;
+  line-height: 12px;
+}
+
+.expense-v2-person-grid {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 1px 2px 4px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.expense-v2-person-grid::-webkit-scrollbar {
+  display: none;
+}
+
+.expense-v2-person-card-wrap,
+.expense-v2-person-card {
+  flex: 0 0 96px;
+}
+
+.expense-v2-person-card {
+  min-height: 48px;
+  padding: 6px 5px;
+  gap: 4px;
+}
+
+.expense-v2-person-avatar {
+  width: 21px;
+  height: 21px;
+  font-size: 9px;
+}
+
+.expense-v2-person-card > span:last-child {
+  font-size: 10px;
+  line-height: 12px;
+}
+
+.expense-v2-fields {
+  gap: 7px;
+  padding-bottom: 4px;
+}
+
+.expense-v2-fields label {
+  min-height: 38px;
+  padding: 8px 10px;
+}
+
+.expense-v2-fields textarea {
+  max-height: 38px;
+}
+
+.expense-v2-bottom {
+  padding: 12px 14px calc(10px + env(safe-area-inset-bottom, 0px));
+}
+
+.expense-v2-primary {
+  min-height: 46px;
+}

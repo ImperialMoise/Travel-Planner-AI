@@ -141,7 +141,7 @@ const expenseCategories = [
   { id: 'shopping', label: 'Achats', icon: 'shopping_bag', tone: 'secondary', emoji: '◒' },
   { id: 'coffee', label: 'Café', icon: 'local_cafe', tone: 'tertiary', emoji: '☕' },
   { id: 'flight', label: 'Vols', icon: 'flight', tone: 'primary', emoji: '✈' },
-  { id: 'other', label: 'Autre', icon: 'add', tone: 'neutral', emoji: '＋' }
+  { id: 'other', label: 'Autre', icon: 'more_horiz', tone: 'neutral', emoji: '...' }
 ];
 
 let selectedExpenseCategory = 'meal';
@@ -1658,27 +1658,23 @@ async function handleDeleteBudgetPerson(personId) {
   if (!personId) return;
 
   const people = getBudgetPeople();
-  const person = people.find(function(item) {
-    return item.id === personId;
-  });
-
+  const person = people.find(item => item.id === personId);
   if (!person) return;
 
   const confirmed = confirm(`Supprimer "${person.name}" ?`);
   if (!confirmed) return;
 
-  if (activeTrip?.id && window.SB?.removeParticipant && !String(personId).startsWith('local-person-')) {
+  if (personId === 'me' || personId === 'partner') {
+    const hiddenIds = getHiddenBudgetPeopleIds();
+    if (!hiddenIds.includes(personId)) hiddenIds.push(personId);
+    saveHiddenBudgetPeopleIds(hiddenIds);
+  } else if (activeTrip?.id && window.SB?.removeParticipant && !String(personId).startsWith('local-person-')) {
     await window.SB.removeParticipant(personId);
     await refreshMobileTrips(activeTrip.id);
-    renderNewExpense();
-    return;
+  } else {
+    const nextPeople = getLocalBudgetPeople().filter(item => item.id !== personId);
+    saveLocalBudgetPeople(nextPeople);
   }
-
-  const nextPeople = getLocalBudgetPeople().filter(function(item) {
-    return item.id !== personId;
-  });
-
-  saveLocalBudgetPeople(nextPeople);
 
   if (selectedExpensePayer === personId) selectedExpensePayer = 'me';
   if (selectedExpenseSplit === personId) selectedExpenseSplit = 'equal';
@@ -1728,6 +1724,18 @@ function saveLocalBudgetPeople(people) {
   localStorage.setItem('atelierBudgetPeople', JSON.stringify(people));
 }
 
+function getHiddenBudgetPeopleIds() {
+  try {
+    return JSON.parse(localStorage.getItem('atelierHiddenBudgetPeopleIds')) || [];
+  } catch {
+    return [];
+  }
+}
+
+function saveHiddenBudgetPeopleIds(ids) {
+  localStorage.setItem('atelierHiddenBudgetPeopleIds', JSON.stringify(ids));
+}
+
 function getBudgetPeople() {
   const participants = activeTrip?.participants || [];
 
@@ -1742,11 +1750,13 @@ function getBudgetPeople() {
 
   const localPeople = getLocalBudgetPeople();
 
-  return [
-    { id: 'me', name: 'Moi' },
-    { id: 'partner', name: 'Partenaire' },
-    ...localPeople
-  ];
+  const hiddenIds = getHiddenBudgetPeopleIds();
+
+return [
+  { id: 'me', name: 'Moi' },
+  { id: 'partner', name: 'Partenaire' },
+  ...localPeople
+].filter(person => !hiddenIds.includes(person.id));
 }
 
 function getInitial(name = '') {
@@ -1816,7 +1826,7 @@ function renderNewExpense() {
 
   const payerButtonsHtml = people.map(function(person) {
     const isActive = selectedExpensePayer === person.id;
-    const canEdit = person.id !== 'me' && person.id !== 'partner';
+    const canEdit = person.id !== 'common';
 
     return `
       <div class="expense-v2-person-card-wrap">
@@ -1851,7 +1861,7 @@ function renderNewExpense() {
 
   const splitPeopleHtml = people.map(function(person) {
     const isActive = selectedExpenseSplit === person.id;
-    const canEdit = person.id !== 'me' && person.id !== 'partner';
+    const canEdit = person.id !== 'common';
 
     return `
       <div class="expense-v2-person-card-wrap">

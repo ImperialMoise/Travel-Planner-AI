@@ -3122,11 +3122,3 @@ window.addEventListener('change', event => {
 });
 
 renderCurrentRoute();
-
-if (typeof initMobileData === 'function') {
-  initMobileData()
-    .then(renderCurrentRoute)
-    .catch(error => {
-      console.error('Erreur chargement données mobiles :', error);
-    });
-}

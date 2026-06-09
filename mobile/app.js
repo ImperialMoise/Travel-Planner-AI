@@ -442,7 +442,15 @@ function getCreateTripFormData() {
 
 function renderStepField(field) {
     const draft = editingStepDraft || mapStepDraft || {};
-  const draftValue = draft[field.name] || '';
+  const draftValue =
+    draft[field.name] ||
+    (field.name === 'title' ? draft.label || draft.title || '' : '') ||
+    (field.name === 'location' ? draft.lieu || draft.location || draft.place || '' : '') ||
+    (field.name === 'notes' ? draft.note || draft.notes || draft.description || '' : '') ||
+    (field.name === 'timeCheckIn' ? draft.timeCheckIn || draft.time || '' : '') ||
+    (field.name === 'timeCheckOut' ? draft.timeCheckOut || draft.timeEnd || '' : '') ||
+    (field.name === 'reference' ? draft.ref || draft.reference || '' : '') ||
+    (field.name === 'duration' ? draft.duree || draft.duration || '' : '');
   const draftLat = field.name === 'location' ? draft.lat || '' : '';
   const draftLng = field.name === 'location' ? draft.lng || '' : '';
 
@@ -500,11 +508,19 @@ function addTransportStopoverField() {
 
 function renderTransportStepFields() {
     const draft = editingStepDraft || mapStepDraft || {};
+      const draftMode = draft.transportType || draft.mode || 'train';
+  const draftDeparture = draft.depart || draft.departure || '';
+  const draftArrival = draft.arrivee || draft.arrival || draft.location || '';
+  const draftReference = draft.ref || draft.reference || '';
+  const draftNotes = draft.note || draft.notes || draft.description || '';
   return `
     <label class="step-input select full">
       <span class="material-symbols-outlined" aria-hidden="true">directions_transit</span>
       <select name="mode" aria-label="Mode de transport">
-        <option value="train">Train</option>
+        <option value="train" ${draftMode === 'train' ? 'selected' : ''}>Train</option>
+<option value="avion" ${draftMode === 'avion' ? 'selected' : ''}>Avion</option>
+<option value="bus" ${draftMode === 'bus' ? 'selected' : ''}>Bus</option>
+<option value="voiture" ${draftMode === 'voiture' ? 'selected' : ''}>Voiture</option>
         <option value="avion">Avion</option>
         <option value="bus">Bus</option>
         <option value="voiture">Voiture</option>
@@ -517,10 +533,10 @@ function renderTransportStepFields() {
       <div class="transport-grid">
         <label class="step-input compact place">
           <span class="material-symbols-outlined" aria-hidden="true">location_on</span>
-          <input name="departure" type="text" placeholder="Gare de départ..." data-autocomplete>
+          <input name="departure" type="text" placeholder="Gare de départ..." data-autocomplete value="${escapeHtml(draftDeparture)}">
         </label>
         <label class="step-input compact time-only">
-          <input name="time" type="time" value="08:00" aria-label="Heure de départ">
+          <input name="time" type="time" value="${escapeHtml(draft.time || '08:00')}" aria-label="Heure de départ">
         </label>
       </div>
     </div>
@@ -533,7 +549,7 @@ function renderTransportStepFields() {
           <input name="arrival" type="text" placeholder="Gare d'arrivée..." data-autocomplete value="${escapeHtml(draft.location || draft.arrivee || '')}" ${draft.lat ? `data-lat="${escapeHtml(draft.lat)}"` : ''} ${draft.lng ? `data-lng="${escapeHtml(draft.lng)}"` : ''}>
         </label>
         <label class="step-input compact time-only">
-          <input name="arrivalTime" type="time" value="10:30" aria-label="Heure d'arrivée">
+          <input name="arrivalTime" type="time" value="${escapeHtml(draft.timeEnd || draft.arrivalTime || '10:30')}" aria-label="Heure d'arrivée">
         </label>
       </div>
       <label class="step-checkbox">
@@ -545,7 +561,7 @@ function renderTransportStepFields() {
     <div class="step-form-grid">
       <label class="step-input compact">
         <span class="material-symbols-outlined" aria-hidden="true">confirmation_number</span>
-        <input name="reference" type="text" placeholder="Référence (ex: AF267)">
+        <input name="reference" type="text" placeholder="Référence (ex: AF267)" value="${escapeHtml(draftReference)}">
       </label>
             <button class="step-input compact transport-add-stopover" type="button" data-action="add-transport-stopover">
         <span class="material-symbols-outlined" aria-hidden="true">alt_route</span>
@@ -556,7 +572,7 @@ function renderTransportStepFields() {
     <div class="transport-stopover-list" data-stopover-list></div>
     <label class="step-input textarea full">
       <span class="material-symbols-outlined" aria-hidden="true">notes</span>
-      <textarea name="notes" rows="3" placeholder="Notes ou détails importants..."></textarea>
+      <textarea name="notes" rows="3" placeholder="Notes ou détails importants...">${escapeHtml(draftNotes)}</textarea>
     </label>
   `;
 }
@@ -3940,15 +3956,17 @@ async function handleDeleteTrip(tripId = activeTrip?.id) {
 }
 
 function handleEditStep(stepIndex) {
-  const step = getCurrentTimelineSteps()[stepIndex];
+  const steps = getCurrentTimelineSteps();
+  const step = steps[stepIndex];
   if (!step) return;
 
   editingStepDraft = {
     ...step,
-    stepIndex
+    stepIndex: step.stepIndex ?? stepIndex,
+    dayIndex: step.dayIndex ?? 0
   };
 
-  selectedStepCategory = step.category || step.typeKey || 'transport';
+  selectedStepCategory = step.type || step.typeKey || 'transport';
   navigate('new-step');
 }
 
@@ -4016,9 +4034,12 @@ async function handleAddStepToProgram() {
 
   if (activeTrip?.id && activeDay?.id && window.SB?.saveStep) {
     try {
-      const stepIndex = activeDay.steps?.length || 0;
+            const stepIndex = editingStepDraft
+        ? editingStepDraft.stepIndex || 0
+        : activeDay.steps?.length || 0;
 
       await window.SB.saveStep(activeTrip.id, activeDay.id, {
+        id: editingStepDraft?.id || null,
         stepIndex,
         type: selectedStepCategory,
         label: title,
@@ -4058,7 +4079,11 @@ async function handleAddStepToProgram() {
     }
   }
 
-  itinerarySteps.push(localStep);
+    if (editingStepDraft && Number.isFinite(editingStepDraft.stepIndex)) {
+    itinerarySteps[editingStepDraft.stepIndex] = localStep;
+  } else {
+    itinerarySteps.push(localStep);
+  }
 
     selectedStepCategory = 'transport';
   editingStepDraft = null;

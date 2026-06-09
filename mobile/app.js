@@ -323,6 +323,7 @@ let mobileMapMarkers = [];
 let mobileMapSearchTimer = null;
 let mobileMapStyle = 'plan';
 let mobileMapSelectedPlace = null;
+let mobileMapDestinationMarker = null;
 
 function attachAutocomplete(input) {
   if (!input || input.dataset.acReady) return;
@@ -765,6 +766,53 @@ function getMobileMapSteps() {
   ).filter(step => Number.isFinite(step.lat) && Number.isFinite(step.lng));
 }
 
+function getMobileMapDestinationLabel() {
+  const draft = getTripDraft();
+
+  return (
+    activeTrip?.name ||
+    draft.destination ||
+    ''
+  ).trim();
+}
+
+async function geocodeMobileMapDestination() {
+  const label = getMobileMapDestinationLabel();
+  if (!label) return null;
+
+  const cacheKey = `atelierMapDestination:${label.toLowerCase()}`;
+
+  try {
+    const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
+    if (cached?.center?.length === 2) return cached;
+  } catch {}
+
+  try {
+    const response = await fetch(
+      `https://api.maptiler.com/geocoding/${encodeURIComponent(label)}.json?key=${MAPTILER_KEY}&language=fr&limit=1`
+    );
+
+    const data = await response.json();
+    const feature = data.features?.[0];
+
+    if (!feature?.center) return null;
+
+    const destination = {
+      label,
+      name: feature.text || label,
+      address: feature.place_name || label,
+      center: feature.center
+    };
+
+    localStorage.setItem(cacheKey, JSON.stringify(destination));
+
+    return destination;
+  } catch (error) {
+    console.warn('Destination geocoding error:', error);
+    return null;
+  }
+}
+
 function getMobileMapStyleUrl() {
   const style = mobileMapStyle === 'satellite'
     ? 'hybrid'
@@ -776,6 +824,11 @@ function getMobileMapStyleUrl() {
 function clearMobileMapMarkers() {
   mobileMapMarkers.forEach(marker => marker.remove());
   mobileMapMarkers = [];
+
+  if (mobileMapDestinationMarker) {
+    mobileMapDestinationMarker.remove();
+    mobileMapDestinationMarker = null;
+  }
 }
 
 function destroyMobileMap() {
@@ -833,7 +886,7 @@ function renderMap() {
           <div class="map-summary-header">
             <div>
               <span class="kicker">${escapeHtml(tripName)}</span>
-              <h1>${steps.length ? `${steps.length} point${steps.length > 1 ? 's' : ''} sur la carte` : 'Aucun point géolocalisé'}</h1>
+              <h1>${steps.length ? `${steps.length} point${steps.length > 1 ? 's' : ''} sur la carte` : 'Destination du voyage'}</h1>
             </div>
 
             <button type="button" data-action="toggle-map-summary" aria-label="Réduire le résumé">
@@ -853,7 +906,7 @@ function renderMap() {
               </button>
             `).join('') : `
               <p class="companion-empty">
-                Ajoutez une étape avec une adresse sélectionnée dans les suggestions pour la voir ici.
+                La carte affiche d’abord la destination. Les étapes apparaîtront ici dès qu’elles auront une adresse sélectionnée dans les suggestions.
               </p>
             `}
           </div>
@@ -884,12 +937,50 @@ function initMobileRealMap() {
 
   mobileMapInstance.addControl(new maplibregl.NavigationControl({ showCompass: true }), 'bottom-right');
 
-  mobileMapInstance.on('load', () => {
+    mobileMapInstance.on('load', async () => {
     renderMobileMapMarkers();
-    fitMobileMapToSteps();
+
+    if (steps.length) {
+      fitMobileMapToSteps();
+    } else {
+      await renderMobileMapDestination();
+    }
   });
 
   initMobileMapSearch();
+}
+
+async function renderMobileMapDestination() {
+  if (!mobileMapInstance) return;
+
+  const destination = await geocodeMobileMapDestination();
+
+  if (!destination?.center) {
+    mobileMapInstance.flyTo({
+      center: [2.3522, 48.8566],
+      zoom: 4,
+      duration: 900
+    });
+    return;
+  }
+
+  const el = document.createElement('button');
+  el.className = 'mobile-map-marker destination';
+  el.type = 'button';
+  el.setAttribute('aria-label', destination.address);
+  el.innerHTML = `
+    <span class="material-symbols-outlined">flag</span>
+  `;
+
+  mobileMapDestinationMarker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
+    .setLngLat(destination.center)
+    .addTo(mobileMapInstance);
+
+  mobileMapInstance.flyTo({
+    center: destination.center,
+    zoom: 10,
+    duration: 1000
+  });
 }
 
 function renderMobileMapMarkers() {
@@ -3476,9 +3567,14 @@ if (action === 'delete-step') {
     mobileMapStyle = mobileMapStyle === 'plan' ? 'satellite' : 'plan';
     if (mobileMapInstance) {
       mobileMapInstance.setStyle(getMobileMapStyleUrl());
-      mobileMapInstance.once('style.load', () => {
+            mobileMapInstance.once('style.load', async () => {
         renderMobileMapMarkers();
-        fitMobileMapToSteps();
+
+        if (getMobileMapSteps().length) {
+          fitMobileMapToSteps();
+        } else {
+          await renderMobileMapDestination();
+        }
       });
     }
     return;

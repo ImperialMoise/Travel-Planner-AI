@@ -2345,6 +2345,24 @@ button {
   font-size: 18px;
 }
 
+.mobile-map-marker.destination {
+  background: var(--tan-accent);
+  color: var(--on-primary-fixed);
+}
+
+.mobile-map-marker.destination::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -7px;
+  width: 10px;
+  height: 10px;
+  border-right: 2px solid var(--surface-container-lowest);
+  border-bottom: 2px solid var(--surface-container-lowest);
+  background: inherit;
+  transform: translateX(-50%) rotate(45deg);
+}
+
 .map-shell {
   height: 100dvh;
   overflow: hidden;

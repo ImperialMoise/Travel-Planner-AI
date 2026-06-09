@@ -1015,6 +1015,17 @@ function destroyMobileMap() {
   mobileMapDestinationMarker = null;
 }
 
+function refreshMobileMapToolsMenu() {
+  const tools = document.querySelector('.mobile-map-tools');
+  if (!tools) return;
+
+  const fabIcon = tools.querySelector('.mobile-map-tools-fab .material-symbols-outlined');
+  const menu = tools.querySelector('.mobile-map-tools-menu');
+
+  if (fabIcon) fabIcon.textContent = mobileMapToolsOpen ? 'close' : 'tune';
+  if (menu) menu.classList.toggle('open', mobileMapToolsOpen);
+}
+
 function renderMap() {
   destroyMobileMap();
 
@@ -1144,13 +1155,15 @@ function renderMap() {
                     const realIndex = steps.indexOf(step);
 
                     return `
-                      <button class="mobile-map-step" type="button" data-action="map-focus-step" data-step-index="${realIndex}">
-                        <span class="material-symbols-outlined" aria-hidden="true">${getMobileMapStepIcon(step)}</span>
+                      <div class="mobile-map-step" data-step-index="${realIndex}">
+                        <button class="mobile-map-step-main" type="button" data-action="map-focus-step" data-step-index="${realIndex}">
+                          <span class="material-symbols-outlined" aria-hidden="true">${getMobileMapStepIcon(step)}</span>
 
-                        <div>
-                          <strong>${escapeHtml(step.label || step.title || 'Étape')}</strong>
-                          <small>${escapeHtml(step.lieu || step.place || step.dayTitle || '')}</small>
-                        </div>
+                          <div>
+                            <strong>${escapeHtml(step.label || step.title || 'Étape')}</strong>
+                            <small>${escapeHtml(step.lieu || step.place || step.dayTitle || '')}</small>
+                          </div>
+                        </button>
 
                         <div class="mobile-map-step-actions">
                           <em>${escapeHtml(step.time || '')}</em>
@@ -1160,7 +1173,7 @@ function renderMap() {
                             </button>
                           `}
                         </div>
-                      </button>
+                      </div>
                     `;
                   }).join('')}
 
@@ -4501,9 +4514,9 @@ if (action === 'delete-step') {
     return;
   }
 
-    if (action === 'map-tools-toggle') {
+  if (action === 'map-tools-toggle') {
     mobileMapToolsOpen = !mobileMapToolsOpen;
-    renderMap();
+    refreshMobileMapToolsMenu();
     return;
   }
 

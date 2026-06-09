@@ -7085,3 +7085,59 @@ button {
   background: var(--primary);
   color: var(--on-primary);
 }
+
+/* Mobile map step structure fix */
+.mobile-map-step {
+  width: 100%;
+  min-width: 0;
+  border-radius: 14px;
+  padding: 8px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.76);
+  color: var(--on-surface);
+}
+
+.mobile-map-step-main {
+  min-width: 0;
+  border: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+
+.mobile-map-step-main > div {
+  min-width: 0;
+}
+
+.mobile-map-step-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mobile-map-step-actions button {
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: rgba(217, 182, 126, 0.45);
+  color: var(--primary);
+}
+
+.mobile-map-step-actions button .material-symbols-outlined {
+  width: auto;
+  height: auto;
+  background: transparent;
+  color: inherit;
+  font-size: 18px;
+}

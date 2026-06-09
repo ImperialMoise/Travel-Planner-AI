@@ -973,25 +973,35 @@ function renderMap() {
             </button>
           </div>
 
-          <div class="mobile-map-step-list">
-            ${steps.length ? steps.slice(0, 6).map((step, index) => `
-              <button class="mobile-map-step" type="button" data-action="map-focus-step" data-step-index="${index}">
-                <span class="material-symbols-outlined" aria-hidden="true">${getMobileMapStepIcon(step)}</span>
-                <div>
-                  <strong>${escapeHtml(step.label || step.title || 'Étape')}</strong>
-                  <small>${escapeHtml(step.lieu || step.place || step.dayTitle || '')}</small>
-                </div>
-                <em>${escapeHtml(step.time || '')}</em>
-              </button>
-                        `).join('')}
-            ${steps.length > 6 ? `
-              <p class="mobile-map-more">+ ${steps.length - 6} autre${steps.length - 6 > 1 ? 's' : ''} point${steps.length - 6 > 1 ? 's' : ''} sur la carte</p>
-            ` : ''}
-            ` : `
-              <p class="companion-empty">
-                La carte affiche d’abord la destination. Les étapes apparaîtront ici dès qu’elles auront une adresse sélectionnée dans les suggestions.
-              </p>
-            `}
+                    <div class="mobile-map-step-list">
+            ${
+              steps.length
+                ? `
+                  ${steps.slice(0, 6).map((step, index) => `
+                    <button class="mobile-map-step" type="button" data-action="map-focus-step" data-step-index="${index}">
+                      <span class="material-symbols-outlined" aria-hidden="true">${getMobileMapStepIcon(step)}</span>
+
+                      <div>
+                        <strong>${escapeHtml(step.label || step.title || 'Étape')}</strong>
+                        <small>${escapeHtml(step.lieu || step.place || step.dayTitle || '')}</small>
+                      </div>
+
+                      <em>${escapeHtml(step.time || '')}</em>
+                    </button>
+                  `).join('')}
+
+                  ${steps.length > 6 ? `
+                    <p class="mobile-map-more">
+                      + ${steps.length - 6} autre${steps.length - 6 > 1 ? 's' : ''} point${steps.length - 6 > 1 ? 's' : ''} sur la carte
+                    </p>
+                  ` : ''}
+                `
+                : `
+                  <p class="companion-empty">
+                    La carte affiche d’abord la destination. Les étapes apparaîtront ici dès qu’elles auront une adresse sélectionnée dans les suggestions.
+                  </p>
+                `
+            }
           </div>
         </article>
       </main>

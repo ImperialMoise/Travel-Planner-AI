@@ -1237,6 +1237,55 @@ function budgetTabs(active = 'overview') {
 function renderBudget() {
   const budgetGroups = getBudgetGroupsForDisplay();
 
+  const groupsHtml = budgetGroups.map(function(group, groupIndex) {
+    const itemsHtml = group.items.map(function(item, itemIndex) {
+      const iconName = item.icon && !['', '▣', '☕', '▰', '✈', '◉', '◒', '▤'].includes(item.icon)
+        ? item.icon
+        : getBudgetCategoryIcon(item.cat || item.title || '');
+
+      const amountLabel = item.amountLabel || `- ${formatEuroAmount(item.amount)}`;
+
+      const actionsHtml = item.synced
+        ? '<span class="sync-pill">Supabase</span>'
+        : `
+          <div class="item-actions">
+            <button class="icon-mini" type="button" data-action="edit-expense" data-group-index="${groupIndex}" data-item-index="${itemIndex}" aria-label="Modifier la dépense">
+              <span class="material-symbols-outlined">edit</span>
+            </button>
+
+            <button class="icon-mini danger" type="button" data-action="delete-expense" data-group-index="${groupIndex}" data-item-index="${itemIndex}" aria-label="Supprimer la dépense">
+              <span class="material-symbols-outlined">close</span>
+            </button>
+          </div>
+        `;
+
+      return `
+        <article class="expense-item">
+          <div class="expense-icon ${item.tone || 'primary'}">
+            <span class="material-symbols-outlined">${iconName}</span>
+          </div>
+
+          <div class="expense-content">
+            <h4>${escapeHtml(item.title || 'Dépense')}</h4>
+            <p>Payé par ${escapeHtml(item.payer || '—')}</p>
+          </div>
+
+          <div class="expense-side">
+            <strong>${escapeHtml(amountLabel)}</strong>
+            ${actionsHtml}
+          </div>
+        </article>
+      `;
+    }).join('');
+
+    return `
+      <div class="expense-group">
+        <h3 class="expense-date">${escapeHtml(group.group)}</h3>
+        ${itemsHtml}
+      </div>
+    `;
+  }).join('');
+
   app.innerHTML = `
     <div class="mobile-shell">
       ${topbar()}
@@ -1250,52 +1299,7 @@ function renderBudget() {
         </button>
 
         <section class="expense-list">
-          ${budgetGroups.map((group, groupIndex) => `
-            <div class="expense-group">
-              <h3 class="expense-date">${escapeHtml(group.group)}</h3>
-
-              ${group.items.map((item, itemIndex) => {
-                const iconName = item.icon && !['', '▣', '☕', '▰', '✈', '◉', '◒', '▤'].includes(item.icon)
-                  ? item.icon
-                  : getBudgetCategoryIcon(item.cat || item.title || '');
-
-                const amountLabel = item.amountLabel || `- ${formatEuroAmount(item.amount)}`;
-
-                return `
-                  <article class="expense-item">
-                    <div class="expense-icon ${item.tone || 'primary'}">
-                      <span class="material-symbols-outlined">${iconName}</span>
-                    </div>
-
-                    <div class="expense-content">
-                      <h4>${escapeHtml(item.title || 'Dépense')}</h4>
-                      <p>Payé par ${escapeHtml(item.payer || '—')}</p>
-                    </div>
-
-                    <div class="expense-side">
-                      <strong>${escapeHtml(amountLabel)}</strong>
-
-                      ${
-                        item.synced
-                          ? '<span class="sync-pill">Supabase</span>'
-                          : `
-                            <div class="item-actions">
-                              <button class="icon-mini" type="button" data-action="edit-expense" data-group-index="${groupIndex}" data-item-index="${itemIndex}" aria-label="Modifier la dépense">
-                                <span class="material-symbols-outlined">edit</span>
-                              </button>
-
-                              <button class="icon-mini danger" type="button" data-action="delete-expense" data-group-index="${groupIndex}" data-item-index="${itemIndex}" aria-label="Supprimer la dépense">
-                                <span class="material-symbols-outlined">close</span>
-                              </button>
-                            </div>
-                          `
-                      }
-                    </div>
-                  </article>
-                `;
-              }).join('')}
-            </div>
-          `).join('')}
+          ${groupsHtml}
         </section>
       </main>
 

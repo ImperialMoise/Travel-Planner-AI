@@ -4729,8 +4729,8 @@ button {
 }
 
 .expense-v2-category.other {
-  border-style: dashed;
-  background: var(--surface-variant);
+  border-style: solid;
+  background: var(--surface-container-low);
 }
 
 .expense-v2-category .filled {
@@ -5266,111 +5266,124 @@ button {
 }
 
 /* ════════════════════════════════════════════════════════════
-   Nouvelle dépense — édition personnes
+   Nouvelle dépense — personnes en cartes Atelier v2
    ════════════════════════════════════════════════════════════ */
 
-/* ════════════════════════════════════════════════════════════
-   Nouvelle dépense — édition personnes inline stable
-   ════════════════════════════════════════════════════════════ */
-
-.expense-v2-people-list {
+.expense-v2-person-grid {
   display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
 }
 
-.expense-v2-person-row,
-.expense-v2-split-person-row {
-  width: 100%;
+.expense-v2-person-card-wrap {
+  position: relative;
   min-width: 0;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 8px;
 }
 
-.expense-v2-person-pill {
-  min-width: 0;
+.expense-v2-person-card {
   width: 100%;
-  min-height: 42px;
-  border: 1px solid var(--faint-border);
-  border-radius: 999px;
-  padding: 0 12px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 8px;
+  min-height: 58px;
+  border: 1px solid var(--outline-variant);
+  border-radius: 12px;
+  padding: 8px 6px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 6px;
   background: var(--surface-container-low);
-  color: var(--secondary);
-  font-size: 12px;
-  line-height: 16px;
-  font-weight: 800;
+  color: var(--on-surface-variant);
+  box-shadow: 0 3px 14px rgba(82, 98, 91, 0.04);
+  text-align: center;
+}
+
+.expense-v2-person-card > span:last-child {
+  max-width: 100%;
   overflow: hidden;
+  color: inherit;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 14px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.expense-v2-person-pill span {
-  width: 20px;
-  height: 20px;
-  flex: 0 0 auto;
+.expense-v2-person-avatar {
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   display: grid;
   place-items: center;
   background: var(--secondary-fixed);
   color: var(--on-secondary-fixed);
-  font-size: 9px;
   font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 800;
 }
 
-.expense-v2-person-pill.active {
-  border-color: var(--outline-variant);
-  background: var(--surface-container-lowest);
-  color: var(--on-surface);
-  box-shadow: 0 3px 14px rgba(82, 98, 91, 0.06);
+.expense-v2-person-card.active {
+  border-color: var(--tertiary-container);
+  background: var(--tertiary-container);
+  color: var(--on-tertiary-container);
+  box-shadow: 0 3px 14px rgba(82, 98, 91, 0.1);
 }
 
-.expense-v2-person-pill.active span {
+.expense-v2-person-card.active .expense-v2-person-avatar {
   background: var(--tan-accent);
   color: var(--on-primary-fixed);
 }
 
-.expense-v2-inline-actions {
-  flex: 0 0 auto;
+.expense-v2-card-actions {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  z-index: 3;
   display: flex;
-  align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 
-.expense-v2-inline-actions button {
-  width: 30px;
-  height: 30px;
-  border: 0;
+.expense-v2-card-actions button {
+  width: 23px;
+  height: 23px;
+  border: 1px solid var(--faint-border);
   border-radius: 999px;
   display: grid;
   place-items: center;
   background: var(--primary-fixed);
   color: var(--primary);
+  box-shadow: 0 3px 10px rgba(82, 98, 91, 0.12);
 }
 
-.expense-v2-inline-actions button.danger {
+.expense-v2-card-actions button.danger {
   background: var(--error-container);
   color: var(--error-red);
 }
 
-.expense-v2-inline-actions .material-symbols-outlined {
-  font-size: 16px;
+.expense-v2-card-actions .material-symbols-outlined {
+  font-size: 14px;
 }
 
-.expense-v2-split-person-row .expense-v2-split-card {
-  width: 100%;
-  min-width: 0;
+.expense-v2-add-card {
+  border-style: dashed;
+  background: var(--surface-variant);
+  color: var(--secondary);
 }
 
-.expense-v2-split-person-row .expense-v2-split-card strong {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.expense-v2-add-card .material-symbols-outlined {
+  font-size: 24px;
+}
+
+@media (max-width: 360px) {
+  .expense-v2-person-grid {
+    gap: 8px;
+  }
+
+  .expense-v2-person-card {
+    min-height: 56px;
+  }
+
+  .expense-v2-person-card > span:last-child {
+    font-size: 10px;
+  }
 }
 
 @media (max-width: 380px) {

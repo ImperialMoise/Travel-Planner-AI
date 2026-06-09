@@ -1781,40 +1781,84 @@ const editingTitle = editingItem?.title || '';
 const editingNote = editingItem?.note || '';
 
   const categoryButtonsHtml = categories.map(function(category) {
-    const isActive = activeCategory.id === category.id;
-    const isCustom = category.custom === true;
+  const isActive = activeCategory.id === category.id;
+  const isCustom = category.custom === true;
 
-    return `
-      <div class="expense-v2-category-wrap">
-        <button
-          class="expense-v2-category ${isActive ? 'active' : ''} ${category.id === 'other' ? 'other' : ''}"
-          type="button"
-          data-expense-category="${category.id}"
-        >
-          <span class="material-symbols-outlined ${isActive ? 'filled' : ''}" aria-hidden="true">${category.icon}</span>
-          <span>${escapeHtml(category.label)}</span>
-        </button>
+  return `
+    <div class="expense-v2-category-wrap">
+      <button
+        class="expense-v2-category ${isActive ? 'active' : ''}"
+        type="button"
+        data-expense-category="${category.id}"
+      >
+        <span class="material-symbols-outlined ${isActive ? 'filled' : ''}" aria-hidden="true">${category.icon}</span>
+        <span>${escapeHtml(category.label)}</span>
+      </button>
 
-        ${
-          isEditingExpenseCategories && isCustom
-            ? `
+      ${
+        isEditingExpenseCategories && isCustom
+          ? `
+            <button
+              class="expense-v2-category-delete"
+              type="button"
+              data-action="delete-expense-category"
+              data-category-id="${category.id}"
+              aria-label="Supprimer ${escapeHtml(category.label)}"
+            >
+              <span class="material-symbols-outlined" aria-hidden="true">close</span>
+            </button>
+          `
+          : ''
+      }
+    </div>
+  `;
+}).join('');
+
+  const payerButtonsHtml = people.map(function(person) {
+  const isActive = selectedExpensePayer === person.id;
+  const canEdit = person.id !== 'me' && person.id !== 'partner';
+
+  return `
+    <div class="expense-v2-person-card-wrap">
+      <button
+        class="expense-v2-person-card ${isActive ? 'active' : ''}"
+        type="button"
+        data-expense-payer="${person.id}"
+      >
+        <span class="expense-v2-person-avatar">${getInitial(person.name)}</span>
+        <span>${escapeHtml(person.name)}</span>
+      </button>
+
+      ${
+        canEdit
+          ? `
+            <div class="expense-v2-card-actions">
               <button
-                class="expense-v2-category-delete"
                 type="button"
-                data-action="delete-expense-category"
-                data-category-id="${category.id}"
-                aria-label="Supprimer ${escapeHtml(category.label)}"
+                data-action="edit-budget-person"
+                data-person-id="${person.id}"
+                aria-label="Modifier ${escapeHtml(person.name)}"
+              >
+                <span class="material-symbols-outlined" aria-hidden="true">edit</span>
+              </button>
+
+              <button
+                type="button"
+                class="danger"
+                data-action="delete-budget-person"
+                data-person-id="${person.id}"
+                aria-label="Supprimer ${escapeHtml(person.name)}"
               >
                 <span class="material-symbols-outlined" aria-hidden="true">close</span>
               </button>
-            `
-            : ''
-        }
-      </div>
-    `;
-  }).join('');
+            </div>
+          `
+          : ''
+      }
+    </div>
+  `;
+}).join('');
 
-  const payerButtonsHtml = people.map(function(person) {
   const isActive = selectedExpensePayer === person.id;
   const canEdit = person.id !== 'me' && person.id !== 'partner';
 
@@ -1864,6 +1908,50 @@ const editingNote = editingItem?.note || '';
   }).join('');
 
  const splitPeopleHtml = people.map(function(person) {
+  const isActive = selectedExpenseSplit === person.id;
+  const canEdit = person.id !== 'me' && person.id !== 'partner';
+
+  return `
+    <div class="expense-v2-person-card-wrap">
+      <button
+        class="expense-v2-person-card ${isActive ? 'active' : ''}"
+        type="button"
+        data-expense-split="${person.id}"
+      >
+        <span class="expense-v2-person-avatar">${getInitial(person.name)}</span>
+        <span>${escapeHtml(person.name)}</span>
+      </button>
+
+      ${
+        canEdit
+          ? `
+            <div class="expense-v2-card-actions">
+              <button
+                type="button"
+                data-action="edit-budget-person"
+                data-person-id="${person.id}"
+                aria-label="Modifier ${escapeHtml(person.name)}"
+              >
+                <span class="material-symbols-outlined" aria-hidden="true">edit</span>
+              </button>
+
+              <button
+                type="button"
+                class="danger"
+                data-action="delete-budget-person"
+                data-person-id="${person.id}"
+                aria-label="Supprimer ${escapeHtml(person.name)}"
+              >
+                <span class="material-symbols-outlined" aria-hidden="true">close</span>
+              </button>
+            </div>
+          `
+          : ''
+      }
+    </div>
+  `;
+}).join('');
+
   const isActive = selectedExpenseSplit === person.id;
   const canEdit = person.id !== 'me' && person.id !== 'partner';
 
@@ -1962,100 +2050,96 @@ const editingNote = editingItem?.note || '';
 
         <section class="expense-v2-section">
           <div class="expense-v2-section-heading">
-            <span class="expense-v2-kicker">Catégorie</span>
+            <section class="expense-v2-section">
+  <div class="expense-v2-section-heading">
+    <span class="expense-v2-kicker">Catégorie</span>
 
-            <div class="expense-v2-heading-actions">
-              <button
-                class="expense-v2-mini-action ${isEditingExpenseCategories ? 'active' : ''}"
-                type="button"
-                data-action="toggle-expense-category-edition"
-                aria-label="Modifier les catégories"
-              >
-                <span class="material-symbols-outlined" aria-hidden="true">edit</span>
-              </button>
+    <button
+      class="expense-v2-mini-action ${isEditingExpenseCategories ? 'active' : ''}"
+      type="button"
+      data-action="toggle-expense-category-edition"
+      aria-label="Modifier les catégories"
+    >
+      <span class="material-symbols-outlined" aria-hidden="true">edit</span>
+    </button>
+  </div>
 
-              <button
-                class="expense-v2-mini-action"
-                type="button"
-                data-action="add-expense-category"
-                aria-label="Ajouter une catégorie"
-              >
-                <span class="material-symbols-outlined" aria-hidden="true">add</span>
-              </button>
-            </div>
-          </div>
+  <div class="expense-v2-category-grid">
+    ${categoryButtonsHtml}
 
-          <div class="expense-v2-category-grid">
-            ${categoryButtonsHtml}
-          </div>
-        </section>
+    <button
+      class="expense-v2-category expense-v2-add-card"
+      type="button"
+      data-action="add-expense-category"
+      aria-label="Ajouter une catégorie"
+    >
+      <span class="material-symbols-outlined" aria-hidden="true">add</span>
+      <span>Ajouter</span>
+    </button>
+  </div>
+</section>
 
         <section class="expense-v2-section">
           <div class="expense-v2-section-heading">
             <div class="expense-v2-section-heading">
   <div class="expense-v2-section-heading">
-  <span class="expense-v2-kicker">Qui a payé ?</span>
+  <section class="expense-v2-section">
+  <div class="expense-v2-section-heading">
+    <span class="expense-v2-kicker">Qui a payé ?</span>
 
-  <button
-    class="expense-v2-mini-action"
-    type="button"
-    data-action="add-budget-person"
-    aria-label="Ajouter une personne"
-  >
-    <span class="material-symbols-outlined" aria-hidden="true">person_add</span>
-  </button>
-</div>
-
-          <div class="expense-v2-people-list">
-  ${payerButtonsHtml}
-
-  <div class="expense-v2-person-row">
     <button
-      class="expense-v2-person-pill ${selectedExpensePayer === 'common' ? 'active' : ''}"
+      class="expense-v2-mini-action"
+      type="button"
+      data-action="add-budget-person"
+      aria-label="Ajouter une personne"
+    >
+      <span class="material-symbols-outlined" aria-hidden="true">person_add</span>
+    </button>
+  </div>
+
+  <div class="expense-v2-person-grid">
+    ${payerButtonsHtml}
+
+    <button
+      class="expense-v2-person-card ${selectedExpensePayer === 'common' ? 'active' : ''}"
       type="button"
       data-expense-payer="common"
     >
-      <span>€</span>
-      Fonds Commun
+      <span class="expense-v2-person-avatar">€</span>
+      <span>Fonds Commun</span>
     </button>
   </div>
-</div>
-        </section>
+</section>
 
         <section class="expense-v2-section">
           <div class="expense-v2-section-heading">
-  <span class="expense-v2-kicker">Pour qui ?</span>
+  <section class="expense-v2-section">
+  <div class="expense-v2-section-heading">
+    <span class="expense-v2-kicker">Pour qui ?</span>
 
-  <button
-    class="expense-v2-mini-action"
-    type="button"
-    data-action="add-budget-person"
-    aria-label="Ajouter une personne"
-  >
-    <span class="material-symbols-outlined" aria-hidden="true">person_add</span>
-  </button>
-</div>
+    <button
+      class="expense-v2-mini-action"
+      type="button"
+      data-action="add-budget-person"
+      aria-label="Ajouter une personne"
+    >
+      <span class="material-symbols-outlined" aria-hidden="true">person_add</span>
+    </button>
+  </div>
 
-          <div class="expense-v2-split-list">
-            <button
-              class="expense-v2-split-card ${selectedExpenseSplit === 'equal' ? 'active' : ''}"
-              type="button"
-              data-expense-split="equal"
-            >
-              <span class="expense-v2-avatar-stack">
-                ${splitAvatarsHtml}
-              </span>
+  <div class="expense-v2-person-grid">
+    <button
+      class="expense-v2-person-card ${selectedExpenseSplit === 'equal' ? 'active' : ''}"
+      type="button"
+      data-expense-split="equal"
+    >
+      <span class="expense-v2-person-avatar">=</span>
+      <span>Équitable</span>
+    </button>
 
-              <strong>Partagé équitablement</strong>
-
-              <span class="material-symbols-outlined" aria-hidden="true">
-                ${selectedExpenseSplit === 'equal' ? 'check_circle' : 'radio_button_unchecked'}
-              </span>
-            </button>
-
-            ${splitPeopleHtml}
-          </div>
-        </section>
+    ${splitPeopleHtml}
+  </div>
+</section>
 
         <section class="expense-v2-fields">
           <label>

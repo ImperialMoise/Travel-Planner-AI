@@ -329,6 +329,7 @@ let mobileMapSearchTimer = null;
 let mobileMapStyle = 'plan';
 let mobileMapSelectedPlace = null;
 let mobileMapSelectedPlaceType = 'activity';
+let mobileMapSelectedDayIndex = 0;
 let showAllMobileMapSteps = false;
 let mobileMapDestinationMarker = null;
 
@@ -827,6 +828,21 @@ function getMobileMapSteps() {
   ).filter(step => Number.isFinite(step.lat) && Number.isFinite(step.lng));
 }
 
+function getMobileMapUnlocatedSteps() {
+  const days = activeTrip?.days || [];
+
+  return days.flatMap((day, dayIndex) =>
+    (day.steps || []).map((step, stepIndex) => ({
+      ...step,
+      dayIndex,
+      stepIndex,
+      dayTitle: day.title || `Jour ${dayIndex + 1}`,
+      lat: Number(step.lat),
+      lng: Number(step.lng)
+    }))
+  ).filter(step => !Number.isFinite(step.lat) || !Number.isFinite(step.lng));
+}
+
 function getMobileMapDestinationLabel() {
   const draft = getTripDraft();
 
@@ -917,6 +933,7 @@ function renderMap() {
   destroyMobileMap();
 
   const steps = getMobileMapSteps();
+  const unlocatedSteps = getMobileMapUnlocatedSteps();
   const visibleMapSteps = showAllMobileMapSteps ? steps : steps.slice(0, 6);
   const hiddenMapStepsCount = Math.max(0, steps.length - visibleMapSteps.length);
   const tripName = activeTrip?.name || getTripDraft().destination || 'Votre voyage';
@@ -958,7 +975,7 @@ function renderMap() {
         </div>
 
         <article id="mobile-map-place-card" class="mobile-map-place-card glass-panel" hidden></article>
-        <article class="mobile-map-card glass-panel">
+                <article class="mobile-map-card glass-panel">
           <div class="map-summary-header">
             <div>
               <span class="kicker">${escapeHtml(tripName)}</span>
@@ -970,7 +987,7 @@ function renderMap() {
             </button>
           </div>
 
-                    <div class="mobile-map-card-actions">
+          <div class="mobile-map-card-actions">
             <button type="button" data-action="map-fit">
               <span class="material-symbols-outlined" aria-hidden="true">center_focus_strong</span>
               <span>Recadrer</span>
@@ -983,18 +1000,19 @@ function renderMap() {
                 ? `
                   ${visibleMapSteps.map((step) => {
                     const realIndex = steps.indexOf(step);
+
                     return `
-                    <button class="mobile-map-step" type="button" data-action="map-focus-step" data-step-index="${realIndex}">
-                      <span class="material-symbols-outlined" aria-hidden="true">${getMobileMapStepIcon(step)}</span>
+                      <button class="mobile-map-step" type="button" data-action="map-focus-step" data-step-index="${realIndex}">
+                        <span class="material-symbols-outlined" aria-hidden="true">${getMobileMapStepIcon(step)}</span>
 
-                      <div>
-                        <strong>${escapeHtml(step.label || step.title || 'Étape')}</strong>
-                        <small>${escapeHtml(step.lieu || step.place || step.dayTitle || '')}</small>
-                      </div>
+                        <div>
+                          <strong>${escapeHtml(step.label || step.title || 'Étape')}</strong>
+                          <small>${escapeHtml(step.lieu || step.place || step.dayTitle || '')}</small>
+                        </div>
 
-                      <em>${escapeHtml(step.time || '')}</em>
-                   </button>
-                  `;
+                        <em>${escapeHtml(step.time || '')}</em>
+                      </button>
+                    `;
                   }).join('')}
 
                   ${steps.length > 6 ? `
@@ -1010,8 +1028,32 @@ function renderMap() {
                 `
             }
           </div>
+
+          ${unlocatedSteps.length ? `
+            <div class="mobile-map-unlocated">
+              <span class="kicker">À localiser</span>
+
+              ${unlocatedSteps.slice(0, 4).map((step, index) => `
+                <button type="button" data-action="map-locate-step" data-unlocated-index="${index}">
+                  <span class="material-symbols-outlined" aria-hidden="true">${getMobileMapStepIcon(step)}</span>
+
+                  <div>
+                    <strong>${escapeHtml(step.label || step.title || 'Étape')}</strong>
+                    <small>${escapeHtml(step.lieu || step.place || step.dayTitle || '')}</small>
+                  </div>
+
+                  <em>Localiser</em>
+                </button>
+              `).join('')}
+
+              ${unlocatedSteps.length > 4 ? `
+                <p>+ ${unlocatedSteps.length - 4} autre${unlocatedSteps.length - 4 > 1 ? 's' : ''} à localiser</p>
+              ` : ''}
+            </div>
+          ` : ''}
         </article>
       </main>
+
 
       ${bottomNav('map')}
     </div>
@@ -1231,6 +1273,7 @@ function renderMobileMapSelectedPlace() {
   const card = document.querySelector('#mobile-map-place-card');
   if (!card || !mobileMapSelectedPlace) return;
 
+  const days = activeTrip?.days || [];
   const placeTypes = [
     { id: 'activity', label: 'Activité', icon: 'local_activity' },
     { id: 'restaurant', label: 'Restaurant', icon: 'restaurant' },
@@ -1267,6 +1310,24 @@ function renderMobileMapSelectedPlace() {
       `).join('')}
     </div>
 
+        ${days.length ? `
+      <div class="mobile-map-day-picker">
+        <span class="kicker">Ajouter à</span>
+        <div>
+          ${days.map((day, index) => `
+            <button
+              type="button"
+              class="${mobileMapSelectedDayIndex === index ? 'active' : ''}"
+              data-action="map-place-day"
+              data-day-index="${index}"
+            >
+              J${index + 1}
+            </button>
+          `).join('')}
+        </div>
+      </div>
+    ` : ''}
+
     <div class="mobile-map-place-actions">
       <button type="button" data-action="map-show-place">
         <span class="material-symbols-outlined" aria-hidden="true">my_location</span>
@@ -1290,7 +1351,7 @@ async function handleAddMapPlaceToTrip() {
   }
 
   const days = activeTrip.days || [];
-  const day = days[0];
+  const day = days[mobileMapSelectedDayIndex] || days[0];
 
   if (!day?.id) {
     alert('Aucun jour trouvé pour ce voyage.');
@@ -1341,6 +1402,56 @@ async function handleAddMapPlaceToTrip() {
   }
 }
 
+async function locateMobileMapStep(index) {
+  const step = getMobileMapUnlocatedSteps()[index];
+  if (!step) return;
+
+  const query = [
+    step.lieu,
+    step.place,
+    step.label,
+    step.title,
+    activeTrip?.name
+  ].filter(Boolean).join(' ');
+
+  if (!query) return;
+
+  const input = document.querySelector('#mobile-map-search');
+  if (input) input.value = query;
+
+  try {
+    const response = await fetch(
+      `https://api.maptiler.com/geocoding/${encodeURIComponent(query)}.json?key=${MAPTILER_KEY}&language=fr&limit=1`
+    );
+
+    const data = await response.json();
+    const feature = data.features?.[0];
+
+    if (!feature?.center || !mobileMapInstance) {
+      alert('Lieu introuvable.');
+      return;
+    }
+
+    mobileMapSelectedPlace = feature;
+    mobileMapSelectedPlaceType = step.type || 'activity';
+    mobileMapSelectedDayIndex = step.dayIndex || 0;
+
+    mobileMapInstance.flyTo({
+      center: feature.center,
+      zoom: 15,
+      duration: 900
+    });
+
+    new maplibregl.Marker({ color: '#7c5410' })
+      .setLngLat(feature.center)
+      .addTo(mobileMapInstance);
+
+    renderMobileMapSelectedPlace();
+  } catch (error) {
+    alert('Erreur localisation : ' + (error.message || error));
+  }
+}
+
 function initMobileMapSearch() {
   const input = document.querySelector('#mobile-map-search');
   const results = document.querySelector('#mobile-map-results');
@@ -1379,6 +1490,8 @@ function initMobileMapSearch() {
 
             mobileMapSelectedPlace = feature;
             mobileMapSelectedPlaceType = 'activity';
+            mobileMapSelectedDayIndex = 0;
+            mobileMapSelectedDayIndex = 0;
             input.value = feature.place_name;
             results.innerHTML = '';
             results.style.display = 'none';
@@ -3921,6 +4034,12 @@ if (action === 'delete-step') {
     return;
   }
 
+    if (action === 'map-locate-step') {
+    const index = Number(event.target.closest('[data-unlocated-index]')?.dataset.unlocatedIndex);
+    locateMobileMapStep(index);
+    return;
+  }
+
     if (action === 'toggle-map-steps') {
     showAllMobileMapSteps = !showAllMobileMapSteps;
     renderMap();
@@ -3940,6 +4059,12 @@ if (action === 'delete-step') {
     const card = document.querySelector('#mobile-map-place-card');
     if (card) card.hidden = true;
 
+    return;
+  }
+
+    if (action === 'map-place-day') {
+    mobileMapSelectedDayIndex = Number(event.target.closest('[data-day-index]')?.dataset.dayIndex || 0);
+    renderMobileMapSelectedPlace();
     return;
   }
 

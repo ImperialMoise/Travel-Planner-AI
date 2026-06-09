@@ -2321,6 +2321,42 @@ button {
   color: var(--on-primary);
 }
 
+.mobile-map-day-picker {
+  display: grid;
+  gap: 8px;
+}
+
+.mobile-map-day-picker > div {
+  display: flex;
+  gap: 7px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+
+.mobile-map-day-picker > div::-webkit-scrollbar {
+  display: none;
+}
+
+.mobile-map-day-picker button {
+  min-width: 38px;
+  min-height: 34px;
+  border: 1px solid var(--faint-border);
+  border-radius: 999px;
+  padding: 0 10px;
+  background: var(--surface-container-lowest);
+  color: var(--secondary);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.mobile-map-day-picker button.active {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: var(--on-primary);
+}
+
 .mobile-map-place-actions {
   display: grid;
   grid-template-columns: 0.8fr 1fr;
@@ -2481,6 +2517,76 @@ button {
   font-family: var(--font-mono);
   font-size: 10px;
   font-style: normal;
+}
+
+.mobile-map-unlocated {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--faint-border);
+  display: grid;
+  gap: 8px;
+}
+
+.mobile-map-unlocated > .kicker {
+  color: var(--secondary);
+}
+
+.mobile-map-unlocated button {
+  width: 100%;
+  min-height: 46px;
+  border: 1px dashed var(--outline-variant);
+  border-radius: 12px;
+  padding: 8px 10px;
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  background: rgba(248, 243, 233, 0.76);
+  color: var(--on-surface);
+  text-align: left;
+}
+
+.mobile-map-unlocated button > span {
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  background: var(--surface-container);
+  color: var(--secondary);
+  font-size: 16px;
+}
+
+.mobile-map-unlocated strong,
+.mobile-map-unlocated small,
+.mobile-map-unlocated em {
+  display: block;
+}
+
+.mobile-map-unlocated strong {
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.mobile-map-unlocated small {
+  color: var(--secondary);
+  font-size: 10px;
+  line-height: 13px;
+}
+
+.mobile-map-unlocated em {
+  color: var(--primary);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.mobile-map-unlocated p {
+  margin: 0;
+  color: var(--secondary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-align: center;
 }
 
 .mobile-map-step.active {

@@ -311,6 +311,7 @@ const stepFieldSets = {
 };
 
 let selectedStepCategory = 'transport';
+let editingStepDraft = null;
 
 function icon(symbol, className = '') {
   return `<span class="${className}" aria-hidden="true">${symbol}</span>`;
@@ -1562,7 +1563,7 @@ function renderNewStep() {
         <button class="new-step-close" type="button" data-action="itinerary" aria-label="Fermer">
           <span class="material-symbols-outlined" aria-hidden="true">close</span>
         </button>
-        <h1>Nouvelle étape</h1>
+        <h1>${editingStepDraft ? 'Modifier l’étape' : 'Nouvelle étape'}</h1>
         <span aria-hidden="true"></span>
       </header>
 
@@ -1590,7 +1591,7 @@ function renderNewStep() {
       <div class="new-step-bottom">
         <button class="primary-action" type="button" data-action="add-step-to-program">
           <span class="material-symbols-outlined" aria-hidden="true">add</span>
-          <span>Ajouter au programme</span>
+          <span>${editingStepDraft ? 'Enregistrer les modifications' : 'Ajouter au programme'}</span>
         </button>
       </div>
     </div>
@@ -3261,20 +3262,16 @@ async function handleDeleteTrip(tripId = activeTrip?.id) {
 }
 
 function handleEditStep(stepIndex) {
-  const step = itinerarySteps[stepIndex];
+  const step = getCurrentTimelineSteps()[stepIndex];
   if (!step) return;
 
-  const title = prompt("Nom de l'étape :", step.title);
-  if (!title || !title.trim()) return;
+  editingStepDraft = {
+    ...step,
+    stepIndex
+  };
 
-  const time = prompt("Heure :", step.time || '');
-  const description = prompt("Description :", step.description || '');
-
-  step.title = title.trim();
-  step.time = time?.trim() || step.time;
-  step.description = description?.trim() || step.description;
-
-  renderItinerary();
+  selectedStepCategory = step.category || step.typeKey || 'transport';
+  navigate('new-step');
 }
 
 function handleDeleteStep(stepIndex) {

@@ -338,6 +338,7 @@ let mobileMapTourTimer = null;
 let mobileMapTouring = false;
 let showAllMobileMapSteps = false;
 let mobileMapDestinationMarker = null;
+let mobileMapSearchMarker = null;
 
 function attachAutocomplete(input) {
   if (!input || input.dataset.acReady) return;
@@ -984,16 +985,32 @@ function clearMobileMapMarkers() {
     mobileMapDestinationMarker.remove();
     mobileMapDestinationMarker = null;
   }
+  if (mobileMapSearchMarker) {
+    mobileMapSearchMarker.remove();
+    mobileMapSearchMarker = null;
+  }
 }
 
 function destroyMobileMap() {
   stopMobileMapTour();
-  clearMobileMapMarkers();
+
+  document.querySelector('#mobile-map-focused-step-card')?.remove();
+
+  const placeCard = document.querySelector('#mobile-map-place-card');
+  if (placeCard) placeCard.hidden = true;
+
+  if (mobileMapSearchMarker) {
+    mobileMapSearchMarker.remove();
+    mobileMapSearchMarker = null;
+  }
 
   if (mobileMapInstance) {
     mobileMapInstance.remove();
     mobileMapInstance = null;
   }
+
+  mobileMapMarkers = [];
+  mobileMapDestinationMarker = null;
 }
 
 function renderMap() {
@@ -1813,9 +1830,7 @@ async function locateMobileMapStep(index) {
       duration: 900
     });
 
-    new maplibregl.Marker({ color: '#7c5410' })
-      .setLngLat(feature.center)
-      .addTo(mobileMapInstance);
+    setMobileMapSearchMarker(feature.center);
 
     renderMobileMapSelectedPlace();
   } catch (error) {
@@ -1919,6 +1934,18 @@ function toggleMobileMapTour() {
   }
 }
 
+function setMobileMapSearchMarker(center) {
+  if (!mobileMapInstance || !center?.length) return;
+
+  if (mobileMapSearchMarker) {
+    mobileMapSearchMarker.remove();
+  }
+
+  mobileMapSearchMarker = new maplibregl.Marker({ color: '#7c5410' })
+    .setLngLat(center)
+    .addTo(mobileMapInstance);
+}
+
 function initMobileMapSearch() {
   const input = document.querySelector('#mobile-map-search');
   const results = document.querySelector('#mobile-map-results');
@@ -1970,9 +1997,7 @@ function initMobileMapSearch() {
               duration: 900
             });
 
-                        new maplibregl.Marker({ color: '#7c5410' })
-              .setLngLat(feature.center)
-              .addTo(mobileMapInstance);
+            setMobileMapSearchMarker(feature.center);
 
             renderMobileMapSelectedPlace();
           });
@@ -4527,7 +4552,7 @@ if (action === 'delete-step') {
     renderMap();
     return;
   }
-  
+
     if (action === 'map-tour') {
     toggleMobileMapTour();
     return;
@@ -4636,10 +4661,15 @@ if (action === 'delete-step') {
     return;
   }
 
-    if (action === 'map-clear-place') {
+  if (action === 'map-clear-place') {
     mobileMapSelectedPlace = null;
     mobileMapSelectedPlaceType = 'activity';
-   mobileMapLocatingStep = null;
+    mobileMapLocatingStep = null;
+
+    if (mobileMapSearchMarker) {
+      mobileMapSearchMarker.remove();
+      mobileMapSearchMarker = null;
+    }
 
     const card = document.querySelector('#mobile-map-place-card');
     if (card) card.hidden = true;

@@ -2005,21 +2005,142 @@ button {
   text-align: right;
 }
 
+/* Budget Stitch polish — page Équilibre */
+.budget-balance-main {
+  padding: 16px 18px 112px;
+  gap: 18px;
+}
+
+.budget-balance-main .seg-control {
+  margin-bottom: 22px;
+}
+
+.balance-list {
+  gap: 14px;
+}
+
+.balance-card-detail {
+  padding: 16px;
+  border-radius: 14px;
+  background: var(--surface-container);
+  box-shadow: 0 2px 8px rgba(45, 73, 63, 0.05);
+}
+
+.balance-card-head {
+  align-items: flex-start;
+}
+
+.balance-card-detail .balance-person {
+  align-items: flex-start;
+}
+
+.balance-card-detail .balance-person h3 {
+  font-size: 18px;
+  line-height: 24px;
+}
+
+.balance-card-detail .balance-person p {
+  font-size: 10px;
+  line-height: 14px;
+}
+
+.balance-card-detail .balance-amount {
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.balance-mini-lines {
+  margin-top: 10px;
+  gap: 9px;
+}
+
+.balance-mini-line {
+  grid-template-columns: 18px 1fr 30px;
+  gap: 8px;
+}
+
+.balance-mini-line .material-symbols-outlined {
+  font-size: 14px;
+}
+
+.balance-mini-line div {
+  height: 4px;
+  background: rgba(212, 196, 179, 0.42);
+}
+
+/* Budget Stitch polish — remboursements */
+.settlement-section {
+  gap: 12px;
+}
+
+.settlement-section h2 {
+  padding-left: 0;
+  font-size: 20px;
+  line-height: 26px;
+}
+
+.settlement-card-list {
+  gap: 14px;
+  padding: 14px;
+  border-radius: 14px;
+  background: var(--surface-container);
+  box-shadow: 0 2px 8px rgba(45, 73, 63, 0.05);
+}
+
+.settlement-lines {
+  display: grid;
+  gap: 10px;
+}
+
+.settlement-line {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.settlement-line strong,
+.settlement-line span {
+  display: block;
+}
+
+.settlement-line strong {
+  color: var(--on-surface);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 800;
+}
+
+.settlement-line div span {
+  margin-top: 2px;
+  color: var(--secondary);
+  font-size: 10px;
+  line-height: 13px;
+}
+
+.settlement-line > span {
+  color: var(--primary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 14px;
+  white-space: nowrap;
+}
+
 .settlement-button {
   width: 100%;
-  min-height: 46px;
+  min-height: 48px;
   border: 0;
-  border-radius: 14px;
+  border-radius: 999px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background: var(--tan-accent);
-  color: var(--on-primary-fixed-variant);
-  font-size: 13px;
-  line-height: 18px;
+  background: var(--primary);
+  color: var(--on-primary);
+  font-size: 12px;
+  line-height: 16px;
   font-weight: 800;
-  box-shadow: var(--shadow-card);
+  box-shadow: none;
 }
 
 .settlement-card.settled .settlement-button {
@@ -5328,6 +5449,88 @@ button {
 
 .expense-card-action .material-symbols-outlined {
   font-size: 16px;
+}
+
+/* Budget Stitch polish — page Dépenses */
+.budget-main {
+  padding: 16px 18px 112px;
+  gap: 18px;
+}
+
+.budget-main .seg-control {
+  margin-bottom: 10px;
+}
+
+.budget-main .create-adventure.compact {
+  min-height: 58px;
+  margin: 2px 0 12px;
+  border-radius: 14px;
+  border-width: 1px;
+  background: transparent;
+  color: var(--secondary);
+  font-size: 13px;
+  box-shadow: none;
+}
+
+.budget-main .expense-group {
+  display: grid;
+  gap: 10px;
+}
+
+.budget-main .expense-group .kicker {
+  margin-bottom: 0;
+  color: var(--secondary);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+}
+
+.expense-list {
+  gap: 18px;
+}
+
+.expense-card {
+  min-height: 58px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--surface-container-lowest);
+  box-shadow: 0 2px 8px rgba(45, 73, 63, 0.06);
+}
+
+.expense-card h3 {
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.expense-card p {
+  font-size: 10px;
+  line-height: 13px;
+}
+
+.expense-card strong {
+  font-size: 17px;
+  line-height: 22px;
+}
+
+.expense-card-right {
+  gap: 6px;
+}
+
+.expense-card-actions {
+  gap: 4px;
+}
+
+.expense-card-action {
+  width: 24px;
+  height: 24px;
+  background: var(--primary-fixed);
+}
+
+.expense-card-action.danger {
+  background: transparent;
+}
+
+.expense-card-action .material-symbols-outlined {
+  font-size: 14px;
 }
 
 /* ════════════════════════════════════════════════════════════

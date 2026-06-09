@@ -1407,7 +1407,7 @@ function getBudgetGroupsForDisplay() {
   if (activeTrip?.budget?.length) {
     return [
       {
-        group: 'Dépenses synchronisées',
+        group: 'Aujourd’hui',
         items: getCurrentBudgetItems().map(item => ({
           ...item,
           amountLabel: `- ${formatEuroAmount(item.amount)}`,
@@ -2353,22 +2353,15 @@ function renderBudgetBalance() {
         <section class="settlement-section">
           <h2>Détails des remboursements</h2>
 
-          ${settlementAmount > 0 ? `
-            <article class="settlement-card">
-              <div class="settlement-flow">
-                <div class="settlement-person">
-                  <span class="balance-avatar">${getInitial(debtor.name)}</span>
-                  <span>${escapeHtml(debtor.name)}</span>
-                </div>
-
-                <div class="settlement-arrow">
-                  <strong>${formatEuroAmount(settlementAmount)}</strong>
-                  <span aria-hidden="true"></span>
-                </div>
-
-                <div class="settlement-person">
-                  <span class="balance-avatar">${getInitial(creditor.name)}</span>
-                  <span>${escapeHtml(creditor.name)}</span>
+                    ${settlementAmount > 0 ? `
+            <article class="settlement-card settlement-card-list">
+              <div class="settlement-lines">
+                <div class="settlement-line">
+                  <div>
+                    <strong>${escapeHtml(debtor.name)} rembourse ${escapeHtml(creditor.name)}</strong>
+                    <span>Payé par ${escapeHtml(creditor.name)}</span>
+                  </div>
+                  <span>+${formatEuroAmount(settlementAmount)}</span>
                 </div>
               </div>
 
@@ -2378,12 +2371,10 @@ function renderBudgetBalance() {
               </button>
             </article>
           ` : `
-            <article class="settlement-card">
+            <article class="settlement-card settlement-card-list">
               <p class="companion-empty">Tout est équilibré pour le moment.</p>
             </article>
           `}
-        </section>
-      </main>
 
       ${bottomNav('budget')}
     </div>

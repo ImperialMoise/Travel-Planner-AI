@@ -619,7 +619,7 @@ function bottomNav(active = 'plan') {
   const items = [
     { route: 'itinerary', id: 'plan', icon: 'event_note', label: 'Plan' },
     { route: 'map', id: 'map', icon: 'map', label: 'Carte' },
-    { route: 'budget-overview', id: 'budget', icon: 'payments', label: 'Budget' },
+    { route: 'budget', id: 'budget', icon: 'payments', label: 'Budget' },
     { route: 'docs', id: 'docs', icon: 'description', label: 'Documents' }
   ];
 

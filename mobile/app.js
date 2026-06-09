@@ -5,6 +5,8 @@ let mobileUser = null;
 let mobileTrips = [];
 let activeTrip = null;
 let mobileReady = false;
+let pendingMobileInvite = null;
+let pendingMobileInviteInfo = null;
 let showAllTrips = false;
 let mobileSupabaseReady = false;
 let mobileSupabaseError = '';
@@ -60,8 +62,72 @@ function getTripDurationDays(startDate, endDate) {
   return Math.max(1, diff || 1);
 }
 
+function getInviteTokenFromUrl() {
+  return new URLSearchParams(window.location.search).get('invite')
+    || localStorage.getItem('pendingTripInvite');
+}
+
+function clearInviteTokenFromUrl() {
+  const url = new URL(window.location.href);
+  url.searchParams.delete('invite');
+  window.history.replaceState(null, '', url.pathname + url.search + url.hash);
+}
+
+async function loadPendingMobileInvite() {
+  pendingMobileInvite = getInviteTokenFromUrl();
+
+  if (!pendingMobileInvite || !window.SB?.getInvite) {
+    pendingMobileInviteInfo = null;
+    return;
+  }
+
+  try {
+    pendingMobileInviteInfo = await window.SB.getInvite(pendingMobileInvite);
+    localStorage.setItem('pendingTripInvite', pendingMobileInvite);
+    clearInviteTokenFromUrl();
+  } catch (error) {
+    console.warn('Mobile invite load error:', error);
+    pendingMobileInvite = null;
+    pendingMobileInviteInfo = null;
+    localStorage.removeItem('pendingTripInvite');
+  }
+}
+
+async function acceptPendingMobileInvite() {
+  const token = pendingMobileInvite || localStorage.getItem('pendingTripInvite');
+  if (!token) return false;
+
+  if (!mobileUser) {
+    navigate('auth');
+    return false;
+  }
+
+  try {
+    const tripId = await window.SB.acceptInvite(token);
+    localStorage.removeItem('pendingTripInvite');
+    pendingMobileInvite = null;
+    pendingMobileInviteInfo = null;
+
+    await refreshMobileTrips(tripId);
+    navigate('itinerary');
+    alert('Invitation acceptée. Bienvenue dans le voyage.');
+    return true;
+  } catch (error) {
+    localStorage.removeItem('pendingTripInvite');
+    pendingMobileInvite = null;
+    pendingMobileInviteInfo = null;
+    alert('Invitation invalide : ' + (error.message || error));
+    navigate('home');
+    return false;
+  }
+}
+
 async function initMobileData() {
   const SB = await waitForSupabase();
+  
+    if (SB) {
+    await loadPendingMobileInvite();
+  }
 
   try {
     if (!SB) {
@@ -2222,6 +2288,49 @@ function initMobileMapSearch() {
   });
 }
 
+function renderInvite() {
+  const title = pendingMobileInviteInfo?.tripName || 'Voyage partagé';
+
+  app.innerHTML = `
+    <div class="mobile-shell create-shell">
+      <header class="topbar">
+        <button class="icon-button" type="button" data-action="home" aria-label="Retour">×</button>
+        <h1 class="topbar-title">Invitation</h1>
+        <span></span>
+      </header>
+
+      <main class="create-main">
+        <section class="create-hero">
+          <h2>Rejoindre<br>${escapeHtml(title)}</h2>
+          <p>Connectez-vous pour rejoindre ce voyage et le retrouver dans votre compte.</p>
+        </section>
+
+        <section class="docs-security-banner">
+          <span class="material-symbols-outlined filled">group_add</span>
+          <div>
+            <strong>Voyage partagé</strong>
+            <p>Une fois acceptée, l’invitation synchronise l’itinéraire, le budget, la carte et les documents.</p>
+          </div>
+        </section>
+      </main>
+
+      <div class="create-bottom">
+        ${mobileUser ? `
+          <button class="primary-action" type="button" data-action="accept-invite">
+            Rejoindre le voyage
+            <span aria-hidden="true">→</span>
+          </button>
+        ` : `
+          <button class="primary-action" type="button" data-action="auth">
+            Se connecter
+            <span aria-hidden="true">→</span>
+          </button>
+        `}
+      </div>
+    </div>
+  `;
+}
+
 function renderAuth() {
   app.innerHTML = `
     <div class="mobile-shell create-shell">
@@ -3109,7 +3218,49 @@ function handleEditBudgetPerson(personId) {
   });
 }
 
-function handleAddBudgetPerson() {
+async function handleAddBudgetPerson() {
+  const members = await getMobileTripMembers();
+  const participants = activeTrip?.participants || [];
+
+  const candidates = members.filter(member => (
+    !window.SB?.isMemberAlreadyParticipant ||
+    !window.SB.isMemberAlreadyParticipant(member, participants)
+  ));
+
+  if (candidates.length) {
+    const choices = candidates
+      .map((member, index) => `${index + 1}. ${member.name || member.email}`)
+      .join('\n');
+
+    const pick = prompt(
+      `Ajouter un membre au budget ?\n\n${choices}\n\nTape le numéro du membre, ou écris un nouveau nom :`,
+      '1'
+    );
+
+    if (!pick) return;
+
+    const index = Number(pick) - 1;
+    const selectedMember = Number.isInteger(index) ? candidates[index] : null;
+
+    if (selectedMember && window.SB?.addMemberAsParticipant) {
+      await window.SB.addMemberAsParticipant(
+        activeTrip.id,
+        selectedMember,
+        participants.length
+      );
+
+      await refreshMobileTrips(activeTrip.id);
+      renderNewExpense();
+      return;
+    }
+
+    const customName = pick.trim();
+    if (!customName) return;
+
+    await addBudgetPersonByName(customName);
+    return;
+  }
+
   if (typeof openExpenseModal === 'function') {
     openExpenseModal('person');
     return;
@@ -3148,6 +3299,17 @@ function getHiddenBudgetPeopleIds() {
 
 function saveHiddenBudgetPeopleIds(ids) {
   localStorage.setItem('atelierHiddenBudgetPeopleIds', JSON.stringify(ids));
+}
+
+async function getMobileTripMembers() {
+  if (!activeTrip?.id || !window.SB?.listTripMembers) return [];
+
+  try {
+    return await window.SB.listTripMembers(activeTrip.id);
+  } catch (error) {
+    console.warn('Mobile members load error:', error);
+    return [];
+  }
 }
 
 function getBudgetPeople() {
@@ -4201,8 +4363,12 @@ async function handleLogin() {
   try {
     await window.SB.signIn(email, password);
     mobileUser = await window.SB.getUser();
-    await refreshMobileTrips();
-    navigate('account');
+    const acceptedInvite = await acceptPendingMobileInvite();
+
+    if (!acceptedInvite) {
+      await refreshMobileTrips();
+      navigate('account');
+    }
   } catch (error) {
     alert('Erreur connexion : ' + (error.message || error));
   }
@@ -4424,6 +4590,10 @@ async function handleAddStepToProgram() {
 }
 
 function navigate(route) {
+    if (route === 'invite') {
+    window.location.hash = 'invite';
+    renderInvite();
+  } else
   if (route === 'auth') {
     window.location.hash = 'auth';
     renderAuth();
@@ -4491,6 +4661,11 @@ window.addEventListener('click', event => {
   if (action === 'delete-doc') {
     const docId = event.target.closest('[data-doc-id]')?.dataset.docId;
     if (docId) handleDeleteDocument(docId);
+    return;
+  }
+
+    if (action === 'accept-invite') {
+    acceptPendingMobileInvite();
     return;
   }
 
@@ -4963,7 +5138,8 @@ if (action === 'delete-step') {
 });
 
 function renderCurrentRoute() {
-  if (window.location.hash === '#auth') renderAuth();
+  if (window.location.hash === '#invite') renderInvite();
+  else if (window.location.hash === '#auth') renderAuth();
   else if (window.location.hash === '#account') renderAccount();
   else if (window.location.hash === '#create-trip') renderCreateTrip();
   else if (window.location.hash === '#budget-overview') renderBudgetOverview();
@@ -5060,4 +5236,11 @@ window.addEventListener('change', event => {
   label.classList.toggle('muted', !input.value && input.id === 'end-date');
 });
 
-renderCurrentRoute();
+initMobileData().then(() => {
+  if (pendingMobileInvite) {
+    renderInvite();
+    return;
+  }
+
+  renderCurrentRoute();
+});

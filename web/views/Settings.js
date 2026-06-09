@@ -4,7 +4,7 @@
 // ════════════════════════════════════════════════════════════
 
 function SettingsModal() {
-  const { user, trips, activeTripId } = Store.useStore();
+  const { user, trips, activeTripId, trip } = Store.useStore();
   const [section, setSection] = React.useState('account');
   const close = () => Store.set({ settingsOpen: false });
 
@@ -62,7 +62,7 @@ function SettingsModal() {
           <div style={{ flex: 1, overflowY: 'auto', padding: 24 }}>
             {section === 'account' && <AccountSection user={user} />}
             {section === 'trips' && <TripsSection trips={trips} activeTripId={activeTripId} onClose={close} />}
-            {section === 'share' && <ShareSection activeTripId={activeTripId} />}
+            {section === 'share' && <ShareSection activeTripId={activeTripId} trip={trip} />}
           </div>
         </section>
       </div>
@@ -136,7 +136,7 @@ function AccountSection({ user }) {
   );
 }
 
-function ShareSection({ activeTripId }) {
+function ShareSection({ activeTripId, trip }) {
   const [members, setMembers] = React.useState([]);
   const [invite, setInvite] = React.useState(null);
   const [busy, setBusy] = React.useState(false);
@@ -181,6 +181,24 @@ function ShareSection({ activeTripId }) {
     }
   }
 
+    async function addToBudget(member) {
+    if (!activeTripId) return;
+
+    try {
+      await SB.addMemberAsParticipant(
+        activeTripId,
+        member,
+        trip?.participants?.length || 0
+      );
+
+      const full = await SB.loadTrip(activeTripId);
+      Store.set({ trip: full });
+      Store.showToast('Membre ajouté au budget');
+    } catch (error) {
+      Store.showToast('Erreur : ' + error.message);
+    }
+  }
+  
   async function removeMember(member) {
     if (member.role === 'owner') {
       Store.showToast('Le propriétaire ne peut pas être retiré ici.');
@@ -274,6 +292,15 @@ function ShareSection({ activeTripId }) {
                   {member.email || 'Email masqué'} · {member.role}
                 </span>
               </div>
+
+              {!SB.isMemberAlreadyParticipant(member, trip?.participants || []) && (
+                <Btn
+                  variant="ghost"
+                  onClick={() => addToBudget(member)}
+                >
+                  Ajouter au budget
+                </Btn>
+              )}
 
               {member.role !== 'owner' && (
                 <Btn

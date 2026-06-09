@@ -225,11 +225,45 @@ export async function deleteBudgetItem(id) {
 
 // ─── Participants (pour le partage des dépenses) ───────────
 export async function addParticipant(tripId, name, sortIndex = 0) {
+  const cleanName = String(name || '').trim();
+  if (!cleanName) throw new Error('Nom requis');
+
   const { data, error } = await sb.from('trip_participants')
-    .insert({ trip_id: tripId, name, sort_index: sortIndex })
-    .select().single();
+    .insert({ trip_id: tripId, name: cleanName, sort_index: sortIndex })
+    .select()
+    .single();
+
   if (error) throw error;
   return data;
+}
+
+export async function addMemberAsParticipant(tripId, member, sortIndex = 0) {
+  if (!tripId) throw new Error('Voyage introuvable');
+  if (!member) throw new Error('Membre introuvable');
+
+  const name = member.name || member.email || 'Membre';
+
+  const { data: existing, error: readError } = await sb
+    .from('trip_participants')
+    .select('id, name')
+    .eq('trip_id', tripId)
+    .ilike('name', name)
+    .maybeSingle();
+
+  if (readError) throw readError;
+  if (existing) return existing;
+
+  return addParticipant(tripId, name, sortIndex);
+}
+
+export function isMemberAlreadyParticipant(member, participants = []) {
+  const memberName = String(member?.name || member?.email || '').trim().toLowerCase();
+
+  if (!memberName) return false;
+
+  return participants.some(participant => (
+    String(participant.name || '').trim().toLowerCase() === memberName
+  ));
 }
 
 export async function removeParticipant(id) {

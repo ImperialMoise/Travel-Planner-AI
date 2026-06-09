@@ -2161,6 +2161,64 @@ button {
   inset: 0;
 }
 
+.mobile-map-error {
+  position: absolute;
+  z-index: 30;
+  left: 18px;
+  right: 18px;
+  top: 96px;
+  border-radius: 20px;
+  padding: 20px;
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  text-align: center;
+}
+
+.mobile-map-error > .material-symbols-outlined {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--primary-fixed);
+  color: var(--primary);
+  font-size: 24px;
+}
+
+.mobile-map-error h2,
+.mobile-map-error p {
+  margin: 0;
+}
+
+.mobile-map-error h2 {
+  color: var(--on-surface);
+  font-family: var(--font-serif);
+  font-size: 24px;
+  line-height: 30px;
+  font-weight: 500;
+}
+
+.mobile-map-error p {
+  color: var(--secondary);
+  font-size: 13px;
+  line-height: 19px;
+}
+
+.mobile-map-error button {
+  min-height: 42px;
+  border: 0;
+  border-radius: 999px;
+  padding: 0 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--primary);
+  color: var(--on-primary);
+  font-size: 13px;
+  font-weight: 800;
+}
+
 .mobile-map-search {
   position: absolute;
   z-index: 8;
@@ -2516,6 +2574,38 @@ button {
   transform: translateY(calc(100% - 48px));
 }
 
+.mobile-map-card-subtitle {
+  margin: 4px 0 0;
+  color: var(--secondary);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.mobile-map-day-nav {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.mobile-map-day-nav button {
+  min-height: 36px;
+  border: 0;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  background: var(--surface-container);
+  color: var(--primary);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.mobile-map-day-nav button:disabled {
+  opacity: 0.45;
+}
+
 .mobile-map-day-tabs {
   display: flex;
   gap: 7px;
@@ -2778,6 +2868,18 @@ button {
 .mobile-map-marker.activité {
   background: var(--success-green);
   color: var(--on-primary);
+}
+
+.mobile-map-marker.stopover {
+  width: 28px;
+  height: 28px;
+  background: var(--surface-container-lowest);
+  color: var(--primary);
+  border-color: var(--tan-accent);
+}
+
+.mobile-map-marker.stopover .material-symbols-outlined {
+  font-size: 15px;
 }
 
 .mobile-map-marker.active {

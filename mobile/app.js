@@ -845,15 +845,52 @@ function getMobileMapSteps() {
   const days = activeTrip?.days || [];
 
   return days.flatMap((day, dayIndex) =>
-    (day.steps || []).map((step, stepIndex) => ({
-      ...step,
-      dayIndex,
-      stepIndex,
-      dayTitle: day.title || `Jour ${dayIndex + 1}`,
-      lat: Number(step.lat),
-      lng: Number(step.lng)
-    }))
-  ).filter(step => Number.isFinite(step.lat) && Number.isFinite(step.lng));
+    (day.steps || []).flatMap((step, stepIndex) => {
+      const points = [];
+      const stepLat = Number(step.lat);
+      const stepLng = Number(step.lng);
+
+      if (Number.isFinite(stepLat) && Number.isFinite(stepLng)) {
+        points.push({
+          ...step,
+          dayIndex,
+          stepIndex,
+          pointKind: 'step',
+          parentStepIndex: stepIndex,
+          dayTitle: day.title || `Jour ${dayIndex + 1}`,
+          lat: stepLat,
+          lng: stepLng
+        });
+      }
+
+      if (Array.isArray(step.escales)) {
+        step.escales.forEach((stopover, stopoverIndex) => {
+          const lat = Number(stopover.lat);
+          const lng = Number(stopover.lng);
+
+          if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+
+          points.push({
+            ...step,
+            id: `${step.id || stepIndex}-stopover-${stopoverIndex}`,
+            label: stopover.place || stopover.name || `Escale ${stopoverIndex + 1}`,
+            lieu: stopover.place || '',
+            time: stopover.arrivalTime || stopover.departureTime || '',
+            dayIndex,
+            stepIndex: `${stepIndex}.${stopoverIndex}`,
+            pointKind: 'stopover',
+            parentStepIndex: stepIndex,
+            stopoverIndex,
+            dayTitle: day.title || `Jour ${dayIndex + 1}`,
+            lat,
+            lng
+          });
+        });
+      }
+
+      return points;
+    })
+  );
 }
 
 function getMobileMapUnlocatedSteps() {
@@ -919,6 +956,7 @@ async function geocodeMobileMapDestination() {
 }
 
 function getMobileMapStepIcon(step) {
+    if (step.pointKind === 'stopover') return 'connecting_airports';
   const type = String(step.type || '').toLowerCase();
 
   if (type.includes('transport')) return 'directions_transit';
@@ -1014,13 +1052,30 @@ function renderMap() {
           <div class="map-summary-header">
             <div>
               <span class="kicker">${escapeHtml(tripName)}</span>
-              <h1>${panelSteps.length ? `${panelSteps.length} point${panelSteps.length > 1 ? 's' : ''} ${mobileMapPanelDayIndex === null ? 'sur la carte' : `jour ${mobileMapPanelDayIndex + 1}`}` : 'Destination du voyage'}</h1>
+              <h1>${escapeHtml(getMobileMapPanelDayLabel())}</h1>
+              <p class="mobile-map-card-subtitle">
+                ${panelSteps.length ? `${panelSteps.length} point${panelSteps.length > 1 ? 's' : ''}` : 'Aucun point sur ce jour'}
+              </p>
             </div>
 
             <button type="button" data-action="toggle-map-summary" aria-label="Réduire le résumé">
               <span class="material-symbols-outlined" aria-hidden="true">keyboard_arrow_down</span>
             </button>
           </div>
+
+                    ${activeTrip?.days?.length ? `
+            <div class="mobile-map-day-nav">
+              <button type="button" data-action="map-prev-day" ${mobileMapPanelDayIndex === null || mobileMapPanelDayIndex <= 0 ? 'disabled' : ''}>
+                <span class="material-symbols-outlined" aria-hidden="true">chevron_left</span>
+                <span>Précédent</span>
+              </button>
+
+              <button type="button" data-action="map-next-day" ${mobileMapPanelDayIndex === null || mobileMapPanelDayIndex >= activeTrip.days.length - 1 ? 'disabled' : ''}>
+                <span>Suivant</span>
+                <span class="material-symbols-outlined" aria-hidden="true">chevron_right</span>
+              </button>
+            </div>
+          ` : ''}
 
                     ${activeTrip?.days?.length ? `
             <div class="mobile-map-day-tabs">
@@ -1071,9 +1126,11 @@ function renderMap() {
 
                         <div class="mobile-map-step-actions">
                           <em>${escapeHtml(step.time || '')}</em>
-                          <button type="button" data-action="map-edit-step" data-step-index="${realIndex}" aria-label="Modifier l'étape">
-                            <span class="material-symbols-outlined" aria-hidden="true">edit</span>
-                          </button>
+                          ${step.pointKind === 'stopover' ? '' : `
+                            <button type="button" data-action="map-edit-step" data-step-index="${realIndex}" aria-label="Modifier l'étape">
+                              <span class="material-symbols-outlined" aria-hidden="true">edit</span>
+                            </button>
+                          `}
                         </div>
                       </button>
                     `;
@@ -1126,9 +1183,36 @@ function renderMap() {
   setTimeout(initMobileRealMap, 0);
 }
 
+function renderMobileMapError(message = 'Impossible de charger la carte.') {
+  const screen = document.querySelector('.mobile-real-map-screen');
+  if (!screen) return;
+
+  const existing = document.querySelector('.mobile-map-error');
+  if (existing) existing.remove();
+
+  const error = document.createElement('div');
+  error.className = 'mobile-map-error glass-panel';
+  error.innerHTML = `
+    <span class="material-symbols-outlined" aria-hidden="true">map_off</span>
+    <h2>Carte indisponible</h2>
+    <p>${escapeHtml(message)}</p>
+    <button type="button" data-action="map-retry">
+      <span class="material-symbols-outlined" aria-hidden="true">refresh</span>
+      <span>Réessayer</span>
+    </button>
+  `;
+
+  screen.appendChild(error);
+}
+
 function initMobileRealMap() {
   const container = document.querySelector('#mobile-map');
-  if (!container || !window.maplibregl) return;
+  if (!container) return;
+
+  if (!window.maplibregl) {
+    renderMobileMapError('Le module de carte n’a pas été chargé. Vérifiez la connexion puis réessayez.');
+    return;
+  }
 
   const steps = getMobileMapSteps();
   const center = steps[0] ? [steps[0].lng, steps[0].lat] : [2.3522, 48.8566];
@@ -1142,6 +1226,11 @@ function initMobileRealMap() {
   });
 
   mobileMapInstance.addControl(new maplibregl.NavigationControl({ showCompass: true }), 'bottom-right');
+
+    mobileMapInstance.on('error', event => {
+    console.warn('Mobile map error:', event?.error || event);
+    renderMobileMapError('Le fond de carte n’a pas pu être chargé.');
+  });
 
     mobileMapInstance.on('load', async () => {
     renderMobileMapRoute();
@@ -1361,7 +1450,7 @@ function renderMobileMapMarkers() {
 
   getMobileMapSteps().forEach((step, index) => {
     const el = document.createElement('button');
-        el.className = `mobile-map-marker ${step.type || 'other'}`;
+    el.className = `mobile-map-marker ${step.type || 'other'} ${step.pointKind === 'stopover' ? 'stopover' : ''}`;
     el.type = 'button';
     el.innerHTML = `
       <span class="material-symbols-outlined">${getMobileMapStepIcon(step)}</span>
@@ -1377,6 +1466,14 @@ function renderMobileMapMarkers() {
 
     mobileMapMarkers.push(marker);
   });
+}
+
+function getMobileMapPanelDayLabel() {
+  if (mobileMapPanelDayIndex === null) return 'Tout le voyage';
+
+  const day = activeTrip?.days?.[mobileMapPanelDayIndex];
+
+  return day?.title || day?.dateLabel || `Jour ${mobileMapPanelDayIndex + 1}`;
 }
 
 function getMobileMapPanelSteps() {
@@ -4377,11 +4474,42 @@ if (action === 'delete-step') {
     return;
   }
 
-  if (action === 'map-panel-day') {
+    if (action === 'map-prev-day') {
+    if (mobileMapPanelDayIndex === null) return;
+
+    mobileMapPanelDayIndex = Math.max(0, mobileMapPanelDayIndex - 1);
+    showAllMobileMapSteps = false;
+    renderMap();
+    setTimeout(fitMobileMapToPanelDay, 250);
+    return;
+  }
+
+  if (action === 'map-next-day') {
+    const maxIndex = (activeTrip?.days?.length || 1) - 1;
+
+    if (mobileMapPanelDayIndex === null) return;
+
+    mobileMapPanelDayIndex = Math.min(maxIndex, mobileMapPanelDayIndex + 1);
+    showAllMobileMapSteps = false;
+    renderMap();
+    setTimeout(fitMobileMapToPanelDay, 250);
+    return;
+  }
+
+    if (action === 'map-panel-day') {
     const value = event.target.closest('[data-panel-day]')?.dataset.panelDay;
     mobileMapPanelDayIndex = value === 'all' ? null : Number(value);
     showAllMobileMapSteps = false;
     renderMap();
+
+    setTimeout(() => {
+      if (mobileMapPanelDayIndex === null) {
+        fitMobileMapToSteps();
+      } else {
+        fitMobileMapToPanelDay();
+      }
+    }, 250);
+
     return;
   }
 
@@ -4395,6 +4523,11 @@ if (action === 'delete-step') {
     return;
   }
 
+    if (action === 'map-retry') {
+    renderMap();
+    return;
+  }
+  
     if (action === 'map-tour') {
     toggleMobileMapTour();
     return;
@@ -4457,9 +4590,9 @@ if (action === 'delete-step') {
     const step = getMobileMapSteps()[index];
     if (!step) return;
 
-    editingStepDraft = {
+        editingStepDraft = {
       ...step,
-      stepIndex: step.stepIndex,
+      stepIndex: step.parentStepIndex ?? step.stepIndex,
       dayIndex: step.dayIndex
     };
 

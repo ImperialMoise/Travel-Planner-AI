@@ -1859,50 +1859,6 @@ const editingNote = editingItem?.note || '';
   `;
 }).join('');
 
-  const isActive = selectedExpensePayer === person.id;
-  const canEdit = person.id !== 'me' && person.id !== 'partner';
-
-  return `
-    <div class="expense-v2-person-row">
-      <button
-        class="expense-v2-person-pill ${isActive ? 'active' : ''}"
-        type="button"
-        data-expense-payer="${person.id}"
-      >
-        <span>${getInitial(person.name)}</span>
-        ${escapeHtml(person.name)}
-      </button>
-
-      ${
-        canEdit
-          ? `
-            <div class="expense-v2-inline-actions">
-              <button
-                type="button"
-                data-action="edit-budget-person"
-                data-person-id="${person.id}"
-                aria-label="Modifier ${escapeHtml(person.name)}"
-              >
-                <span class="material-symbols-outlined" aria-hidden="true">edit</span>
-              </button>
-
-              <button
-                type="button"
-                class="danger"
-                data-action="delete-budget-person"
-                data-person-id="${person.id}"
-                aria-label="Supprimer ${escapeHtml(person.name)}"
-              >
-                <span class="material-symbols-outlined" aria-hidden="true">close</span>
-              </button>
-            </div>
-          `
-          : ''
-      }
-    </div>
-  `;
-}).join('');
-
   const splitAvatarsHtml = people.slice(0, 4).map(function(person) {
     return `<span>${getInitial(person.name)}</span>`;
   }).join('');
@@ -1926,57 +1882,6 @@ const editingNote = editingItem?.note || '';
         canEdit
           ? `
             <div class="expense-v2-card-actions">
-              <button
-                type="button"
-                data-action="edit-budget-person"
-                data-person-id="${person.id}"
-                aria-label="Modifier ${escapeHtml(person.name)}"
-              >
-                <span class="material-symbols-outlined" aria-hidden="true">edit</span>
-              </button>
-
-              <button
-                type="button"
-                class="danger"
-                data-action="delete-budget-person"
-                data-person-id="${person.id}"
-                aria-label="Supprimer ${escapeHtml(person.name)}"
-              >
-                <span class="material-symbols-outlined" aria-hidden="true">close</span>
-              </button>
-            </div>
-          `
-          : ''
-      }
-    </div>
-  `;
-}).join('');
-
-  const isActive = selectedExpenseSplit === person.id;
-  const canEdit = person.id !== 'me' && person.id !== 'partner';
-
-  return `
-    <div class="expense-v2-split-person-row">
-      <button
-        class="expense-v2-split-card ${isActive ? 'active' : ''}"
-        type="button"
-        data-expense-split="${person.id}"
-      >
-        <span class="expense-v2-avatar-stack solo">
-          <span>${getInitial(person.name)}</span>
-        </span>
-
-        <strong>${escapeHtml(person.name)}</strong>
-
-        <span class="material-symbols-outlined" aria-hidden="true">
-          ${isActive ? 'check_circle' : 'radio_button_unchecked'}
-        </span>
-      </button>
-
-      ${
-        canEdit
-          ? `
-            <div class="expense-v2-inline-actions">
               <button
                 type="button"
                 data-action="edit-budget-person"

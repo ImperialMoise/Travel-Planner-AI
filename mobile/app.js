@@ -1955,96 +1955,79 @@ const editingNote = editingItem?.note || '';
 
         <section class="expense-v2-section">
           <div class="expense-v2-section-heading">
-            <section class="expense-v2-section">
-  <div class="expense-v2-section-heading">
-    <span class="expense-v2-kicker">Catégorie</span>
-
-    <button
-      class="expense-v2-mini-action ${isEditingExpenseCategories ? 'active' : ''}"
-      type="button"
-      data-action="toggle-expense-category-edition"
-      aria-label="Modifier les catégories"
-    >
-      <span class="material-symbols-outlined" aria-hidden="true">edit</span>
-    </button>
-  </div>
-
-  <div class="expense-v2-category-grid">
-    ${categoryButtonsHtml}
-
-    <button
-      class="expense-v2-category expense-v2-add-card"
-      type="button"
-      data-action="add-expense-category"
-      aria-label="Ajouter une catégorie"
-    >
-      <span class="material-symbols-outlined" aria-hidden="true">add</span>
-      <span>Ajouter</span>
-    </button>
-  </div>
-</section>
+            <span class="expense-v2-kicker">Catégorie</span>
+            <button
+              class="expense-v2-mini-action ${isEditingExpenseCategories ? 'active' : ''}"
+              type="button"
+              data-action="toggle-expense-category-edition"
+              aria-label="Modifier les catégories"
+            >
+              <span class="material-symbols-outlined" aria-hidden="true">edit</span>
+            </button>
+          </div>
+          <div class="expense-v2-category-grid">
+            ${categoryButtonsHtml}
+            <button
+              class="expense-v2-category expense-v2-add-card"
+              type="button"
+              data-action="add-expense-category"
+              aria-label="Ajouter une catégorie"
+            >
+              <span class="material-symbols-outlined" aria-hidden="true">add</span>
+              <span>Ajouter</span>
+            </button>
+          </div>
+        </section>
 
         <section class="expense-v2-section">
           <div class="expense-v2-section-heading">
-            <div class="expense-v2-section-heading">
-  <div class="expense-v2-section-heading">
-  <section class="expense-v2-section">
-  <div class="expense-v2-section-heading">
-    <span class="expense-v2-kicker">Qui a payé ?</span>
-
-    <button
-      class="expense-v2-mini-action"
-      type="button"
-      data-action="add-budget-person"
-      aria-label="Ajouter une personne"
-    >
-      <span class="material-symbols-outlined" aria-hidden="true">person_add</span>
-    </button>
-  </div>
-
-  <div class="expense-v2-person-grid">
-    ${payerButtonsHtml}
-
-    <button
-      class="expense-v2-person-card ${selectedExpensePayer === 'common' ? 'active' : ''}"
-      type="button"
-      data-expense-payer="common"
-    >
-      <span class="expense-v2-person-avatar">€</span>
-      <span>Fonds Commun</span>
-    </button>
-  </div>
-</section>
+            <span class="expense-v2-kicker">Qui a payé ?</span>
+            <button
+              class="expense-v2-mini-action"
+              type="button"
+              data-action="add-budget-person"
+              aria-label="Ajouter une personne"
+            >
+              <span class="material-symbols-outlined" aria-hidden="true">person_add</span>
+            </button>
+          </div>
+          <div class="expense-v2-person-grid">
+            ${payerButtonsHtml}
+            <button
+              class="expense-v2-person-card ${selectedExpensePayer === 'common' ? 'active' : ''}"
+              type="button"
+              data-expense-payer="common"
+            >
+              <span class="expense-v2-person-avatar">€</span>
+              <span>Fonds Commun</span>
+            </button>
+          </div>
+        </section>
 
         <section class="expense-v2-section">
           <div class="expense-v2-section-heading">
-  <section class="expense-v2-section">
-  <div class="expense-v2-section-heading">
-    <span class="expense-v2-kicker">Pour qui ?</span>
-
-    <button
-      class="expense-v2-mini-action"
-      type="button"
-      data-action="add-budget-person"
-      aria-label="Ajouter une personne"
-    >
-      <span class="material-symbols-outlined" aria-hidden="true">person_add</span>
-    </button>
-  </div>
-
-  <div class="expense-v2-person-grid">
-    <button
-      class="expense-v2-person-card ${selectedExpenseSplit === 'equal' ? 'active' : ''}"
-      type="button"
-      data-expense-split="equal"
-    >
-      <span class="expense-v2-person-avatar">=</span>
-      <span>Équitable</span>
-    </button>
-
-    ${splitPeopleHtml}
-  </div>
-</section>
+            <span class="expense-v2-kicker">Pour qui ?</span>
+            <button
+              class="expense-v2-mini-action"
+              type="button"
+              data-action="add-budget-person"
+              aria-label="Ajouter une personne"
+            >
+              <span class="material-symbols-outlined" aria-hidden="true">person_add</span>
+            </button>
+          </div>
+          <div class="expense-v2-person-grid">
+            <button
+              class="expense-v2-person-card ${selectedExpenseSplit === 'equal' ? 'active' : ''}"
+              type="button"
+              data-expense-split="equal"
+            >
+              <span class="expense-v2-person-avatar">=</span>
+              <span>Équitable</span>
+            </button>
+            ${splitPeopleHtml}
+          </div>
+        </section>
 
         <section class="expense-v2-fields">
           <label>

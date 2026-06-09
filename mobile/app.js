@@ -1615,7 +1615,20 @@ function handleEditBudgetPerson(personId) {
 }
 
 function handleAddBudgetPerson() {
-  openExpenseModal('person');
+  if (typeof openExpenseModal === 'function') {
+    openExpenseModal('person');
+    return;
+  }
+
+  const name = prompt('Nom de la personne :');
+  if (!name || !name.trim()) return;
+
+  saveLocalBudgetPeople([...getLocalBudgetPeople(), {
+    id: `local-${Date.now()}`,
+    name: name.trim()
+  }]);
+
+  renderNewExpense();
 }
 
 function getBudgetPeople() {
@@ -1641,18 +1654,6 @@ function getBudgetPeople() {
 
 function getInitial(name = '') {
   return name.trim().charAt(0).toUpperCase() || '?';
-}
-
-async function handleAddBudgetPerson() {
-  const name = prompt('Nom de la personne :');
-  if (!name || !name.trim()) return;
-
-  if (activeTrip?.id && window.SB?.addParticipant) {
-    await window.SB.addParticipant(activeTrip.id, name.trim(), activeTrip.participants?.length || 0);
-    await refreshMobileTrips(activeTrip.id);
-  }
-
-  renderNewExpense();
 }
 
 function renderNewExpense() {
@@ -2175,6 +2176,17 @@ function renderDocDetail() {
 function handleEditExpense(groupIndex, itemIndex) {
   const item = expenses[groupIndex]?.items[itemIndex];
   if (!item) return;
+
+  editingExpenseDraft = {
+    source: 'local',
+    groupIndex,
+    itemIndex,
+    title: item.title,
+    note: item.note || '',
+    amount: item.amount.replace(/[^0-9,.]/g, '').replace(',', '.'),
+    payer: item.payer || 'Moi',
+    cat: item.cat || selectedExpenseCategory
+  };
 
   editingExpenseGroupIndex = groupIndex;
   editingExpenseItemIndex = itemIndex;
@@ -2709,9 +2721,15 @@ if (action === 'delete-budget-person') {
 }
 
   if (action === 'new-expense') {
-    navigate('new-expense');
-    return;
-  }
+  editingExpenseDraft = null;
+  editingExpenseGroupIndex = null;
+  editingExpenseItemIndex = null;
+  selectedExpenseCategory = 'meal';
+  selectedExpensePayer = 'me';
+  selectedExpenseSplit = 'equal';
+  navigate('new-expense');
+  return;
+}
 
     if (action === 'save-expense') {
     handleSaveExpense();

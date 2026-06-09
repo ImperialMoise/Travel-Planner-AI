@@ -4436,6 +4436,21 @@ button {
   border-radius: 18px;
 }
 
+.sync-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 6px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(213, 231, 221, 0.75);
+  color: var(--on-secondary-fixed-variant);
+  font-family: var(--font-data);
+  font-size: 10px;
+  line-height: 14px;
+  letter-spacing: 0.04em;
+}
+
 .item-actions {
   display: flex;
   align-items: center;

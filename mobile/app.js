@@ -1,19 +1,52 @@
 const app = document.getElementById('app');
 
+let mobileSB = null;
 let mobileUser = null;
 let mobileTrips = [];
 let activeTrip = null;
 let mobileReady = false;
 let showAllTrips = false;
+let mobileSupabaseReady = false;
+let mobileSupabaseError = '';
+
+async function bootMobileSupabase() {
+  if (window.SB) {
+    mobileSB = window.SB;
+    mobileSupabaseReady = true;
+    return window.SB;
+  }
+
+  try {
+    mobileSB = await import('./lib/supabase.js');
+    window.SB = mobileSB;
+
+    mobileSupabaseReady = true;
+    mobileSupabaseError = '';
+
+    window.dispatchEvent(new Event('sb-ready'));
+
+    return mobileSB;
+  } catch (error) {
+    console.error('Supabase mobile import failed:', error);
+
+    mobileSupabaseReady = false;
+    mobileSupabaseError = error.message || String(error);
+    mobileReady = true;
+
+    window.dispatchEvent(new Event('sb-ready'));
+
+    return null;
+  }
+}
 
 async function waitForSupabase() {
   if (window.SB) return window.SB;
 
-  await new Promise(resolve => {
-    window.addEventListener('sb-ready', resolve, { once: true });
-  });
+  const SB = await bootMobileSupabase();
 
-  return window.SB;
+  if (SB) return SB;
+
+  return null;
 }
 
 function getTripDurationDays(startDate, endDate) {
@@ -31,6 +64,13 @@ async function initMobileData() {
   const SB = await waitForSupabase();
 
   try {
+    if (!SB) {
+      mobileUser = null;
+      mobileTrips = [];
+      activeTrip = null;
+      return;
+    }
+
     mobileUser = await SB.getUser();
 
     if (!mobileUser) {
@@ -42,6 +82,10 @@ async function initMobileData() {
     await refreshMobileTrips();
   } catch (error) {
     console.warn('Mobile Supabase init error:', error);
+
+    mobileUser = null;
+    mobileTrips = [];
+    activeTrip = null;
   } finally {
     mobileReady = true;
   }
@@ -514,7 +558,19 @@ function bottomNav(active = 'plan') {
 
 function renderHome() {
   const realTrips = mobileTrips || [];
-  const nextTrip = activeTrip || null;
+  const visibleTrips = showAllTrips ? realTrips : realTrips.slice(0, 2);
+  const nextTrip = activeTrip || realTrips[0] || null;
+
+  const nextTripName = nextTrip?.name || 'Aucun voyage';
+  const nextTripDate = nextTrip?.startDate || nextTrip?.start_date || '';
+
+  const syncStatus = mobileSupabaseError
+    ? 'Mode local · Supabase indisponible'
+    : !mobileReady
+      ? 'Chargement des données...'
+      : mobileUser
+        ? 'Connecté à vos voyages Supabase'
+        : 'Mode local · connectez-vous';
 
   app.innerHTML = `
     <div class="mobile-shell">
@@ -524,21 +580,24 @@ function renderHome() {
         <section class="home-hero">
           <p class="kicker">Votre Carnet</p>
           <h2 class="hero-title">Où commence votre prochaine escale ?</h2>
+          <p class="mobile-sync-status">${syncStatus}</p>
         </section>
 
         <section class="next-trip-card" aria-label="Prochain départ" data-action="itinerary" style="cursor:pointer">
           <div class="next-trip-content">
             <span class="badge">Prochain départ</span>
-            <h3 class="next-trip-title">${escapeHtml(nextTrip?.name || 'Aucun voyage')}</h3>
+            <h3 class="next-trip-title">${escapeHtml(nextTripName)}</h3>
             <div>
               <div class="next-trip-row">
                 <div class="date-row">
-                  <span class="countdown">J-12</span>
-                  <span class="mono">${nextTrip?.startDate ? formatDateLabel(nextTrip.startDate, '') : 'Créez votre premier voyage'}</span>
+                  <span class="countdown">${nextTrip ? 'Prêt' : '—'}</span>
+                  <span class="mono">${nextTripDate ? formatDateLabel(nextTripDate, '') : 'Créez votre premier voyage'}</span>
                 </div>
-                <span class="mono percent">80%</span>
+                <span class="mono percent">${nextTrip ? '80%' : '0%'}</span>
               </div>
-              <div class="progress-track"><div class="progress-fill"></div></div>
+              <div class="progress-track">
+                <div class="progress-fill" style="width:${nextTrip ? '80%' : '0%'}"></div>
+              </div>
             </div>
           </div>
         </section>
@@ -552,29 +611,38 @@ function renderHome() {
           <div class="section-heading">
             <h3>Mes Voyages</h3>
             <button class="section-link" type="button" data-action="toggle-all-trips">
-  ${showAllTrips ? 'Réduire' : 'Tout voir'}
-</button>
+              ${showAllTrips ? 'Réduire' : 'Tout voir'}
+            </button>
           </div>
+
           <div class="trip-strip ${showAllTrips ? 'expanded' : ''}">
-            ${realTrips.length ? realTrips.map(trip => `
+            ${visibleTrips.length ? visibleTrips.map(trip => `
               <article class="trip-card" data-action="open-trip" data-trip-id="${trip.id}" style="cursor:pointer">
-                 <div class="trip-image" style="background-image: url('https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=900&auto=format&fit=crop')">
-                 <span class="trip-status">En préparation</span>
+                <div class="trip-image" style="background-image: url('https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=900&auto=format&fit=crop')">
+                  <span class="trip-status">Synchronisé</span>
                 </div>
+
                 <div class="trip-body">
-  <h4>${escapeHtml(trip.name)}</h4>
-  <div class="trip-date mono">${trip.start_date ? formatDateLabel(trip.start_date, '') : 'Sans date'}</div>
-  <div class="item-actions">
-    <button class="icon-mini" type="button" data-action="rename-trip" data-trip-id="${trip.id}" aria-label="Renommer le voyage">
-      <span class="material-symbols-outlined">edit</span>
-    </button>
-    <button class="icon-mini danger" type="button" data-action="delete-trip" data-trip-id="${trip.id}" aria-label="Supprimer le voyage">
-      <span class="material-symbols-outlined">close</span>
-    </button>
-  </div>
-</div>
+                  <h4>${escapeHtml(trip.name || 'Voyage sans titre')}</h4>
+                  <div class="trip-date mono">
+                    ${trip.start_date ? formatDateLabel(trip.start_date, '') : 'Sans date'}
+                  </div>
+
+                  <div class="item-actions">
+                    <button class="icon-mini" type="button" data-action="rename-trip" data-trip-id="${trip.id}" aria-label="Renommer le voyage">
+                      <span class="material-symbols-outlined">edit</span>
+                    </button>
+                    <button class="icon-mini danger" type="button" data-action="delete-trip" data-trip-id="${trip.id}" aria-label="Supprimer le voyage">
+                      <span class="material-symbols-outlined">close</span>
+                    </button>
+                  </div>
+                </div>
               </article>
-            `).join('') : '<p class="companion-empty">Aucun voyage pour le moment.</p>'}
+            `).join('') : `
+              <p class="companion-empty">
+                ${mobileReady ? 'Aucun voyage pour le moment.' : 'Chargement de vos voyages...'}
+              </p>
+            `}
           </div>
         </section>
       </main>
@@ -1093,56 +1161,79 @@ function budgetTabs(active = 'overview') {
 }
 
 function renderBudget() {
+  const budgetGroups = getBudgetGroupsForDisplay();
+
   app.innerHTML = `
     <div class="mobile-shell">
       ${topbar()}
 
-      <main class="budget-v2-main">
+      <main class="budget-main">
         ${budgetTabs('expenses')}
 
-        <button class="expense-add-btn" type="button" data-action="new-expense">
+        <button class="create-adventure compact" type="button" data-action="new-expense">
           <span class="material-symbols-outlined">add_circle</span>
           <span>Ajouter une dépense</span>
         </button>
 
-        ${expenses.map((group, groupIndex) => `
-          <section class="expense-group-v2">
-            <h3 class="kicker">${group.group}</h3>
-            <div class="expense-list-v2">
+        <section class="expense-list">
+          ${budgetGroups.map((group, groupIndex) => `
+            <div class="expense-group">
+              <h3 class="expense-date">${group.group}</h3>
+
               ${group.items.map((item, itemIndex) => `
-                <article class="expense-row">
-                  <span class="expense-row-icon ${item.tone}">
-                    <span class="material-symbols-outlined">${
-                      item.icon === '🍴' ? 'restaurant' :
-                      item.icon === '▣' ? 'directions_bus' :
-                      item.icon === '☕' ? 'local_cafe' :
-                      item.icon === '▰' ? 'museum' :
-                      item.icon === '✈' ? 'flight' :
-                      item.icon === '◉' ? 'local_activity' :
-                      item.icon === '◒' ? 'shopping_bag' :
-                      item.icon === '▤' ? 'hotel' : 'receipt'
-                    }</span>
-                  </span>
-                  <div class="expense-row-info">
-                    <h4>${item.title}</h4>
-                    <p>Payé par ${item.payer}</p>
+                <article class="expense-item">
+                  <div class="expense-icon ${item.tone || 'primary'}">
+                    <span class="material-symbols-outlined">
+                      ${
+                        item.icon === ''
+                          ? 'restaurant'
+                          : item.icon === '▣'
+                            ? 'directions_bus'
+                            : item.icon === '☕'
+                              ? 'local_cafe'
+                              : item.icon === '▰'
+                                ? 'museum'
+                                : item.icon === '✈'
+                                  ? 'flight'
+                                  : item.icon === '◉'
+                                    ? 'local_activity'
+                                    : item.icon === '◒'
+                                      ? 'shopping_bag'
+                                      : item.icon === '▤'
+                                        ? 'hotel'
+                                        : item.icon || 'receipt'
+                      }
+                    </span>
                   </div>
-                  <div class="expense-row-actions">
-  <strong class="expense-row-amount">${item.amount}</strong>
-  <div class="item-actions">
-    <button class="icon-mini" type="button" data-action="edit-expense" data-group-index="${groupIndex}" data-item-index="${itemIndex}" aria-label="Modifier la dépense">
-      <span class="material-symbols-outlined">edit</span>
-    </button>
-    <button class="icon-mini danger" type="button" data-action="delete-expense" data-group-index="${groupIndex}" data-item-index="${itemIndex}" aria-label="Supprimer la dépense">
-      <span class="material-symbols-outlined">close</span>
-    </button>
-  </div>
-</div>
+
+                  <div class="expense-content">
+                    <h4>${escapeHtml(item.title)}</h4>
+                    <p>Payé par ${escapeHtml(item.payer || '—')}</p>
+                  </div>
+
+                  <div class="expense-side">
+                    <strong>${item.amountLabel || item.amount}</strong>
+
+                    ${
+                      item.synced
+                        ? '<span class="sync-pill">Supabase</span>'
+                        : `
+                          <div class="item-actions">
+                            <button class="icon-mini" type="button" data-action="edit-expense" data-group-index="${groupIndex}" data-item-index="${itemIndex}" aria-label="Modifier la dépense">
+                              <span class="material-symbols-outlined">edit</span>
+                            </button>
+                            <button class="icon-mini danger" type="button" data-action="delete-expense" data-group-index="${groupIndex}" data-item-index="${itemIndex}" aria-label="Supprimer la dépense">
+                              <span class="material-symbols-outlined">close</span>
+                            </button>
+                          </div>
+                        `
+                    }
+                  </div>
                 </article>
               `).join('')}
             </div>
-          </section>
-        `).join('')}
+          `).join('')}
+        </section>
       </main>
 
       ${bottomNav('budget')}
@@ -1301,49 +1392,54 @@ function renderNewExpense() {
 }
 
 function renderBudgetOverview() {
+  const formattedTotal = formatEuroAmount(getCurrentBudgetTotal());
+
   app.innerHTML = `
     <div class="mobile-shell">
       ${topbar()}
 
-      <main class="budget-v2-main">
+      <main class="budget-main">
         ${budgetTabs('overview')}
 
-        <div class="budget-summary-card">
-          <div class="budget-summary-dots" aria-hidden="true"></div>
-          <div class="budget-summary-inner">
-            <span class="kicker">Budget Total</span>
-            <h2 class="budget-total">${formattedTotal}</h2>
+        <section class="budget-hero-card">
+          <span class="kicker">Budget Total</span>
+          <h2>${formattedTotal}</h2>
 
-            <div class="donut-container">
-              <svg class="donut-svg" viewBox="0 0 36 36">
-                <path class="donut-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                <path class="donut-seg seg-primary" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" style="stroke-dasharray: 45 100;" />
-                <path class="donut-seg seg-tertiary" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" style="stroke-dasharray: 30 100; stroke-dashoffset: -45;" />
-                <path class="donut-seg seg-accent" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" style="stroke-dasharray: 15 100; stroke-dashoffset: -75;" />
-              </svg>
-              <div class="donut-center">
+          <div class="budget-donut">
+            <svg viewBox="0 0 36 36" aria-hidden="true">
+              <path class="donut-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+              <path class="donut-main" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+              <path class="donut-secondary" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+              <path class="donut-accent" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+            </svg>
+
+            <div>
               <span>Total</span>
               <strong>${formattedTotal}</strong>
             </div>
-            </div>
           </div>
-        </div>
+        </section>
 
-        <h3 class="budget-section-title">Répartition</h3>
-        <div class="budget-cat-list">
-          ${budgetCategories.map(cat => `
-            <article class="budget-cat-row">
-              <span class="budget-cat-icon ${cat.tone}">
-                <span class="material-symbols-outlined">${cat.icon}</span>
-              </span>
-              <div class="budget-cat-info">
-                <h4>${cat.label}</h4>
-                <p>${cat.percent}</p>
-              </div>
-              <strong class="budget-cat-amount">${cat.amount}</strong>
-            </article>
-          `).join('')}
-        </div>
+        <section>
+          <h3 class="section-title">Répartition</h3>
+
+          <div class="category-list">
+            ${budgetCategories.map(cat => `
+              <article class="category-row ${cat.tone}">
+                <div class="category-icon">
+                  <span class="material-symbols-outlined">${cat.icon}</span>
+                </div>
+
+                <div>
+                  <h4>${cat.label}</h4>
+                  <p>${cat.percent}</p>
+                </div>
+
+                <strong>${cat.amount}</strong>
+              </article>
+            `).join('')}
+          </div>
+        </section>
       </main>
 
       ${bottomNav('budget')}
@@ -1653,36 +1749,73 @@ function handleDeleteExpense(groupIndex, itemIndex) {
   renderBudget();
 }
 
-function handleSaveExpense() {
+async function handleSaveExpense() {
   const amountInput = document.querySelector('#expense-amount');
-  const title = titleInput?.value.trim();
-  const note = noteInput?.value.trim();
+  const titleInput = document.querySelector('#expense-title');
+  const noteInput = document.querySelector('#expense-note');
+
+  const title = titleInput?.value.trim() || '';
+  const note = noteInput?.value.trim() || '';
+  const amount = parseEuroAmount(amountInput?.value || '0');
+
   const people = getBudgetPeople();
   const selectedPayer = people.find(person => person.id === selectedExpensePayer);
-  const titleInput = document.querySelector('#expense-title');
+
   const activeCategory = expenseCategories.find(category => category.id === selectedExpenseCategory) || expenseCategories[0];
-  const amount = amountInput?.value.trim() || '0.00';
-  const normalizedAmount = amount.replace('.', ',');
-  const payer = selectedExpensePayer === 'common' ? 'Fonds commun' : selectedPayer?.name || 'Moi';
 
+  const payer = selectedExpensePayer === 'common'
+    ? 'Fonds commun'
+    : selectedPayer?.name || 'Moi';
+
+  if (!amount) {
+    alert('Ajoute un montant avant d’enregistrer.');
+    return;
+  }
+
+  if (activeTrip?.id && window.SB?.saveBudgetItem) {
+    try {
+      await window.SB.saveBudgetItem(activeTrip.id, {
+        cat: activeCategory.label,
+        desc: title || note || activeCategory.label,
+        amount,
+        paidBy: payer,
+        forParticipants: selectedExpenseSplit === 'equal'
+          ? ['__all__']
+          : [selectedExpenseSplit]
+      });
+
+      await refreshMobileTrips(activeTrip.id);
+
+      editingExpenseGroupIndex = null;
+      editingExpenseItemIndex = null;
+
+      navigate('budget');
+      return;
+    } catch (error) {
+      alert('Erreur sauvegarde dépense : ' + (error.message || error));
+      return;
+    }
+  }
+
+  const normalizedAmount = formatEuroAmount(amount);
   const expenseData = {
-  title: title || activeCategory.label,
-  note,
-  payer,
-  amount: `- ${normalizedAmount} €`,
-  icon: activeCategory.emoji,
-  tone: activeCategory.tone
-};
+    title: title || activeCategory.label,
+    note,
+    payer,
+    amount: `- ${normalizedAmount}`,
+    icon: activeCategory.emoji,
+    tone: activeCategory.tone
+  };
 
-if (editingExpenseGroupIndex !== null && editingExpenseItemIndex !== null) {
-  expenses[editingExpenseGroupIndex].items[editingExpenseItemIndex] = expenseData;
-  editingExpenseGroupIndex = null;
-  editingExpenseItemIndex = null;
-} else {
-  expenses[0].items.unshift(expenseData);
-}
+  if (editingExpenseGroupIndex !== null && editingExpenseItemIndex !== null) {
+    expenses[editingExpenseGroupIndex].items[editingExpenseItemIndex] = expenseData;
+    editingExpenseGroupIndex = null;
+    editingExpenseItemIndex = null;
+  } else {
+    expenses[0].items.unshift(expenseData);
+  }
 
-navigate('budget');
+  navigate('budget');
 }
 
 async function handleLogin() {
@@ -2015,7 +2148,7 @@ if (action === 'delete-step') {
   navigate(action);
 });
 
-window.addEventListener('hashchange', () => {
+function renderCurrentRoute() {
   if (window.location.hash === '#auth') renderAuth();
   else if (window.location.hash === '#account') renderAccount();
   else if (window.location.hash === '#create-trip') renderCreateTrip();
@@ -2028,11 +2161,12 @@ window.addEventListener('hashchange', () => {
   else if (window.location.hash === '#docs') renderDocs();
   else if (window.location.hash === '#itinerary') renderItinerary();
   else if (window.location.hash === '#new-step') renderNewStep();
-  else if (window.location.hash === '#docs') renderDocs();
   else if (window.location.hash === '#doc-scanner') renderDocScanner();
   else if (window.location.hash === '#doc-detail') renderDocDetail();
   else renderHome();
-});
+}
+
+window.addEventListener('hashchange', renderCurrentRoute);
 
 window.addEventListener('click', event => {
   const categoryButton = event.target.closest('[data-category]');
@@ -2099,17 +2233,8 @@ window.addEventListener('change', event => {
   label.classList.toggle('muted', !input.value && input.id === 'end-date');
 });
 
+renderCurrentRoute();
+
 initMobileData().then(() => {
-  if (window.location.hash === '#auth') renderAuth();
-  else if (window.location.hash === '#account') renderAccount();
-  else if (window.location.hash === '#create-trip') renderCreateTrip();
-  else if (window.location.hash === '#budget-overview') renderBudgetOverview();
-  else if (window.location.hash === '#budget') renderBudget();
-  else if (window.location.hash === '#budget-balance') renderBudgetBalance();
-  else if (window.location.hash === '#new-expense') renderNewExpense();
-  else if (window.location.hash === '#map') renderMap();
-  else if (window.location.hash === '#activity-detail') renderActivityDetail();
-  else if (window.location.hash === '#itinerary') renderItinerary();
-  else if (window.location.hash === '#new-step') renderNewStep();
-  else renderHome();
+  renderCurrentRoute();
 });

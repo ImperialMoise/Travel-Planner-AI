@@ -2110,6 +2110,80 @@ ${splitMoreButtonHtml}
   `;
 }
 
+function renderBudgetOverview() {
+  const total = formatEuroAmount(getCurrentBudgetTotal());
+  const items = getCurrentBudgetItems();
+
+  app.innerHTML = `
+    <div class="mobile-shell">
+      ${topbar()}
+
+      <main class="budget-main">
+        ${budgetTabs('overview')}
+
+        <section class="budget-summary-card">
+          <div class="budget-summary-inner">
+            <span class="kicker">Budget total</span>
+            <h2>${total}</h2>
+            <p>${items.length} dépense${items.length > 1 ? 's' : ''} enregistrée${items.length > 1 ? 's' : ''}</p>
+          </div>
+        </section>
+
+        <div class="budget-cat-list">
+          ${getExpenseCategories().map(category => `
+            <article class="budget-cat-row">
+              <span class="budget-cat-icon primary">
+                <span class="material-symbols-outlined">${category.icon}</span>
+              </span>
+              <div class="budget-cat-info">
+                <h4>${escapeHtml(category.label)}</h4>
+                <p>Catégorie disponible</p>
+              </div>
+            </article>
+          `).join('')}
+        </div>
+      </main>
+
+      ${bottomNav('budget')}
+    </div>
+  `;
+}
+
+function renderBudgetBalance() {
+  const people = getBudgetPeople();
+  const total = getCurrentBudgetTotal();
+  const share = people.length ? total / people.length : 0;
+
+  app.innerHTML = `
+    <div class="mobile-shell">
+      ${topbar()}
+
+      <main class="budget-main">
+        ${budgetTabs('balance')}
+
+        <section class="balance-cards">
+          ${people.map(person => `
+            <article class="balance-person-card">
+              <div class="balance-person-header">
+                <div class="balance-person-id">
+                  <span class="balance-avatar neutral">${getInitial(person.name)}</span>
+                  <span class="balance-person-name">${escapeHtml(person.name)}</span>
+                </div>
+                <div class="balance-person-amounts">
+                  <strong class="balance-main-amount">${formatEuroAmount(share)}</strong>
+                  <span class="balance-paid">Part estimée</span>
+                </div>
+              </div>
+            </article>
+          `).join('')}
+        </section>
+      </main>
+
+      ${bottomNav('budget')}
+    </div>
+  `;
+}
+
 function renderDocs() {
   app.innerHTML = `
     <div class="mobile-shell">
@@ -2726,12 +2800,9 @@ function navigate(route) {
   } else if (route === 'budget') {
     window.location.hash = 'budget';
     renderBudget();
-  } else if (route === 'budget-balance') {
+    } else if (route === 'budget-balance') {
     window.location.hash = 'budget-balance';
     renderBudgetBalance();
-    } else if (route === 'budget') {
-    window.location.hash = 'budget';
-    renderBudget();
   } else if (route === 'new-expense') {
     window.location.hash = 'new-expense';
     renderNewExpense();
@@ -2856,17 +2927,20 @@ if (action === 'delete-budget-person') {
 }
 
 if (action === 'budget-overview') {
-  navigate('budget-overview');
+  window.location.hash = 'budget-overview';
+  renderBudgetOverview();
   return;
 }
 
 if (action === 'budget') {
-  navigate('budget');
+  window.location.hash = 'budget';
+  renderBudget();
   return;
 }
 
 if (action === 'budget-balance') {
-  navigate('budget-balance');
+  window.location.hash = 'budget-balance';
+  renderBudgetBalance();
   return;
 }
 

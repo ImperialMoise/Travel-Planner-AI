@@ -328,6 +328,7 @@ let mobileMapMarkers = [];
 let mobileMapSearchTimer = null;
 let mobileMapStyle = 'plan';
 let mobileMapSelectedPlace = null;
+let mobileMapSelectedPlaceType = 'activity';
 let showAllMobileMapSteps = false;
 let mobileMapDestinationMarker = null;
 
@@ -1230,19 +1231,53 @@ function renderMobileMapSelectedPlace() {
   const card = document.querySelector('#mobile-map-place-card');
   if (!card || !mobileMapSelectedPlace) return;
 
+  const placeTypes = [
+    { id: 'activity', label: 'Activité', icon: 'local_activity' },
+    { id: 'restaurant', label: 'Restaurant', icon: 'restaurant' },
+    { id: 'lodging', label: 'Logement', icon: 'hotel' },
+    { id: 'transport', label: 'Transport', icon: 'directions_transit' }
+  ];
+
   card.hidden = false;
 
   card.innerHTML = `
-    <div>
-      <span class="kicker">Lieu trouvé</span>
-      <h2>${escapeHtml(mobileMapSelectedPlace.text || 'Lieu sélectionné')}</h2>
-      <p>${escapeHtml(mobileMapSelectedPlace.place_name || '')}</p>
+    <div class="mobile-map-place-head">
+      <div>
+        <span class="kicker">Lieu trouvé</span>
+        <h2>${escapeHtml(mobileMapSelectedPlace.text || 'Lieu sélectionné')}</h2>
+        <p>${escapeHtml(mobileMapSelectedPlace.place_name || '')}</p>
+      </div>
+
+      <button class="mobile-map-place-close" type="button" data-action="map-clear-place" aria-label="Fermer">
+        <span class="material-symbols-outlined" aria-hidden="true">close</span>
+      </button>
     </div>
 
-    <button type="button" data-action="map-add-place">
-      <span class="material-symbols-outlined" aria-hidden="true">add_location_alt</span>
-      <span>Ajouter au voyage</span>
-    </button>
+    <div class="mobile-map-place-types" role="group" aria-label="Type d'étape">
+      ${placeTypes.map(type => `
+        <button
+          type="button"
+          class="${mobileMapSelectedPlaceType === type.id ? 'active' : ''}"
+          data-action="map-place-type"
+          data-place-type="${type.id}"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">${type.icon}</span>
+          <span>${type.label}</span>
+        </button>
+      `).join('')}
+    </div>
+
+    <div class="mobile-map-place-actions">
+      <button type="button" data-action="map-show-place">
+        <span class="material-symbols-outlined" aria-hidden="true">my_location</span>
+        <span>Voir</span>
+      </button>
+
+      <button type="button" data-action="map-add-place">
+        <span class="material-symbols-outlined" aria-hidden="true">add_location_alt</span>
+        <span>Ajouter</span>
+      </button>
+    </div>
   `;
 }
 
@@ -1264,7 +1299,7 @@ async function handleAddMapPlaceToTrip() {
 
   const step = {
     stepIndex: day.steps?.length || 0,
-    type: 'activity',
+    type: mobileMapSelectedPlaceType,
     label: mobileMapSelectedPlace.text || 'Lieu ajouté',
     lieu: mobileMapSelectedPlace.place_name || '',
     time: '09:00',
@@ -1289,7 +1324,7 @@ async function handleAddMapPlaceToTrip() {
     } else {
       itinerarySteps.push({
         time: step.time,
-        type: 'Activité',
+        type: getStepCategoryConfig(mobileMapSelectedPlaceType).type,
         title: step.label,
         description: step.lieu,
         icon: 'location_on',
@@ -1343,6 +1378,7 @@ function initMobileMapSearch() {
             if (!feature || !mobileMapInstance) return;
 
             mobileMapSelectedPlace = feature;
+            mobileMapSelectedPlaceType = 'activity';
             input.value = feature.place_name;
             results.innerHTML = '';
             results.style.display = 'none';
@@ -3894,6 +3930,34 @@ if (action === 'delete-step') {
   if (action === 'map-focus-step') {
     const index = Number(event.target.closest('[data-step-index]')?.dataset.stepIndex);
     focusMobileMapStep(index);
+    return;
+  }
+
+    if (action === 'map-clear-place') {
+    mobileMapSelectedPlace = null;
+    mobileMapSelectedPlaceType = 'activity';
+
+    const card = document.querySelector('#mobile-map-place-card');
+    if (card) card.hidden = true;
+
+    return;
+  }
+
+  if (action === 'map-place-type') {
+    mobileMapSelectedPlaceType = event.target.closest('[data-place-type]')?.dataset.placeType || 'activity';
+    renderMobileMapSelectedPlace();
+    return;
+  }
+
+  if (action === 'map-show-place') {
+    if (mobileMapSelectedPlace?.center && mobileMapInstance) {
+      mobileMapInstance.flyTo({
+        center: mobileMapSelectedPlace.center,
+        zoom: 15,
+        duration: 900
+      });
+    }
+
     return;
   }
 

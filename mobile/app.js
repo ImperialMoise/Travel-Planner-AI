@@ -872,6 +872,17 @@ async function geocodeMobileMapDestination() {
   }
 }
 
+function getMobileMapStepIcon(step) {
+  const type = String(step.type || '').toLowerCase();
+
+  if (type.includes('transport')) return 'directions_transit';
+  if (type.includes('lodging') || type.includes('logement')) return 'hotel';
+  if (type.includes('restaurant')) return 'restaurant';
+  if (type.includes('activity') || type.includes('activit')) return 'local_activity';
+
+  return step.icon || 'location_on';
+}
+
 function getMobileMapStyleUrl() {
   const style = mobileMapStyle === 'satellite'
     ? 'hybrid'
@@ -881,6 +892,7 @@ function getMobileMapStyleUrl() {
 }
 
 function clearMobileMapMarkers() {
+  clearMobileMapRoute();
   mobileMapMarkers.forEach(marker => marker.remove());
   mobileMapMarkers = [];
 
@@ -954,17 +966,28 @@ function renderMap() {
             </button>
           </div>
 
+                    <div class="mobile-map-card-actions">
+            <button type="button" data-action="map-fit">
+              <span class="material-symbols-outlined" aria-hidden="true">center_focus_strong</span>
+              <span>Recadrer</span>
+            </button>
+          </div>
+
           <div class="mobile-map-step-list">
             ${steps.length ? steps.slice(0, 6).map((step, index) => `
               <button class="mobile-map-step" type="button" data-action="map-focus-step" data-step-index="${index}">
-                <span class="material-symbols-outlined" aria-hidden="true">${step.icon || getStepCategoryConfig(step.type).timelineIcon || 'location_on'}</span>
+                <span class="material-symbols-outlined" aria-hidden="true">${getMobileMapStepIcon(step)}</span>
                 <div>
                   <strong>${escapeHtml(step.label || step.title || 'Étape')}</strong>
                   <small>${escapeHtml(step.lieu || step.place || step.dayTitle || '')}</small>
                 </div>
                 <em>${escapeHtml(step.time || '')}</em>
               </button>
-            `).join('') : `
+                        `).join('')}
+            ${steps.length > 6 ? `
+              <p class="mobile-map-more">+ ${steps.length - 6} autre${steps.length - 6 > 1 ? 's' : ''} point${steps.length - 6 > 1 ? 's' : ''} sur la carte</p>
+            ` : ''}
+            ` : `
               <p class="companion-empty">
                 La carte affiche d’abord la destination. Les étapes apparaîtront ici dès qu’elles auront une adresse sélectionnée dans les suggestions.
               </p>
@@ -998,6 +1021,7 @@ function initMobileRealMap() {
   mobileMapInstance.addControl(new maplibregl.NavigationControl({ showCompass: true }), 'bottom-right');
 
     mobileMapInstance.on('load', async () => {
+    renderMobileMapRoute();
     renderMobileMapMarkers();
 
     if (steps.length) {
@@ -1043,6 +1067,74 @@ async function renderMobileMapDestination() {
   });
 }
 
+function clearMobileMapRoute() {
+  if (!mobileMapInstance) return;
+
+  ['mobile-step-route-glow', 'mobile-step-route-line'].forEach(layerId => {
+    if (mobileMapInstance.getLayer(layerId)) {
+      mobileMapInstance.removeLayer(layerId);
+    }
+  });
+
+  if (mobileMapInstance.getSource('mobile-step-route')) {
+    mobileMapInstance.removeSource('mobile-step-route');
+  }
+}
+
+function renderMobileMapRoute() {
+  if (!mobileMapInstance) return;
+
+  const steps = getMobileMapSteps();
+  clearMobileMapRoute();
+
+  if (steps.length < 2) return;
+
+  const coordinates = steps.map(step => [step.lng, step.lat]);
+
+  mobileMapInstance.addSource('mobile-step-route', {
+    type: 'geojson',
+    data: {
+      type: 'Feature',
+      geometry: {
+        type: 'LineString',
+        coordinates
+      }
+    }
+  });
+
+  mobileMapInstance.addLayer({
+    id: 'mobile-step-route-glow',
+    type: 'line',
+    source: 'mobile-step-route',
+    layout: {
+      'line-cap': 'round',
+      'line-join': 'round'
+    },
+    paint: {
+      'line-color': '#7c5410',
+      'line-width': 10,
+      'line-opacity': 0.18,
+      'line-blur': 4
+    }
+  });
+
+  mobileMapInstance.addLayer({
+    id: 'mobile-step-route-line',
+    type: 'line',
+    source: 'mobile-step-route',
+    layout: {
+      'line-cap': 'round',
+      'line-join': 'round'
+    },
+    paint: {
+      'line-color': '#7c5410',
+      'line-width': 3,
+      'line-opacity': 0.9,
+      'line-dasharray': [1.5, 2.2]
+    }
+  });
+}
+
 function renderMobileMapMarkers() {
   if (!mobileMapInstance) return;
 
@@ -1050,10 +1142,10 @@ function renderMobileMapMarkers() {
 
   getMobileMapSteps().forEach((step, index) => {
     const el = document.createElement('button');
-    el.className = 'mobile-map-marker';
+        el.className = `mobile-map-marker ${step.type || 'other'}`;
     el.type = 'button';
     el.innerHTML = `
-      <span class="material-symbols-outlined">${step.icon || getStepCategoryConfig(step.type).timelineIcon || 'location_on'}</span>
+      <span class="material-symbols-outlined">${getMobileMapStepIcon(step)}</span>
     `;
 
     el.addEventListener('click', () => {
@@ -1102,6 +1194,14 @@ function focusMobileMapStep(index) {
 
   const step = getMobileMapSteps()[index];
   if (!step) return;
+
+    document.querySelectorAll('.mobile-map-marker').forEach((marker, markerIndex) => {
+    marker.classList.toggle('active', markerIndex === index);
+  });
+
+  document.querySelectorAll('.mobile-map-step').forEach((button, buttonIndex) => {
+    button.classList.toggle('active', buttonIndex === index);
+  });
 
   mobileMapInstance.flyTo({
     center: [step.lng, step.lat],
@@ -3552,7 +3652,7 @@ if (action === 'delete-trip') {
     event.target.closest('[data-stopover-row]')?.remove();
     return;
   }
-  
+
   if (action === 'add-step-to-program') {
     handleAddStepToProgram();
     return;
@@ -3735,7 +3835,8 @@ if (action === 'delete-step') {
     mobileMapStyle = mobileMapStyle === 'plan' ? 'satellite' : 'plan';
     if (mobileMapInstance) {
       mobileMapInstance.setStyle(getMobileMapStyleUrl());
-            mobileMapInstance.once('style.load', async () => {
+      mobileMapInstance.once('style.load', async () => {
+        renderMobileMapRoute();
         renderMobileMapMarkers();
 
         if (getMobileMapSteps().length) {

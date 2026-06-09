@@ -318,6 +318,12 @@ function icon(symbol, className = '') {
 
 const MAPTILER_KEY = '08IwMKKAkP3BQJss5poF';
 
+let mobileMapInstance = null;
+let mobileMapMarkers = [];
+let mobileMapSearchTimer = null;
+let mobileMapStyle = 'plan';
+let mobileMapSelectedPlace = null;
+
 function attachAutocomplete(input) {
   if (!input || input.dataset.acReady) return;
   input.dataset.acReady = 'true';
@@ -525,7 +531,17 @@ function getNewStepFormData() {
   const form = document.querySelector('[data-step-form]');
   if (!form) return {};
 
-  return Object.fromEntries(new FormData(form).entries());
+  const data = Object.fromEntries(new FormData(form).entries());
+
+  ['location', 'departure', 'arrival'].forEach(name => {
+    const input = form.querySelector(`[name="${name}"]`);
+    if (!input) return;
+
+    data[`${name}Lat`] = input.dataset.lat || '';
+    data[`${name}Lng`] = input.dataset.lng || '';
+  });
+
+  return data;
 }
 
 function getStepCategoryConfig(type = '') {
@@ -734,74 +750,112 @@ function renderHome() {
 }
 
 
+function getMobileMapSteps() {
+  const days = activeTrip?.days || [];
+
+  return days.flatMap((day, dayIndex) =>
+    (day.steps || []).map((step, stepIndex) => ({
+      ...step,
+      dayIndex,
+      stepIndex,
+      dayTitle: day.title || `Jour ${dayIndex + 1}`,
+      lat: Number(step.lat),
+      lng: Number(step.lng)
+    }))
+  ).filter(step => Number.isFinite(step.lat) && Number.isFinite(step.lng));
+}
+
+function getMobileMapStyleUrl() {
+  const style = mobileMapStyle === 'satellite'
+    ? 'hybrid'
+    : 'streets-v2';
+
+  return `https://api.maptiler.com/maps/${style}/style.json?key=${MAPTILER_KEY}&language=fr`;
+}
+
+function clearMobileMapMarkers() {
+  mobileMapMarkers.forEach(marker => marker.remove());
+  mobileMapMarkers = [];
+}
+
+function destroyMobileMap() {
+  clearMobileMapMarkers();
+
+  if (mobileMapInstance) {
+    mobileMapInstance.remove();
+    mobileMapInstance = null;
+  }
+}
+
 function renderMap() {
+  destroyMobileMap();
+
+  const steps = getMobileMapSteps();
+  const tripName = activeTrip?.name || getTripDraft().destination || 'Votre voyage';
+
   app.innerHTML = `
     <div class="mobile-shell map-shell">
       ${topbar()}
-      <main class="map-screen" aria-label="Carte du voyage à Séoul">
-        <div class="map-background" data-location="Seoul, South Korea">
-          <div class="map-overlay" aria-hidden="true"></div>
 
-          ${mapMarkers.map(marker => `
-            <button
-              class="map-marker ${marker.active ? 'active' : ''}"
-              type="button"
-              aria-label="${marker.label}"
-              style="--marker-top: ${marker.top}; --marker-left: ${marker.left};"
-            >
-              <span class="material-symbols-outlined" aria-hidden="true">${marker.icon}</span>
-            </button>
-          `).join('')}
-        </div>
+      <main class="mobile-real-map-screen">
+        <div id="mobile-map" class="mobile-real-map"></div>
 
-        <div class="map-search-panel glass-panel">
+        <div class="mobile-map-search glass-panel">
           <span class="material-symbols-outlined" aria-hidden="true">search</span>
-          <input type="search" placeholder="Rechercher un lieu, une étape..." aria-label="Rechercher sur la carte">
-          <button type="button" aria-label="Filtrer la carte">
-            <span class="material-symbols-outlined" aria-hidden="true">filter_list</span>
-          </button>
+          <input id="mobile-map-search" type="search" placeholder="Rechercher un lieu..." autocomplete="off">
+          <div id="mobile-map-results" class="mobile-map-results"></div>
         </div>
 
-        <div class="map-controls" aria-label="Contrôles de la carte">
-          <div class="glass-panel map-zoom-controls">
-            <button type="button" aria-label="Zoomer">
+        <div class="mobile-map-controls">
+          <button class="glass-panel" type="button" data-action="map-fit" aria-label="Vue globale">
+            <span class="material-symbols-outlined" aria-hidden="true">travel_explore</span>
+          </button>
+
+          <button class="glass-panel" type="button" data-action="map-geolocate" aria-label="Me localiser">
+            <span class="material-symbols-outlined filled" aria-hidden="true">my_location</span>
+          </button>
+
+          <button class="glass-panel" type="button" data-action="map-style" aria-label="Changer le fond de carte">
+            <span class="material-symbols-outlined" aria-hidden="true">layers</span>
+          </button>
+
+          <div class="glass-panel mobile-map-zoom">
+            <button type="button" data-action="map-zoom-in" aria-label="Zoomer">
               <span class="material-symbols-outlined" aria-hidden="true">add</span>
             </button>
-            <button type="button" aria-label="Dézoomer">
+            <button type="button" data-action="map-zoom-out" aria-label="Dézoomer">
               <span class="material-symbols-outlined" aria-hidden="true">remove</span>
             </button>
           </div>
-          <button class="glass-panel" type="button" aria-label="Me localiser">
-            <span class="material-symbols-outlined filled" aria-hidden="true">my_location</span>
-          </button>
-          <button class="glass-panel" type="button" aria-label="Calques">
-            <span class="material-symbols-outlined" aria-hidden="true">layers</span>
-          </button>
         </div>
 
-        <article class="map-summary-card glass-panel" id="summary-card">
-          <div class="map-summary-accent" aria-hidden="true"></div>
+        <article class="mobile-map-card glass-panel">
           <div class="map-summary-header">
             <div>
-              <span class="kicker">Jour 6 • Aujourd'hui</span>
-              <h1>Exploration de la DMZ</h1>
+              <span class="kicker">${escapeHtml(tripName)}</span>
+              <h1>${steps.length ? `${steps.length} point${steps.length > 1 ? 's' : ''} sur la carte` : 'Aucun point géolocalisé'}</h1>
             </div>
-            <button type="button" data-action="toggle-map-summary" aria-label="Réduire le résumé de la journée">
+
+            <button type="button" data-action="toggle-map-summary" aria-label="Réduire le résumé">
               <span class="material-symbols-outlined" aria-hidden="true">keyboard_arrow_down</span>
             </button>
           </div>
-          <div class="map-summary-body">
-            <div class="map-summary-image" aria-hidden="true"></div>
-            <div>
-              <p>
-                <span class="material-symbols-outlined" aria-hidden="true">schedule</span>
-                <span>08:00 - Départ en bus</span>
+
+          <div class="mobile-map-step-list">
+            ${steps.length ? steps.slice(0, 6).map((step, index) => `
+              <button class="mobile-map-step" type="button" data-action="map-focus-step" data-step-index="${index}">
+                <span class="material-symbols-outlined" aria-hidden="true">${step.icon || getStepCategoryConfig(step.type).timelineIcon || 'location_on'}</span>
+                <div>
+                  <strong>${escapeHtml(step.label || step.title || 'Étape')}</strong>
+                  <small>${escapeHtml(step.lieu || step.place || step.dayTitle || '')}</small>
+                </div>
+                <em>${escapeHtml(step.time || '')}</em>
+              </button>
+            `).join('') : `
+              <p class="companion-empty">
+                Ajoutez une étape avec une adresse sélectionnée dans les suggestions pour la voir ici.
               </p>
-              <p>
-                <span class="material-symbols-outlined" aria-hidden="true">location_on</span>
-                <span>Imjingak Park</span>
-              </p>
-            </div>
+            `}
           </div>
         </article>
       </main>
@@ -809,6 +863,159 @@ function renderMap() {
       ${bottomNav('map')}
     </div>
   `;
+
+  setTimeout(initMobileRealMap, 0);
+}
+
+function initMobileRealMap() {
+  const container = document.querySelector('#mobile-map');
+  if (!container || !window.maplibregl) return;
+
+  const steps = getMobileMapSteps();
+  const center = steps[0] ? [steps[0].lng, steps[0].lat] : [2.3522, 48.8566];
+
+  mobileMapInstance = new maplibregl.Map({
+    container,
+    style: getMobileMapStyleUrl(),
+    center,
+    zoom: steps.length ? 12 : 3,
+    attributionControl: { compact: true }
+  });
+
+  mobileMapInstance.addControl(new maplibregl.NavigationControl({ showCompass: true }), 'bottom-right');
+
+  mobileMapInstance.on('load', () => {
+    renderMobileMapMarkers();
+    fitMobileMapToSteps();
+  });
+
+  initMobileMapSearch();
+}
+
+function renderMobileMapMarkers() {
+  if (!mobileMapInstance) return;
+
+  clearMobileMapMarkers();
+
+  getMobileMapSteps().forEach((step, index) => {
+    const el = document.createElement('button');
+    el.className = 'mobile-map-marker';
+    el.type = 'button';
+    el.innerHTML = `
+      <span class="material-symbols-outlined">${step.icon || getStepCategoryConfig(step.type).timelineIcon || 'location_on'}</span>
+    `;
+
+    el.addEventListener('click', () => {
+      focusMobileMapStep(index);
+    });
+
+    const marker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
+      .setLngLat([step.lng, step.lat])
+      .addTo(mobileMapInstance);
+
+    mobileMapMarkers.push(marker);
+  });
+}
+
+function fitMobileMapToSteps() {
+  if (!mobileMapInstance) return;
+
+  const steps = getMobileMapSteps();
+
+  if (!steps.length) return;
+
+  if (steps.length === 1) {
+    mobileMapInstance.flyTo({
+      center: [steps[0].lng, steps[0].lat],
+      zoom: 14,
+      duration: 900
+    });
+    return;
+  }
+
+  const bounds = new maplibregl.LngLatBounds();
+
+  steps.forEach(step => {
+    bounds.extend([step.lng, step.lat]);
+  });
+
+  mobileMapInstance.fitBounds(bounds, {
+    padding: { top: 110, right: 70, bottom: 250, left: 70 },
+    duration: 900,
+    maxZoom: 14
+  });
+}
+
+function focusMobileMapStep(index) {
+  if (!mobileMapInstance) return;
+
+  const step = getMobileMapSteps()[index];
+  if (!step) return;
+
+  mobileMapInstance.flyTo({
+    center: [step.lng, step.lat],
+    zoom: 15,
+    duration: 900
+  });
+}
+
+function initMobileMapSearch() {
+  const input = document.querySelector('#mobile-map-search');
+  const results = document.querySelector('#mobile-map-results');
+
+  if (!input || !results) return;
+
+  input.addEventListener('input', () => {
+    clearTimeout(mobileMapSearchTimer);
+
+    const query = input.value.trim();
+
+    if (!query) {
+      results.innerHTML = '';
+      results.style.display = 'none';
+      return;
+    }
+
+    mobileMapSearchTimer = setTimeout(async () => {
+      try {
+        const response = await fetch(`https://api.maptiler.com/geocoding/${encodeURIComponent(query)}.json?key=${MAPTILER_KEY}&language=fr&limit=5`);
+        const data = await response.json();
+
+        results.innerHTML = (data.features || []).map((feature, index) => `
+          <button type="button" data-map-result="${index}">
+            <span class="material-symbols-outlined" aria-hidden="true">location_on</span>
+            <span>${escapeHtml(feature.place_name)}</span>
+          </button>
+        `).join('');
+
+        results.style.display = results.innerHTML ? 'grid' : 'none';
+
+        results.querySelectorAll('[data-map-result]').forEach(button => {
+          button.addEventListener('click', () => {
+            const feature = data.features[Number(button.dataset.mapResult)];
+            if (!feature || !mobileMapInstance) return;
+
+            mobileMapSelectedPlace = feature;
+            input.value = feature.place_name;
+            results.innerHTML = '';
+            results.style.display = 'none';
+
+            mobileMapInstance.flyTo({
+              center: feature.center,
+              zoom: 15,
+              duration: 900
+            });
+
+            new maplibregl.Marker({ color: '#7c5410' })
+              .setLngLat(feature.center)
+              .addTo(mobileMapInstance);
+          });
+        });
+      } catch (error) {
+        console.warn('Mobile map search error:', error);
+      }
+    }, 350);
+  });
 }
 
 function renderAuth() {
@@ -2962,7 +3169,9 @@ async function handleAddStepToProgram() {
         ref: data.reference?.trim() || '',
         note: data.notes?.trim() || '',
         amount: 0,
-        paidBy: ''
+        paidBy: '',
+        lat: data.locationLat || data.arrivalLat || data.departureLat || null,
+        lng: data.locationLng || data.arrivalLng || data.departureLng || null
       });
 
       await refreshMobileTrips(activeTrip.id);
@@ -3243,8 +3452,61 @@ if (action === 'delete-step') {
     return;
   }
 
-  if (action === 'toggle-map-summary') {
-    event.target.closest('.map-summary-card')?.classList.toggle('collapsed');
+    if (action === 'toggle-map-summary') {
+    event.target.closest('.mobile-map-card, .map-summary-card')?.classList.toggle('collapsed');
+    return;
+  }
+
+  if (action === 'map-fit') {
+    fitMobileMapToSteps();
+    return;
+  }
+
+  if (action === 'map-zoom-in') {
+    mobileMapInstance?.zoomIn();
+    return;
+  }
+
+  if (action === 'map-zoom-out') {
+    mobileMapInstance?.zoomOut();
+    return;
+  }
+
+  if (action === 'map-style') {
+    mobileMapStyle = mobileMapStyle === 'plan' ? 'satellite' : 'plan';
+    if (mobileMapInstance) {
+      mobileMapInstance.setStyle(getMobileMapStyleUrl());
+      mobileMapInstance.once('style.load', () => {
+        renderMobileMapMarkers();
+        fitMobileMapToSteps();
+      });
+    }
+    return;
+  }
+
+  if (action === 'map-geolocate') {
+    if (!navigator.geolocation || !mobileMapInstance) {
+      alert('Géolocalisation non disponible.');
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      position => {
+        mobileMapInstance.flyTo({
+          center: [position.coords.longitude, position.coords.latitude],
+          zoom: 15,
+          duration: 900
+        });
+      },
+      () => alert('Impossible de vous localiser.'),
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
+    return;
+  }
+
+  if (action === 'map-focus-step') {
+    const index = Number(event.target.closest('[data-step-index]')?.dataset.stepIndex);
+    focusMobileMapStep(index);
     return;
   }
 

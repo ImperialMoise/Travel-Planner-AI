@@ -1354,7 +1354,9 @@ function initMobileRealMap() {
     renderMobileMapRoute();
     renderMobileMapMarkers();
 
-    if (!steps.length) {
+    if (steps.length) {
+      fitMobileMapToSteps({ duration: 0, maxZoom: 8 });
+    } else {
       await renderMobileMapDestination();
     }
   });
@@ -1634,18 +1636,21 @@ function fitMobileMapToPanelDay() {
   });
 }
 
-function fitMobileMapToSteps() {
+function fitMobileMapToSteps(options = {}) {
   if (!mobileMapInstance) return;
 
   const steps = getMobileMapSteps();
 
   if (!steps.length) return;
 
+  const duration = options.duration ?? 900;
+  const maxZoom = options.maxZoom ?? 14;
+
   if (steps.length === 1) {
     mobileMapInstance.flyTo({
       center: [steps[0].lng, steps[0].lat],
-      zoom: 14,
-      duration: 900
+      zoom: Math.min(maxZoom, 14),
+      duration
     });
     return;
   }
@@ -1657,9 +1662,9 @@ function fitMobileMapToSteps() {
   });
 
   mobileMapInstance.fitBounds(bounds, {
-    padding: { top: 110, right: 70, bottom: 250, left: 70 },
-    duration: 900,
-    maxZoom: 14
+    padding: { top: 120, right: 70, bottom: 270, left: 70 },
+    duration,
+    maxZoom
   });
 }
 

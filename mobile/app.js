@@ -2111,37 +2111,68 @@ ${splitMoreButtonHtml}
 }
 
 function renderBudgetOverview() {
-  const total = formatEuroAmount(getCurrentBudgetTotal());
+  const total = getCurrentBudgetTotal();
+  const formattedTotal = formatEuroAmount(total);
   const items = getCurrentBudgetItems();
+  const categories = getExpenseCategories();
+
+  const categoryRows = categories.map(category => {
+    const categoryTotal = items
+      .filter(item => (item.cat || item.title || '').toLowerCase().includes(category.label.toLowerCase()))
+      .reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+
+    const percent = total ? Math.round((categoryTotal / total) * 100) : 0;
+
+    return `
+      <article class="budget-category-card">
+        <span class="budget-category-icon primary">
+          <span class="material-symbols-outlined">${category.icon}</span>
+        </span>
+        <div>
+          <h4>${escapeHtml(category.label)}</h4>
+          <p>${percent}% du budget</p>
+        </div>
+        <strong>${formatEuroAmount(categoryTotal)}</strong>
+      </article>
+    `;
+  }).join('');
 
   app.innerHTML = `
     <div class="mobile-shell">
       ${topbar()}
 
-      <main class="budget-main">
+      <main class="budget-overview-main">
         ${budgetTabs('overview')}
 
-        <section class="budget-summary-card">
-          <div class="budget-summary-inner">
+        <section class="budget-overview-card">
+          <div class="budget-pattern" aria-hidden="true"></div>
+
+          <div class="budget-overview-content">
             <span class="kicker">Budget total</span>
-            <h2>${total}</h2>
-            <p>${items.length} dépense${items.length > 1 ? 's' : ''} enregistrée${items.length > 1 ? 's' : ''}</p>
+            <h2>${formattedTotal}</h2>
+
+            <div class="donut-wrap">
+              <svg class="donut" viewBox="0 0 36 36" aria-hidden="true">
+                <path class="donut-ring" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                <path class="donut-segment primary" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                <path class="donut-segment tertiary" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                <path class="donut-segment accent" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+              </svg>
+
+              <div class="donut-center">
+                <span>Total</span>
+                <strong>${formattedTotal}</strong>
+              </div>
+            </div>
           </div>
         </section>
 
-        <div class="budget-cat-list">
-          ${getExpenseCategories().map(category => `
-            <article class="budget-cat-row">
-              <span class="budget-cat-icon primary">
-                <span class="material-symbols-outlined">${category.icon}</span>
-              </span>
-              <div class="budget-cat-info">
-                <h4>${escapeHtml(category.label)}</h4>
-                <p>Catégorie disponible</p>
-              </div>
-            </article>
-          `).join('')}
-        </div>
+        <section class="budget-repartition">
+          <h3>Répartition</h3>
+          <div class="budget-category-list">
+            ${categoryRows}
+          </div>
+        </section>
       </main>
 
       ${bottomNav('budget')}
@@ -2158,24 +2189,37 @@ function renderBudgetBalance() {
     <div class="mobile-shell">
       ${topbar()}
 
-      <main class="budget-main">
-        ${budgetTabs('balance')}
+      <main class="budget-balance-main">
+        <div class="balance-sticky">
+          ${budgetTabs('balance')}
 
-        <section class="balance-cards">
-          ${people.map(person => `
-            <article class="balance-person-card">
-              <div class="balance-person-header">
-                <div class="balance-person-id">
-                  <span class="balance-avatar neutral">${getInitial(person.name)}</span>
-                  <span class="balance-person-name">${escapeHtml(person.name)}</span>
+          <section class="budget-overview-card balance-summary">
+            <div class="budget-pattern" aria-hidden="true"></div>
+            <div class="budget-overview-content">
+              <span class="kicker">Part estimée</span>
+              <h2>${formatEuroAmount(share)}</h2>
+            </div>
+          </section>
+        </div>
+
+        <section class="balance-section">
+          <span class="kicker">Équilibre du groupe</span>
+
+          <div class="balance-list">
+            ${people.map(person => `
+              <article class="balance-card">
+                <div class="balance-person">
+                  <span class="balance-avatar">${getInitial(person.name)}</span>
+                  <div>
+                    <h3>${escapeHtml(person.name)}</h3>
+                    <p>Part estimée</p>
+                  </div>
                 </div>
-                <div class="balance-person-amounts">
-                  <strong class="balance-main-amount">${formatEuroAmount(share)}</strong>
-                  <span class="balance-paid">Part estimée</span>
-                </div>
-              </div>
-            </article>
-          `).join('')}
+
+                <strong class="balance-amount positive">${formatEuroAmount(share)}</strong>
+              </article>
+            `).join('')}
+          </div>
         </section>
       </main>
 

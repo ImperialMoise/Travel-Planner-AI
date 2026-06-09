@@ -1940,6 +1940,71 @@ button {
   border-left: 7px solid var(--tan-accent);
 }
 
+.balance-card-detail {
+  min-height: auto;
+  align-items: stretch;
+  flex-direction: column;
+}
+
+.balance-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.balance-card-detail .balance-person h3 {
+  font-family: var(--font-serif);
+  font-size: 18px;
+  line-height: 24px;
+  font-weight: 500;
+}
+
+.balance-card-detail .balance-amount {
+  text-align: right;
+}
+
+.balance-mini-lines {
+  display: grid;
+  gap: 8px;
+  padding-top: 8px;
+}
+
+.balance-mini-line {
+  display: grid;
+  grid-template-columns: 22px 1fr 34px;
+  align-items: center;
+  gap: 8px;
+  color: var(--secondary);
+}
+
+.balance-mini-line .material-symbols-outlined {
+  font-size: 17px;
+  color: var(--primary);
+}
+
+.balance-mini-line div {
+  height: 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--surface-variant);
+}
+
+.balance-mini-line i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--primary);
+}
+
+.balance-mini-line small {
+  color: var(--on-surface-variant);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 12px;
+  text-align: right;
+}
+
 .settlement-button {
   width: 100%;
   min-height: 46px;

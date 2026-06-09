@@ -1380,6 +1380,7 @@ function getCurrentBudgetItems() {
       title: item.desc || item.cat || 'Dépense',
       payer: item.paidBy || '—',
       amount: Number(item.amount) || 0,
+      forParticipants: item.forParticipants || item.for_participants || ['__all__'],
       synced: true
     }));
   }
@@ -2110,32 +2111,116 @@ ${splitMoreButtonHtml}
   `;
 }
 
+function getBudgetCategoryTone(index) {
+  return ['primary', 'tertiary', 'accent', 'neutral'][index % 4];
+}
+
+function getBudgetCategoryBreakdown() {
+  const items = getCurrentBudgetItems();
+  const categories = getExpenseCategories();
+  const total = getCurrentBudgetTotal();
+  const normalize = value => String(value || '').toLowerCase().trim();
+  const byCategory = new Map();
+
+  items.forEach(item => {
+    const rawCategory = item.cat || item.title || 'Autres';
+    const category = categories.find(cat =>
+      normalize(cat.id) === normalize(rawCategory) ||
+      normalize(cat.label) === normalize(rawCategory)
+    );
+
+    const key = category?.id || normalize(rawCategory) || 'other';
+
+    if (!byCategory.has(key)) {
+      byCategory.set(key, {
+        label: category?.label || rawCategory,
+        icon: category?.icon || getBudgetCategoryIcon(rawCategory),
+        amount: 0
+      });
+    }
+
+    byCategory.get(key).amount += Number(item.amount) || 0;
+  });
+
+  return Array.from(byCategory.values())
+    .filter(item => item.amount > 0)
+    .sort((a, b) => b.amount - a.amount)
+    .map((item, index) => ({
+      ...item,
+      tone: getBudgetCategoryTone(index),
+      percent: total ? Math.round((item.amount / total) * 100) : 0
+    }));
+}
+
+function getBudgetPeopleBalanceData() {
+  const people = getBudgetPeople();
+  const items = getCurrentBudgetItems();
+  const balances = people.map(person => ({
+    ...person,
+    paid: 0,
+    owed: 0,
+    balance: 0
+  }));
+
+  items.forEach(item => {
+    const amount = Number(item.amount) || 0;
+    if (!amount) return;
+
+    const payer = balances.find(person =>
+      String(person.name || '').toLowerCase() === String(item.payer || '').toLowerCase() ||
+      String(person.id || '') === String(item.payer || '')
+    );
+
+    if (payer) {
+      payer.paid += amount;
+    }
+
+    const targets = Array.isArray(item.forParticipants) ? item.forParticipants : ['__all__'];
+    const splitPeople = targets.includes('__all__')
+      ? balances
+      : balances.filter(person =>
+          targets.includes(person.id) ||
+          targets.includes(person.name)
+        );
+
+    const finalSplitPeople = splitPeople.length ? splitPeople : balances;
+    const share = finalSplitPeople.length ? amount / finalSplitPeople.length : 0;
+
+    finalSplitPeople.forEach(person => {
+      person.owed += share;
+    });
+  });
+
+  return balances.map(person => ({
+    ...person,
+    balance: person.paid - person.owed
+  }));
+}
+
 function renderBudgetOverview() {
   const total = getCurrentBudgetTotal();
   const formattedTotal = formatEuroAmount(total);
-  const items = getCurrentBudgetItems();
-  const categories = getExpenseCategories();
+  const breakdown = getBudgetCategoryBreakdown();
+  const donutClasses = ['primary', 'tertiary', 'accent'];
+  let donutOffset = 0;
 
-  const categoryRows = categories.map(category => {
-    const categoryTotal = items
-      .filter(item => (item.cat || item.title || '').toLowerCase().includes(category.label.toLowerCase()))
-      .reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
-
-    const percent = total ? Math.round((categoryTotal / total) * 100) : 0;
-
-    return `
-      <article class="budget-category-card">
-        <span class="budget-category-icon primary">
-          <span class="material-symbols-outlined">${category.icon}</span>
-        </span>
-        <div>
-          <h4>${escapeHtml(category.label)}</h4>
-          <p>${percent}% du budget</p>
-        </div>
-        <strong>${formatEuroAmount(categoryTotal)}</strong>
-      </article>
+  const donutSegments = breakdown.slice(0, 3).map((category, index) => {
+    const dash = Math.max(0, Math.min(100, category.percent));
+    const segment = `
+      <circle
+        class="donut-segment ${donutClasses[index] || 'primary'}"
+        cx="18"
+        cy="18"
+        r="15.9155"
+        style="stroke-dasharray:${dash} 100; stroke-dashoffset:-${donutOffset};"
+      ></circle>
     `;
+
+    donutOffset += dash;
+    return segment;
   }).join('');
+
+  const mainCategory = breakdown[0];
 
   app.innerHTML = `
     <div class="mobile-shell">
@@ -2153,15 +2238,13 @@ function renderBudgetOverview() {
 
             <div class="donut-wrap">
               <svg class="donut" viewBox="0 0 36 36" aria-hidden="true">
-                <path class="donut-ring" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                <path class="donut-segment primary" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                <path class="donut-segment tertiary" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                <path class="donut-segment accent" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                <circle class="donut-ring" cx="18" cy="18" r="15.9155"></circle>
+                ${donutSegments}
               </svg>
 
               <div class="donut-center">
-                <span>Total</span>
-                <strong>${formattedTotal}</strong>
+                <span>${mainCategory ? mainCategory.label : 'Reste'}</span>
+                <strong>${mainCategory ? formatEuroAmount(mainCategory.amount) : formattedTotal}</strong>
               </div>
             </div>
           </div>
@@ -2169,8 +2252,35 @@ function renderBudgetOverview() {
 
         <section class="budget-repartition">
           <h3>Répartition</h3>
+
           <div class="budget-category-list">
-            ${categoryRows}
+            ${breakdown.length ? breakdown.map(category => `
+              <article class="budget-category-card">
+                <span class="budget-category-icon ${category.tone}">
+                  <span class="material-symbols-outlined" aria-hidden="true">${category.icon}</span>
+                </span>
+
+                <div>
+                  <h4>${escapeHtml(category.label)}</h4>
+                  <p>${category.percent}% du budget</p>
+                </div>
+
+                <strong>${formatEuroAmount(category.amount)}</strong>
+              </article>
+            `).join('') : `
+              <article class="budget-category-card">
+                <span class="budget-category-icon neutral">
+                  <span class="material-symbols-outlined" aria-hidden="true">receipt_long</span>
+                </span>
+
+                <div>
+                  <h4>Aucune dépense</h4>
+                  <p>Ajoutez une dépense pour commencer</p>
+                </div>
+
+                <strong>0,00 €</strong>
+              </article>
+            `}
           </div>
         </section>
       </main>
@@ -2181,45 +2291,97 @@ function renderBudgetOverview() {
 }
 
 function renderBudgetBalance() {
-  const people = getBudgetPeople();
-  const total = getCurrentBudgetTotal();
-  const share = people.length ? total / people.length : 0;
+  const peopleBalances = getBudgetPeopleBalanceData();
+  const breakdown = getBudgetCategoryBreakdown().slice(0, 3);
+  const debtors = peopleBalances.filter(person => person.balance < -0.01).sort((a, b) => a.balance - b.balance);
+  const creditors = peopleBalances.filter(person => person.balance > 0.01).sort((a, b) => b.balance - a.balance);
+  const debtor = debtors[0];
+  const creditor = creditors[0];
+  const settlementAmount = debtor && creditor ? Math.min(Math.abs(debtor.balance), creditor.balance) : 0;
 
   app.innerHTML = `
     <div class="mobile-shell">
       ${topbar()}
 
       <main class="budget-balance-main">
-        <div class="balance-sticky">
-          ${budgetTabs('balance')}
-
-          <section class="budget-overview-card balance-summary">
-            <div class="budget-pattern" aria-hidden="true"></div>
-            <div class="budget-overview-content">
-              <span class="kicker">Part estimée</span>
-              <h2>${formatEuroAmount(share)}</h2>
-            </div>
-          </section>
-        </div>
+        ${budgetTabs('balance')}
 
         <section class="balance-section">
-          <span class="kicker">Équilibre du groupe</span>
-
           <div class="balance-list">
-            ${people.map(person => `
-              <article class="balance-card">
-                <div class="balance-person">
-                  <span class="balance-avatar">${getInitial(person.name)}</span>
-                  <div>
-                    <h3>${escapeHtml(person.name)}</h3>
-                    <p>Part estimée</p>
+            ${peopleBalances.map(person => {
+              const isPositive = person.balance >= 0;
+              const amount = Math.abs(person.balance);
+
+              return `
+                <article class="balance-card balance-card-detail">
+                  <div class="balance-card-head">
+                    <div class="balance-person">
+                      <span class="balance-avatar">${getInitial(person.name)}</span>
+
+                      <div>
+                        <h3>${escapeHtml(person.name)}</h3>
+                        <p>Payé : ${formatEuroAmount(person.paid)}</p>
+                      </div>
+                    </div>
+
+                    <strong class="balance-amount ${isPositive ? 'positive' : 'negative'}">
+                      ${isPositive ? 'Reçoit' : 'Doit'} ${formatEuroAmount(amount)}
+                    </strong>
                   </div>
+
+                  <div class="balance-mini-lines">
+                    ${breakdown.length ? breakdown.map(category => `
+                      <div class="balance-mini-line">
+                        <span class="material-symbols-outlined" aria-hidden="true">${category.icon}</span>
+                        <div><i style="width:${category.percent}%"></i></div>
+                        <small>${category.percent}%</small>
+                      </div>
+                    `).join('') : `
+                      <div class="balance-mini-line">
+                        <span class="material-symbols-outlined" aria-hidden="true">receipt_long</span>
+                        <div><i style="width:0%"></i></div>
+                        <small>0%</small>
+                      </div>
+                    `}
+                  </div>
+                </article>
+              `;
+            }).join('')}
+          </div>
+        </section>
+
+        <section class="settlement-section">
+          <h2>Détails des remboursements</h2>
+
+          ${settlementAmount > 0 ? `
+            <article class="settlement-card">
+              <div class="settlement-flow">
+                <div class="settlement-person">
+                  <span class="balance-avatar">${getInitial(debtor.name)}</span>
+                  <span>${escapeHtml(debtor.name)}</span>
                 </div>
 
-                <strong class="balance-amount positive">${formatEuroAmount(share)}</strong>
-              </article>
-            `).join('')}
-          </div>
+                <div class="settlement-arrow">
+                  <strong>${formatEuroAmount(settlementAmount)}</strong>
+                  <span aria-hidden="true"></span>
+                </div>
+
+                <div class="settlement-person">
+                  <span class="balance-avatar">${getInitial(creditor.name)}</span>
+                  <span>${escapeHtml(creditor.name)}</span>
+                </div>
+              </div>
+
+              <button class="settlement-button" type="button" data-action="settlement-settled">
+                <span class="material-symbols-outlined" aria-hidden="true">payments</span>
+                <span>Solder la dette</span>
+              </button>
+            </article>
+          ` : `
+            <article class="settlement-card">
+              <p class="companion-empty">Tout est équilibré pour le moment.</p>
+            </article>
+          `}
         </section>
       </main>
 
@@ -2227,6 +2389,7 @@ function renderBudgetBalance() {
     </div>
   `;
 }
+
 
 function renderDocs() {
   app.innerHTML = `

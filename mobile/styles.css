@@ -5508,3 +5508,32 @@ button {
 .expense-v2-primary {
   min-height: 46px;
 }
+
+.expense-v2-amount-input {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto minmax(90px, max-content);
+  justify-content: center;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.expense-v2-amount-input input {
+  width: 110px;
+  text-align: center;
+}
+
+.expense-v2-amount-line {
+  margin: 0 auto;
+}
+
+.expense-v2-more-card {
+  border-style: dashed;
+  background: rgba(95, 121, 112, 0.06);
+  color: var(--muted-green);
+}
+
+.expense-v2-more-card .expense-v2-person-avatar {
+  background: var(--surface-container-high);
+  color: var(--primary);
+}

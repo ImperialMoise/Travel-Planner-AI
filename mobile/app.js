@@ -153,6 +153,8 @@ let isEditingBudgetPeople = false;
 let editingExpenseDraft = null;
 let editingExpenseGroupIndex = null;
 let editingExpenseItemIndex = null;
+let showAllExpensePayers = false;
+let showAllExpenseSplits = false;
 
 const budgetCategories = [
   { label: 'Transport', percent: '45% du budget', amount: '256,50 €', icon: 'flight', tone: 'primary' },
@@ -1824,75 +1826,99 @@ function renderNewExpense() {
     `;
   }).join('');
 
-  const payerButtonsHtml = people.map(function(person) {
-    const isActive = selectedExpensePayer === person.id;
-    const canEdit = person.id !== 'common';
+  const visiblePayers = showAllExpensePayers ? people : people.slice(0, 3);
+const hiddenPayersCount = Math.max(0, people.length - visiblePayers.length);
 
-    return `
-      <div class="expense-v2-person-card-wrap">
-        <button
-          class="expense-v2-person-card ${isActive ? 'active' : ''}"
-          type="button"
-          data-expense-payer="${person.id}"
-          ${isEditingBudgetPeople && canEdit ? `data-action="edit-budget-person" data-person-id="${person.id}"` : ''}
-        >
-          <span class="expense-v2-person-avatar">${getInitial(person.name)}</span>
-          <span>${escapeHtml(person.name)}</span>
-        </button>
+const payerButtonsHtml = visiblePayers.map(function(person) {
+  const isActive = selectedExpensePayer === person.id;
+  const canEdit = person.id !== 'common';
 
-        ${
-          isEditingBudgetPeople && canEdit
-            ? `
-              <button
-                class="expense-v2-card-delete"
-                type="button"
-                data-action="delete-budget-person"
-                data-person-id="${person.id}"
-                aria-label="Supprimer ${escapeHtml(person.name)}"
-              >
-                <span class="material-symbols-outlined" aria-hidden="true">close</span>
-              </button>
-            `
-            : ''
-        }
-      </div>
-    `;
-  }).join('');
+  return `
+    <div class="expense-v2-person-card-wrap">
+      <button
+        class="expense-v2-person-card ${isActive ? 'active' : ''}"
+        type="button"
+        data-expense-payer="${person.id}"
+        ${isEditingBudgetPeople && canEdit ? `data-action="edit-budget-person" data-person-id="${person.id}"` : ''}
+      >
+        <span class="expense-v2-person-avatar">${getInitial(person.name)}</span>
+        <span>${escapeHtml(person.name)}</span>
+      </button>
 
-  const splitPeopleHtml = people.map(function(person) {
-    const isActive = selectedExpenseSplit === person.id;
-    const canEdit = person.id !== 'common';
+      ${
+        isEditingBudgetPeople && canEdit
+          ? `
+            <button
+              class="expense-v2-card-delete"
+              type="button"
+              data-action="delete-budget-person"
+              data-person-id="${person.id}"
+              aria-label="Supprimer ${escapeHtml(person.name)}"
+            >
+              <span class="material-symbols-outlined" aria-hidden="true">close</span>
+            </button>
+          `
+          : ''
+      }
+    </div>
+  `;
+}).join('');
 
-    return `
-      <div class="expense-v2-person-card-wrap">
-        <button
-          class="expense-v2-person-card ${isActive ? 'active' : ''}"
-          type="button"
-          data-expense-split="${person.id}"
-          ${isEditingBudgetPeople && canEdit ? `data-action="edit-budget-person" data-person-id="${person.id}"` : ''}
-        >
-          <span class="expense-v2-person-avatar">${getInitial(person.name)}</span>
-          <span>${escapeHtml(person.name)}</span>
-        </button>
+const payerMoreButtonHtml = hiddenPayersCount
+  ? `
+    <button class="expense-v2-person-card expense-v2-more-card" type="button" data-action="toggle-expense-payers">
+      <span class="expense-v2-person-avatar">${showAllExpensePayers ? '−' : '+'}</span>
+      <span>${showAllExpensePayers ? 'Réduire' : `+${hiddenPayersCount} autres`}</span>
+    </button>
+  `
+  : '';
 
-        ${
-          isEditingBudgetPeople && canEdit
-            ? `
-              <button
-                class="expense-v2-card-delete"
-                type="button"
-                data-action="delete-budget-person"
-                data-person-id="${person.id}"
-                aria-label="Supprimer ${escapeHtml(person.name)}"
-              >
-                <span class="material-symbols-outlined" aria-hidden="true">close</span>
-              </button>
-            `
-            : ''
-        }
-      </div>
-    `;
-  }).join('');
+  const visibleSplits = showAllExpenseSplits ? people : people.slice(0, 2);
+const hiddenSplitsCount = Math.max(0, people.length - visibleSplits.length);
+
+const splitPeopleHtml = visibleSplits.map(function(person) {
+  const isActive = selectedExpenseSplit === person.id;
+  const canEdit = person.id !== 'common';
+
+  return `
+    <div class="expense-v2-person-card-wrap">
+      <button
+        class="expense-v2-person-card ${isActive ? 'active' : ''}"
+        type="button"
+        data-expense-split="${person.id}"
+        ${isEditingBudgetPeople && canEdit ? `data-action="edit-budget-person" data-person-id="${person.id}"` : ''}
+      >
+        <span class="expense-v2-person-avatar">${getInitial(person.name)}</span>
+        <span>${escapeHtml(person.name)}</span>
+      </button>
+
+      ${
+        isEditingBudgetPeople && canEdit
+          ? `
+            <button
+              class="expense-v2-card-delete"
+              type="button"
+              data-action="delete-budget-person"
+              data-person-id="${person.id}"
+              aria-label="Supprimer ${escapeHtml(person.name)}"
+            >
+              <span class="material-symbols-outlined" aria-hidden="true">close</span>
+            </button>
+          `
+          : ''
+      }
+    </div>
+  `;
+}).join('');
+
+const splitMoreButtonHtml = hiddenSplitsCount
+  ? `
+    <button class="expense-v2-person-card expense-v2-more-card" type="button" data-action="toggle-expense-splits">
+      <span class="expense-v2-person-avatar">${showAllExpenseSplits ? '−' : '+'}</span>
+      <span>${showAllExpenseSplits ? 'Réduire' : `+${hiddenSplitsCount} autres`}</span>
+    </button>
+  `
+  : '';
 
   app.innerHTML = `
     <div class="mobile-shell expense-v2-shell">
@@ -1995,9 +2021,10 @@ function renderNewExpense() {
 
           <div class="expense-v2-person-grid">
             ${payerButtonsHtml}
+${payerMoreButtonHtml}
 
-            <button
-              class="expense-v2-person-card ${selectedExpensePayer === 'common' ? 'active' : ''}"
+<button
+  class="expense-v2-person-card ${selectedExpensePayer === 'common' ? 'active' : ''}"
               type="button"
               data-expense-payer="common"
             >
@@ -2043,6 +2070,7 @@ function renderNewExpense() {
             </button>
 
             ${splitPeopleHtml}
+${splitMoreButtonHtml}
           </div>
         </section>
 
@@ -2827,6 +2855,21 @@ if (action === 'delete-budget-person') {
   return;
 }
 
+if (action === 'budget-overview') {
+  navigate('budget-overview');
+  return;
+}
+
+if (action === 'budget') {
+  navigate('budget');
+  return;
+}
+
+if (action === 'budget-balance') {
+  navigate('budget-balance');
+  return;
+}
+
   if (action === 'new-expense') {
   editingExpenseDraft = null;
   editingExpenseGroupIndex = null;
@@ -2850,6 +2893,18 @@ if (action === 'delete-budget-person') {
 }
   if (action === 'add-budget-person') {
   handleAddBudgetPerson();
+  return;
+}
+
+if (action === 'toggle-expense-payers') {
+  showAllExpensePayers = !showAllExpensePayers;
+  renderNewExpense();
+  return;
+}
+
+if (action === 'toggle-expense-splits') {
+  showAllExpenseSplits = !showAllExpenseSplits;
+  renderNewExpense();
   return;
 }
 

@@ -2303,7 +2303,7 @@ button {
 
 .mobile-map-focused-actions {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: repeat(4, 1fr);
   gap: 8px;
 }
 
@@ -2318,7 +2318,7 @@ button {
   gap: 5px;
   background: var(--surface-container);
   color: var(--primary);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 800;
   text-decoration: none;
 }
@@ -2623,11 +2623,34 @@ button {
   line-height: 13px;
 }
 
+.mobile-map-step-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
 .mobile-map-step em {
   color: var(--primary);
   font-family: var(--font-mono);
   font-size: 10px;
   font-style: normal;
+  white-space: nowrap;
+}
+
+.mobile-map-step-actions button {
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: var(--primary-fixed);
+  color: var(--primary);
+}
+
+.mobile-map-step-actions button .material-symbols-outlined {
+  font-size: 14px;
 }
 
 .mobile-map-unlocated {

@@ -315,6 +315,7 @@ const stepFieldSets = {
 
 let selectedStepCategory = 'transport';
 let editingStepDraft = null;
+let mapStepDraft = null;
 let transportStopoverUid = 0;
 
 function icon(symbol, className = '') {
@@ -331,6 +332,7 @@ let mobileMapSelectedPlace = null;
 let mobileMapSelectedPlaceType = 'activity';
 let mobileMapSelectedDayIndex = 0;
 let mobileMapFocusedStepIndex = null;
+let mobileMapLocatingStep = null;
 let mobileMapPanelDayIndex = null;
 let mobileMapTourTimer = null;
 let mobileMapTouring = false;
@@ -439,10 +441,15 @@ function getCreateTripFormData() {
 }
 
 function renderStepField(field) {
-  const common = `name="${field.name}" ${field.aria ? `aria-label="${field.aria}"` : ''} ${field.autocomplete ? 'data-autocomplete' : ''}`;
+    const draft = editingStepDraft || mapStepDraft || {};
+  const draftValue = draft[field.name] || '';
+  const draftLat = field.name === 'location' ? draft.lat || '' : '';
+  const draftLng = field.name === 'location' ? draft.lng || '' : '';
+
+  const common = `name="${field.name}" ${field.aria ? `aria-label="${field.aria}"` : ''} ${field.autocomplete ? 'data-autocomplete' : ''} ${draftLat ? `data-lat="${escapeHtml(draftLat)}"` : ''} ${draftLng ? `data-lng="${escapeHtml(draftLng)}"` : ''}`;
   const control = field.textarea
-    ? `<textarea ${common} rows="3" placeholder="${field.placeholder}"></textarea>`
-    : `<input ${common} type="${field.type || 'text'}" ${field.value ? `value="${field.value}"` : ''} ${field.placeholder ? `placeholder="${field.placeholder}"` : ''}>`;
+        ? `<textarea ${common} rows="3" placeholder="${field.placeholder}">${escapeHtml(draftValue)}</textarea>`
+    : `<input ${common} type="${field.type || 'text'}" value="${escapeHtml(draftValue || field.value || '')}" ${field.placeholder ? `placeholder="${field.placeholder}"` : ''}>`;
 
   return `
     <label class="step-input ${field.compact ? 'compact' : 'full'} ${field.textarea ? 'textarea' : ''}">
@@ -492,6 +499,7 @@ function addTransportStopoverField() {
 }
 
 function renderTransportStepFields() {
+    const draft = editingStepDraft || mapStepDraft || {};
   return `
     <label class="step-input select full">
       <span class="material-symbols-outlined" aria-hidden="true">directions_transit</span>
@@ -522,7 +530,7 @@ function renderTransportStepFields() {
       <div class="transport-grid">
         <label class="step-input compact place">
           <span class="material-symbols-outlined" aria-hidden="true">location_on</span>
-          <input name="arrival" type="text" placeholder="Gare d'arrivée..." data-autocomplete>
+          <input name="arrival" type="text" placeholder="Gare d'arrivée..." data-autocomplete value="${escapeHtml(draft.location || draft.arrivee || '')}" ${draft.lat ? `data-lat="${escapeHtml(draft.lat)}"` : ''} ${draft.lng ? `data-lng="${escapeHtml(draft.lng)}"` : ''}>
         </label>
         <label class="step-input compact time-only">
           <input name="arrivalTime" type="time" value="10:30" aria-label="Heure d'arrivée">
@@ -1045,7 +1053,12 @@ function renderMap() {
                           <small>${escapeHtml(step.lieu || step.place || step.dayTitle || '')}</small>
                         </div>
 
-                        <em>${escapeHtml(step.time || '')}</em>
+                        <div class="mobile-map-step-actions">
+                          <em>${escapeHtml(step.time || '')}</em>
+                          <button type="button" data-action="map-edit-step" data-step-index="${realIndex}" aria-label="Modifier l'étape">
+                            <span class="material-symbols-outlined" aria-hidden="true">edit</span>
+                          </button>
+                        </div>
                       </button>
                     `;
                   }).join('')}
@@ -1163,6 +1176,7 @@ async function renderMobileMapDestination() {
 
 function clearMobileMapRoute() {
   if (!mobileMapInstance) return;
+    clearMobileCalculatedRoute();
 
   ['mobile-step-route-glow', 'mobile-step-route-line'].forEach(layerId => {
     if (mobileMapInstance.getLayer(layerId)) {
@@ -1227,6 +1241,101 @@ function renderMobileMapRoute() {
       'line-dasharray': [1.5, 2.2]
     }
   });
+}
+
+function clearMobileCalculatedRoute() {
+  if (!mobileMapInstance) return;
+
+  ['mobile-calc-route-glow', 'mobile-calc-route-line'].forEach(layerId => {
+    if (mobileMapInstance.getLayer(layerId)) {
+      mobileMapInstance.removeLayer(layerId);
+    }
+  });
+
+  if (mobileMapInstance.getSource('mobile-calc-route')) {
+    mobileMapInstance.removeSource('mobile-calc-route');
+  }
+}
+
+async function renderMobileCalculatedRouteToStep(index) {
+  if (!mobileMapInstance) return;
+
+  const steps = getMobileMapSteps();
+  const to = steps[index];
+  const from = steps[index - 1];
+
+  if (!from || !to) {
+    alert('Il faut une étape précédente pour calculer un trajet.');
+    return;
+  }
+
+  clearMobileCalculatedRoute();
+
+  try {
+    const profile = String(to.type || '').toLowerCase().includes('transport')
+      ? 'driving'
+      : 'walking';
+
+    const url = `https://router.project-osrm.org/route/v1/${profile}/${from.lng},${from.lat};${to.lng},${to.lat}?overview=full&geometries=geojson`;
+    const response = await fetch(url);
+    const data = await response.json();
+    const route = data.routes?.[0];
+
+    if (!route?.geometry) {
+      alert('Impossible de calculer ce trajet.');
+      return;
+    }
+
+    mobileMapInstance.addSource('mobile-calc-route', {
+      type: 'geojson',
+      data: {
+        type: 'Feature',
+        geometry: route.geometry
+      }
+    });
+
+    mobileMapInstance.addLayer({
+      id: 'mobile-calc-route-glow',
+      type: 'line',
+      source: 'mobile-calc-route',
+      layout: {
+        'line-cap': 'round',
+        'line-join': 'round'
+      },
+      paint: {
+        'line-color': '#3a7d6e',
+        'line-width': 12,
+        'line-opacity': 0.2,
+        'line-blur': 5
+      }
+    });
+
+    mobileMapInstance.addLayer({
+      id: 'mobile-calc-route-line',
+      type: 'line',
+      source: 'mobile-calc-route',
+      layout: {
+        'line-cap': 'round',
+        'line-join': 'round'
+      },
+      paint: {
+        'line-color': '#3a7d6e',
+        'line-width': 4,
+        'line-opacity': 0.95
+      }
+    });
+
+    const bounds = new maplibregl.LngLatBounds();
+    route.geometry.coordinates.forEach(point => bounds.extend(point));
+
+    mobileMapInstance.fitBounds(bounds, {
+      padding: { top: 120, right: 60, bottom: 260, left: 60 },
+      duration: 900,
+      maxZoom: 16
+    });
+  } catch (error) {
+    alert('Erreur calcul trajet : ' + (error.message || error));
+  }
 }
 
 function renderMobileMapMarkers() {
@@ -1421,8 +1530,77 @@ function renderMobileMapSelectedPlace() {
   `;
 }
 
+async function handleAttachPlaceToExistingStep() {
+  if (!mobileMapLocatingStep || !mobileMapSelectedPlace) return;
+
+  const step = mobileMapLocatingStep;
+  const center = mobileMapSelectedPlace.center || [];
+
+  try {
+    if (activeTrip?.id && step.id && window.SB?.saveStep) {
+      await window.SB.saveStep(activeTrip.id, step.dayId, {
+        ...step,
+        id: step.id,
+        stepIndex: step.stepIndex || 0,
+        type: step.type || mobileMapSelectedPlaceType,
+        label: step.label || step.title || mobileMapSelectedPlace.text || 'Étape',
+        lieu: mobileMapSelectedPlace.place_name || step.lieu || '',
+        lat: center[1] || null,
+        lng: center[0] || null
+      });
+
+      await refreshMobileTrips(activeTrip.id);
+    } else {
+      const localStep = itinerarySteps[step.stepIndex];
+
+      if (localStep) {
+        localStep.lat = center[1] || null;
+        localStep.lng = center[0] || null;
+        localStep.description = mobileMapSelectedPlace.place_name || localStep.description;
+      }
+    }
+
+    mobileMapSelectedPlace = null;
+    mobileMapLocatingStep = null;
+    renderMap();
+  } catch (error) {
+    alert('Erreur localisation étape : ' + (error.message || error));
+  }
+}
+
+function openNewStepFromMapPlace() {
+  if (!mobileMapSelectedPlace) return;
+
+  const center = mobileMapSelectedPlace.center || [];
+  const type = mobileMapSelectedPlaceType || 'activity';
+
+  mapStepDraft = {
+    source: 'map',
+    dayIndex: mobileMapSelectedDayIndex || 0,
+    type,
+    title: mobileMapSelectedPlace.text || '',
+    location: mobileMapSelectedPlace.place_name || '',
+    lat: center[1] || '',
+    lng: center[0] || ''
+  };
+
+  selectedStepCategory = type;
+  mobileMapSelectedPlace = null;
+  mobileMapLocatingStep = null;
+
+  navigate('new-step');
+}
+
 async function handleAddMapPlaceToTrip() {
   if (!mobileMapSelectedPlace) return;
+
+  if (mobileMapLocatingStep) {
+    await handleAttachPlaceToExistingStep();
+    return;
+  }
+
+  openNewStepFromMapPlace();
+  return;
 
   if (!activeTrip?.id) {
     alert('Créez ou ouvrez un voyage avant d’ajouter un lieu.');
@@ -1514,6 +1692,7 @@ async function locateMobileMapStep(index) {
     mobileMapSelectedPlace = feature;
     mobileMapSelectedPlaceType = step.type || 'activity';
     mobileMapSelectedDayIndex = step.dayIndex || 0;
+    mobileMapLocatingStep = step;
 
     mobileMapInstance.flyTo({
       center: feature.center,
@@ -1552,6 +1731,11 @@ function renderMobileMapFocusedStepCard(step, index) {
       <button type="button" data-action="map-show-focused-step">
         <span class="material-symbols-outlined" aria-hidden="true">my_location</span>
         <span>Voir</span>
+      </button>
+
+            <button type="button" data-action="map-route-focused-step">
+        <span class="material-symbols-outlined" aria-hidden="true">route</span>
+        <span>Trajet</span>
       </button>
 
       <button type="button" data-action="map-edit-focused-step">
@@ -1660,6 +1844,7 @@ function initMobileMapSearch() {
 
             mobileMapSelectedPlace = feature;
             mobileMapSelectedPlaceType = 'activity';
+            mobileMapLocatingStep = null;
             mobileMapSelectedDayIndex = 0;
             mobileMapSelectedDayIndex = 0;
             input.value = feature.place_name;
@@ -2865,7 +3050,7 @@ const splitMoreButtonHtml = hiddenSplitsCount
               aria-label="Ajouter une catégorie"
             >
               <span class="material-symbols-outlined" aria-hidden="true">add</span>
-              <span>Ajouter</span>
+              <span>${mobileMapLocatingStep ? 'Localiser' : 'Ajouter'}</span>
             </button>
           </div>
         </section>
@@ -3825,7 +4010,9 @@ async function handleAddStepToProgram() {
     tone: selectedStepCategory === 'restaurant' ? 'accent' : 'petrol'
   };
 
-  const activeDay = getActiveTripDayForNewStep();
+    const activeDay = mapStepDraft?.source === 'map'
+    ? activeTrip?.days?.[mapStepDraft.dayIndex] || getActiveTripDayForNewStep()
+    : getActiveTripDayForNewStep();
 
   if (activeTrip?.id && activeDay?.id && window.SB?.saveStep) {
     try {
@@ -3860,7 +4047,9 @@ async function handleAddStepToProgram() {
 
       await refreshMobileTrips(activeTrip.id);
 
-      selectedStepCategory = 'transport';
+            selectedStepCategory = 'transport';
+      editingStepDraft = null;
+      mapStepDraft = null;
       navigate('itinerary');
       return;
     } catch (error) {
@@ -3871,7 +4060,9 @@ async function handleAddStepToProgram() {
 
   itinerarySteps.push(localStep);
 
-  selectedStepCategory = 'transport';
+    selectedStepCategory = 'transport';
+  editingStepDraft = null;
+  mapStepDraft = null;
   navigate('itinerary');
 }
 
@@ -4234,9 +4425,34 @@ if (action === 'delete-step') {
     return;
   }
 
+    if (action === 'map-edit-step') {
+          event.preventDefault();
+    event.stopPropagation();
+    const index = Number(event.target.closest('[data-step-index]')?.dataset.stepIndex);
+    const step = getMobileMapSteps()[index];
+    if (!step) return;
+
+    editingStepDraft = {
+      ...step,
+      stepIndex: step.stepIndex,
+      dayIndex: step.dayIndex
+    };
+
+    selectedStepCategory = step.type || 'activity';
+    navigate('new-step');
+    return;
+  }
+
   if (action === 'map-focus-step') {
     const index = Number(event.target.closest('[data-step-index]')?.dataset.stepIndex);
     focusMobileMapStep(index);
+    return;
+  }
+
+  if (action === 'map-route-focused-step') {
+    if (mobileMapFocusedStepIndex !== null) {
+      renderMobileCalculatedRouteToStep(mobileMapFocusedStepIndex);
+    }
     return;
   }
 
@@ -4265,6 +4481,7 @@ if (action === 'delete-step') {
     if (action === 'map-clear-place') {
     mobileMapSelectedPlace = null;
     mobileMapSelectedPlaceType = 'activity';
+   mobileMapLocatingStep = null;
 
     const card = document.querySelector('#mobile-map-place-card');
     if (card) card.hidden = true;

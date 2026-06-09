@@ -1604,6 +1604,47 @@ function getMobileMapPanelSteps() {
   return steps.filter(step => step.dayIndex === mobileMapPanelDayIndex);
 }
 
+function fitMobileMapToDay(dayIndex, options = {}) {
+  if (!mobileMapInstance) return;
+
+  if (dayIndex === null) {
+    fitMobileMapToSteps({ duration: options.duration ?? 520, maxZoom: options.maxZoom ?? 8 });
+    return;
+  }
+
+  const steps = getMobileMapSteps().filter(step => Number(step.dayIndex) === Number(dayIndex));
+
+  if (!steps.length) {
+    return;
+  }
+
+  const duration = options.duration ?? 520;
+  const maxZoom = options.maxZoom ?? 13;
+
+  if (steps.length === 1) {
+    mobileMapInstance.easeTo({
+      center: [steps[0].lng, steps[0].lat],
+      zoom: Math.min(maxZoom, 13),
+      duration,
+      essential: true
+    });
+    return;
+  }
+
+  const bounds = new maplibregl.LngLatBounds();
+
+  steps.forEach(step => {
+    bounds.extend([step.lng, step.lat]);
+  });
+
+  mobileMapInstance.fitBounds(bounds, {
+    padding: { top: 120, right: 72, bottom: 280, left: 72 },
+    duration,
+    maxZoom,
+    essential: true
+  });
+}
+
 function fitMobileMapToPanelDay(options = {}) {
   if (!mobileMapInstance) return;
 
@@ -4644,22 +4685,22 @@ if (action === 'delete-step') {
     return;
   }
 
-  if (action === 'map-panel-day') {
+    if (action === 'map-panel-day') {
     const value = event.target.closest('[data-panel-day]')?.dataset.panelDay;
+    const selectedDayIndex = value === 'all' ? null : Number(value);
 
-    mobileMapPanelDayIndex = value === 'all' ? null : Number(value);
+    mobileMapPanelDayIndex = selectedDayIndex;
     mobileMapDaysOpen = false;
     showAllMobileMapSteps = false;
 
     renderMap();
 
     setTimeout(() => {
-      if (mobileMapPanelDayIndex === null) {
-        fitMobileMapToSteps({ duration: 520, maxZoom: 8 });
-      } else {
-        fitMobileMapToPanelDay({ duration: 520, maxZoom: 13 });
-      }
-    }, 80);
+      fitMobileMapToDay(selectedDayIndex, {
+        duration: 520,
+        maxZoom: selectedDayIndex === null ? 8 : 13
+      });
+    }, 120);
 
     return;
   }

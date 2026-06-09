@@ -4615,12 +4615,14 @@ button {
 }
 
 .expense-v2-main {
-  width: 100%;
+  width: min(100%, 430px);
   max-width: 430px;
   margin: 0 auto;
   padding: 26px 18px 32px;
   display: grid;
   gap: 30px;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 .expense-v2-kicker {
@@ -5267,58 +5269,81 @@ button {
    Nouvelle dépense — édition personnes
    ════════════════════════════════════════════════════════════ */
 
-.expense-v2-person-wrap {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
+/* ════════════════════════════════════════════════════════════
+   Nouvelle dépense — édition personnes inline stable
+   ════════════════════════════════════════════════════════════ */
+
+.expense-v2-people-list {
+  display: grid;
+  gap: 10px;
 }
 
-.expense-v2-person-edit,
-.expense-v2-person-delete {
-  position: absolute;
-  top: -8px;
-  width: 22px;
-  height: 22px;
+.expense-v2-person-row,
+.expense-v2-split-person-row {
+  width: 100%;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.expense-v2-person-pill {
+  min-width: 0;
+  width: 100%;
+  min-height: 42px;
   border: 1px solid var(--faint-border);
   border-radius: 999px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  background: var(--surface-container-low);
+  color: var(--secondary);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 800;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.expense-v2-person-pill span {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  border-radius: 50%;
   display: grid;
   place-items: center;
+  background: var(--secondary-fixed);
+  color: var(--on-secondary-fixed);
+  font-size: 9px;
+  font-family: var(--font-mono);
+}
+
+.expense-v2-person-pill.active {
+  border-color: var(--outline-variant);
   background: var(--surface-container-lowest);
-  color: var(--primary);
-  box-shadow: 0 3px 10px rgba(82, 98, 91, 0.12);
+  color: var(--on-surface);
+  box-shadow: 0 3px 14px rgba(82, 98, 91, 0.06);
 }
 
-.expense-v2-person-edit {
-  right: 18px;
+.expense-v2-person-pill.active span {
+  background: var(--tan-accent);
+  color: var(--on-primary-fixed);
 }
 
-.expense-v2-person-delete {
-  right: -4px;
-  background: var(--error-container);
-  color: var(--error-red);
-}
-
-.expense-v2-person-edit .material-symbols-outlined,
-.expense-v2-person-delete .material-symbols-outlined {
-  font-size: 14px;
-}
-
-.expense-v2-split-person-wrap {
-  position: relative;
-}
-
-.expense-v2-split-person-actions {
-  position: absolute;
-  top: 50%;
-  right: 48px;
-  transform: translateY(-50%);
+.expense-v2-inline-actions {
+  flex: 0 0 auto;
   display: flex;
+  align-items: center;
   gap: 6px;
 }
 
-.expense-v2-split-person-actions button {
-  width: 28px;
-  height: 28px;
+.expense-v2-inline-actions button {
+  width: 30px;
+  height: 30px;
   border: 0;
   border-radius: 999px;
   display: grid;
@@ -5327,11 +5352,34 @@ button {
   color: var(--primary);
 }
 
-.expense-v2-split-person-actions button:last-child {
+.expense-v2-inline-actions button.danger {
   background: var(--error-container);
   color: var(--error-red);
 }
 
-.expense-v2-split-person-actions .material-symbols-outlined {
+.expense-v2-inline-actions .material-symbols-outlined {
   font-size: 16px;
+}
+
+.expense-v2-split-person-row .expense-v2-split-card {
+  width: 100%;
+  min-width: 0;
+}
+
+.expense-v2-split-person-row .expense-v2-split-card strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 380px) {
+  .expense-v2-person-row,
+  .expense-v2-split-person-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .expense-v2-inline-actions {
+    justify-content: flex-end;
+  }
 }

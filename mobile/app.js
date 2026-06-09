@@ -1819,9 +1819,9 @@ const editingNote = editingItem?.note || '';
   const canEdit = person.id !== 'me' && person.id !== 'partner';
 
   return `
-    <span class="expense-v2-person-wrap">
+    <div class="expense-v2-person-row">
       <button
-        class="${isActive ? 'active' : ''}"
+        class="expense-v2-person-pill ${isActive ? 'active' : ''}"
         type="button"
         data-expense-payer="${person.id}"
       >
@@ -1830,31 +1830,32 @@ const editingNote = editingItem?.note || '';
       </button>
 
       ${
-        isEditingBudgetPeople && canEdit
+        canEdit
           ? `
-            <button
-              class="expense-v2-person-edit"
-              type="button"
-              data-action="edit-budget-person"
-              data-person-id="${person.id}"
-              aria-label="Modifier ${escapeHtml(person.name)}"
-            >
-              <span class="material-symbols-outlined" aria-hidden="true">edit</span>
-            </button>
+            <div class="expense-v2-inline-actions">
+              <button
+                type="button"
+                data-action="edit-budget-person"
+                data-person-id="${person.id}"
+                aria-label="Modifier ${escapeHtml(person.name)}"
+              >
+                <span class="material-symbols-outlined" aria-hidden="true">edit</span>
+              </button>
 
-            <button
-              class="expense-v2-person-delete"
-              type="button"
-              data-action="delete-budget-person"
-              data-person-id="${person.id}"
-              aria-label="Supprimer ${escapeHtml(person.name)}"
-            >
-              <span class="material-symbols-outlined" aria-hidden="true">close</span>
-            </button>
+              <button
+                type="button"
+                class="danger"
+                data-action="delete-budget-person"
+                data-person-id="${person.id}"
+                aria-label="Supprimer ${escapeHtml(person.name)}"
+              >
+                <span class="material-symbols-outlined" aria-hidden="true">close</span>
+              </button>
+            </div>
           `
           : ''
       }
-    </span>
+    </div>
   `;
 }).join('');
 
@@ -1867,7 +1868,7 @@ const editingNote = editingItem?.note || '';
   const canEdit = person.id !== 'me' && person.id !== 'partner';
 
   return `
-    <div class="expense-v2-split-person-wrap">
+    <div class="expense-v2-split-person-row">
       <button
         class="expense-v2-split-card ${isActive ? 'active' : ''}"
         type="button"
@@ -1885,9 +1886,9 @@ const editingNote = editingItem?.note || '';
       </button>
 
       ${
-        isEditingBudgetPeople && canEdit
+        canEdit
           ? `
-            <div class="expense-v2-split-person-actions">
+            <div class="expense-v2-inline-actions">
               <button
                 type="button"
                 data-action="edit-budget-person"
@@ -1899,6 +1900,7 @@ const editingNote = editingItem?.note || '';
 
               <button
                 type="button"
+                class="danger"
                 data-action="delete-budget-person"
                 data-person-id="${person.id}"
                 aria-label="Supprimer ${escapeHtml(person.name)}"
@@ -1991,56 +1993,48 @@ const editingNote = editingItem?.note || '';
         <section class="expense-v2-section">
           <div class="expense-v2-section-heading">
             <div class="expense-v2-section-heading">
+  <div class="expense-v2-section-heading">
   <span class="expense-v2-kicker">Qui a payé ?</span>
 
-  <div class="expense-v2-heading-actions">
-    <button
-      class="expense-v2-mini-action ${isEditingBudgetPeople ? 'active' : ''}"
-      type="button"
-      data-action="toggle-budget-people-edition"
-      aria-label="Modifier les personnes"
-    >
-      <span class="material-symbols-outlined" aria-hidden="true">edit</span>
-    </button>
+  <button
+    class="expense-v2-mini-action"
+    type="button"
+    data-action="add-budget-person"
+    aria-label="Ajouter une personne"
+  >
+    <span class="material-symbols-outlined" aria-hidden="true">person_add</span>
+  </button>
+</div>
 
+          <div class="expense-v2-people-list">
+  ${payerButtonsHtml}
+
+  <div class="expense-v2-person-row">
     <button
-      class="expense-v2-mini-action"
+      class="expense-v2-person-pill ${selectedExpensePayer === 'common' ? 'active' : ''}"
       type="button"
-      data-action="add-budget-person"
-      aria-label="Ajouter une personne"
+      data-expense-payer="common"
     >
-      <span class="material-symbols-outlined" aria-hidden="true">person_add</span>
+      <span>€</span>
+      Fonds Commun
     </button>
   </div>
 </div>
-
-          <div class="expense-v2-people-scroll">
-            ${payerButtonsHtml}
-
-            <button
-              class="${selectedExpensePayer === 'common' ? 'active' : ''}"
-              type="button"
-              data-expense-payer="common"
-            >
-              <span>€</span>
-              Fonds Commun
-            </button>
-          </div>
         </section>
 
         <section class="expense-v2-section">
           <div class="expense-v2-section-heading">
-            <span class="expense-v2-kicker">Pour qui ?</span>
+  <span class="expense-v2-kicker">Pour qui ?</span>
 
-            <button
-              class="expense-v2-mini-action"
-              type="button"
-              data-action="add-budget-person"
-              aria-label="Ajouter une personne"
-            >
-              <span class="material-symbols-outlined" aria-hidden="true">person_add</span>
-            </button>
-          </div>
+  <button
+    class="expense-v2-mini-action"
+    type="button"
+    data-action="add-budget-person"
+    aria-label="Ajouter une personne"
+  >
+    <span class="material-symbols-outlined" aria-hidden="true">person_add</span>
+  </button>
+</div>
 
           <div class="expense-v2-split-list">
             <button
@@ -2973,11 +2967,6 @@ if (action === 'edit-budget-expense') {
 if (action === 'delete-budget-expense') {
   const button = event.target.closest('[data-action="delete-budget-expense"]');
   if (button) handleDeleteBudgetExpense(button);
-  return;
-}
-
-if (action === 'toggle-budget-people-edition') {
-  toggleBudgetPeopleEdition();
   return;
 }
 

@@ -342,6 +342,7 @@ let mobileMapSearchMarker = null;
 let mobileMapToolsOpen = false;
 let mobileMapSheetOpen = false;
 let mobileMapDaysOpen = false;
+let mobileMapRestoreCamera = null;
 
 function attachAutocomplete(input) {
   if (!input || input.dataset.acReady) return;
@@ -1016,6 +1017,30 @@ function destroyMobileMap() {
   mobileMapDestinationMarker = null;
 }
 
+function rememberMobileMapCamera() {
+  if (!mobileMapInstance) return;
+
+  const center = mobileMapInstance.getCenter();
+
+  mobileMapRestoreCamera = {
+    center: [center.lng, center.lat],
+    zoom: mobileMapInstance.getZoom(),
+    bearing: mobileMapInstance.getBearing(),
+    pitch: mobileMapInstance.getPitch()
+  };
+}
+
+function refreshMobileMapSheet() {
+  const card = document.querySelector('.mobile-map-card');
+  if (!card) return;
+
+  card.classList.toggle('is-open', mobileMapSheetOpen);
+  card.classList.toggle('is-compact', !mobileMapSheetOpen);
+
+  const icon = card.querySelector('[data-action="toggle-map-sheet"] .material-symbols-outlined');
+  if (icon) icon.textContent = mobileMapSheetOpen ? 'keyboard_arrow_down' : 'keyboard_arrow_up';
+}
+
 function refreshMobileMapDaysMenu() {
   const days = document.querySelector('.mobile-map-days-tool');
   if (!days) return;
@@ -1302,13 +1327,18 @@ function initMobileRealMap() {
   }
 
   const steps = getMobileMapSteps();
-  const center = steps[0] ? [steps[0].lng, steps[0].lat] : [2.3522, 48.8566];
+  const savedCamera = mobileMapRestoreCamera;
+  mobileMapRestoreCamera = null;
+
+  const center = savedCamera?.center || (steps[0] ? [steps[0].lng, steps[0].lat] : [2.3522, 48.8566]);
 
   mobileMapInstance = new maplibregl.Map({
     container,
     style: getMobileMapStyleUrl(),
     center,
-    zoom: steps.length ? 12 : 3,
+    zoom: savedCamera?.zoom ?? (steps.length ? 12 : 3),
+    bearing: savedCamera?.bearing || 0,
+    pitch: savedCamera?.pitch || 0,
     attributionControl: { compact: true }
   });
 
@@ -4556,7 +4586,7 @@ if (action === 'delete-step') {
 
       if (action === 'toggle-map-summary' || action === 'toggle-map-sheet') {
     mobileMapSheetOpen = !mobileMapSheetOpen;
-    renderMap();
+    refreshMobileMapSheet();
     return;
   }
 
@@ -4591,10 +4621,10 @@ if (action === 'delete-step') {
     if (action === 'map-prev-day') {
     if (mobileMapPanelDayIndex === null) return;
 
+    rememberMobileMapCamera();
     mobileMapPanelDayIndex = Math.max(0, mobileMapPanelDayIndex - 1);
     showAllMobileMapSteps = false;
     renderMap();
-    setTimeout(fitMobileMapToPanelDay, 250);
     return;
   }
 
@@ -4603,28 +4633,23 @@ if (action === 'delete-step') {
 
     if (mobileMapPanelDayIndex === null) return;
 
+    rememberMobileMapCamera();
     mobileMapPanelDayIndex = Math.min(maxIndex, mobileMapPanelDayIndex + 1);
     showAllMobileMapSteps = false;
     renderMap();
-    setTimeout(fitMobileMapToPanelDay, 250);
     return;
   }
 
-    if (action === 'map-panel-day') {
+  if (action === 'map-panel-day') {
     const value = event.target.closest('[data-panel-day]')?.dataset.panelDay;
+
+    rememberMobileMapCamera();
+
     mobileMapPanelDayIndex = value === 'all' ? null : Number(value);
     mobileMapDaysOpen = false;
     showAllMobileMapSteps = false;
+
     renderMap();
-
-    setTimeout(() => {
-      if (mobileMapPanelDayIndex === null) {
-        fitMobileMapToSteps();
-      } else {
-        fitMobileMapToPanelDay();
-      }
-    }, 250);
-
     return;
   }
 

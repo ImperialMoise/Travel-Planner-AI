@@ -64,17 +64,32 @@ function dayRange(startISO, endISO) {
 function stepView(s) {
   const icon = s.type === 'transport' ? (IT_MODE_ICON[s.mode] || 'route') : IT_TYPE_ICON[s.type];
   let title = s.label || '', sub = '', range = s.time || '', badge = null;
+
   if (s.type === 'transport') {
-    title = s.label || `${s.from} → ${s.to}`;
-    if (!s.label) title = null; // route rendered specially
-    range = s.timeEnd ? `${s.time}–${s.timeEnd}${s.over || ''}` : s.time;
-    sub = [s.ref, s.dur].filter(Boolean).join(' · ');
+    const escales = (s.escales || []).map(e => e.place).filter(Boolean);
+
+    title = s.label || `${s.from || 'Départ'} → ${s.to || 'Arrivée'}`;
+    range = s.timeEnd ? `${s.time || ''}–${s.timeEnd}${s.over || ''}` : s.time;
+    sub = [
+      escales.length ? `Escales : ${escales.join(' → ')}` : '',
+      s.ref,
+      s.dur
+    ].filter(Boolean).join(' · ');
   } else if (s.type === 'logement') {
-    sub = s.place; badge = `${s.nights} ${s.nights > 1 ? 'nuits' : 'nuit'}`;
+    const stayTimes = [
+      s.checkin ? `check-in ${s.checkin}` : '',
+      s.checkout ? `check-out ${s.checkout}` : ''
+    ].filter(Boolean).join(' · ');
+
+    sub = [s.place, stayTimes].filter(Boolean).join(' · ');
+    badge = s.nights ? `${s.nights} ${s.nights > 1 ? 'nuits' : 'nuit'}` : null;
     range = s.checkin ? `arr. ${s.checkin}` : '';
   } else if (s.type === 'activite') {
     sub = [s.place, s.dur].filter(Boolean).join(' · ');
-  } else { sub = s.place || ''; }
+  } else {
+    sub = s.place || '';
+  }
+
   return { icon, kind: IT_TYPE_LABEL[s.type], title, sub, range, badge, raw: s };
 }
 

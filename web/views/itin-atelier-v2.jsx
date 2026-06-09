@@ -63,12 +63,43 @@ function StepEditor({ open, tripId, dayId, step, stepCount, onClose, onSaved }) 
   const blank = {
     type: 'activite', label: '', lieu: '', time: '', timeEnd: '',
     transportType: 'train', depart: '', arrivee: '', nextDay: false, ref: '',
+    escales: [],
+    escales: [],
     dateStart: '', dateEnd: '', timeCheckIn: '15:00', timeCheckOut: '11:00',
     dureeEstimee: '', link: '', note: ''
   };
   const [f, setF] = React.useState(blank);
   const [busy, setBusy] = React.useState(false);
   const set = (k, v) => setF(prev => ({ ...prev, [k]: v }));
+  const addEscale = () => setF(prev => ({
+    ...prev,
+    escales: [...(prev.escales || []), { place: '', arrivalTime: '', departureTime: '' }]
+  }));
+
+  const updateEscale = (index, patch) => setF(prev => ({
+    ...prev,
+    escales: (prev.escales || []).map((escale, i) => i === index ? { ...escale, ...patch } : escale)
+  }));
+
+  const removeEscale = index => setF(prev => ({
+    ...prev,
+    escales: (prev.escales || []).filter((_, i) => i !== index)
+  }));
+
+  const addEscale = () => setF(prev => ({
+    ...prev,
+    escales: [...(prev.escales || []), { place: '', arrivalTime: '', departureTime: '' }]
+  }));
+
+  const updateEscale = (index, patch) => setF(prev => ({
+    ...prev,
+    escales: (prev.escales || []).map((escale, i) => i === index ? { ...escale, ...patch } : escale)
+  }));
+
+  const removeEscale = index => setF(prev => ({
+    ...prev,
+    escales: (prev.escales || []).filter((_, i) => i !== index)
+  }));
 
   React.useEffect(() => {
     if (!open) return;
@@ -98,7 +129,24 @@ function StepEditor({ open, tripId, dayId, step, stepCount, onClose, onSaved }) 
         type: f.type, label: f.label, note: f.note, link: f.link, time: f.time
       };
       if (f.type === 'transport') {
-        Object.assign(p, { transportType: f.transportType, depart: f.depart, arrivee: f.arrivee, timeEnd: f.timeEnd, nextDay: f.nextDay, duree, ref: f.ref });
+        Object.assign(p, {
+          transportType: f.transportType,
+          depart: f.depart,
+          arrivee: f.arrivee,
+          timeEnd: f.timeEnd,
+          nextDay: f.nextDay,
+          duree,
+          ref: f.ref,
+          escales: (f.escales || [])
+            .filter(escale => escale.place || escale.arrivalTime || escale.departureTime)
+            .map(escale => ({
+              place: escale.place || '',
+              arrivalTime: escale.arrivalTime || '',
+              departureTime: escale.departureTime || '',
+              lat: escale.lat || null,
+              lng: escale.lng || null
+            }))
+        });
       } else if (f.type === 'logement') {
         Object.assign(p, { lieu: f.lieu, dateStart: f.dateStart || null, dateEnd: f.dateEnd || null, timeCheckIn: f.timeCheckIn, timeCheckOut: f.timeCheckOut, nuits });
       } else if (f.type === 'activite') {
@@ -180,6 +228,72 @@ function StepEditor({ open, tripId, dayId, step, stepCount, onClose, onSaved }) 
               field('Référence', <input style={inp} value={f.ref} onChange={e => set('ref', e.target.value)} placeholder="TGV 6601…" />),
               field('Titre (option.)', <input style={inp} value={f.label} onChange={e => set('label', e.target.value)} placeholder="Paris → Lyon" />)
             )}
+            <div style={{ marginTop: 4, marginBottom: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                <label style={lbl}>Escales</label>
+                <button type="button" onClick={addEscale} style={{ ...ghost, padding: '7px 11px', fontSize: 12 }}>
+                  + Ajouter une escale
+                </button>
+              </div>
+
+              {(f.escales || []).map((escale, index) => (
+                <div key={index} style={{ border: `1px solid ${C.line}`, borderRadius: 12, padding: 12, marginBottom: 8, background: C.inset }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                    <strong style={{ fontSize: 13, color: C.text }}>Escale {index + 1}</strong>
+                    <button type="button" onClick={() => removeEscale(index)} style={{ border: 'none', background: 'transparent', color: '#c0563f', cursor: 'pointer' }}>
+                      Supprimer
+                    </button>
+                  </div>
+
+                  {field('Ville / gare / aéroport', (
+                    <LocationInput
+                      style={inp}
+                      value={escale.place || ''}
+                      onChange={v => updateEscale(index, { place: v })}
+                      placeholder="Ville ou lieu d'escale…"
+                    />
+                  ))}
+
+                  {twoCol(
+                    field('Arrivée', <input type="time" style={inp} value={escale.arrivalTime || ''} onChange={e => updateEscale(index, { arrivalTime: e.target.value })} />),
+                    field('Départ', <input type="time" style={inp} value={escale.departureTime || ''} onChange={e => updateEscale(index, { departureTime: e.target.value })} />)
+                  )}
+                </div>
+              ))}
+            </div>
+                        <div style={{ marginTop: 4, marginBottom: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                <label style={lbl}>Escales</label>
+                <button type="button" onClick={addEscale} style={{ ...ghost, padding: '7px 11px', fontSize: 12 }}>
+                  + Ajouter une escale
+                </button>
+              </div>
+
+              {(f.escales || []).map((escale, index) => (
+                <div key={index} style={{ border: `1px solid ${C.line}`, borderRadius: 12, padding: 12, marginBottom: 8, background: C.inset }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                    <strong style={{ fontSize: 13, color: C.text }}>Escale {index + 1}</strong>
+                    <button type="button" onClick={() => removeEscale(index)} style={{ border: 'none', background: 'transparent', color: '#c0563f', cursor: 'pointer' }}>
+                      Supprimer
+                    </button>
+                  </div>
+
+                  {field('Ville / gare / aéroport', (
+                    <LocationInput
+                      style={inp}
+                      value={escale.place || ''}
+                      onChange={v => updateEscale(index, { place: v })}
+                      placeholder="Ville ou lieu d'escale…"
+                    />
+                  ))}
+
+                  {twoCol(
+                    field('Arrivée', <input type="time" style={inp} value={escale.arrivalTime || ''} onChange={e => updateEscale(index, { arrivalTime: e.target.value })} />),
+                    field('Départ', <input type="time" style={inp} value={escale.departureTime || ''} onChange={e => updateEscale(index, { departureTime: e.target.value })} />)
+                  )}
+                </div>
+              ))}
+            </div>
           </>}
 
           {f.type === 'logement' && <>
@@ -265,7 +379,10 @@ function AtelierV2() {
           to: s.arrivee,
           nights: s.nuits,
           checkin: s.timeCheckIn,
+          checkout: s.timeCheckOut,
+          ref: s.ref,
           dur: s.dureeEstimee || s.duree,
+          escales: s.escales || [],
           over: s.nextDay ? ' +1' : ''
         }))
       };

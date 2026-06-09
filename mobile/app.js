@@ -1610,6 +1610,58 @@ function renderBudgetOverview() {
 
 
 function renderBudgetBalance() {
+  const balanceCardsHtml = budgetBalances.map(function(person) {
+    const isPositive = person.tone === 'positive';
+    const cleanBalance = person.balance.replace('+ ', '').replace('- ', '');
+    const transportWidth = isPositive ? '40%' : '0%';
+    const hotelWidth = isPositive ? '35%' : '0%';
+    const restaurantWidth = isPositive ? '25%' : '0%';
+
+    return `
+      <div class="balance-person-card">
+        <div class="balance-person-header">
+          <div class="balance-person-id">
+            <span class="balance-avatar ${person.tone}">${escapeHtml(person.initials)}</span>
+            <span class="balance-person-name">${escapeHtml(person.name)}</span>
+          </div>
+
+          <div class="balance-person-amounts">
+            <strong class="balance-main-amount ${person.tone}">
+              ${isPositive ? 'Reçoit' : 'Doit'} ${escapeHtml(cleanBalance)}
+            </strong>
+            <span class="balance-paid">Payé : ${escapeHtml(person.paid)}</span>
+          </div>
+        </div>
+
+        <div class="balance-bars">
+          <div class="balance-bar-row">
+            <span class="material-symbols-outlined">directions_car</span>
+            <div class="balance-bar-track">
+              <div class="balance-bar-fill" style="width: ${transportWidth}"></div>
+            </div>
+            <span class="balance-bar-pct">${transportWidth}</span>
+          </div>
+
+          <div class="balance-bar-row">
+            <span class="material-symbols-outlined">hotel</span>
+            <div class="balance-bar-track">
+              <div class="balance-bar-fill" style="width: ${hotelWidth}"></div>
+            </div>
+            <span class="balance-bar-pct">${hotelWidth}</span>
+          </div>
+
+          <div class="balance-bar-row">
+            <span class="material-symbols-outlined">restaurant</span>
+            <div class="balance-bar-track">
+              <div class="balance-bar-fill" style="width: ${restaurantWidth}"></div>
+            </div>
+            <span class="balance-bar-pct">${restaurantWidth}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
   app.innerHTML = `
     <div class="mobile-shell">
       ${topbar()}
@@ -1618,55 +1670,24 @@ function renderBudgetBalance() {
         ${budgetTabs('balance')}
 
         <div class="balance-cards">
-          ${budgetBalances.map(person => {
-            const isPositive = person.tone === 'positive';
-            return `
-              <div class="balance-person-card">
-                <div class="balance-person-header">
-                  <div class="balance-person-id">
-                    <span class="balance-avatar ${person.tone}">${person.initials}</span>
-                    <span class="balance-person-name">${person.name}</span>
-                  </div>
-                  <div class="balance-person-amounts">
-                    <strong class="balance-main-amount ${person.tone}">${isPositive ? 'Reçoit' : 'Doit'} ${person.balance.replace('+ ', '').replace('- ', '')}</strong>
-                    <span class="balance-paid">Payé : ${person.paid}</span>
-                  </div>
-                </div>
-                <div class="balance-bars">
-                  <div class="balance-bar-row">
-                    <span class="material-symbols-outlined">directions_car</span>
-                    <div class="balance-bar-track"><div class="balance-bar-fill" style="width: ${isPositive ? '40%' : '0%'}"></div></div>
-                    <span class="balance-bar-pct">${isPositive ? '40%' : '0%'}</span>
-                  </div>
-                  <div class="balance-bar-row">
-                    <span class="material-symbols-outlined">hotel</span>
-                    <div class="balance-bar-track"><div class="balance-bar-fill" style="width: ${isPositive ? '35%' : '0%'}"></div></div>
-                    <span class="balance-bar-pct">${isPositive ? '35%' : '0%'}</span>
-                  </div>
-                  <div class="balance-bar-row">
-                    <span class="material-symbols-outlined">restaurant</span>
-                    <div class="balance-bar-track"><div class="balance-bar-fill" style="width: ${isPositive ? '25%' : '0%'}"></div></div>
-                    <span class="balance-bar-pct">${isPositive ? '25%' : '0%'}</span>
-                  </div>
-                </div>
-              </div>
-            `;
-          }).join('')}
+          ${balanceCardsHtml}
         </div>
 
         <h3 class="budget-section-title">Détails des remboursements</h3>
+
         <div class="settlement-detail-card">
           <div class="settlement-detail-row">
             <div class="settlement-detail-info">
               <strong>Location Voiture</strong>
-              <span>Payé par ${budgetSettlement.to}</span>
+              <span>Payé par ${escapeHtml(budgetSettlement.to)}</span>
             </div>
             <span class="settlement-detail-amount">+180,00 €</span>
           </div>
+
           <div class="settlement-detail-row">
             <div class="settlement-detail-info">
               <strong>Hôtel Paris</strong>
-              <span>Payé par ${budgetSettlement.to}</span>
+              <span>Payé par ${escapeHtml(budgetSettlement.to)}</span>
             </div>
             <span class="settlement-detail-amount">+270,00 €</span>
           </div>

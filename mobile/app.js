@@ -316,7 +316,6 @@ const stepFieldSets = {
 let selectedStepCategory = 'transport';
 let editingStepDraft = null;
 let transportStopoverUid = 0;
-let editingStepDraft = null;
 
 function icon(symbol, className = '') {
   return `<span class="${className}" aria-hidden="true">${symbol}</span>`;

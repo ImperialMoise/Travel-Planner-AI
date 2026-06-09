@@ -341,6 +341,7 @@ let mobileMapDestinationMarker = null;
 let mobileMapSearchMarker = null;
 let mobileMapToolsOpen = false;
 let mobileMapSheetOpen = false;
+let mobileMapDaysOpen = false;
 
 function attachAutocomplete(input) {
   if (!input || input.dataset.acReady) return;
@@ -1015,6 +1016,17 @@ function destroyMobileMap() {
   mobileMapDestinationMarker = null;
 }
 
+function refreshMobileMapDaysMenu() {
+  const days = document.querySelector('.mobile-map-days-tool');
+  if (!days) return;
+
+  const fabIcon = days.querySelector('.mobile-map-days-fab .material-symbols-outlined');
+  const menu = days.querySelector('.mobile-map-days-menu');
+
+  if (fabIcon) fabIcon.textContent = mobileMapDaysOpen ? 'close' : 'calendar_month';
+  if (menu) menu.classList.toggle('open', mobileMapDaysOpen);
+}
+
 function refreshMobileMapToolsMenu() {
   const tools = document.querySelector('.mobile-map-tools');
   if (!tools) return;
@@ -1047,6 +1059,40 @@ function renderMap() {
           <span class="material-symbols-outlined" aria-hidden="true">search</span>
           <input id="mobile-map-search" type="search" placeholder="Rechercher un lieu..." autocomplete="off">
           <div id="mobile-map-results" class="mobile-map-results"></div>
+        </div>
+
+                <div class="mobile-map-days-tool">
+          <button class="mobile-map-days-fab glass-panel" type="button" data-action="map-days-toggle" aria-label="Choisir un jour">
+            <span class="material-symbols-outlined" aria-hidden="true">${mobileMapDaysOpen ? 'close' : 'calendar_month'}</span>
+          </button>
+
+          <div class="mobile-map-days-menu glass-panel ${mobileMapDaysOpen ? 'open' : ''}">
+            <button
+              type="button"
+              class="${mobileMapPanelDayIndex === null ? 'active' : ''}"
+              data-action="map-panel-day"
+              data-panel-day="all"
+            >
+              <span>Tout le voyage</span>
+              <small>${steps.length} point${steps.length > 1 ? 's' : ''}</small>
+            </button>
+
+            ${(activeTrip?.days || []).map((day, index) => {
+              const daySteps = steps.filter(step => step.dayIndex === index);
+
+              return `
+                <button
+                  type="button"
+                  class="${mobileMapPanelDayIndex === index ? 'active' : ''}"
+                  data-action="map-panel-day"
+                  data-panel-day="${index}"
+                >
+                  <span>Jour ${index + 1}</span>
+                  <small>${daySteps.length} point${daySteps.length > 1 ? 's' : ''}</small>
+                </button>
+              `;
+            }).join('')}
+          </div>
         </div>
 
         <div class="mobile-map-tools">
@@ -4514,17 +4560,28 @@ if (action === 'delete-step') {
     return;
   }
 
-  if (action === 'map-tools-toggle') {
-    mobileMapToolsOpen = !mobileMapToolsOpen;
+      if (action === 'map-days-toggle') {
+    mobileMapDaysOpen = !mobileMapDaysOpen;
+    mobileMapToolsOpen = false;
+    refreshMobileMapDaysMenu();
     refreshMobileMapToolsMenu();
     return;
   }
 
-    if (action === 'map-fit') {
-          mobileMapToolsOpen = false;
-    fitMobileMapToSteps();
+  if (action === 'map-tools-toggle') {
+    mobileMapToolsOpen = !mobileMapToolsOpen;
+    mobileMapDaysOpen = false;
+    refreshMobileMapToolsMenu();
+    refreshMobileMapDaysMenu();
     return;
   }
+
+    if (action === 'map-fit') {
+  mobileMapToolsOpen = false;
+  mobileMapDaysOpen = false;
+  fitMobileMapToSteps();
+  return;
+}
 
   if (action === 'map-fit-panel') {
     fitMobileMapToPanelDay();
@@ -4556,6 +4613,7 @@ if (action === 'delete-step') {
     if (action === 'map-panel-day') {
     const value = event.target.closest('[data-panel-day]')?.dataset.panelDay;
     mobileMapPanelDayIndex = value === 'all' ? null : Number(value);
+    mobileMapDaysOpen = false;
     showAllMobileMapSteps = false;
     renderMap();
 

@@ -7141,3 +7141,71 @@ button {
   color: inherit;
   font-size: 18px;
 }
+
+/* Mobile map floating days menu */
+.mobile-map-days-tool {
+  position: absolute;
+  z-index: 24;
+  top: calc(132px + env(safe-area-inset-top, 0px));
+  right: 66px;
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+}
+
+.mobile-map-days-fab {
+  width: 46px;
+  height: 46px;
+  border: 0;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  color: var(--primary);
+}
+
+.mobile-map-days-menu {
+  width: 176px;
+  max-height: 260px;
+  overflow-y: auto;
+  padding: 8px;
+  border-radius: 18px;
+  display: none;
+  gap: 4px;
+}
+
+.mobile-map-days-menu.open {
+  display: grid;
+}
+
+.mobile-map-days-menu > button {
+  width: 100%;
+  border: 0;
+  border-radius: 12px;
+  padding: 10px;
+  display: grid;
+  gap: 2px;
+  background: transparent;
+  color: var(--on-surface);
+  text-align: left;
+}
+
+.mobile-map-days-menu > button.active {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+
+.mobile-map-days-menu span {
+  font-size: 12.5px;
+  font-weight: 800;
+}
+
+.mobile-map-days-menu small {
+  color: currentColor;
+  opacity: 0.7;
+  font-size: 10.5px;
+}
+
+.mobile-map-card .mobile-map-day-nav,
+.mobile-map-card .mobile-map-day-tabs {
+  display: none !important;
+}

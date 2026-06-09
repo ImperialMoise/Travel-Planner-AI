@@ -2253,6 +2253,57 @@ button {
   border-top: 1px solid var(--faint-border);
 }
 
+.mobile-map-place-card {
+  position: absolute;
+  z-index: 8;
+  left: 14px;
+  right: 14px;
+  bottom: 380px;
+  border-radius: 18px;
+  padding: 16px;
+  display: grid;
+  gap: 14px;
+}
+
+.mobile-map-place-card[hidden] {
+  display: none;
+}
+
+.mobile-map-place-card h2,
+.mobile-map-place-card p {
+  margin: 0;
+}
+
+.mobile-map-place-card h2 {
+  margin-top: 4px;
+  color: var(--on-surface);
+  font-family: var(--font-serif);
+  font-size: 22px;
+  line-height: 28px;
+  font-weight: 500;
+}
+
+.mobile-map-place-card p {
+  margin-top: 4px;
+  color: var(--secondary);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.mobile-map-place-card button {
+  min-height: 44px;
+  border: 0;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--primary);
+  color: var(--on-primary);
+  font-size: 13px;
+  font-weight: 800;
+}
+
 .mobile-map-card {
   position: absolute;
   z-index: 7;

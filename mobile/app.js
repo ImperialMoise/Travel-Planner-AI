@@ -882,6 +882,7 @@ function renderMap() {
           </div>
         </div>
 
+        <article id="mobile-map-place-card" class="mobile-map-place-card glass-panel" hidden></article>
         <article class="mobile-map-card glass-panel">
           <div class="map-summary-header">
             <div>
@@ -1050,6 +1051,86 @@ function focusMobileMapStep(index) {
   });
 }
 
+function renderMobileMapSelectedPlace() {
+  const card = document.querySelector('#mobile-map-place-card');
+  if (!card || !mobileMapSelectedPlace) return;
+
+  card.hidden = false;
+
+  card.innerHTML = `
+    <div>
+      <span class="kicker">Lieu trouvé</span>
+      <h2>${escapeHtml(mobileMapSelectedPlace.text || 'Lieu sélectionné')}</h2>
+      <p>${escapeHtml(mobileMapSelectedPlace.place_name || '')}</p>
+    </div>
+
+    <button type="button" data-action="map-add-place">
+      <span class="material-symbols-outlined" aria-hidden="true">add_location_alt</span>
+      <span>Ajouter au voyage</span>
+    </button>
+  `;
+}
+
+async function handleAddMapPlaceToTrip() {
+  if (!mobileMapSelectedPlace) return;
+
+  if (!activeTrip?.id) {
+    alert('Créez ou ouvrez un voyage avant d’ajouter un lieu.');
+    return;
+  }
+
+  const days = activeTrip.days || [];
+  const day = days[0];
+
+  if (!day?.id) {
+    alert('Aucun jour trouvé pour ce voyage.');
+    return;
+  }
+
+  const step = {
+    stepIndex: day.steps?.length || 0,
+    type: 'activity',
+    label: mobileMapSelectedPlace.text || 'Lieu ajouté',
+    lieu: mobileMapSelectedPlace.place_name || '',
+    time: '09:00',
+    timeEnd: '',
+    transportType: '',
+    depart: '',
+    arrivee: '',
+    ref: '',
+    duration: '',
+    note: '',
+    link: '',
+    amount: 0,
+    paidBy: '',
+    lat: mobileMapSelectedPlace.center?.[1] || null,
+    lng: mobileMapSelectedPlace.center?.[0] || null
+  };
+
+  try {
+    if (window.SB?.saveStep) {
+      await window.SB.saveStep(activeTrip.id, day.id, step);
+      await refreshMobileTrips(activeTrip.id);
+    } else {
+      itinerarySteps.push({
+        time: step.time,
+        type: 'Activité',
+        title: step.label,
+        description: step.lieu,
+        icon: 'location_on',
+        tone: 'petrol',
+        lat: step.lat,
+        lng: step.lng
+      });
+    }
+
+    mobileMapSelectedPlace = null;
+    renderMap();
+  } catch (error) {
+    alert('Erreur ajout du lieu : ' + (error.message || error));
+  }
+}
+
 function initMobileMapSearch() {
   const input = document.querySelector('#mobile-map-search');
   const results = document.querySelector('#mobile-map-results');
@@ -1097,9 +1178,11 @@ function initMobileMapSearch() {
               duration: 900
             });
 
-            new maplibregl.Marker({ color: '#7c5410' })
+                        new maplibregl.Marker({ color: '#7c5410' })
               .setLngLat(feature.center)
               .addTo(mobileMapInstance);
+
+            renderMobileMapSelectedPlace();
           });
         });
       } catch (error) {
@@ -3603,6 +3686,11 @@ if (action === 'delete-step') {
   if (action === 'map-focus-step') {
     const index = Number(event.target.closest('[data-step-index]')?.dataset.stepIndex);
     focusMobileMapStep(index);
+    return;
+  }
+
+    if (action === 'map-add-place') {
+    handleAddMapPlaceToTrip();
     return;
   }
 

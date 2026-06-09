@@ -339,6 +339,8 @@ let mobileMapTouring = false;
 let showAllMobileMapSteps = false;
 let mobileMapDestinationMarker = null;
 let mobileMapSearchMarker = null;
+let mobileMapToolsOpen = false;
+let mobileMapSheetOpen = false;
 
 function attachAutocomplete(input) {
   if (!input || input.dataset.acReady) return;
@@ -1036,36 +1038,45 @@ function renderMap() {
           <div id="mobile-map-results" class="mobile-map-results"></div>
         </div>
 
-        <div class="mobile-map-controls">
-          <button class="glass-panel" type="button" data-action="map-fit" aria-label="Vue globale">
-            <span class="material-symbols-outlined" aria-hidden="true">travel_explore</span>
+        <div class="mobile-map-tools">
+          <button class="mobile-map-tools-fab glass-panel" type="button" data-action="map-tools-toggle" aria-label="Ouvrir les outils de carte">
+            <span class="material-symbols-outlined" aria-hidden="true">${mobileMapToolsOpen ? 'close' : 'tune'}</span>
           </button>
 
-          <button class="glass-panel" type="button" data-action="map-geolocate" aria-label="Me localiser">
-            <span class="material-symbols-outlined filled" aria-hidden="true">my_location</span>
-          </button>
-
-          <button class="glass-panel" type="button" data-action="map-style" aria-label="Changer le fond de carte">
-            <span class="material-symbols-outlined" aria-hidden="true">layers</span>
-          </button>
-
-          <button class="glass-panel mobile-map-tour-button" type="button" data-action="map-tour" aria-label="Survoler les points">
-            <span class="material-symbols-outlined" aria-hidden="true">route</span>
-            <span>Survoler</span>
-          </button>
-
-          <div class="glass-panel mobile-map-zoom">
-            <button type="button" data-action="map-zoom-in" aria-label="Zoomer">
-              <span class="material-symbols-outlined" aria-hidden="true">add</span>
+          <div class="mobile-map-tools-menu glass-panel ${mobileMapToolsOpen ? 'open' : ''}">
+            <button type="button" data-action="map-fit">
+              <span class="material-symbols-outlined" aria-hidden="true">travel_explore</span>
+              <span>Vue globale</span>
             </button>
-            <button type="button" data-action="map-zoom-out" aria-label="Dézoomer">
-              <span class="material-symbols-outlined" aria-hidden="true">remove</span>
+
+            <button type="button" data-action="map-geolocate">
+              <span class="material-symbols-outlined filled" aria-hidden="true">my_location</span>
+              <span>Ma position</span>
             </button>
+
+            <button type="button" data-action="map-style">
+              <span class="material-symbols-outlined" aria-hidden="true">layers</span>
+              <span>${mobileMapStyle === 'plan' ? 'Satellite' : 'Plan'}</span>
+            </button>
+
+            <button type="button" data-action="map-tour">
+              <span class="material-symbols-outlined" aria-hidden="true">route</span>
+              <span>${mobileMapTouring ? 'Stop visite' : 'Mode visite'}</span>
+            </button>
+
+            <div class="mobile-map-tools-zoom">
+              <button type="button" data-action="map-zoom-out" aria-label="Dézoomer">
+                <span class="material-symbols-outlined" aria-hidden="true">remove</span>
+              </button>
+              <button type="button" data-action="map-zoom-in" aria-label="Zoomer">
+                <span class="material-symbols-outlined" aria-hidden="true">add</span>
+              </button>
+            </div>
           </div>
         </div>
 
         <article id="mobile-map-place-card" class="mobile-map-place-card glass-panel" hidden></article>
-                <article class="mobile-map-card glass-panel">
+        <article class="mobile-map-card glass-panel ${mobileMapSheetOpen ? 'is-open' : 'is-compact'}">
           <div class="map-summary-header">
             <div>
               <span class="kicker">${escapeHtml(tripName)}</span>
@@ -1075,8 +1086,8 @@ function renderMap() {
               </p>
             </div>
 
-            <button type="button" data-action="toggle-map-summary" aria-label="Réduire le résumé">
-              <span class="material-symbols-outlined" aria-hidden="true">keyboard_arrow_down</span>
+            <button type="button" data-action="toggle-map-sheet" aria-label="${mobileMapSheetOpen ? 'Réduire le panneau' : 'Ouvrir le panneau'}">
+              <span class="material-symbols-outlined" aria-hidden="true">${mobileMapSheetOpen ? 'keyboard_arrow_down' : 'keyboard_arrow_up'}</span>
             </button>
           </div>
 
@@ -4484,12 +4495,20 @@ if (action === 'delete-step') {
     return;
   }
 
-    if (action === 'toggle-map-summary') {
-    event.target.closest('.mobile-map-card, .map-summary-card')?.classList.toggle('collapsed');
+      if (action === 'toggle-map-summary' || action === 'toggle-map-sheet') {
+    mobileMapSheetOpen = !mobileMapSheetOpen;
+    renderMap();
+    return;
+  }
+
+    if (action === 'map-tools-toggle') {
+    mobileMapToolsOpen = !mobileMapToolsOpen;
+    renderMap();
     return;
   }
 
     if (action === 'map-fit') {
+          mobileMapToolsOpen = false;
     fitMobileMapToSteps();
     return;
   }
@@ -4554,11 +4573,13 @@ if (action === 'delete-step') {
   }
 
     if (action === 'map-tour') {
+     mobileMapToolsOpen = false;   
     toggleMobileMapTour();
     return;
   }
 
   if (action === 'map-style') {
+      mobileMapToolsOpen = false;
     mobileMapStyle = mobileMapStyle === 'plan' ? 'satellite' : 'plan';
     if (mobileMapInstance) {
       mobileMapInstance.setStyle(getMobileMapStyleUrl());
@@ -4577,6 +4598,7 @@ if (action === 'delete-step') {
   }
 
   if (action === 'map-geolocate') {
+    mobileMapToolsOpen = false;
     if (!navigator.geolocation || !mobileMapInstance) {
       alert('Géolocalisation non disponible.');
       return;
@@ -4665,6 +4687,7 @@ if (action === 'delete-step') {
     mobileMapSelectedPlace = null;
     mobileMapSelectedPlaceType = 'activity';
     mobileMapLocatingStep = null;
+    mobileMapToolsOpen = false;
 
     if (mobileMapSearchMarker) {
       mobileMapSearchMarker.remove();

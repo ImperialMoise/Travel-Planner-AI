@@ -83,6 +83,7 @@ button {
 }
 
 .mobile-shell {
+  position: relative;
   width: 100%;
   min-height: 100dvh;
   background: var(--surface);
@@ -672,8 +673,10 @@ button {
 
   .mobile-shell {
     max-width: 430px;
+    min-height: 100dvh;
     margin: 0 auto;
     box-shadow: 0 0 40px rgba(45, 73, 63, 0.12);
+    overflow: hidden;
   }
 
   .bottom-nav,
@@ -6616,4 +6619,469 @@ button {
 
 .expense-v2-amount-line {
   margin-inline: auto;
+}
+
+/* Mobile map layout polish */
+.mobile-shell:has(.mobile-map-screen),
+.mobile-shell:has(.map-screen) {
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+}
+
+.mobile-map-screen,
+.map-screen {
+  position: relative;
+  width: 100%;
+  height: 100dvh;
+  min-height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.mobile-real-map,
+#mobile-map {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.mobile-map-search {
+  position: absolute;
+  z-index: 20;
+  top: calc(72px + env(safe-area-inset-top, 0px));
+  left: 12px;
+  right: 12px;
+  min-height: 48px;
+  border-radius: 999px;
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+}
+
+.mobile-map-search input {
+  min-width: 0;
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--on-surface);
+  font-size: 13.5px;
+}
+
+.mobile-map-results {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  max-height: 220px;
+  overflow-y: auto;
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+
+.mobile-map-card {
+  position: absolute;
+  z-index: 20;
+  left: 12px;
+  right: 12px;
+  bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+  max-height: min(42dvh, 360px);
+  overflow: hidden;
+  border-radius: 18px;
+  padding: 14px;
+  display: grid;
+  gap: 10px;
+}
+
+.mobile-map-card.collapsed {
+  max-height: 76px;
+}
+
+.mobile-map-card.collapsed > *:not(.map-summary-header) {
+  display: none;
+}
+
+.mobile-map-step-list,
+.mobile-map-unlocated {
+  min-height: 0;
+  max-height: 180px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: grid;
+  gap: 8px;
+  padding-right: 2px;
+}
+
+.mobile-map-step,
+.mobile-map-unlocated button {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  border-radius: 14px;
+  padding: 10px 12px;
+  display: grid;
+  grid-template-columns: 34px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.76);
+  color: var(--on-surface);
+  text-align: left;
+}
+
+.mobile-map-step div,
+.mobile-map-unlocated button div {
+  min-width: 0;
+}
+
+.mobile-map-step strong,
+.mobile-map-unlocated strong {
+  display: block;
+  overflow: hidden;
+  color: var(--on-surface);
+  font-size: 13.5px;
+  line-height: 18px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mobile-map-step small,
+.mobile-map-unlocated small {
+  display: block;
+  overflow: hidden;
+  color: var(--on-surface-variant);
+  font-size: 11.5px;
+  line-height: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mobile-map-day-tabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+
+.mobile-map-day-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.mobile-map-day-tabs button {
+  flex: 0 0 auto;
+}
+
+.mobile-map-place-card {
+  position: absolute;
+  z-index: 25;
+  left: 12px;
+  right: 12px;
+  bottom: calc(76px + min(42dvh, 360px) + 12px);
+  max-height: 210px;
+  overflow-y: auto;
+  border-radius: 18px;
+  padding: 14px;
+}
+
+.bottom-nav {
+  z-index: 40;
+}
+
+/* Mobile map tools menu */
+.mobile-map-tools {
+  position: absolute;
+  z-index: 24;
+  top: calc(132px + env(safe-area-inset-top, 0px));
+  right: 12px;
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+}
+
+.mobile-map-tools-fab {
+  width: 46px;
+  height: 46px;
+  border: 0;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  color: var(--primary);
+}
+
+.mobile-map-tools-menu {
+  width: 168px;
+  padding: 8px;
+  border-radius: 18px;
+  display: none;
+  gap: 4px;
+}
+
+.mobile-map-tools-menu.open {
+  display: grid;
+}
+
+.mobile-map-tools-menu > button {
+  width: 100%;
+  border: 0;
+  border-radius: 12px;
+  padding: 10px;
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  color: var(--on-surface);
+  text-align: left;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.mobile-map-tools-menu > button:active {
+  background: rgba(124, 84, 16, 0.1);
+}
+
+.mobile-map-tools-menu .material-symbols-outlined {
+  color: var(--primary);
+  font-size: 20px;
+}
+
+.mobile-map-tools-zoom {
+  margin-top: 4px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.mobile-map-tools-zoom button {
+  height: 38px;
+  border: 0;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--primary);
+}
+
+/* Mobile map bottom sheet */
+.mobile-map-card.is-compact {
+  max-height: 92px;
+  padding: 14px;
+}
+
+.mobile-map-card.is-compact .mobile-map-day-nav,
+.mobile-map-card.is-compact .mobile-map-day-tabs,
+.mobile-map-card.is-compact .mobile-map-card-actions,
+.mobile-map-card.is-compact .mobile-map-step-list,
+.mobile-map-card.is-compact .mobile-map-unlocated {
+  display: none;
+}
+
+.mobile-map-card.is-open {
+  max-height: min(52dvh, 440px);
+  grid-template-rows: auto auto auto auto minmax(0, 1fr);
+}
+
+.mobile-map-card.is-open .mobile-map-step-list,
+.mobile-map-card.is-open .mobile-map-unlocated {
+  max-height: 210px;
+}
+
+.mobile-map-card.is-open .map-summary-header button span {
+  transform: rotate(0deg);
+}
+
+.mobile-map-card.is-compact .map-summary-header button span {
+  transform: rotate(0deg);
+}
+
+.mobile-map-card .map-summary-header {
+  align-items: center;
+}
+
+.mobile-map-card .map-summary-header h1 {
+  font-size: 18px;
+  line-height: 24px;
+}
+
+.mobile-map-card .mobile-map-card-subtitle {
+  margin: 2px 0 0;
+  color: var(--on-surface-variant);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.mobile-map-card .kicker {
+  font-size: 9px;
+  letter-spacing: 0.16em;
+}
+
+/* Mobile map place card polish */
+.mobile-map-place-card {
+  display: grid;
+  gap: 10px;
+}
+
+.mobile-map-place-card[hidden] {
+  display: none;
+}
+
+.mobile-map-place-head,
+.mobile-map-place-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.mobile-map-place-card h2,
+.mobile-map-place-card h3 {
+  margin: 0;
+  color: var(--on-surface);
+  font-family: var(--font-serif);
+  font-size: 18px;
+  line-height: 24px;
+  font-weight: 500;
+}
+
+.mobile-map-place-card p {
+  margin: 2px 0 0;
+  color: var(--on-surface-variant);
+  font-size: 12.5px;
+  line-height: 17px;
+}
+
+.mobile-map-place-close {
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--on-surface-variant);
+}
+
+.mobile-map-place-types,
+.mobile-map-place-days,
+.mobile-map-place-actions {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+
+.mobile-map-place-types::-webkit-scrollbar,
+.mobile-map-place-days::-webkit-scrollbar,
+.mobile-map-place-actions::-webkit-scrollbar {
+  display: none;
+}
+
+.mobile-map-place-types button,
+.mobile-map-place-days button {
+  flex: 0 0 auto;
+  min-height: 34px;
+  border: 1px solid rgba(124, 84, 16, 0.16);
+  border-radius: 999px;
+  padding: 7px 11px;
+  background: rgba(255, 255, 255, 0.62);
+  color: var(--on-surface-variant);
+  font-size: 11.5px;
+  font-weight: 800;
+}
+
+.mobile-map-place-types button.active,
+.mobile-map-place-days button.active {
+  border-color: transparent;
+  background: var(--primary);
+  color: var(--on-primary);
+}
+
+.mobile-map-place-actions button {
+  min-height: 38px;
+  border: 0;
+  border-radius: 999px;
+  padding: 8px 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--primary);
+  color: var(--on-primary);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.mobile-map-place-actions button.secondary {
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--primary);
+}
+
+/* Mobile map step list polish */
+.mobile-map-step .material-symbols-outlined,
+.mobile-map-unlocated .material-symbols-outlined {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: var(--tan-accent);
+  color: var(--primary);
+  font-size: 19px;
+}
+
+.mobile-map-step em,
+.mobile-map-unlocated em {
+  color: var(--primary);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-style: normal;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.mobile-map-more {
+  min-height: 38px;
+  border: 1px dashed rgba(124, 84, 16, 0.28);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.5);
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.mobile-map-unlocated {
+  margin-top: 4px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(124, 84, 16, 0.12);
+}
+
+.mobile-map-unlocated > .kicker {
+  color: var(--primary);
+}
+
+/* Mobile map day chips */
+.mobile-map-day-tabs button {
+  min-width: 34px;
+  min-height: 30px;
+  border: 1px solid rgba(124, 84, 16, 0.12);
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--on-surface-variant);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.mobile-map-day-tabs button.active {
+  border-color: transparent;
+  background: var(--primary);
+  color: var(--on-primary);
 }

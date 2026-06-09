@@ -2708,6 +2708,11 @@ if (action === 'delete-budget-person') {
   return;
 }
 
+  if (action === 'new-expense') {
+    navigate('new-expense');
+    return;
+  }
+
     if (action === 'save-expense') {
     handleSaveExpense();
     return;

@@ -1219,17 +1219,23 @@ function budgetTabs(active = 'overview') {
     { id: 'balance', label: 'Équilibre', action: 'budget-balance' }
   ];
 
+  const tabsHtml = tabs.map(function(tab) {
+    const isActive = active === tab.id;
+
+    return `
+      <button
+        class="seg-control-btn ${isActive ? 'active' : ''}"
+        type="button"
+        role="tab"
+        aria-selected="${isActive ? 'true' : 'false'}"
+        data-action="${tab.action}"
+      >${tab.label}</button>
+    `;
+  }).join('');
+
   return `
     <div class="seg-control" role="tablist" aria-label="Vue budget">
-      ${tabs.map(tab => `
-        <button
-          class="seg-control-btn ${active === tab.id ? 'active' : ''}"
-          type="button"
-          role="tab"
-          aria-selected="${active === tab.id ? 'true' : 'false'}"
-          data-action="${tab.action}"
-        >${tab.label}</button>
-      `).join('')}
+      ${tabsHtml}
     </div>
   `;
 }
@@ -1430,7 +1436,9 @@ async function handleAddBudgetPerson() {
 
 function renderNewExpense() {
   const people = getBudgetPeople();
-  const activeCategory = expenseCategories.find(category => category.id === selectedExpenseCategory) || expenseCategories[0];
+  const activeCategory = expenseCategories.find(function(category) {
+    return category.id === selectedExpenseCategory;
+  }) || expenseCategories[0];
 
   const editingItem = editingExpenseGroupIndex !== null && editingExpenseItemIndex !== null
     ? expenses[editingExpenseGroupIndex]?.items[editingExpenseItemIndex]
@@ -1443,26 +1451,64 @@ function renderNewExpense() {
   const editingTitle = editingItem?.title || '';
   const editingNote = editingItem?.note || '';
 
+  const categoryButtonsHtml = expenseCategories.map(function(category) {
+    const isActive = activeCategory.id === category.id;
+
+    return `
+      <button class="expense-category-button ${isActive ? 'active' : ''} ${category.id === 'other' ? 'other' : ''}" type="button" data-expense-category="${category.id}">
+        <span class="material-symbols-outlined ${isActive ? 'filled' : ''}" aria-hidden="true">${category.icon}</span>
+        <span>${category.label}</span>
+      </button>
+    `;
+  }).join('');
+
+  const payerButtonsHtml = people.map(function(person) {
+    const isActive = selectedExpensePayer === person.id;
+
+    return `
+      <button class="expense-person-pill ${isActive ? 'active' : ''}" type="button" data-expense-payer="${person.id}">
+        <span>${getInitial(person.name)}</span>
+        ${escapeHtml(person.name)}
+      </button>
+    `;
+  }).join('');
+
+  const splitAvatarsHtml = people.slice(0, 4).map(function(person) {
+    return `<span>${getInitial(person.name)}</span>`;
+  }).join('');
+
+  const splitPeopleHtml = people.map(function(person) {
+    const isActive = selectedExpenseSplit === person.id;
+
+    return `
+      <button class="expense-split-card ${isActive ? 'active' : ''}" type="button" data-expense-split="${person.id}">
+        <span class="split-avatars solo">
+          <span>${getInitial(person.name)}</span>
+        </span>
+        <strong>${escapeHtml(person.name)}</strong>
+        <span class="material-symbols-outlined" aria-hidden="true">${isActive ? 'check_circle' : 'radio_button_unchecked'}</span>
+      </button>
+    `;
+  }).join('');
+
   app.innerHTML = `
     <div class="mobile-shell new-expense-shell">
       <header class="new-expense-header">
         <button type="button" data-action="budget" aria-label="Fermer">
           <span class="material-symbols-outlined" aria-hidden="true">close</span>
         </button>
+
         <span class="kicker">${editingItem ? 'Modifier la dépense' : 'Nouvelle dépense'}</span>
+
         <button type="button" data-action="save-expense">Enregistrer</button>
       </header>
 
       <main class="new-expense-main">
         <section class="new-expense-section" aria-labelledby="expense-category-title">
           <h2 class="kicker" id="expense-category-title">Catégorie</h2>
+
           <div class="expense-category-grid">
-            ${expenseCategories.map(category => `
-              <button class="expense-category-button ${activeCategory.id === category.id ? 'active' : ''} ${category.id === 'other' ? 'other' : ''}" type="button" data-expense-category="${category.id}">
-                <span class="material-symbols-outlined ${activeCategory.id === category.id ? 'filled' : ''}" aria-hidden="true">${category.icon}</span>
-                <span>${category.label}</span>
-              </button>
-            `).join('')}
+            ${categoryButtonsHtml}
           </div>
         </section>
 
@@ -1475,6 +1521,7 @@ function renderNewExpense() {
 
         <section class="expense-amount-section compact" aria-labelledby="expense-amount-title">
           <h2 class="kicker" id="expense-amount-title">Montant</h2>
+
           <label class="expense-amount-input">
             <span>€</span>
             <input id="expense-amount" type="text" inputmode="decimal" value="${editingAmount}" placeholder="0.00" aria-label="Montant de la dépense">
@@ -1483,13 +1530,10 @@ function renderNewExpense() {
 
         <section class="new-expense-section" aria-labelledby="expense-payer-title">
           <h2 class="kicker" id="expense-payer-title">Qui a payé ?</h2>
+
           <div class="expense-people-grid">
-            ${people.map(person => `
-              <button class="expense-person-pill ${selectedExpensePayer === person.id ? 'active' : ''}" type="button" data-expense-payer="${person.id}">
-                <span>${getInitial(person.name)}</span>
-                ${escapeHtml(person.name)}
-              </button>
-            `).join('')}
+            ${payerButtonsHtml}
+
             <button class="expense-person-pill ${selectedExpensePayer === 'common' ? 'active' : ''}" type="button" data-expense-payer="common">
               <span>€</span>
               Fonds commun
@@ -1499,22 +1543,17 @@ function renderNewExpense() {
 
         <section class="new-expense-section" aria-labelledby="expense-split-title">
           <h2 class="kicker" id="expense-split-title">Pour qui ?</h2>
+
           <div class="expense-split-list">
             <button class="expense-split-card ${selectedExpenseSplit === 'equal' ? 'active' : ''}" type="button" data-expense-split="equal">
               <span class="split-avatars">
-                ${people.slice(0, 4).map(person => `<span>${getInitial(person.name)}</span>`).join('')}
+                ${splitAvatarsHtml}
               </span>
               <strong>Partagé équitablement</strong>
               <span class="material-symbols-outlined" aria-hidden="true">${selectedExpenseSplit === 'equal' ? 'check_circle' : 'radio_button_unchecked'}</span>
             </button>
 
-            ${people.map(person => `
-              <button class="expense-split-card ${selectedExpenseSplit === person.id ? 'active' : ''}" type="button" data-expense-split="${person.id}">
-                <span class="split-avatars solo"><span>${getInitial(person.name)}</span></span>
-                <strong>${escapeHtml(person.name)}</strong>
-                <span class="material-symbols-outlined" aria-hidden="true">${selectedExpenseSplit === person.id ? 'check_circle' : 'radio_button_unchecked'}</span>
-              </button>
-            `).join('')}
+            ${splitPeopleHtml}
 
             <button class="expense-split-card add-person" type="button" data-action="add-budget-person">
               <span class="material-symbols-outlined">person_add</span>
@@ -1529,6 +1568,7 @@ function renderNewExpense() {
             <span class="material-symbols-outlined" aria-hidden="true">calendar_today</span>
             <input id="expense-date" type="date">
           </label>
+
           <label>
             <span class="material-symbols-outlined" aria-hidden="true">notes</span>
             <textarea id="expense-note" rows="2" placeholder="Note optionnelle">${escapeHtml(editingNote)}</textarea>

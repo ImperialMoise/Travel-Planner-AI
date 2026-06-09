@@ -1472,6 +1472,91 @@ function getExpenseCategories() {
   ].filter(Boolean);
 }
 
+function openExpenseModal(type, options = {}) {
+  expenseModal = {
+    type,
+    id: options.id || null,
+    value: options.value || ''
+  };
+
+  renderNewExpense();
+}
+
+function closeExpenseModal() {
+  expenseModal = null;
+  renderNewExpense();
+}
+
+async function confirmExpenseModal() {
+  const input = document.querySelector('#expense-modal-input');
+  const value = input?.value.trim();
+
+  if (!expenseModal || !value) return;
+
+  if (expenseModal.type === 'category') {
+    const customCategories = getCustomExpenseCategories();
+
+    customCategories.push({
+      id: `custom-${Date.now()}`,
+      label: value,
+      icon: 'receipt',
+      tone: 'neutral',
+      emoji: '+',
+      custom: true
+    });
+
+    saveCustomExpenseCategories(customCategories);
+    selectedExpenseCategory = customCategories[customCategories.length - 1].id;
+  }
+
+  if (expenseModal.type === 'person') {
+    await addBudgetPersonByName(value);
+  }
+
+  if (expenseModal.type === 'person-edit') {
+    await updateBudgetPersonByName(expenseModal.id, value);
+  }
+
+  expenseModal = null;
+  renderNewExpense();
+}
+
+function renderExpenseModal() {
+  if (!expenseModal) return '';
+
+  const title = expenseModal.type === 'category'
+    ? 'Ajouter une catégorie'
+    : expenseModal.type === 'person-edit'
+      ? 'Modifier la personne'
+      : 'Ajouter une personne';
+
+  const placeholder = expenseModal.type === 'category'
+    ? 'Ex: Visites, Santé, Souvenirs...'
+    : 'Nom de la personne';
+
+  return `
+    <div class="expense-v2-modal-backdrop">
+      <div class="expense-v2-modal">
+        <button class="expense-v2-modal-close" type="button" data-action="close-expense-modal" aria-label="Fermer">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+
+        <h3>${title}</h3>
+
+        <label class="expense-v2-modal-field">
+          <span class="material-symbols-outlined">${expenseModal.type === 'category' ? 'category' : 'person'}</span>
+          <input id="expense-modal-input" type="text" value="${escapeHtml(expenseModal.value || '')}" placeholder="${placeholder}">
+        </label>
+
+        <div class="expense-v2-modal-actions">
+          <button class="secondary" type="button" data-action="close-expense-modal">Annuler</button>
+          <button class="primary" type="button" data-action="confirm-expense-modal">Valider</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 function handleAddExpenseCategory() {
   openExpenseModal('category');
 }
@@ -1629,6 +1714,18 @@ function handleAddBudgetPerson() {
   }]);
 
   renderNewExpense();
+}
+
+function getLocalBudgetPeople() {
+  try {
+    return JSON.parse(localStorage.getItem('atelierBudgetPeople')) || [];
+  } catch {
+    return [];
+  }
+}
+
+function saveLocalBudgetPeople(people) {
+  localStorage.setItem('atelierBudgetPeople', JSON.stringify(people));
 }
 
 function getBudgetPeople() {
@@ -2727,7 +2824,8 @@ if (action === 'delete-budget-person') {
   selectedExpenseCategory = 'meal';
   selectedExpensePayer = 'me';
   selectedExpenseSplit = 'equal';
-  navigate('new-expense');
+  window.location.hash = 'new-expense';
+  renderNewExpense();
   return;
 }
 

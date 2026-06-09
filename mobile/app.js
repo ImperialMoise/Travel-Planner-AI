@@ -1252,59 +1252,48 @@ function renderBudget() {
         <section class="expense-list">
           ${budgetGroups.map((group, groupIndex) => `
             <div class="expense-group">
-              <h3 class="expense-date">${group.group}</h3>
+              <h3 class="expense-date">${escapeHtml(group.group)}</h3>
 
-              ${group.items.map((item, itemIndex) => `
-                <article class="expense-item">
-                  <div class="expense-icon ${item.tone || 'primary'}">
-                    <span class="material-symbols-outlined">
+              ${group.items.map((item, itemIndex) => {
+                const iconName = item.icon && !['', '▣', '☕', '▰', '✈', '◉', '◒', '▤'].includes(item.icon)
+                  ? item.icon
+                  : getBudgetCategoryIcon(item.cat || item.title || '');
+
+                const amountLabel = item.amountLabel || `- ${formatEuroAmount(item.amount)}`;
+
+                return `
+                  <article class="expense-item">
+                    <div class="expense-icon ${item.tone || 'primary'}">
+                      <span class="material-symbols-outlined">${iconName}</span>
+                    </div>
+
+                    <div class="expense-content">
+                      <h4>${escapeHtml(item.title || 'Dépense')}</h4>
+                      <p>Payé par ${escapeHtml(item.payer || '—')}</p>
+                    </div>
+
+                    <div class="expense-side">
+                      <strong>${escapeHtml(amountLabel)}</strong>
+
                       ${
-                        item.icon === ''
-                          ? 'restaurant'
-                          : item.icon === '▣'
-                            ? 'directions_bus'
-                            : item.icon === '☕'
-                              ? 'local_cafe'
-                              : item.icon === '▰'
-                                ? 'museum'
-                                : item.icon === '✈'
-                                  ? 'flight'
-                                  : item.icon === '◉'
-                                    ? 'local_activity'
-                                    : item.icon === '◒'
-                                      ? 'shopping_bag'
-                                      : item.icon === '▤'
-                                        ? 'hotel'
-                                        : item.icon || 'receipt'
+                        item.synced
+                          ? '<span class="sync-pill">Supabase</span>'
+                          : `
+                            <div class="item-actions">
+                              <button class="icon-mini" type="button" data-action="edit-expense" data-group-index="${groupIndex}" data-item-index="${itemIndex}" aria-label="Modifier la dépense">
+                                <span class="material-symbols-outlined">edit</span>
+                              </button>
+
+                              <button class="icon-mini danger" type="button" data-action="delete-expense" data-group-index="${groupIndex}" data-item-index="${itemIndex}" aria-label="Supprimer la dépense">
+                                <span class="material-symbols-outlined">close</span>
+                              </button>
+                            </div>
+                          `
                       }
-                    </span>
-                  </div>
-
-                  <div class="expense-content">
-                    <h4>${escapeHtml(item.title)}</h4>
-                    <p>Payé par ${escapeHtml(item.payer || '—')}</p>
-                  </div>
-
-                  <div class="expense-side">
-                    <strong>${item.amountLabel || item.amount}</strong>
-
-                    ${
-                      item.synced
-                        ? '<span class="sync-pill">Supabase</span>'
-                        : `
-                          <div class="item-actions">
-                            <button class="icon-mini" type="button" data-action="edit-expense" data-group-index="${groupIndex}" data-item-index="${itemIndex}" aria-label="Modifier la dépense">
-                              <span class="material-symbols-outlined">edit</span>
-                            </button>
-                            <button class="icon-mini danger" type="button" data-action="delete-expense" data-group-index="${groupIndex}" data-item-index="${itemIndex}" aria-label="Supprimer la dépense">
-                              <span class="material-symbols-outlined">close</span>
-                            </button>
-                          </div>
-                        `
-                    }
-                  </div>
-                </article>
-              `).join('')}
+                    </div>
+                  </article>
+                `;
+              }).join('')}
             </div>
           `).join('')}
         </section>
@@ -1313,6 +1302,94 @@ function renderBudget() {
       ${bottomNav('budget')}
     </div>
   `;
+}
+
+function parseEuroAmount(value = '') {
+  const normalized = String(value)
+    .replace(/[^0-9,.-]/g, '')
+    .replace(',', '.');
+
+  const amount = Number.parseFloat(normalized);
+
+  return Number.isFinite(amount) ? Math.abs(amount) : 0;
+}
+
+function formatEuroAmount(value = 0) {
+  const amount = Number(value) || 0;
+
+  return amount.toLocaleString('fr-FR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }) + ' €';
+}
+
+function getBudgetCategoryIcon(category = '') {
+  const normalized = category.toLowerCase();
+
+  if (normalized.includes('repas') || normalized.includes('restaurant')) return 'restaurant';
+  if (normalized.includes('transport') || normalized.includes('train') || normalized.includes('bus')) return 'directions_bus';
+  if (normalized.includes('hôtel') || normalized.includes('hotel') || normalized.includes('logement')) return 'hotel';
+  if (normalized.includes('activité') || normalized.includes('activite')) return 'local_activity';
+  if (normalized.includes('vol')) return 'flight';
+  if (normalized.includes('café') || normalized.includes('cafe')) return 'local_cafe';
+  if (normalized.includes('achat')) return 'shopping_bag';
+
+  return 'receipt';
+}
+
+function getCurrentBudgetItems() {
+  if (activeTrip?.budget?.length) {
+    return activeTrip.budget.map(item => ({
+      id: item.id,
+      cat: item.cat || 'Divers',
+      title: item.desc || item.cat || 'Dépense',
+      payer: item.paidBy || '—',
+      amount: Number(item.amount) || 0,
+      synced: true
+    }));
+  }
+
+  return expenses.flatMap(group =>
+    group.items.map(item => ({
+      id: null,
+      cat: item.title || 'Divers',
+      title: item.title,
+      payer: item.payer,
+      amount: parseEuroAmount(item.amount),
+      icon: item.icon,
+      tone: item.tone,
+      synced: false
+    }))
+  );
+}
+
+function getCurrentBudgetTotal() {
+  return getCurrentBudgetItems().reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+}
+
+function getBudgetGroupsForDisplay() {
+  if (activeTrip?.budget?.length) {
+    return [
+      {
+        group: 'Dépenses synchronisées',
+        items: getCurrentBudgetItems().map(item => ({
+          ...item,
+          amountLabel: `- ${formatEuroAmount(item.amount)}`,
+          icon: getBudgetCategoryIcon(item.cat),
+          tone: 'primary'
+        }))
+      }
+    ];
+  }
+
+  return expenses.map(group => ({
+    ...group,
+    items: group.items.map(item => ({
+      ...item,
+      amountLabel: item.amount,
+      synced: false
+    }))
+  }));
 }
 
 function getBudgetPeople() {
@@ -1466,50 +1543,56 @@ function renderNewExpense() {
 }
 
 function renderBudgetOverview() {
-  const formattedTotal = formatEuroAmount(getCurrentBudgetTotal());
+  const total = getCurrentBudgetTotal();
+  const formattedTotal = formatEuroAmount(total);
 
   app.innerHTML = `
     <div class="mobile-shell">
       ${topbar()}
 
-      <main class="budget-main">
+      <main class="budget-overview-main">
         ${budgetTabs('overview')}
 
-        <section class="budget-hero-card">
-          <span class="kicker">Budget Total</span>
-          <h2>${formattedTotal}</h2>
+        <section class="budget-overview-card" aria-label="Résumé du budget">
+          <div class="budget-pattern" aria-hidden="true"></div>
 
-          <div class="budget-donut">
-            <svg viewBox="0 0 36 36" aria-hidden="true">
-              <path class="donut-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-              <path class="donut-main" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-              <path class="donut-secondary" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-              <path class="donut-accent" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-            </svg>
+          <div class="budget-overview-content">
+            <span class="kicker">Budget Total</span>
+            <h2>${formattedTotal}</h2>
 
-            <div>
-              <span>Total</span>
-              <strong>${formattedTotal}</strong>
+            <div class="donut-wrap" aria-label="Graphique du budget">
+              <svg class="donut" viewBox="0 0 36 36" role="img" aria-labelledby="budget-donut-title">
+                <title id="budget-donut-title">Répartition du budget</title>
+                <path class="donut-ring" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                <path class="donut-segment primary" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                <path class="donut-segment tertiary" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                <path class="donut-segment accent" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+              </svg>
+
+              <div class="donut-center">
+                <span>Total</span>
+                <strong>${formattedTotal}</strong>
+              </div>
             </div>
           </div>
         </section>
 
-        <section>
-          <h3 class="section-title">Répartition</h3>
+        <section class="budget-repartition" aria-labelledby="budget-repartition-title">
+          <h3 id="budget-repartition-title">Répartition</h3>
 
-          <div class="category-list">
-            ${budgetCategories.map(cat => `
-              <article class="category-row ${cat.tone}">
-                <div class="category-icon">
-                  <span class="material-symbols-outlined">${cat.icon}</span>
-                </div>
+          <div class="budget-category-list">
+            ${budgetCategories.map(category => `
+              <article class="budget-category-card">
+                <span class="budget-category-icon ${category.tone}" aria-hidden="true">
+                  <span class="material-symbols-outlined">${category.icon}</span>
+                </span>
 
                 <div>
-                  <h4>${cat.label}</h4>
-                  <p>${cat.percent}</p>
+                  <h4>${category.label}</h4>
+                  <p>${category.percent}</p>
                 </div>
 
-                <strong>${cat.amount}</strong>
+                <strong>${category.amount}</strong>
               </article>
             `).join('')}
           </div>
@@ -1520,14 +1603,6 @@ function renderBudgetOverview() {
     </div>
   `;
 }
-
-const totalExpenses = expenses.reduce((sum, group) =>
-    sum + group.items.reduce((s, item) => {
-      const num = parseFloat(item.amount.replace(/[^0-9.,]/g, '').replace(',', '.'));
-      return s + (isNaN(num) ? 0 : num);
-    }, 0)
-  , 0);
-  const formattedTotal = totalExpenses.toFixed(2).replace('.', ',') + ' €';
 
 
 function renderBudgetBalance() {
@@ -1832,7 +1907,7 @@ async function handleSaveExpense() {
   const note = noteInput?.value.trim() || '';
   const amount = parseEuroAmount(amountInput?.value || '0');
 
-  const people = getBudgetPeople();
+  const people = typeof getBudgetPeople === 'function' ? getBudgetPeople() : [];
   const selectedPayer = people.find(person => person.id === selectedExpensePayer);
 
   const activeCategory = expenseCategories.find(category => category.id === selectedExpenseCategory) || expenseCategories[0];
@@ -1871,14 +1946,13 @@ async function handleSaveExpense() {
     }
   }
 
-  const normalizedAmount = formatEuroAmount(amount);
   const expenseData = {
-    title: title || activeCategory.label,
+    title: title || note || activeCategory.label,
     note,
     payer,
-    amount: `- ${normalizedAmount}`,
-    icon: activeCategory.emoji,
-    tone: activeCategory.tone
+    amount: `- ${formatEuroAmount(amount)}`,
+    icon: activeCategory.emoji || 'receipt',
+    tone: activeCategory.tone || 'primary'
   };
 
   if (editingExpenseGroupIndex !== null && editingExpenseItemIndex !== null) {

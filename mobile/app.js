@@ -2582,6 +2582,9 @@ function navigate(route) {
   } else if (route === 'budget-balance') {
     window.location.hash = 'budget-balance';
     renderBudgetBalance();
+    } else if (route === 'budget') {
+    window.location.hash = 'budget';
+    renderBudget();
   } else if (route === 'new-expense') {
     window.location.hash = 'new-expense';
     renderNewExpense();

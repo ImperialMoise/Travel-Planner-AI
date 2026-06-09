@@ -1745,6 +1745,49 @@ const editingNote = editingItem?.note || '';
   `;
 }).join('');
 
+  const isActive = selectedExpensePayer === person.id;
+  const canEdit = person.id !== 'me' && person.id !== 'partner';
+
+  return `
+    <div class="expense-v2-person-card-wrap">
+      <button
+        class="expense-v2-person-card ${isActive ? 'active' : ''}"
+        type="button"
+        data-expense-payer="${person.id}"
+      >
+        <span class="expense-v2-person-avatar">${getInitial(person.name)}</span>
+        <span>${escapeHtml(person.name)}</span>
+      </button>
+
+      ${
+        canEdit
+          ? `
+            <div class="expense-v2-card-actions">
+              <button
+                type="button"
+                data-action="edit-budget-person"
+                data-person-id="${person.id}"
+                aria-label="Modifier ${escapeHtml(person.name)}"
+              >
+                <span class="material-symbols-outlined" aria-hidden="true">edit</span>
+              </button>
+
+              <button
+                type="button"
+                class="danger"
+                data-action="delete-budget-person"
+                data-person-id="${person.id}"
+                aria-label="Supprimer ${escapeHtml(person.name)}"
+              >
+                <span class="material-symbols-outlined" aria-hidden="true">close</span>
+              </button>
+            </div>
+          `
+          : ''
+      }
+    </div>
+  `;
+}).join('');
 
   const splitAvatarsHtml = people.slice(0, 4).map(function(person) {
     return `<span>${getInitial(person.name)}</span>`;
@@ -1785,6 +1828,49 @@ const editingNote = editingItem?.note || '';
   `;
 }).join('');
 
+  const isActive = selectedExpenseSplit === person.id;
+  const canEdit = person.id !== 'me' && person.id !== 'partner';
+
+  return `
+    <div class="expense-v2-person-card-wrap">
+      <button
+        class="expense-v2-person-card ${isActive ? 'active' : ''}"
+        type="button"
+        data-expense-split="${person.id}"
+      >
+        <span class="expense-v2-person-avatar">${getInitial(person.name)}</span>
+        <span>${escapeHtml(person.name)}</span>
+      </button>
+
+      ${
+        canEdit
+          ? `
+            <div class="expense-v2-card-actions">
+              <button
+                type="button"
+                data-action="edit-budget-person"
+                data-person-id="${person.id}"
+                aria-label="Modifier ${escapeHtml(person.name)}"
+              >
+                <span class="material-symbols-outlined" aria-hidden="true">edit</span>
+              </button>
+
+              <button
+                type="button"
+                class="danger"
+                data-action="delete-budget-person"
+                data-person-id="${person.id}"
+                aria-label="Supprimer ${escapeHtml(person.name)}"
+              >
+                <span class="material-symbols-outlined" aria-hidden="true">close</span>
+              </button>
+            </div>
+          `
+          : ''
+      }
+    </div>
+  `;
+}).join('');
 
   app.innerHTML = `
     <div class="mobile-shell expense-v2-shell">
@@ -2867,7 +2953,6 @@ if (action === 'delete-budget-person') {
   toggleBudgetPeopleEdition();
   return;
 }
-
   if (action === 'add-budget-person') {
   handleAddBudgetPerson();
   return;
@@ -3038,6 +3123,10 @@ window.addEventListener('change', event => {
 
 renderCurrentRoute();
 
-initMobileData().then(() => {
-  renderCurrentRoute();
-});
+if (typeof initMobileData === 'function') {
+  initMobileData()
+    .then(renderCurrentRoute)
+    .catch(error => {
+      console.error('Erreur chargement données mobiles :', error);
+    });
+}

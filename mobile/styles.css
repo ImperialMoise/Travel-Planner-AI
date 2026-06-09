@@ -5224,3 +5224,114 @@ button {
   color: var(--on-primary);
   box-shadow: 0 8px 24px rgba(124, 84, 16, 0.18);
 }
+
+/* ════════════════════════════════════════════════════════════
+   Budget — actions modifier/supprimer
+   ════════════════════════════════════════════════════════════ */
+
+.expense-card-right {
+  flex: 0 0 auto;
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+}
+
+.expense-card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.expense-card-action {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: var(--primary-fixed);
+  color: var(--primary);
+}
+
+.expense-card-action.danger {
+  background: var(--error-container);
+  color: var(--error-red);
+}
+
+.expense-card-action .material-symbols-outlined {
+  font-size: 16px;
+}
+
+/* ════════════════════════════════════════════════════════════
+   Nouvelle dépense — édition personnes
+   ════════════════════════════════════════════════════════════ */
+
+.expense-v2-person-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.expense-v2-person-edit,
+.expense-v2-person-delete {
+  position: absolute;
+  top: -8px;
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--faint-border);
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: var(--surface-container-lowest);
+  color: var(--primary);
+  box-shadow: 0 3px 10px rgba(82, 98, 91, 0.12);
+}
+
+.expense-v2-person-edit {
+  right: 18px;
+}
+
+.expense-v2-person-delete {
+  right: -4px;
+  background: var(--error-container);
+  color: var(--error-red);
+}
+
+.expense-v2-person-edit .material-symbols-outlined,
+.expense-v2-person-delete .material-symbols-outlined {
+  font-size: 14px;
+}
+
+.expense-v2-split-person-wrap {
+  position: relative;
+}
+
+.expense-v2-split-person-actions {
+  position: absolute;
+  top: 50%;
+  right: 48px;
+  transform: translateY(-50%);
+  display: flex;
+  gap: 6px;
+}
+
+.expense-v2-split-person-actions button {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: var(--primary-fixed);
+  color: var(--primary);
+}
+
+.expense-v2-split-person-actions button:last-child {
+  background: var(--error-container);
+  color: var(--error-red);
+}
+
+.expense-v2-split-person-actions .material-symbols-outlined {
+  font-size: 16px;
+}

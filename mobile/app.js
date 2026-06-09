@@ -149,6 +149,8 @@ let selectedExpensePayer = 'me';
 let selectedExpenseSplit = 'equal';
 let isEditingExpenseCategories = false;
 let expenseModal = null;
+let isEditingBudgetPeople = false;
+let editingExpenseDraft = null;
 let editingExpenseGroupIndex = null;
 let editingExpenseItemIndex = null;
 
@@ -1245,8 +1247,8 @@ function budgetTabs(active = 'overview') {
 function renderBudget() {
   const budgetGroups = getBudgetGroupsForDisplay();
 
-  const groupsHtml = budgetGroups.map(function(group) {
-    const itemsHtml = group.items.map(function(item) {
+  const groupsHtml = budgetGroups.map(function(group, groupIndex) {
+    const itemsHtml = group.items.map(function(item, itemIndex) {
       const iconName = item.icon && !['', '▣', '☕', '▰', '✈', '◉', '◒', '▤'].includes(item.icon)
         ? item.icon
         : getBudgetCategoryIcon(item.cat || item.title || '');
@@ -1267,7 +1269,35 @@ function renderBudget() {
             </div>
           </div>
 
-          <strong>${escapeHtml(amountLabel)}</strong>
+          <div class="expense-card-right">
+            <strong>${escapeHtml(amountLabel)}</strong>
+
+            <div class="expense-card-actions">
+              <button
+                class="expense-card-action"
+                type="button"
+                data-action="edit-budget-expense"
+                data-expense-id="${item.id || ''}"
+                data-group-index="${groupIndex}"
+                data-item-index="${itemIndex}"
+                aria-label="Modifier la dépense"
+              >
+                <span class="material-symbols-outlined" aria-hidden="true">edit</span>
+              </button>
+
+              <button
+                class="expense-card-action danger"
+                type="button"
+                data-action="delete-budget-expense"
+                data-expense-id="${item.id || ''}"
+                data-group-index="${groupIndex}"
+                data-item-index="${itemIndex}"
+                aria-label="Supprimer la dépense"
+              >
+                <span class="material-symbols-outlined" aria-hidden="true">close</span>
+              </button>
+            </div>
+          </div>
         </article>
       `;
     }).join('');
@@ -1423,10 +1453,11 @@ function getExpenseCategories() {
   ].filter(Boolean);
 }
 
-function openExpenseModal(type) {
+function openExpenseModal(type, payload = {}) {
   expenseModal = {
     type,
-    value: ''
+    value: payload.value || '',
+    id: payload.id || null
   };
 
   renderNewExpense();
@@ -1439,6 +1470,15 @@ function closeExpenseModal() {
 
 function getExpenseModalCopy() {
   if (!expenseModal) return null;
+
+  if (expenseModal.type === 'person-edit') {
+    return {
+      title: 'Modifier une personne',
+      label: 'Nom de la personne',
+      placeholder: 'Ex : Sarah',
+      actionLabel: 'Enregistrer'
+    };
+  }
 
   if (expenseModal.type === 'person') {
     return {
@@ -1479,7 +1519,7 @@ function renderExpenseModal() {
 
         <label class="expense-v2-modal-field">
           <span class="material-symbols-outlined" aria-hidden="true">
-            ${expenseModal.type === 'person' ? 'person_add' : 'category'}
+            ${expenseModal.type.includes('person') ? 'person_add' : 'category'}
           </span>
           <input
             id="expense-modal-input"
@@ -1511,6 +1551,10 @@ async function confirmExpenseModal() {
 
   if (expenseModal.type === 'person') {
     await addBudgetPersonByName(value);
+  }
+
+  if (expenseModal.type === 'person-edit') {
+    await updateBudgetPersonByName(expenseModal.id, value);
   }
 
   if (expenseModal.type === 'category') {
@@ -1576,6 +1620,11 @@ function toggleExpenseCategoryEdition() {
   renderNewExpense();
 }
 
+function toggleBudgetPeopleEdition() {
+  isEditingBudgetPeople = !isEditingBudgetPeople;
+  renderNewExpense();
+}
+
 async function addBudgetPersonByName(name) {
   const cleanName = name.trim();
   if (!cleanName) return;
@@ -1594,20 +1643,83 @@ async function addBudgetPersonByName(name) {
   saveLocalBudgetPeople(localPeople);
 }
 
+async function updateBudgetPersonByName(personId, name) {
+  const cleanName = name.trim();
+  if (!personId || !cleanName) return;
+
+  if (activeTrip?.id && window.SB?.sb && !String(personId).startsWith('local-person-')) {
+    const { error } = await window.SB.sb
+      .from('trip_participants')
+      .update({ name: cleanName })
+      .eq('id', personId);
+
+    if (error) {
+      alert('Erreur modification personne : ' + error.message);
+      return;
+    }
+
+    await refreshMobileTrips(activeTrip.id);
+    return;
+  }
+
+  const localPeople = getLocalBudgetPeople().map(function(person) {
+    if (person.id !== personId) return person;
+    return {
+      ...person,
+      name: cleanName
+    };
+  });
+
+  saveLocalBudgetPeople(localPeople);
+}
+
+async function handleDeleteBudgetPerson(personId) {
+  if (!personId) return;
+
+  const people = getBudgetPeople();
+  const person = people.find(function(item) {
+    return item.id === personId;
+  });
+
+  if (!person) return;
+
+  const confirmed = confirm(`Supprimer "${person.name}" ?`);
+  if (!confirmed) return;
+
+  if (activeTrip?.id && window.SB?.removeParticipant && !String(personId).startsWith('local-person-')) {
+    await window.SB.removeParticipant(personId);
+    await refreshMobileTrips(activeTrip.id);
+    renderNewExpense();
+    return;
+  }
+
+  const nextPeople = getLocalBudgetPeople().filter(function(item) {
+    return item.id !== personId;
+  });
+
+  saveLocalBudgetPeople(nextPeople);
+
+  if (selectedExpensePayer === personId) selectedExpensePayer = 'me';
+  if (selectedExpenseSplit === personId) selectedExpenseSplit = 'equal';
+
+  renderNewExpense();
+}
+
+function handleEditBudgetPerson(personId) {
+  const person = getBudgetPeople().find(function(item) {
+    return item.id === personId;
+  });
+
+  if (!person) return;
+
+  openExpenseModal('person-edit', {
+    id: person.id,
+    value: person.name
+  });
+}
+
 function handleAddBudgetPerson() {
   openExpenseModal('person');
-}
-
-function getLocalBudgetPeople() {
-  try {
-    return JSON.parse(localStorage.getItem('atelierBudgetPeople')) || [];
-  } catch {
-    return [];
-  }
-}
-
-function saveLocalBudgetPeople(people) {
-  localStorage.setItem('atelierBudgetPeople', JSON.stringify(people));
 }
 
 function getBudgetPeople() {
@@ -1655,16 +1767,18 @@ function renderNewExpense() {
     return category.id === selectedExpenseCategory;
   }) || categories[0];
 
-  const editingItem = editingExpenseGroupIndex !== null && editingExpenseItemIndex !== null
+  const editingItem = editingExpenseDraft || (
+  editingExpenseGroupIndex !== null && editingExpenseItemIndex !== null
     ? expenses[editingExpenseGroupIndex]?.items[editingExpenseItemIndex]
-    : null;
+    : null
+);
 
-  const editingAmount = editingItem
-    ? editingItem.amount.replace(/[^0-9,.]/g, '').replace(',', '.')
-    : '';
+const editingAmount = editingItem
+  ? String(editingItem.amount || '').replace(/[^0-9,.]/g, '').replace(',', '.')
+  : '';
 
-  const editingTitle = editingItem?.title || '';
-  const editingNote = editingItem?.note || '';
+const editingTitle = editingItem?.title || '';
+const editingNote = editingItem?.note || '';
 
   const categoryButtonsHtml = categories.map(function(category) {
     const isActive = activeCategory.id === category.id;
@@ -1701,9 +1815,11 @@ function renderNewExpense() {
   }).join('');
 
   const payerButtonsHtml = people.map(function(person) {
-    const isActive = selectedExpensePayer === person.id;
+  const isActive = selectedExpensePayer === person.id;
+  const canEdit = person.id !== 'me' && person.id !== 'partner';
 
-    return `
+  return `
+    <span class="expense-v2-person-wrap">
       <button
         class="${isActive ? 'active' : ''}"
         type="button"
@@ -1712,17 +1828,46 @@ function renderNewExpense() {
         <span>${getInitial(person.name)}</span>
         ${escapeHtml(person.name)}
       </button>
-    `;
-  }).join('');
+
+      ${
+        isEditingBudgetPeople && canEdit
+          ? `
+            <button
+              class="expense-v2-person-edit"
+              type="button"
+              data-action="edit-budget-person"
+              data-person-id="${person.id}"
+              aria-label="Modifier ${escapeHtml(person.name)}"
+            >
+              <span class="material-symbols-outlined" aria-hidden="true">edit</span>
+            </button>
+
+            <button
+              class="expense-v2-person-delete"
+              type="button"
+              data-action="delete-budget-person"
+              data-person-id="${person.id}"
+              aria-label="Supprimer ${escapeHtml(person.name)}"
+            >
+              <span class="material-symbols-outlined" aria-hidden="true">close</span>
+            </button>
+          `
+          : ''
+      }
+    </span>
+  `;
+}).join('');
 
   const splitAvatarsHtml = people.slice(0, 4).map(function(person) {
     return `<span>${getInitial(person.name)}</span>`;
   }).join('');
 
-  const splitPeopleHtml = people.map(function(person) {
-    const isActive = selectedExpenseSplit === person.id;
+ const splitPeopleHtml = people.map(function(person) {
+  const isActive = selectedExpenseSplit === person.id;
+  const canEdit = person.id !== 'me' && person.id !== 'partner';
 
-    return `
+  return `
+    <div class="expense-v2-split-person-wrap">
       <button
         class="expense-v2-split-card ${isActive ? 'active' : ''}"
         type="button"
@@ -1738,8 +1883,35 @@ function renderNewExpense() {
           ${isActive ? 'check_circle' : 'radio_button_unchecked'}
         </span>
       </button>
-    `;
-  }).join('');
+
+      ${
+        isEditingBudgetPeople && canEdit
+          ? `
+            <div class="expense-v2-split-person-actions">
+              <button
+                type="button"
+                data-action="edit-budget-person"
+                data-person-id="${person.id}"
+                aria-label="Modifier ${escapeHtml(person.name)}"
+              >
+                <span class="material-symbols-outlined" aria-hidden="true">edit</span>
+              </button>
+
+              <button
+                type="button"
+                data-action="delete-budget-person"
+                data-person-id="${person.id}"
+                aria-label="Supprimer ${escapeHtml(person.name)}"
+              >
+                <span class="material-symbols-outlined" aria-hidden="true">close</span>
+              </button>
+            </div>
+          `
+          : ''
+      }
+    </div>
+  `;
+}).join('');
 
   app.innerHTML = `
     <div class="mobile-shell expense-v2-shell">
@@ -1818,17 +1990,29 @@ function renderNewExpense() {
 
         <section class="expense-v2-section">
           <div class="expense-v2-section-heading">
-            <span class="expense-v2-kicker">Qui a payé ?</span>
+            <div class="expense-v2-section-heading">
+  <span class="expense-v2-kicker">Qui a payé ?</span>
 
-            <button
-              class="expense-v2-mini-action"
-              type="button"
-              data-action="add-budget-person"
-              aria-label="Ajouter une personne"
-            >
-              <span class="material-symbols-outlined" aria-hidden="true">person_add</span>
-            </button>
-          </div>
+  <div class="expense-v2-heading-actions">
+    <button
+      class="expense-v2-mini-action ${isEditingBudgetPeople ? 'active' : ''}"
+      type="button"
+      data-action="toggle-budget-people-edition"
+      aria-label="Modifier les personnes"
+    >
+      <span class="material-symbols-outlined" aria-hidden="true">edit</span>
+    </button>
+
+    <button
+      class="expense-v2-mini-action"
+      type="button"
+      data-action="add-budget-person"
+      aria-label="Ajouter une personne"
+    >
+      <span class="material-symbols-outlined" aria-hidden="true">person_add</span>
+    </button>
+  </div>
+</div>
 
           <div class="expense-v2-people-scroll">
             ${payerButtonsHtml}
@@ -2292,6 +2476,97 @@ function handleDeleteExpense(groupIndex, itemIndex) {
   renderBudget();
 }
 
+function getBudgetExpenseFromButton(button) {
+  const expenseId = button.dataset.expenseId || '';
+  const groupIndex = Number(button.dataset.groupIndex);
+  const itemIndex = Number(button.dataset.itemIndex);
+
+  if (expenseId && activeTrip?.budget?.length) {
+    const item = activeTrip.budget.find(function(expense) {
+      return String(expense.id) === String(expenseId);
+    });
+
+    if (!item) return null;
+
+    return {
+      source: 'supabase',
+      id: item.id,
+      title: item.desc || item.cat || 'Dépense',
+      note: '',
+      amount: Number(item.amount) || 0,
+      payer: item.paidBy || 'Moi',
+      cat: item.cat || 'Divers',
+      raw: item
+    };
+  }
+
+  const localItem = expenses[groupIndex]?.items[itemIndex];
+  if (!localItem) return null;
+
+  return {
+    source: 'local',
+    groupIndex,
+    itemIndex,
+    id: null,
+    title: localItem.title || 'Dépense',
+    note: localItem.note || '',
+    amount: parseEuroAmount(localItem.amount),
+    payer: localItem.payer || 'Moi',
+    cat: localItem.title || 'Divers',
+    raw: localItem
+  };
+}
+
+function handleEditBudgetExpense(button) {
+  const expense = getBudgetExpenseFromButton(button);
+  if (!expense) return;
+
+  editingExpenseDraft = expense;
+
+  editingExpenseGroupIndex = expense.source === 'local' ? expense.groupIndex : null;
+  editingExpenseItemIndex = expense.source === 'local' ? expense.itemIndex : null;
+
+  const categories = getExpenseCategories();
+  const matchedCategory = categories.find(function(category) {
+    return category.label === expense.cat || category.label === expense.title;
+  });
+
+  selectedExpenseCategory = matchedCategory?.id || 'other';
+
+  const people = getBudgetPeople();
+  const matchedPayer = people.find(function(person) {
+    return person.name === expense.payer;
+  });
+
+  selectedExpensePayer = matchedPayer?.id || 'me';
+  selectedExpenseSplit = 'equal';
+
+  navigate('new-expense');
+}
+
+async function handleDeleteBudgetExpense(button) {
+  const expense = getBudgetExpenseFromButton(button);
+  if (!expense) return;
+
+  const confirmed = confirm(`Supprimer "${expense.title}" ?`);
+  if (!confirmed) return;
+
+  if (expense.source === 'supabase' && window.SB?.deleteBudgetItem) {
+    try {
+      await window.SB.deleteBudgetItem(expense.id);
+      await refreshMobileTrips(activeTrip.id);
+      renderBudget();
+      return;
+    } catch (error) {
+      alert('Erreur suppression dépense : ' + (error.message || error));
+      return;
+    }
+  }
+
+  expenses[expense.groupIndex].items.splice(expense.itemIndex, 1);
+  renderBudget();
+}
+
 async function handleSaveExpense() {
   const amountInput = document.querySelector('#expense-amount');
   const titleInput = document.querySelector('#expense-title');
@@ -2321,14 +2596,15 @@ const activeCategory = categories.find(function(category) {
   if (activeTrip?.id && window.SB?.saveBudgetItem) {
     try {
       await window.SB.saveBudgetItem(activeTrip.id, {
-        cat: activeCategory.label,
-        desc: title || note || activeCategory.label,
-        amount,
-        paidBy: payer,
-        forParticipants: selectedExpenseSplit === 'equal'
-          ? ['__all__']
-          : [selectedExpenseSplit]
-      });
+  id: editingExpenseDraft?.source === 'supabase' ? editingExpenseDraft.id : null,
+  cat: activeCategory.label,
+  desc: title || note || activeCategory.label,
+  amount,
+  paidBy: payer,
+  forParticipants: selectedExpenseSplit === 'equal'
+    ? ['__all__']
+    : [selectedExpenseSplit]
+});
 
       await refreshMobileTrips(activeTrip.id);
 
@@ -2352,13 +2628,19 @@ const activeCategory = categories.find(function(category) {
     tone: activeCategory.tone || 'primary'
   };
 
-  if (editingExpenseGroupIndex !== null && editingExpenseItemIndex !== null) {
-    expenses[editingExpenseGroupIndex].items[editingExpenseItemIndex] = expenseData;
-    editingExpenseGroupIndex = null;
-    editingExpenseItemIndex = null;
-  } else {
-    expenses[0].items.unshift(expenseData);
-  }
+  if (editingExpenseDraft?.source === 'local' && editingExpenseDraft.groupIndex !== null && editingExpenseDraft.itemIndex !== null) {
+  expenses[editingExpenseDraft.groupIndex].items[editingExpenseDraft.itemIndex] = expenseData;
+  editingExpenseDraft = null;
+  editingExpenseGroupIndex = null;
+  editingExpenseItemIndex = null;
+} else if (editingExpenseGroupIndex !== null && editingExpenseItemIndex !== null) {
+  expenses[editingExpenseGroupIndex].items[editingExpenseItemIndex] = expenseData;
+  editingExpenseDraft = null;
+  editingExpenseGroupIndex = null;
+  editingExpenseItemIndex = null;
+} else {
+  expenses[0].items.unshift(expenseData);
+}
 
   navigate('budget');
 }
@@ -2679,6 +2961,35 @@ if (action === 'delete-trip') {
 
   if (action === 'confirm-expense-modal') {
   confirmExpenseModal();
+  return;
+}
+
+if (action === 'edit-budget-expense') {
+  const button = event.target.closest('[data-action="edit-budget-expense"]');
+  if (button) handleEditBudgetExpense(button);
+  return;
+}
+
+if (action === 'delete-budget-expense') {
+  const button = event.target.closest('[data-action="delete-budget-expense"]');
+  if (button) handleDeleteBudgetExpense(button);
+  return;
+}
+
+if (action === 'toggle-budget-people-edition') {
+  toggleBudgetPeopleEdition();
+  return;
+}
+
+if (action === 'edit-budget-person') {
+  const personId = event.target.closest('[data-person-id]')?.dataset.personId;
+  if (personId) handleEditBudgetPerson(personId);
+  return;
+}
+
+if (action === 'delete-budget-person') {
+  const personId = event.target.closest('[data-person-id]')?.dataset.personId;
+  if (personId) handleDeleteBudgetPerson(personId);
   return;
 }
 

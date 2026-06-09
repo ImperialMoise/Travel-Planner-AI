@@ -1437,154 +1437,39 @@ function saveCustomExpenseCategories(categories) {
   localStorage.setItem('atelierCustomExpenseCategories', JSON.stringify(categories));
 }
 
+function getHiddenExpenseCategoryIds() {
+  try {
+    return JSON.parse(localStorage.getItem('atelierHiddenExpenseCategoryIds')) || [];
+  } catch {
+    return [];
+  }
+}
+
+function saveHiddenExpenseCategoryIds(ids) {
+  localStorage.setItem('atelierHiddenExpenseCategoryIds', JSON.stringify(ids));
+}
+
 function getExpenseCategories() {
   const customCategories = getCustomExpenseCategories();
+  const hiddenIds = getHiddenExpenseCategoryIds();
+
   const baseWithoutOther = expenseCategories.filter(function(category) {
-    return category.id !== 'other';
+    return category.id !== 'other' && !hiddenIds.includes(category.id);
   });
+
   const otherCategory = expenseCategories.find(function(category) {
     return category.id === 'other';
   });
 
-  return [
-    ...baseWithoutOther,
-    ...customCategories,
-    otherCategory
-  ].filter(Boolean);
-}
-
-function openExpenseModal(type, payload = {}) {
-  expenseModal = {
-    type,
-    value: payload.value || '',
-    id: payload.id || null
-  };
-
-  renderNewExpense();
-}
-
-function closeExpenseModal() {
-  expenseModal = null;
-  renderNewExpense();
-}
-
-function getExpenseModalCopy() {
-  if (!expenseModal) return null;
-
-  if (expenseModal.type === 'person-edit') {
-    return {
-      title: 'Modifier une personne',
-      label: 'Nom de la personne',
-      placeholder: 'Ex : Sarah',
-      actionLabel: 'Enregistrer'
-    };
-  }
-
-  if (expenseModal.type === 'person') {
-    return {
-      title: 'Ajouter une personne',
-      label: 'Nom de la personne',
-      placeholder: 'Ex : Sarah',
-      actionLabel: 'Ajouter'
-    };
-  }
-
-  return {
-    title: 'Nouvelle catégorie',
-    label: 'Nom de la catégorie',
-    placeholder: 'Ex : Visites',
-    actionLabel: 'Ajouter'
-  };
-}
-
-function renderExpenseModal() {
-  if (!expenseModal) return '';
-
-  const copy = getExpenseModalCopy();
-
-  return `
-    <div class="expense-v2-modal-backdrop" role="presentation">
-      <section class="expense-v2-modal" role="dialog" aria-modal="true" aria-labelledby="expense-modal-title">
-        <button
-          class="expense-v2-modal-close"
-          type="button"
-          data-action="close-expense-modal"
-          aria-label="Fermer"
-        >
-          <span class="material-symbols-outlined" aria-hidden="true">close</span>
-        </button>
-
-        <span class="expense-v2-kicker">${copy.title}</span>
-        <h3 id="expense-modal-title">${copy.label}</h3>
-
-        <label class="expense-v2-modal-field">
-          <span class="material-symbols-outlined" aria-hidden="true">
-            ${expenseModal.type.includes('person') ? 'person_add' : 'category'}
-          </span>
-          <input
-            id="expense-modal-input"
-            type="text"
-            value="${escapeHtml(expenseModal.value || '')}"
-            placeholder="${copy.placeholder}"
-            autocomplete="off"
-          >
-        </label>
-
-        <div class="expense-v2-modal-actions">
-          <button type="button" class="secondary" data-action="close-expense-modal">
-            Annuler
-          </button>
-
-          <button type="button" class="primary" data-action="confirm-expense-modal">
-            ${copy.actionLabel}
-          </button>
-        </div>
-      </section>
-    </div>
-  `;
-}
-
-async function confirmExpenseModal() {
-  const value = document.querySelector('#expense-modal-input')?.value.trim();
-
-  if (!expenseModal || !value) return;
-
-  if (expenseModal.type === 'person') {
-    await addBudgetPersonByName(value);
-  }
-
-  if (expenseModal.type === 'person-edit') {
-    await updateBudgetPersonByName(expenseModal.id, value);
-  }
-
-  if (expenseModal.type === 'category') {
-    addExpenseCategoryByName(value);
-  }
-
-  expenseModal = null;
-  renderNewExpense();
-}
-
-function addExpenseCategoryByName(label) {
-  const cleanLabel = label.trim();
-  if (!cleanLabel) return;
-
-  const id = `custom-${Date.now()}`;
-  const customCategories = getCustomExpenseCategories();
-
-  customCategories.push({
-    id,
-    label: cleanLabel,
-    icon: 'category',
-    tone: 'neutral',
-    emoji: '▧',
-    custom: true
+  const visibleCustomCategories = customCategories.filter(function(category) {
+    return !hiddenIds.includes(category.id);
   });
 
-  saveCustomExpenseCategories(customCategories);
-
-  selectedExpenseCategory = id;
-  isEditingExpenseCategories = false;
+  return [
+    ...baseWithoutOther,
+    ...visibleCustomCategories,
+    otherCategory
+  ].filter(Boolean);
 }
 
 function handleAddExpenseCategory() {
@@ -1592,8 +1477,10 @@ function handleAddExpenseCategory() {
 }
 
 function handleDeleteExpenseCategory(categoryId) {
-  const customCategories = getCustomExpenseCategories();
-  const category = customCategories.find(function(item) {
+  if (!categoryId) return;
+
+  const categories = getExpenseCategories();
+  const category = categories.find(function(item) {
     return item.id === categoryId;
   });
 
@@ -1602,11 +1489,20 @@ function handleDeleteExpenseCategory(categoryId) {
   const confirmed = confirm(`Supprimer la catégorie "${category.label}" ?`);
   if (!confirmed) return;
 
-  const nextCategories = customCategories.filter(function(item) {
-    return item.id !== categoryId;
-  });
+  if (category.custom) {
+    const nextCustomCategories = getCustomExpenseCategories().filter(function(item) {
+      return item.id !== categoryId;
+    });
 
-  saveCustomExpenseCategories(nextCategories);
+    saveCustomExpenseCategories(nextCustomCategories);
+  } else {
+    const hiddenIds = getHiddenExpenseCategoryIds();
+
+    if (!hiddenIds.includes(categoryId)) {
+      hiddenIds.push(categoryId);
+      saveHiddenExpenseCategoryIds(hiddenIds);
+    }
+  }
 
   if (selectedExpenseCategory === categoryId) {
     selectedExpenseCategory = 'other';
@@ -1782,7 +1678,7 @@ const editingNote = editingItem?.note || '';
 
   const categoryButtonsHtml = categories.map(function(category) {
   const isActive = activeCategory.id === category.id;
-  const isCustom = category.custom === true;
+  const canDelete = category.id !== 'other';
 
   return `
     <div class="expense-v2-category-wrap">
@@ -1796,7 +1692,7 @@ const editingNote = editingItem?.note || '';
       </button>
 
       ${
-        isEditingExpenseCategories && isCustom
+        isEditingExpenseCategories && canDelete
           ? `
             <button
               class="expense-v2-category-delete"
@@ -1815,6 +1711,40 @@ const editingNote = editingItem?.note || '';
 }).join('');
 
   const payerButtonsHtml = people.map(function(person) {
+  const isActive = selectedExpensePayer === person.id;
+  const canEdit = person.id !== 'me' && person.id !== 'partner';
+
+  return `
+    <div class="expense-v2-person-card-wrap">
+      <button
+        class="expense-v2-person-card ${isActive ? 'active' : ''}"
+        type="button"
+        data-expense-payer="${person.id}"
+        ${isEditingBudgetPeople && canEdit ? `data-action="edit-budget-person" data-person-id="${person.id}"` : ''}
+      >
+        <span class="expense-v2-person-avatar">${getInitial(person.name)}</span>
+        <span>${escapeHtml(person.name)}</span>
+      </button>
+
+      ${
+        isEditingBudgetPeople && canEdit
+          ? `
+            <button
+              class="expense-v2-card-delete"
+              type="button"
+              data-action="delete-budget-person"
+              data-person-id="${person.id}"
+              aria-label="Supprimer ${escapeHtml(person.name)}"
+            >
+              <span class="material-symbols-outlined" aria-hidden="true">close</span>
+            </button>
+          `
+          : ''
+      }
+    </div>
+  `;
+}).join('');
+
   const isActive = selectedExpensePayer === person.id;
   const canEdit = person.id !== 'me' && person.id !== 'partner';
 
@@ -1864,6 +1794,40 @@ const editingNote = editingItem?.note || '';
   }).join('');
 
  const splitPeopleHtml = people.map(function(person) {
+  const isActive = selectedExpenseSplit === person.id;
+  const canEdit = person.id !== 'me' && person.id !== 'partner';
+
+  return `
+    <div class="expense-v2-person-card-wrap">
+      <button
+        class="expense-v2-person-card ${isActive ? 'active' : ''}"
+        type="button"
+        data-expense-split="${person.id}"
+        ${isEditingBudgetPeople && canEdit ? `data-action="edit-budget-person" data-person-id="${person.id}"` : ''}
+      >
+        <span class="expense-v2-person-avatar">${getInitial(person.name)}</span>
+        <span>${escapeHtml(person.name)}</span>
+      </button>
+
+      ${
+        isEditingBudgetPeople && canEdit
+          ? `
+            <button
+              class="expense-v2-card-delete"
+              type="button"
+              data-action="delete-budget-person"
+              data-person-id="${person.id}"
+              aria-label="Supprimer ${escapeHtml(person.name)}"
+            >
+              <span class="material-symbols-outlined" aria-hidden="true">close</span>
+            </button>
+          `
+          : ''
+      }
+    </div>
+  `;
+}).join('');
+
   const isActive = selectedExpenseSplit === person.id;
   const canEdit = person.id !== 'me' && person.id !== 'partner';
 
@@ -1981,16 +1945,29 @@ const editingNote = editingItem?.note || '';
 
         <section class="expense-v2-section">
           <div class="expense-v2-section-heading">
-            <span class="expense-v2-kicker">Qui a payé ?</span>
-            <button
-              class="expense-v2-mini-action"
-              type="button"
-              data-action="add-budget-person"
-              aria-label="Ajouter une personne"
-            >
-              <span class="material-symbols-outlined" aria-hidden="true">person_add</span>
-            </button>
-          </div>
+            <div class="expense-v2-section-heading">
+  <span class="expense-v2-kicker">Qui a payé ?</span>
+
+  <div class="expense-v2-heading-actions">
+    <button
+      class="expense-v2-mini-action ${isEditingBudgetPeople ? 'active' : ''}"
+      type="button"
+      data-action="toggle-budget-people-edition"
+      aria-label="Modifier les personnes"
+    >
+      <span class="material-symbols-outlined" aria-hidden="true">edit</span>
+    </button>
+
+    <button
+      class="expense-v2-mini-action"
+      type="button"
+      data-action="add-budget-person"
+      aria-label="Ajouter une personne"
+    >
+      <span class="material-symbols-outlined" aria-hidden="true">person_add</span>
+    </button>
+  </div>
+</div>
           <div class="expense-v2-person-grid">
             ${payerButtonsHtml}
             <button
@@ -2006,16 +1983,29 @@ const editingNote = editingItem?.note || '';
 
         <section class="expense-v2-section">
           <div class="expense-v2-section-heading">
-            <span class="expense-v2-kicker">Pour qui ?</span>
-            <button
-              class="expense-v2-mini-action"
-              type="button"
-              data-action="add-budget-person"
-              aria-label="Ajouter une personne"
-            >
-              <span class="material-symbols-outlined" aria-hidden="true">person_add</span>
-            </button>
-          </div>
+            <div class="expense-v2-section-heading">
+  <span class="expense-v2-kicker">Pour qui ?</span>
+
+  <div class="expense-v2-heading-actions">
+    <button
+      class="expense-v2-mini-action ${isEditingBudgetPeople ? 'active' : ''}"
+      type="button"
+      data-action="toggle-budget-people-edition"
+      aria-label="Modifier les personnes"
+    >
+      <span class="material-symbols-outlined" aria-hidden="true">edit</span>
+    </button>
+
+    <button
+      class="expense-v2-mini-action"
+      type="button"
+      data-action="add-budget-person"
+      aria-label="Ajouter une personne"
+    >
+      <span class="material-symbols-outlined" aria-hidden="true">person_add</span>
+    </button>
+  </div>
+</div>
           <div class="expense-v2-person-grid">
             <button
               class="expense-v2-person-card ${selectedExpenseSplit === 'equal' ? 'active' : ''}"
@@ -2958,6 +2948,11 @@ if (action === 'delete-budget-person') {
     handleSaveExpense();
     return;
   }
+
+  if (action === 'toggle-budget-people-edition') {
+  toggleBudgetPeopleEdition();
+  return;
+}
 
   if (action === 'add-budget-person') {
   handleAddBudgetPerson();

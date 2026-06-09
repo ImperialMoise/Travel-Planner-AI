@@ -5332,33 +5332,23 @@ button {
   color: var(--on-primary-fixed);
 }
 
-.expense-v2-card-actions {
+.expense-v2-card-delete {
   position: absolute;
   top: -7px;
   right: -7px;
   z-index: 3;
-  display: flex;
-  gap: 4px;
-}
-
-.expense-v2-card-actions button {
   width: 23px;
   height: 23px;
-  border: 1px solid var(--faint-border);
+  border: 1px solid var(--error-container);
   border-radius: 999px;
   display: grid;
   place-items: center;
-  background: var(--primary-fixed);
-  color: var(--primary);
+  background: var(--error-container);
+  color: var(--error-red);
   box-shadow: 0 3px 10px rgba(82, 98, 91, 0.12);
 }
 
-.expense-v2-card-actions button.danger {
-  background: var(--error-container);
-  color: var(--error-red);
-}
-
-.expense-v2-card-actions .material-symbols-outlined {
+.expense-v2-card-delete .material-symbols-outlined {
   font-size: 14px;
 }
 

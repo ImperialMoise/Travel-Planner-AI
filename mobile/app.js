@@ -1343,19 +1343,18 @@ function initMobileRealMap() {
   });
 
   mobileMapInstance.addControl(new maplibregl.NavigationControl({ showCompass: true }), 'bottom-right');
+  mobileMapInstance.doubleClickZoom.disable();
 
     mobileMapInstance.on('error', event => {
     console.warn('Mobile map error:', event?.error || event);
     renderMobileMapError('Le fond de carte n’a pas pu être chargé.');
   });
 
-    mobileMapInstance.on('load', async () => {
+  mobileMapInstance.on('load', async () => {
     renderMobileMapRoute();
     renderMobileMapMarkers();
 
-    if (steps.length) {
-      fitMobileMapToSteps();
-    } else {
+    if (!steps.length) {
       await renderMobileMapDestination();
     }
   });
@@ -1680,11 +1679,6 @@ function focusMobileMapStep(index) {
     button.classList.toggle('active', buttonIndex === index);
   });
 
-  mobileMapInstance.flyTo({
-    center: [step.lng, step.lat],
-    zoom: 15,
-    duration: 900
-  });
 }
 
 function renderMobileMapSelectedPlace() {

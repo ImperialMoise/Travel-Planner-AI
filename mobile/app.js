@@ -1036,7 +1036,7 @@ function renderItinerary() {
         </section>
 
         <section class="timeline" aria-label="Programme de la journée">
-          ${timelineSteps.map(step, stepIndex) => `
+          ${timelineSteps.map((step, stepIndex) => `
             <article class="timeline-item ${step.type === 'Activité' ? 'clickable' : ''}" ${step.type === 'Activité' ? 'data-action="activity-detail" tabindex="0" role="button" aria-label="Ouvrir le détail de Sanctuaire Meiji"' : ''}>
               <span class="timeline-pin ${step.tone}">
                 <span class="material-symbols-outlined" aria-hidden="true">${step.icon}</span>

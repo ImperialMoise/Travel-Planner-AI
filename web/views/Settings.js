@@ -39,6 +39,7 @@ function SettingsModal() {
           </div>
           <NavItem icon="user" on={section === 'account'} onClick={() => setSection('account')}>Compte</NavItem>
           <NavItem icon="map"  on={section === 'trips'}   onClick={() => setSection('trips')}>Mes voyages</NavItem>
+          <NavItem icon="users" on={section === 'share'} onClick={() => setSection('share')}>Partage</NavItem>
         </aside>
 
         {/* Contenu */}
@@ -49,7 +50,7 @@ function SettingsModal() {
             display: 'flex', alignItems: 'center', justifyContent: 'space-between'
           }}>
             <div style={{ fontFamily: 'var(--serif)', fontStyle: 'italic', fontSize: 24 }}>
-              {section === 'account' ? 'Compte' : 'Mes voyages'}
+              {section === 'account' ? 'Compte' : section === 'trips' ? 'Mes voyages' : 'Partage'}
             </div>
             <button onClick={close} style={{
               background: 'transparent', border: '1px solid var(--line)',
@@ -61,6 +62,7 @@ function SettingsModal() {
           <div style={{ flex: 1, overflowY: 'auto', padding: 24 }}>
             {section === 'account' && <AccountSection user={user} />}
             {section === 'trips' && <TripsSection trips={trips} activeTripId={activeTripId} onClose={close} />}
+            {section === 'share' && <ShareSection activeTripId={activeTripId} />}
           </div>
         </section>
       </div>
@@ -129,6 +131,166 @@ function AccountSection({ user }) {
             Se déconnecter
           </Btn>
         </Row>
+      </Card>
+    </div>
+  );
+}
+
+function ShareSection({ activeTripId }) {
+  const [members, setMembers] = React.useState([]);
+  const [invite, setInvite] = React.useState(null);
+  const [busy, setBusy] = React.useState(false);
+
+  async function loadMembers() {
+    if (!activeTripId) {
+      setMembers([]);
+      return;
+    }
+
+    try {
+      const list = await SB.listTripMembers(activeTripId);
+      setMembers(list);
+    } catch (error) {
+      Store.showToast('Erreur membres : ' + error.message);
+    }
+  }
+
+  React.useEffect(() => {
+    loadMembers();
+    setInvite(null);
+  }, [activeTripId]);
+
+  async function createInvite() {
+    if (!activeTripId) return;
+
+    setBusy(true);
+    try {
+      const created = await SB.createTripInvite(activeTripId, 'editor');
+      setInvite(created);
+
+      try {
+        await navigator.clipboard.writeText(created.url);
+        Store.showToast('Lien copié');
+      } catch (error) {
+        Store.showToast('Lien créé');
+      }
+    } catch (error) {
+      Store.showToast('Erreur invitation : ' + error.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function removeMember(member) {
+    if (member.role === 'owner') {
+      Store.showToast('Le propriétaire ne peut pas être retiré ici.');
+      return;
+    }
+
+    if (!confirm(`Retirer ${member.name} du voyage ?`)) return;
+
+    try {
+      await SB.removeTripMember(member.id);
+      await loadMembers();
+      Store.showToast('Membre retiré');
+    } catch (error) {
+      Store.showToast('Erreur : ' + error.message);
+    }
+  }
+
+  if (!activeTripId) {
+    return (
+      <div style={{ color: 'var(--muted)', fontSize: 13 }}>
+        Sélectionne un voyage pour gérer le partage.
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+      <Card title="Inviter quelqu’un">
+        <Row label="Lien">
+          <div style={{ display: 'flex', gap: 8, flex: 1 }}>
+            <Btn variant="primary" onClick={createInvite} disabled={busy}>
+              {busy ? 'Création...' : 'Créer un lien'}
+            </Btn>
+          </div>
+        </Row>
+
+        {invite && (
+          <Row label="Invitation">
+            <div style={{
+              flex: 1,
+              display: 'flex',
+              gap: 8,
+              alignItems: 'center',
+              minWidth: 0
+            }}>
+              <input readOnly value={invite.url} style={{ ...inputStyle, flex: 1 }} />
+              <Btn
+                variant="ghost"
+                onClick={() => {
+                  navigator.clipboard?.writeText(invite.url);
+                  Store.showToast('Lien copié');
+                }}
+              >
+                Copier
+              </Btn>
+            </div>
+          </Row>
+        )}
+      </Card>
+
+      <Card title="Membres du voyage">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
+          {members.length ? members.map(member => (
+            <div key={member.id} style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              padding: '10px 12px',
+              borderRadius: 12,
+              background: 'var(--bg-2)',
+              border: '1px solid var(--line)'
+            }}>
+              <div style={{
+                width: 34,
+                height: 34,
+                borderRadius: '50%',
+                display: 'grid',
+                placeItems: 'center',
+                background: 'var(--accent-soft)',
+                color: 'var(--accent)',
+                fontWeight: 800
+              }}>
+                {(member.name || member.email || 'M').slice(0, 1).toUpperCase()}
+              </div>
+
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <strong style={{ display: 'block', fontSize: 13 }}>
+                  {member.name}
+                </strong>
+                <span style={{ color: 'var(--muted)', fontSize: 12 }}>
+                  {member.email || 'Email masqué'} · {member.role}
+                </span>
+              </div>
+
+              {member.role !== 'owner' && (
+                <Btn
+                  variant="ghost"
+                  onClick={() => removeMember(member)}
+                  style={{ color: 'var(--danger)' }}
+                >
+                  Retirer
+                </Btn>
+              )}
+            </div>
+          )) : (
+            <p style={{ margin: 0, color: 'var(--muted)', fontSize: 13 }}>
+              Aucun membre pour le moment.
+            </p>
+          )}
+        </div>
       </Card>
     </div>
   );

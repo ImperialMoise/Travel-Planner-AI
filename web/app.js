@@ -21,6 +21,45 @@
   }
   while (!ready()) await new Promise(r => setTimeout(r, 40));
 
+    async function handlePendingInvite(token, currentUser) {
+    if (!token) return false;
+
+    if (!currentUser) {
+      localStorage.setItem('pendingTripInvite', token);
+
+      const url = new URL(window.location.href);
+      url.searchParams.delete('invite');
+      window.history.replaceState(null, '', url.pathname + url.search + url.hash);
+
+      Store.showToast('Connecte-toi pour rejoindre le voyage.');
+      return false;
+    }
+
+    try {
+      const tripId = await SB.acceptInvite(token);
+
+      localStorage.removeItem('pendingTripInvite');
+
+      const url = new URL(window.location.href);
+      url.searchParams.delete('invite');
+      window.history.replaceState(null, '', url.pathname + url.search + url.hash);
+
+      const trips = await SB.listMyTrips();
+      Store.set({ trips });
+
+      if (window.selectTrip) {
+        await window.selectTrip(tripId);
+      }
+
+      Store.showToast('Invitation acceptée. Bienvenue dans le voyage.');
+      return true;
+    } catch (error) {
+      localStorage.removeItem('pendingTripInvite');
+      Store.showToast('Invitation invalide : ' + (error.message || error));
+      return false;
+    }
+  }
+
   // 1. Récupérer l'utilisateur courant
   let user = await SB.getUser();
 
@@ -39,13 +78,21 @@
 
   Store.set({ user, authReady: true });
 
+    const inviteToken =
+    new URLSearchParams(window.location.search).get('invite') ||
+    localStorage.getItem('pendingTripInvite');
+
+  const inviteAccepted = inviteToken
+    ? await handlePendingInvite(inviteToken, user)
+    : false;
+
   // 2. Si connecté : charger ses voyages
   if (user) {
     try {
       const trips = await SB.listMyTrips();
       Store.set({ trips });
       // Auto-sélectionner le plus récent
-      if (trips.length) {
+      if (trips.length && !inviteAccepted) {
         await window.selectTrip(trips[0].id);
       }
     } catch (e) {
@@ -59,6 +106,13 @@
       Store.set({ user: newUser });
       const trips = await SB.listMyTrips();
       Store.set({ trips });
+      const pendingInvite = localStorage.getItem('pendingTripInvite');
+
+      if (pendingInvite) {
+        const accepted = await handlePendingInvite(pendingInvite, newUser);
+        if (accepted) return;
+      }
+
       if (trips.length && !Store.get().activeTripId) {
         await window.selectTrip(trips[0].id);
       }

@@ -237,6 +237,116 @@ export async function removeParticipant(id) {
   if (error) throw error;
 }
 
+// ─── Partage / membres ─────────────────────────────
+export async function listTripMembers(tripId) {
+  if (!tripId) return [];
+
+  const { data, error } = await sb
+    .from('trip_members')
+    .select('id, trip_id, user_id, role, joined_at, profiles(email, display_name)')
+    .eq('trip_id', tripId)
+    .order('joined_at', { ascending: true });
+
+  if (error) throw error;
+
+  return (data || []).map(member => ({
+    id: member.id,
+    tripId: member.trip_id,
+    userId: member.user_id,
+    role: member.role,
+    joinedAt: member.joined_at,
+    email: member.profiles?.email || '',
+    name: member.profiles?.display_name || member.profiles?.email || 'Membre'
+  }));
+}
+
+export async function createTripInvite(tripId, role = 'editor') {
+  const user = await getUser();
+  if (!user) throw new Error('Connexion requise');
+  if (!tripId) throw new Error('Voyage introuvable');
+
+  const { data, error } = await sb
+    .from('trip_invites')
+    .insert({
+      trip_id: tripId,
+      role,
+      created_by: user.id
+    })
+    .select('token, role, expires_at')
+    .single();
+
+  if (error) throw error;
+
+  return {
+    token: data.token,
+    role: data.role,
+    expiresAt: data.expires_at,
+    url: `${window.location.origin}${window.location.pathname}?invite=${data.token}`
+  };
+}
+
+export async function getInvite(token) {
+  if (!token) throw new Error('Invitation manquante');
+
+  const { data, error } = await sb
+    .from('trip_invites')
+    .select('id, trip_id, role, expires_at, used_at, trips(name)')
+    .eq('token', token)
+    .single();
+
+  if (error) throw error;
+
+  return {
+    id: data.id,
+    tripId: data.trip_id,
+    role: data.role,
+    expiresAt: data.expires_at,
+    usedAt: data.used_at,
+    tripName: data.trips?.name || 'Voyage'
+  };
+}
+
+export async function acceptInvite(token) {
+  const user = await getUser();
+  if (!user) throw new Error('Connexion requise');
+
+  const invite = await getInvite(token);
+
+  if (invite.usedAt) throw new Error('Invitation déjà utilisée');
+  if (invite.expiresAt && new Date(invite.expiresAt) < new Date()) {
+    throw new Error('Invitation expirée');
+  }
+
+  const { error: memberError } = await sb
+    .from('trip_members')
+    .upsert({
+      trip_id: invite.tripId,
+      user_id: user.id,
+      role: invite.role || 'editor'
+    }, { onConflict: 'trip_id,user_id' });
+
+  if (memberError) throw memberError;
+
+  await sb
+    .from('trip_invites')
+    .update({
+      used_by: user.id,
+      used_at: new Date().toISOString()
+    })
+    .eq('id', invite.id);
+
+  return invite.tripId;
+}
+
+export async function removeTripMember(memberId) {
+  const { error } = await sb
+    .from('trip_members')
+    .delete()
+    .eq('id', memberId);
+
+  if (error) throw error;
+}
+
 // ─── Documents ─────────────────────────────────────
 export async function listDocuments(tripId) {
   if (!tripId) return [];

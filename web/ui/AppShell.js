@@ -712,7 +712,12 @@ function Toolbox() {
 function Topbar() {
   const { user, trips, activeTripId, trip, view, theme = localStorage.getItem('it_theme') || 'light' } = Store.useStore();
   const [authOpen, setAuthOpen] = React.useState(false);
-
+    React.useEffect(() => {
+    if (!user && localStorage.getItem('pendingTripInvite')) {
+      setAuthOpen(true);
+    }
+  }, [user]);
+  
   const toggleTheme = () => {
     const newTheme = theme === 'dark' ? 'light' : 'dark';
     localStorage.setItem('it_theme', newTheme);

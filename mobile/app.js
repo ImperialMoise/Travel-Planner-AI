@@ -275,7 +275,10 @@ const stepFieldSets = {
     fields: [
       { name: 'title', icon: 'bed', placeholder: "Nom de l'hôtel / logement", type: 'text' },
       { name: 'location', icon: 'location_on', placeholder: 'Adresse / Lieu', type: 'text', autocomplete: true },
-      { name: 'time', icon: 'schedule', type: 'time', value: '15:00', aria: 'Heure de check-in' },
+      { name: 'timeCheckIn', icon: 'login', type: 'time', value: '15:00', aria: 'Heure de check-in', compact: true },
+      { name: 'timeCheckOut', icon: 'logout', type: 'time', value: '11:00', aria: 'Heure de check-out', compact: true },
+      { name: 'reference', icon: 'confirmation_number', placeholder: 'Référence / réservation', type: 'text', compact: true },
+      { name: 'duration', icon: 'bedtime', placeholder: 'Nombre de nuits', type: 'number', compact: true },
       { name: 'notes', icon: 'notes', placeholder: 'Code, réservation, contact...', textarea: true }
     ]
   },
@@ -311,6 +314,7 @@ const stepFieldSets = {
 };
 
 let selectedStepCategory = 'transport';
+let transportStopoverUid = 0;
 let editingStepDraft = null;
 
 function icon(symbol, className = '') {
@@ -441,6 +445,45 @@ function renderStepField(field) {
   `;
 }
 
+function createTransportStopoverHtml(index) {
+  return `
+    <div class="transport-stopover" data-stopover-row>
+      <div class="transport-stopover-head">
+        <span class="transport-subtitle">Escale ${index + 1}</span>
+        <button type="button" data-action="remove-transport-stopover" aria-label="Supprimer l'escale">
+          <span class="material-symbols-outlined" aria-hidden="true">close</span>
+        </button>
+      </div>
+
+      <label class="step-input full">
+        <span class="material-symbols-outlined" aria-hidden="true">connecting_airports</span>
+        <input name="stopoverPlace[]" type="text" placeholder="Ville / aéroport / gare d'escale..." data-autocomplete>
+      </label>
+
+      <div class="step-form-grid">
+        <label class="step-input compact time-only">
+          <input name="stopoverArrivalTime[]" type="time" aria-label="Heure d'arrivée à l'escale">
+        </label>
+
+        <label class="step-input compact time-only">
+          <input name="stopoverDepartureTime[]" type="time" aria-label="Heure de départ de l'escale">
+        </label>
+      </div>
+    </div>
+  `;
+}
+
+function addTransportStopoverField() {
+  const list = document.querySelector('[data-stopover-list]');
+  if (!list) return;
+
+  const wrapper = document.createElement('div');
+  wrapper.innerHTML = createTransportStopoverHtml(transportStopoverUid++);
+  list.appendChild(wrapper.firstElementChild);
+
+  initAutocompleteOnPage();
+}
+
 function renderTransportStepFields() {
   return `
     <label class="step-input select full">
@@ -489,12 +532,13 @@ function renderTransportStepFields() {
         <span class="material-symbols-outlined" aria-hidden="true">confirmation_number</span>
         <input name="reference" type="text" placeholder="Référence (ex: AF267)">
       </label>
-      <label class="step-input compact">
+            <button class="step-input compact transport-add-stopover" type="button" data-action="add-transport-stopover">
         <span class="material-symbols-outlined" aria-hidden="true">alt_route</span>
-        <input name="stopover" type="text" placeholder="Escale (optionnel)">
-      </label>
+        <span>Ajouter une escale</span>
+      </button>
     </div>
 
+    <div class="transport-stopover-list" data-stopover-list></div>
     <label class="step-input textarea full">
       <span class="material-symbols-outlined" aria-hidden="true">notes</span>
       <textarea name="notes" rows="3" placeholder="Notes ou détails importants..."></textarea>
@@ -542,6 +586,20 @@ function getNewStepFormData() {
     data[`${name}Lat`] = input.dataset.lat || '';
     data[`${name}Lng`] = input.dataset.lng || '';
   });
+
+  data.stopovers = [...form.querySelectorAll('[data-stopover-row]')].map(row => {
+    const place = row.querySelector('[name="stopoverPlace[]"]');
+    const arrivalTime = row.querySelector('[name="stopoverArrivalTime[]"]');
+    const departureTime = row.querySelector('[name="stopoverDepartureTime[]"]');
+
+    return {
+      place: place?.value.trim() || '',
+      arrivalTime: arrivalTime?.value || '',
+      departureTime: departureTime?.value || '',
+      lat: place?.dataset.lat || '',
+      lng: place?.dataset.lng || ''
+    };
+  }).filter(stopover => stopover.place);
 
   return data;
 }
@@ -3292,10 +3350,24 @@ async function handleAddStepToProgram() {
   let title = data.title?.trim() || config.fallbackTitle;
   let descriptionParts = [data.location?.trim(), data.duration?.trim(), data.notes?.trim()].filter(Boolean);
 
+    if (selectedStepCategory === 'lodging') {
+    title = data.title?.trim() || 'Nouveau logement';
+
+    descriptionParts = [
+      data.location?.trim(),
+      data.timeCheckIn ? `Check-in ${data.timeCheckIn}` : '',
+      data.timeCheckOut ? `Check-out ${data.timeCheckOut}` : '',
+      data.duration ? `${data.duration} nuit${Number(data.duration) > 1 ? 's' : ''}` : '',
+      data.reference?.trim() ? `Réf. ${data.reference.trim()}` : '',
+      data.notes?.trim()
+    ].filter(Boolean);
+  }
+
   if (selectedStepCategory === 'transport') {
     const mode = transportModeLabels[data.mode] || 'Transport';
     const departure = data.departure?.trim();
     const arrival = data.arrival?.trim();
+    const stopovers = data.stopovers || [];
 
     title = departure || arrival
       ? `${mode} ${departure || 'Départ'} → ${arrival || 'Arrivée'}`
@@ -3303,8 +3375,8 @@ async function handleAddStepToProgram() {
 
     descriptionParts = [
       data.arrivalTime ? `Arrivée ${data.arrivalTime}${data.nextDay ? ' +1 jour' : ''}` : '',
+      stopovers.length ? `Escales : ${stopovers.map(stopover => stopover.place).join(' → ')}` : '',
       data.reference?.trim() ? `Réf. ${data.reference.trim()}` : '',
-      data.stopover?.trim() ? `Escale ${data.stopover.trim()}` : '',
       data.notes?.trim()
     ].filter(Boolean);
   }
@@ -3330,17 +3402,23 @@ async function handleAddStepToProgram() {
         label: title,
         lieu: data.location?.trim() || '',
         time: data.time || config.defaultTime || '09:00',
-        timeEnd: data.arrivalTime || '',
+                timeEnd: selectedStepCategory === 'lodging'
+          ? data.timeCheckOut || ''
+          : data.arrivalTime || '',
         transportType: data.mode || '',
         depart: data.departure?.trim() || '',
         arrivee: data.arrival?.trim() || '',
         duree: data.duration?.trim() || '',
         nextDay: data.nextDay === 'yes',
-        escales: data.stopover?.trim() ? [data.stopover.trim()] : [],
+        escales: selectedStepCategory === 'transport' ? (data.stopovers || []) : [],
         ref: data.reference?.trim() || '',
         note: data.notes?.trim() || '',
+                timeCheckIn: data.timeCheckIn || '',
+        timeCheckOut: data.timeCheckOut || '',
         amount: 0,
         paidBy: '',
+        lat: data.locationLat || data.arrivalLat || data.departureLat || null,
+        lng: data.locationLng || data.arrivalLng || data.departureLng || null,
         lat: data.locationLat || data.arrivalLat || data.departureLat || null,
         lng: data.locationLng || data.arrivalLng || data.departureLng || null
       });
@@ -3465,6 +3543,16 @@ if (action === 'delete-trip') {
   return;
 }
 
+  if (action === 'add-transport-stopover') {
+    addTransportStopoverField();
+    return;
+  }
+
+  if (action === 'remove-transport-stopover') {
+    event.target.closest('[data-stopover-row]')?.remove();
+    return;
+  }
+  
   if (action === 'add-step-to-program') {
     handleAddStepToProgram();
     return;

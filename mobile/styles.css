@@ -4797,6 +4797,52 @@ button {
 }
 
 /* --- Checkbox (Arrivée le lendemain) --- */
+.transport-add-stopover {
+  border: 0;
+  color: var(--secondary);
+  font: inherit;
+  text-align: left;
+}
+
+.transport-add-stopover span:last-child {
+  color: var(--on-surface-variant);
+}
+
+.transport-stopover-list {
+  display: grid;
+  gap: 14px;
+}
+
+.transport-stopover {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px dashed var(--outline-variant);
+  border-radius: 18px;
+  background: rgba(248, 243, 233, 0.72);
+}
+
+.transport-stopover-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.transport-stopover-head button {
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: var(--error-container);
+  color: var(--error-red);
+}
+
+.transport-stopover-head button .material-symbols-outlined {
+  font-size: 16px;
+}
+
 .step-checkbox {
   display: inline-flex;
   align-items: center;

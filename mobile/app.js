@@ -1656,221 +1656,135 @@ async function handleAddBudgetPerson() {
 }
 
 function renderNewExpense() {
-  const people = getBudgetPeople();
-  const categories = getExpenseCategories();
+  const categories = typeof getExpenseCategories === 'function'
+    ? getExpenseCategories()
+    : expenseCategories;
+
+  const people = (typeof getBudgetPeople === 'function'
+    ? getBudgetPeople()
+    : [
+      { id: 'me', name: 'Moi' },
+      { id: 'partner', name: 'Partenaire' }
+    ]).filter(function(person) {
+      return person.id !== 'common';
+    });
+
+  const editingItem = editingExpenseDraft || null;
 
   const activeCategory = categories.find(function(category) {
     return category.id === selectedExpenseCategory;
   }) || categories[0];
 
-  const editingItem = editingExpenseDraft || (
-  editingExpenseGroupIndex !== null && editingExpenseItemIndex !== null
-    ? expenses[editingExpenseGroupIndex]?.items[editingExpenseItemIndex]
-    : null
-);
+  const editingAmount = editingItem?.amount
+    ? String(editingItem.amount).replace('.', ',')
+    : '';
 
-const editingAmount = editingItem
-  ? String(editingItem.amount || '').replace(/[^0-9,.]/g, '').replace(',', '.')
-  : '';
-
-const editingTitle = editingItem?.title || '';
-const editingNote = editingItem?.note || '';
+  const editingTitle = editingItem?.title || '';
+  const editingNote = editingItem?.note || '';
 
   const categoryButtonsHtml = categories.map(function(category) {
-  const isActive = activeCategory.id === category.id;
-  const canDelete = category.id !== 'other';
+    const isActive = activeCategory.id === category.id;
+    const canDelete = category.id !== 'other';
 
-  return `
-    <div class="expense-v2-category-wrap">
-      <button
-        class="expense-v2-category ${isActive ? 'active' : ''}"
-        type="button"
-        data-expense-category="${category.id}"
-      >
-        <span class="material-symbols-outlined ${isActive ? 'filled' : ''}" aria-hidden="true">${category.icon}</span>
-        <span>${escapeHtml(category.label)}</span>
-      </button>
+    return `
+      <div class="expense-v2-category-wrap">
+        <button
+          class="expense-v2-category ${isActive ? 'active' : ''}"
+          type="button"
+          data-expense-category="${category.id}"
+        >
+          <span class="material-symbols-outlined ${isActive ? 'filled' : ''}" aria-hidden="true">${category.icon}</span>
+          <span>${escapeHtml(category.label)}</span>
+        </button>
 
-      ${
-        isEditingExpenseCategories && canDelete
-          ? `
-            <button
-              class="expense-v2-category-delete"
-              type="button"
-              data-action="delete-expense-category"
-              data-category-id="${category.id}"
-              aria-label="Supprimer ${escapeHtml(category.label)}"
-            >
-              <span class="material-symbols-outlined" aria-hidden="true">close</span>
-            </button>
-          `
-          : ''
-      }
-    </div>
-  `;
-}).join('');
-
-  const payerButtonsHtml = people.map(function(person) {
-  const isActive = selectedExpensePayer === person.id;
-  const canEdit = person.id !== 'me' && person.id !== 'partner';
-
-  return `
-    <div class="expense-v2-person-card-wrap">
-      <button
-        class="expense-v2-person-card ${isActive ? 'active' : ''}"
-        type="button"
-        data-expense-payer="${person.id}"
-        ${isEditingBudgetPeople && canEdit ? `data-action="edit-budget-person" data-person-id="${person.id}"` : ''}
-      >
-        <span class="expense-v2-person-avatar">${getInitial(person.name)}</span>
-        <span>${escapeHtml(person.name)}</span>
-      </button>
-
-      ${
-        isEditingBudgetPeople && canEdit
-          ? `
-            <button
-              class="expense-v2-card-delete"
-              type="button"
-              data-action="delete-budget-person"
-              data-person-id="${person.id}"
-              aria-label="Supprimer ${escapeHtml(person.name)}"
-            >
-              <span class="material-symbols-outlined" aria-hidden="true">close</span>
-            </button>
-          `
-          : ''
-      }
-    </div>
-  `;
-}).join('');
-
-  const isActive = selectedExpensePayer === person.id;
-  const canEdit = person.id !== 'me' && person.id !== 'partner';
-
-  return `
-    <div class="expense-v2-person-card-wrap">
-      <button
-        class="expense-v2-person-card ${isActive ? 'active' : ''}"
-        type="button"
-        data-expense-payer="${person.id}"
-      >
-        <span class="expense-v2-person-avatar">${getInitial(person.name)}</span>
-        <span>${escapeHtml(person.name)}</span>
-      </button>
-
-      ${
-        canEdit
-          ? `
-            <div class="expense-v2-card-actions">
+        ${
+          isEditingExpenseCategories && canDelete
+            ? `
               <button
+                class="expense-v2-category-delete"
                 type="button"
-                data-action="edit-budget-person"
-                data-person-id="${person.id}"
-                aria-label="Modifier ${escapeHtml(person.name)}"
-              >
-                <span class="material-symbols-outlined" aria-hidden="true">edit</span>
-              </button>
-
-              <button
-                type="button"
-                class="danger"
-                data-action="delete-budget-person"
-                data-person-id="${person.id}"
-                aria-label="Supprimer ${escapeHtml(person.name)}"
+                data-action="delete-expense-category"
+                data-category-id="${category.id}"
+                aria-label="Supprimer ${escapeHtml(category.label)}"
               >
                 <span class="material-symbols-outlined" aria-hidden="true">close</span>
               </button>
-            </div>
-          `
-          : ''
-      }
-    </div>
-  `;
-}).join('');
-
-  const splitAvatarsHtml = people.slice(0, 4).map(function(person) {
-    return `<span>${getInitial(person.name)}</span>`;
+            `
+            : ''
+        }
+      </div>
+    `;
   }).join('');
 
- const splitPeopleHtml = people.map(function(person) {
-  const isActive = selectedExpenseSplit === person.id;
-  const canEdit = person.id !== 'me' && person.id !== 'partner';
+  const payerButtonsHtml = people.map(function(person) {
+    const isActive = selectedExpensePayer === person.id;
+    const canEdit = person.id !== 'me' && person.id !== 'partner';
 
-  return `
-    <div class="expense-v2-person-card-wrap">
-      <button
-        class="expense-v2-person-card ${isActive ? 'active' : ''}"
-        type="button"
-        data-expense-split="${person.id}"
-        ${isEditingBudgetPeople && canEdit ? `data-action="edit-budget-person" data-person-id="${person.id}"` : ''}
-      >
-        <span class="expense-v2-person-avatar">${getInitial(person.name)}</span>
-        <span>${escapeHtml(person.name)}</span>
-      </button>
+    return `
+      <div class="expense-v2-person-card-wrap">
+        <button
+          class="expense-v2-person-card ${isActive ? 'active' : ''}"
+          type="button"
+          data-expense-payer="${person.id}"
+          ${isEditingBudgetPeople && canEdit ? `data-action="edit-budget-person" data-person-id="${person.id}"` : ''}
+        >
+          <span class="expense-v2-person-avatar">${getInitial(person.name)}</span>
+          <span>${escapeHtml(person.name)}</span>
+        </button>
 
-      ${
-        isEditingBudgetPeople && canEdit
-          ? `
-            <button
-              class="expense-v2-card-delete"
-              type="button"
-              data-action="delete-budget-person"
-              data-person-id="${person.id}"
-              aria-label="Supprimer ${escapeHtml(person.name)}"
-            >
-              <span class="material-symbols-outlined" aria-hidden="true">close</span>
-            </button>
-          `
-          : ''
-      }
-    </div>
-  `;
-}).join('');
-
-  const isActive = selectedExpenseSplit === person.id;
-  const canEdit = person.id !== 'me' && person.id !== 'partner';
-
-  return `
-    <div class="expense-v2-person-card-wrap">
-      <button
-        class="expense-v2-person-card ${isActive ? 'active' : ''}"
-        type="button"
-        data-expense-split="${person.id}"
-      >
-        <span class="expense-v2-person-avatar">${getInitial(person.name)}</span>
-        <span>${escapeHtml(person.name)}</span>
-      </button>
-
-      ${
-        canEdit
-          ? `
-            <div class="expense-v2-card-actions">
+        ${
+          isEditingBudgetPeople && canEdit
+            ? `
               <button
+                class="expense-v2-card-delete"
                 type="button"
-                data-action="edit-budget-person"
-                data-person-id="${person.id}"
-                aria-label="Modifier ${escapeHtml(person.name)}"
-              >
-                <span class="material-symbols-outlined" aria-hidden="true">edit</span>
-              </button>
-
-              <button
-                type="button"
-                class="danger"
                 data-action="delete-budget-person"
                 data-person-id="${person.id}"
                 aria-label="Supprimer ${escapeHtml(person.name)}"
               >
                 <span class="material-symbols-outlined" aria-hidden="true">close</span>
               </button>
-            </div>
-          `
-          : ''
-      }
-    </div>
-  `;
-}).join('');
+            `
+            : ''
+        }
+      </div>
+    `;
+  }).join('');
+
+  const splitPeopleHtml = people.map(function(person) {
+    const isActive = selectedExpenseSplit === person.id;
+    const canEdit = person.id !== 'me' && person.id !== 'partner';
+
+    return `
+      <div class="expense-v2-person-card-wrap">
+        <button
+          class="expense-v2-person-card ${isActive ? 'active' : ''}"
+          type="button"
+          data-expense-split="${person.id}"
+          ${isEditingBudgetPeople && canEdit ? `data-action="edit-budget-person" data-person-id="${person.id}"` : ''}
+        >
+          <span class="expense-v2-person-avatar">${getInitial(person.name)}</span>
+          <span>${escapeHtml(person.name)}</span>
+        </button>
+
+        ${
+          isEditingBudgetPeople && canEdit
+            ? `
+              <button
+                class="expense-v2-card-delete"
+                type="button"
+                data-action="delete-budget-person"
+                data-person-id="${person.id}"
+                aria-label="Supprimer ${escapeHtml(person.name)}"
+              >
+                <span class="material-symbols-outlined" aria-hidden="true">close</span>
+              </button>
+            `
+            : ''
+        }
+      </div>
+    `;
+  }).join('');
 
   app.innerHTML = `
     <div class="mobile-shell expense-v2-shell">
@@ -1920,6 +1834,7 @@ const editingNote = editingItem?.note || '';
         <section class="expense-v2-section">
           <div class="expense-v2-section-heading">
             <span class="expense-v2-kicker">Catégorie</span>
+
             <button
               class="expense-v2-mini-action ${isEditingExpenseCategories ? 'active' : ''}"
               type="button"
@@ -1929,8 +1844,10 @@ const editingNote = editingItem?.note || '';
               <span class="material-symbols-outlined" aria-hidden="true">edit</span>
             </button>
           </div>
+
           <div class="expense-v2-category-grid">
             ${categoryButtonsHtml}
+
             <button
               class="expense-v2-category expense-v2-add-card"
               type="button"
@@ -1945,67 +1862,68 @@ const editingNote = editingItem?.note || '';
 
         <section class="expense-v2-section">
           <div class="expense-v2-section-heading">
-            <div class="expense-v2-section-heading">
-  <span class="expense-v2-kicker">Qui a payé ?</span>
+            <span class="expense-v2-kicker">Qui a payé ?</span>
 
-  <div class="expense-v2-heading-actions">
-    <button
-      class="expense-v2-mini-action ${isEditingBudgetPeople ? 'active' : ''}"
-      type="button"
-      data-action="toggle-budget-people-edition"
-      aria-label="Modifier les personnes"
-    >
-      <span class="material-symbols-outlined" aria-hidden="true">edit</span>
-    </button>
+            <div class="expense-v2-heading-actions">
+              <button
+                class="expense-v2-mini-action ${isEditingBudgetPeople ? 'active' : ''}"
+                type="button"
+                data-action="toggle-budget-people-edition"
+                aria-label="Modifier les personnes"
+              >
+                <span class="material-symbols-outlined" aria-hidden="true">edit</span>
+              </button>
 
-    <button
-      class="expense-v2-mini-action"
-      type="button"
-      data-action="add-budget-person"
-      aria-label="Ajouter une personne"
-    >
-      <span class="material-symbols-outlined" aria-hidden="true">person_add</span>
-    </button>
-  </div>
-</div>
+              <button
+                class="expense-v2-mini-action"
+                type="button"
+                data-action="add-budget-person"
+                aria-label="Ajouter une personne"
+              >
+                <span class="material-symbols-outlined" aria-hidden="true">person_add</span>
+              </button>
+            </div>
+          </div>
+
           <div class="expense-v2-person-grid">
             ${payerButtonsHtml}
+
             <button
               class="expense-v2-person-card ${selectedExpensePayer === 'common' ? 'active' : ''}"
               type="button"
               data-expense-payer="common"
             >
               <span class="expense-v2-person-avatar">€</span>
-              <span>Fonds Commun</span>
+              <span>Fonds commun</span>
             </button>
           </div>
         </section>
 
         <section class="expense-v2-section">
           <div class="expense-v2-section-heading">
-            <div class="expense-v2-section-heading">
-  <span class="expense-v2-kicker">Pour qui ?</span>
+            <span class="expense-v2-kicker">Pour qui ?</span>
 
-  <div class="expense-v2-heading-actions">
-    <button
-      class="expense-v2-mini-action ${isEditingBudgetPeople ? 'active' : ''}"
-      type="button"
-      data-action="toggle-budget-people-edition"
-      aria-label="Modifier les personnes"
-    >
-      <span class="material-symbols-outlined" aria-hidden="true">edit</span>
-    </button>
+            <div class="expense-v2-heading-actions">
+              <button
+                class="expense-v2-mini-action ${isEditingBudgetPeople ? 'active' : ''}"
+                type="button"
+                data-action="toggle-budget-people-edition"
+                aria-label="Modifier les personnes"
+              >
+                <span class="material-symbols-outlined" aria-hidden="true">edit</span>
+              </button>
 
-    <button
-      class="expense-v2-mini-action"
-      type="button"
-      data-action="add-budget-person"
-      aria-label="Ajouter une personne"
-    >
-      <span class="material-symbols-outlined" aria-hidden="true">person_add</span>
-    </button>
-  </div>
-</div>
+              <button
+                class="expense-v2-mini-action"
+                type="button"
+                data-action="add-budget-person"
+                aria-label="Ajouter une personne"
+              >
+                <span class="material-symbols-outlined" aria-hidden="true">person_add</span>
+              </button>
+            </div>
+          </div>
+
           <div class="expense-v2-person-grid">
             <button
               class="expense-v2-person-card ${selectedExpenseSplit === 'equal' ? 'active' : ''}"
@@ -2015,6 +1933,7 @@ const editingNote = editingItem?.note || '';
               <span class="expense-v2-person-avatar">=</span>
               <span>Équitable</span>
             </button>
+
             ${splitPeopleHtml}
           </div>
         </section>
@@ -2050,165 +1969,7 @@ const editingNote = editingItem?.note || '';
         </button>
       </div>
 
-      ${renderExpenseModal()}
-    </div>
-  `;
-}
-
-function renderBudgetOverview() {
-  const total = getCurrentBudgetTotal();
-  const formattedTotal = formatEuroAmount(total);
-
-  app.innerHTML = `
-    <div class="mobile-shell">
-      ${topbar()}
-
-      <main class="budget-overview-main">
-        ${budgetTabs('overview')}
-
-        <section class="budget-overview-card" aria-label="Résumé du budget">
-          <div class="budget-pattern" aria-hidden="true"></div>
-
-          <div class="budget-overview-content">
-            <span class="kicker">Budget Total</span>
-            <h2>${formattedTotal}</h2>
-
-            <div class="donut-wrap" aria-label="Graphique du budget">
-              <svg class="donut" viewBox="0 0 36 36" role="img" aria-labelledby="budget-donut-title">
-                <title id="budget-donut-title">Répartition du budget</title>
-                <path class="donut-ring" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                <path class="donut-segment primary" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                <path class="donut-segment tertiary" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                <path class="donut-segment accent" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-              </svg>
-
-              <div class="donut-center">
-                <span>Total</span>
-                <strong>${formattedTotal}</strong>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section class="budget-repartition" aria-labelledby="budget-repartition-title">
-          <h3 id="budget-repartition-title">Répartition</h3>
-
-          <div class="budget-category-list">
-            ${budgetCategories.map(category => `
-              <article class="budget-category-card">
-                <span class="budget-category-icon ${category.tone}" aria-hidden="true">
-                  <span class="material-symbols-outlined">${category.icon}</span>
-                </span>
-
-                <div>
-                  <h4>${category.label}</h4>
-                  <p>${category.percent}</p>
-                </div>
-
-                <strong>${category.amount}</strong>
-              </article>
-            `).join('')}
-          </div>
-        </section>
-      </main>
-
-      ${bottomNav('budget')}
-    </div>
-  `;
-}
-
-
-function renderBudgetBalance() {
-  const balanceCardsHtml = budgetBalances.map(function(person) {
-    const isPositive = person.tone === 'positive';
-    const cleanBalance = person.balance.replace('+ ', '').replace('- ', '');
-    const transportWidth = isPositive ? '40%' : '0%';
-    const hotelWidth = isPositive ? '35%' : '0%';
-    const restaurantWidth = isPositive ? '25%' : '0%';
-
-    return `
-      <div class="balance-person-card">
-        <div class="balance-person-header">
-          <div class="balance-person-id">
-            <span class="balance-avatar ${person.tone}">${escapeHtml(person.initials)}</span>
-            <span class="balance-person-name">${escapeHtml(person.name)}</span>
-          </div>
-
-          <div class="balance-person-amounts">
-            <strong class="balance-main-amount ${person.tone}">
-              ${isPositive ? 'Reçoit' : 'Doit'} ${escapeHtml(cleanBalance)}
-            </strong>
-            <span class="balance-paid">Payé : ${escapeHtml(person.paid)}</span>
-          </div>
-        </div>
-
-        <div class="balance-bars">
-          <div class="balance-bar-row">
-            <span class="material-symbols-outlined">directions_car</span>
-            <div class="balance-bar-track">
-              <div class="balance-bar-fill" style="width: ${transportWidth}"></div>
-            </div>
-            <span class="balance-bar-pct">${transportWidth}</span>
-          </div>
-
-          <div class="balance-bar-row">
-            <span class="material-symbols-outlined">hotel</span>
-            <div class="balance-bar-track">
-              <div class="balance-bar-fill" style="width: ${hotelWidth}"></div>
-            </div>
-            <span class="balance-bar-pct">${hotelWidth}</span>
-          </div>
-
-          <div class="balance-bar-row">
-            <span class="material-symbols-outlined">restaurant</span>
-            <div class="balance-bar-track">
-              <div class="balance-bar-fill" style="width: ${restaurantWidth}"></div>
-            </div>
-            <span class="balance-bar-pct">${restaurantWidth}</span>
-          </div>
-        </div>
-      </div>
-    `;
-  }).join('');
-
-  app.innerHTML = `
-    <div class="mobile-shell">
-      ${topbar()}
-
-      <main class="budget-v2-main">
-        ${budgetTabs('balance')}
-
-        <div class="balance-cards">
-          ${balanceCardsHtml}
-        </div>
-
-        <h3 class="budget-section-title">Détails des remboursements</h3>
-
-        <div class="settlement-detail-card">
-          <div class="settlement-detail-row">
-            <div class="settlement-detail-info">
-              <strong>Location Voiture</strong>
-              <span>Payé par ${escapeHtml(budgetSettlement.to)}</span>
-            </div>
-            <span class="settlement-detail-amount">+180,00 €</span>
-          </div>
-
-          <div class="settlement-detail-row">
-            <div class="settlement-detail-info">
-              <strong>Hôtel Paris</strong>
-              <span>Payé par ${escapeHtml(budgetSettlement.to)}</span>
-            </div>
-            <span class="settlement-detail-amount">+270,00 €</span>
-          </div>
-        </div>
-
-        <button class="settle-debt-btn" type="button" data-action="settlement-settled">
-          <span class="material-symbols-outlined">payments</span>
-          <span>Solder la dette</span>
-        </button>
-      </main>
-
-      ${bottomNav('budget')}
+      ${typeof renderExpenseModal === 'function' ? renderExpenseModal() : ''}
     </div>
   `;
 }

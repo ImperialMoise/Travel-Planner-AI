@@ -1604,21 +1604,25 @@ function getMobileMapPanelSteps() {
   return steps.filter(step => step.dayIndex === mobileMapPanelDayIndex);
 }
 
-function fitMobileMapToPanelDay() {
+function fitMobileMapToPanelDay(options = {}) {
   if (!mobileMapInstance) return;
 
   const steps = getMobileMapPanelSteps();
 
   if (!steps.length) {
-    fitMobileMapToSteps();
+    fitMobileMapToSteps({ duration: options.duration ?? 450, maxZoom: 8 });
     return;
   }
 
+  const duration = options.duration ?? 520;
+  const maxZoom = options.maxZoom ?? 13;
+
   if (steps.length === 1) {
-    mobileMapInstance.flyTo({
+    mobileMapInstance.easeTo({
       center: [steps[0].lng, steps[0].lat],
-      zoom: 15,
-      duration: 900
+      zoom: Math.min(maxZoom, 13),
+      duration,
+      essential: true
     });
     return;
   }
@@ -1630,9 +1634,10 @@ function fitMobileMapToPanelDay() {
   });
 
   mobileMapInstance.fitBounds(bounds, {
-    padding: { top: 110, right: 70, bottom: 250, left: 70 },
-    duration: 900,
-    maxZoom: 15
+    padding: { top: 120, right: 72, bottom: 280, left: 72 },
+    duration,
+    maxZoom,
+    essential: true
   });
 }
 
@@ -4642,13 +4647,20 @@ if (action === 'delete-step') {
   if (action === 'map-panel-day') {
     const value = event.target.closest('[data-panel-day]')?.dataset.panelDay;
 
-    rememberMobileMapCamera();
-
     mobileMapPanelDayIndex = value === 'all' ? null : Number(value);
     mobileMapDaysOpen = false;
     showAllMobileMapSteps = false;
 
     renderMap();
+
+    setTimeout(() => {
+      if (mobileMapPanelDayIndex === null) {
+        fitMobileMapToSteps({ duration: 520, maxZoom: 8 });
+      } else {
+        fitMobileMapToPanelDay({ duration: 520, maxZoom: 13 });
+      }
+    }, 80);
+
     return;
   }
 

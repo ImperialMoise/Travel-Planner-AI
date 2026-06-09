@@ -176,46 +176,114 @@ const budgetSettlement = {
   amount: '226,00 €'
 };
 
-const docCategories = [
-  {
-    id: 'flights',
-    label: 'Billets d\'avion',
-    icon: 'flight',
-    tone: 'primary',
-    files: [
-      { name: 'E-Ticket_AirFrance_AF123.pdf', type: 'pdf', date: '12 Oct', size: '1.2 MB' },
-      { name: 'Carte_Embarquement_Retour.png', type: 'image', date: '14 Oct', size: '850 KB' }
-    ]
-  },
-  {
-    id: 'hotels',
-    label: 'Hébergements',
-    icon: 'hotel',
-    tone: 'accent',
-    files: [
-      { name: 'Booking_Riad_Marrakech.pdf', type: 'pdf', date: '10 Oct', size: '2.1 MB' }
-    ]
-  },
-  {
-    id: 'identity',
-    label: 'Identité',
-    icon: 'badge',
-    tone: 'secondary',
-    files: [
-      { name: 'Passeport_Marie.jpg', type: 'image', date: '05 Sep', size: '1.5 MB' },
-      { name: 'Passeport_Jean.jpg', type: 'image', date: '05 Sep', size: '1.4 MB' }
-    ]
-  },
-  {
-    id: 'insurance',
-    label: 'Assurances',
-    icon: 'health_and_safety',
-    tone: 'tertiary',
-    files: [
-      { name: 'Attestation_Rapatriement.pdf', type: 'pdf', date: '15 Sep', size: '500 KB' }
-    ]
-  }
+const docCategoryMeta = [
+  { id: 'flights', label: "Billets d'avion", icon: 'flight', tone: 'primary' },
+  { id: 'hotels', label: 'Hébergements', icon: 'hotel', tone: 'accent' },
+  { id: 'identity', label: 'Identité', icon: 'badge', tone: 'secondary' },
+  { id: 'insurance', label: 'Assurances', icon: 'health_and_safety', tone: 'tertiary' },
+  { id: 'other', label: 'Autres documents', icon: 'folder', tone: 'secondary' }
 ];
+
+let activeDocId = null;
+let mobileDocuments = [];
+
+function getTripDocuments() {
+  return mobileDocuments;
+}
+
+async function refreshMobileDocuments() {
+  if (!activeTrip?.id || !window.SB?.listDocuments) {
+    mobileDocuments = [];
+    return;
+  }
+
+  try {
+    mobileDocuments = await window.SB.listDocuments(activeTrip.id);
+  } catch (error) {
+    console.error('Mobile documents refresh error:', error);
+    mobileDocuments = [];
+  }
+}
+
+function getDocCategories() {
+  const documents = getTripDocuments();
+
+  return docCategoryMeta.map(category => ({
+    ...category,
+    files: documents.filter(document => document.category === category.id)
+  }));
+}
+
+function formatDocSize(bytes) {
+  if (!bytes) return 'Taille inconnue';
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
+
+function getDocFileType(file) {
+  if (file.type?.includes('pdf')) return 'pdf';
+  if (file.type?.includes('image')) return 'image';
+  return 'file';
+}
+
+function readFileAsDataUrl(file) {
+  return new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => resolve('');
+    reader.readAsDataURL(file);
+  });
+}
+
+async function handleAddDocuments(files) {
+  const selectedFiles = [...files || []];
+  if (!selectedFiles.length) return;
+
+  if (!activeTrip?.id) {
+    alert('Sélectionne un voyage avant d’ajouter un document.');
+    return;
+  }
+
+  if (!window.SB?.uploadDocument) {
+    alert('Supabase documents indisponible.');
+    return;
+  }
+
+  const category = prompt(
+    "Catégorie ? flights, hotels, identity, insurance ou other",
+    'other'
+  ) || 'other';
+
+  const safeCategory = docCategoryMeta.some(item => item.id === category) ? category : 'other';
+
+  try {
+    for (const file of selectedFiles) {
+      await window.SB.uploadDocument(activeTrip.id, file, safeCategory);
+    }
+
+    await refreshMobileDocuments();
+    renderDocs();
+  } catch (error) {
+    alert('Erreur upload document : ' + (error.message || error));
+  }
+}
+
+async function handleDeleteDocument(docId) {
+  if (!confirm('Supprimer ce document ?')) return;
+
+  try {
+    await window.SB.deleteDocument(docId);
+    await refreshMobileDocuments();
+    activeDocId = null;
+    renderDocs();
+  } catch (error) {
+    alert('Erreur suppression document : ' + (error.message || error));
+  }
+}
+
+function getDocumentById(docId) {
+  return getTripDocuments().find(document => document.id === docId) || null;
+}
 
 const mapMarkers = [
   { icon: 'hotel', label: 'Hôtel', top: '32%', left: '24%', active: false },
@@ -3724,29 +3792,33 @@ function renderBudgetBalance() {
   `;
 }
 
+async function renderDocs() {
+  await refreshMobileDocuments();
 
-function renderDocs() {
+  const categories = getDocCategories();
+  const totalFiles = categories.reduce((sum, category) => sum + category.files.length, 0);
+
   app.innerHTML = `
     <div class="mobile-shell">
       ${topbar()}
 
       <main class="docs-main-v2">
         <div class="docs-header">
-          <span class="kicker">Coffre-fort Numérique</span>
+          <span class="kicker">Coffre-fort numérique</span>
           <h2 class="docs-title">Documents de Voyage</h2>
-          <p class="docs-subtitle">Vos documents essentiels centralisés et sécurisés.</p>
+          <p class="docs-subtitle">${escapeHtml(activeTrip?.name || 'Aucun voyage sélectionné')} · ${totalFiles} document${totalFiles > 1 ? 's' : ''}</p>
         </div>
 
         <div class="docs-security-banner">
           <span class="material-symbols-outlined filled">verified_user</span>
           <div>
-            <strong>Stockage Sécurisé</strong>
-            <p>Documents chiffrés. Synchronisez avant le départ pour un accès hors ligne.</p>
+            <strong>Stockage synchronisé</strong>
+            <p>Documents stockés dans Supabase et accessibles avec votre compte.</p>
           </div>
         </div>
 
         <div class="docs-actions">
-          <button class="docs-action-primary" type="button">
+          <button class="docs-action-primary" type="button" data-action="doc-upload">
             <span class="material-symbols-outlined">upload_file</span>
             <span>Ajouter</span>
           </button>
@@ -3754,38 +3826,38 @@ function renderDocs() {
             <span class="material-symbols-outlined">photo_camera</span>
             <span>Scanner</span>
           </button>
+          <input id="doc-file-input" type="file" multiple accept="image/*,.pdf" hidden>
         </div>
 
         <div class="docs-grid">
-          ${docCategories.map(cat => `
+          ${categories.map(cat => `
             <div class="docs-category-card">
               <div class="docs-category-header">
                 <div class="docs-category-icon ${cat.tone}">
                   <span class="material-symbols-outlined">${cat.icon}</span>
                 </div>
-                <h3>${cat.label}</h3>
+                <h3>${escapeHtml(cat.label)}</h3>
                 <span class="docs-file-count">${cat.files.length} fichier${cat.files.length > 1 ? 's' : ''}</span>
               </div>
+
               <div class="docs-file-list">
-                ${cat.files.map(file => `
-                  <button class="docs-file-row" type="button" data-action="doc-detail">
-                    <span class="material-symbols-outlined docs-file-type-icon ${file.type === 'pdf' ? 'pdf' : 'img'}">${file.type === 'pdf' ? 'picture_as_pdf' : 'image'}</span>
+                ${cat.files.length ? cat.files.map(file => `
+                  <button class="docs-file-row" type="button" data-action="doc-detail" data-doc-id="${file.id}">
+                    <span class="material-symbols-outlined docs-file-type-icon ${file.type === 'pdf' ? 'pdf' : 'img'}">${file.type === 'pdf' ? 'picture_as_pdf' : file.type === 'image' ? 'image' : 'description'}</span>
                     <div class="docs-file-info">
-                      <span class="docs-file-name">${file.name}</span>
-                      <span class="docs-file-meta">Ajouté le ${file.date} • ${file.size}</span>
+                      <span class="docs-file-name">${escapeHtml(file.name)}</span>
+                      <span class="docs-file-meta">Ajouté le ${escapeHtml(file.date)} · ${formatDocSize(file.size)}</span>
                     </div>
                     <span class="material-symbols-outlined docs-file-more">chevron_right</span>
                   </button>
-                `).join('')}
+                `).join('') : `
+                  <div class="docs-empty">
+                    <p>Aucun document dans cette catégorie.</p>
+                  </div>
+                `}
               </div>
             </div>
           `).join('')}
-
-          <button class="docs-add-folder" type="button" data-action="add-doc-folder">
-            <span class="material-symbols-outlined">create_new_folder</span>
-            <strong>Nouveau Dossier</strong>
-            <span>Créer une catégorie</span>
-          </button>
         </div>
       </main>
 
@@ -3846,78 +3918,71 @@ function renderDocScanner() {
   `;
 }
 
-function renderDocDetail() {
+async function renderDocDetail() {
+  const documentItem = getDocumentById(activeDocId);
+
+  if (!documentItem) {
+    navigate('docs');
+    return;
+  }
+
+  const isImage = documentItem.mime?.includes('image') || documentItem.type === 'image';
+  const isPdf = documentItem.mime?.includes('pdf') || documentItem.type === 'pdf';
+
+  let documentUrl = '';
+  try {
+    documentUrl = await window.SB.getDocumentUrl(documentItem.filePath);
+  } catch (error) {
+    alert('Impossible d’ouvrir le document : ' + (error.message || error));
+    navigate('docs');
+    return;
+  }
+
   app.innerHTML = `
     <div class="mobile-shell doc-detail-shell">
       <header class="doc-detail-topbar">
         <button type="button" data-action="docs" aria-label="Retour">
           <span class="material-symbols-outlined">arrow_back</span>
         </button>
+
         <div class="doc-detail-title">
-          <strong>E-Ticket_AF_Paris_Tokyo.pdf</strong>
-          <span>1.2 MB • PDF</span>
+          <strong>${escapeHtml(documentItem.name)}</strong>
+          <span>${formatDocSize(documentItem.size)} · ${(documentItem.mime || documentItem.type || 'FICHIER').toUpperCase()}</span>
         </div>
-        <button type="button" aria-label="Options">
-          <span class="material-symbols-outlined">more_vert</span>
+
+        <button type="button" data-action="delete-doc" data-doc-id="${documentItem.id}" aria-label="Supprimer">
+          <span class="material-symbols-outlined">delete</span>
         </button>
       </header>
 
       <main class="doc-detail-viewer">
-        <div class="ticket-card">
-          <div class="ticket-header">
-            <div>
-              <h2>Air France</h2>
-              <p>First Class E-Ticket</p>
+        ${isImage ? `
+          <img class="doc-preview-image" src="${documentUrl}" alt="${escapeHtml(documentItem.name)}">
+        ` : isPdf ? `
+          <iframe class="doc-preview-frame" src="${documentUrl}" title="${escapeHtml(documentItem.name)}"></iframe>
+        ` : `
+          <div class="docs-empty">
+            <div class="docs-empty-icon">
+              <span class="material-symbols-outlined">description</span>
             </div>
-            <div class="ticket-icon">
-              <span class="material-symbols-outlined">flight</span>
-            </div>
+            <h2>Aperçu indisponible</h2>
+            <p>Ce type de fichier peut être téléchargé, mais pas prévisualisé ici.</p>
           </div>
+        `}
 
-          <div class="ticket-body">
-            <div class="ticket-route">
-              <div class="ticket-airport">
-                <span class="ticket-code">CDG</span>
-                <span class="ticket-city">Paris</span>
-              </div>
-              <div class="ticket-line">
-                <span class="material-symbols-outlined">flight_takeoff</span>
-                <span class="ticket-duration">12H 45M</span>
-              </div>
-              <div class="ticket-airport right">
-                <span class="ticket-code">HND</span>
-                <span class="ticket-city">Tokyo</span>
-              </div>
-            </div>
-
-            <div class="ticket-details">
-              <div><span class="kicker">Passager</span><strong>Alexandre Dubois</strong></div>
-              <div><span class="kicker">Vol</span><strong class="mono">AF 276</strong></div>
-              <div><span class="kicker">Date</span><strong>14 Nov 2023</strong></div>
-              <div><span class="kicker">Embarquement</span><strong class="boarding-time">22:45</strong></div>
-              <div><span class="kicker">Terminal / Porte</span><strong>2E / K34</strong></div>
-              <div><span class="kicker">Siège</span><strong>02A</strong></div>
-            </div>
-
-            <div class="ticket-perforation"></div>
-
-            <div class="ticket-qr">
-              <span class="kicker">Scanner à la porte</span>
-              <div class="qr-placeholder">
-                <span class="material-symbols-outlined">qr_code_2</span>
-              </div>
-              <span class="ticket-barcode">01384028394820</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="doc-page-indicator">1 / 1</div>
+        <div class="doc-page-indicator">${escapeHtml(documentItem.name)}</div>
       </main>
 
       <footer class="doc-detail-actions">
-        <button type="button"><span class="material-symbols-outlined">ios_share</span><span>Partager</span></button>
-        <button type="button" class="primary-doc-action"><span class="material-symbols-outlined">download</span><span>Télécharger</span></button>
-        <button type="button" class="danger"><span class="material-symbols-outlined">delete</span><span>Supprimer</span></button>
+        <a class="primary-doc-action" href="${documentUrl}" download="${escapeHtml(documentItem.name)}">
+          <span class="material-symbols-outlined">download</span>
+          <span>Télécharger</span>
+        </a>
+
+        <button type="button" class="danger" data-action="delete-doc" data-doc-id="${documentItem.id}">
+          <span class="material-symbols-outlined">delete</span>
+          <span>Supprimer</span>
+        </button>
       </footer>
     </div>
   `;
@@ -4411,6 +4476,23 @@ function navigate(route) {
 window.addEventListener('click', event => {
   const action = event.target.closest('[data-action]')?.dataset.action;
   if (!action) return;
+
+    if (action === 'doc-detail') {
+    activeDocId = event.target.closest('[data-doc-id]')?.dataset.docId || null;
+    navigate('doc-detail');
+    return;
+  }
+
+    if (action === 'doc-upload') {
+    document.querySelector('#doc-file-input')?.click();
+    return;
+  }
+
+  if (action === 'delete-doc') {
+    const docId = event.target.closest('[data-doc-id]')?.dataset.docId;
+    if (docId) handleDeleteDocument(docId);
+    return;
+  }
 
     if (action === 'account') {
     navigate(mobileUser ? 'account' : 'auth');
@@ -4928,6 +5010,12 @@ window.addEventListener('click', event => {
   if (splitButton) {
     selectedExpenseSplit = splitButton.dataset.expenseSplit || 'equal';
     renderNewExpense();
+  }
+});
+
+window.addEventListener('change', event => {
+  if (event.target?.id === 'doc-file-input') {
+    handleAddDocuments(event.target.files);
   }
 });
 

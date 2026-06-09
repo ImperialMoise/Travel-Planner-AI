@@ -237,6 +237,107 @@ export async function removeParticipant(id) {
   if (error) throw error;
 }
 
+// ─── Documents ─────────────────────────────────────
+export async function listDocuments(tripId) {
+  if (!tripId) return [];
+
+  const { data, error } = await sb
+    .from('trip_documents')
+    .select('*')
+    .eq('trip_id', tripId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+
+  return (data || []).map(doc => ({
+    id: doc.id,
+    tripId: doc.trip_id,
+    category: doc.category || 'other',
+    name: doc.name,
+    filePath: doc.file_path,
+    mime: doc.mime_type || '',
+    size: doc.size_bytes || 0,
+    createdAt: doc.created_at
+  }));
+}
+
+export async function uploadDocument(tripId, file, category = 'other') {
+  const user = await getUser();
+  if (!user) throw new Error('Connexion requise');
+  if (!tripId) throw new Error('Voyage introuvable');
+  if (!file) throw new Error('Fichier manquant');
+
+  const safeName = file.name.replace(/[^\w.\-]+/g, '_');
+  const filePath = `${tripId}/${Date.now()}-${safeName}`;
+
+  const { error: uploadError } = await sb.storage
+    .from('trip-documents')
+    .upload(filePath, file, {
+      cacheControl: '3600',
+      upsert: false,
+      contentType: file.type || 'application/octet-stream'
+    });
+
+  if (uploadError) throw uploadError;
+
+  const { data, error } = await sb
+    .from('trip_documents')
+    .insert({
+      trip_id: tripId,
+      category,
+      name: file.name,
+      file_path: filePath,
+      mime_type: file.type || '',
+      size_bytes: file.size || 0,
+      created_by: user.id
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+
+  return {
+    id: data.id,
+    tripId: data.trip_id,
+    category: data.category || 'other',
+    name: data.name,
+    filePath: data.file_path,
+    mime: data.mime_type || '',
+    size: data.size_bytes || 0,
+    createdAt: data.created_at
+  };
+}
+
+export async function getDocumentUrl(filePath) {
+  const { data, error } = await sb.storage
+    .from('trip-documents')
+    .createSignedUrl(filePath, 60 * 10);
+
+  if (error) throw error;
+  return data.signedUrl;
+}
+
+export async function deleteDocument(documentId) {
+  const { data: doc, error: fetchError } = await sb
+    .from('trip_documents')
+    .select('file_path')
+    .eq('id', documentId)
+    .single();
+
+  if (fetchError) throw fetchError;
+
+  const { error: deleteRowError } = await sb
+    .from('trip_documents')
+    .delete()
+    .eq('id', documentId);
+
+  if (deleteRowError) throw deleteRowError;
+
+  if (doc?.file_path) {
+    await sb.storage.from('trip-documents').remove([doc.file_path]);
+  }
+}
+
 // ─── Realtime ──────────────────────────────────────────────
 let _channel = null;
 export function subscribeTrip(tripId, onChange) {

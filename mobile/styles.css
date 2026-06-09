@@ -7209,3 +7209,23 @@ button {
 .mobile-map-card .mobile-map-day-tabs {
   display: none !important;
 }
+
+.doc-preview-image,
+.doc-preview-frame {
+  width: 100%;
+  min-height: 62vh;
+  border: 0;
+  border-radius: 18px;
+  background: var(--surface-container);
+  box-shadow: var(--shadow-card);
+}
+
+.doc-preview-image {
+  height: auto;
+  max-height: 68vh;
+  object-fit: contain;
+}
+
+.doc-detail-actions a {
+  text-decoration: none;
+}

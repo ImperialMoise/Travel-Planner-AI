@@ -111,15 +111,101 @@ const MV_LIGHT='https://api.maptiler.com/maps/streets-v2/style.json?key='+MT_KEY
 const MV_DARK='https://api.maptiler.com/maps/streets-v2-dark/style.json?key='+MT_KEY+'&language=fr';
 const MV_SAT='https://api.maptiler.com/maps/hybrid/style.json?key='+MT_KEY+'&language=fr';
 
+function mapStepCoords(step) {
+  if (step && Number.isFinite(Number(step.lat)) && Number.isFinite(Number(step.lng))) {
+    return [Number(step.lng), Number(step.lat)];
+  }
+
+  return null;
+}
+
+function tripToMapTrip(realTrip) {
+  if (!realTrip || !Array.isArray(realTrip.days) || !realTrip.days.length) {
+    return MAP_TRIP;
+  }
+
+  const days = realTrip.days.map(function(day, index) {
+    const fallback = MAP_TRIP.days[index % MAP_TRIP.days.length];
+
+    const steps = (day.steps || []).reduce(function(list, step) {
+      const coords = mapStepCoords(step);
+
+      if (step.type === 'transport') {
+        (step.escales || []).forEach(function(escale, escaleIndex) {
+          const escaleCoords = mapStepCoords(escale);
+          if (!escaleCoords) return;
+
+          list.push({
+            id: step.id + '-escale-' + escaleIndex,
+            t: 'transport',
+            mode: step.transportType || 'route',
+            l: escale.place || 'Escale ' + (escaleIndex + 1),
+            s: [
+              'Escale',
+              escale.arrivalTime ? 'arr. ' + escale.arrivalTime : '',
+              escale.departureTime ? 'dép. ' + escale.departureTime : ''
+            ].filter(Boolean).join(' · '),
+            time: escale.arrivalTime || escale.departureTime || step.time || '',
+            c: escaleCoords,
+            raw: { ...step, escale, isEscale: true }
+          });
+        });
+      }
+
+      if (coords) {
+        list.push({
+          id: step.id,
+          t: step.type || 'autre',
+          mode: step.transportType || step.type || 'pin',
+          l: step.label || step.lieu || step.arrivee || step.depart || 'Étape',
+          s: step.type === 'transport'
+            ? [step.depart, step.arrivee].filter(Boolean).join(' → ')
+            : (step.lieu || step.note || ''),
+          time: step.time || '',
+          c: coords,
+          raw: step
+        });
+      }
+
+      return list;
+    }, []);
+
+    const firstCoords = steps.find(function(step) { return step.c; });
+    const center = firstCoords ? firstCoords.c : fallback.c;
+
+    return {
+      ...fallback,
+      id: day.id,
+      n: day.index != null ? day.index + 1 : index + 1,
+      date: day.dateISO || fallback.date,
+      wd: fallback.wd,
+      region: day.title || realTrip.destination || realTrip.name || fallback.region,
+      city: day.title || realTrip.destination || realTrip.name || fallback.city,
+      title: day.title || fallback.title,
+      tag: realTrip.destination || fallback.tag,
+      note: day.note || '',
+      c: center,
+      z: firstCoords ? 13.5 : fallback.z,
+      steps
+    };
+  });
+
+  return {
+    ...MAP_TRIP,
+    name: realTrip.name || MAP_TRIP.name,
+    dates: [realTrip.startDate, realTrip.endDate].filter(Boolean).join(' — ') || MAP_TRIP.dates,
+    days
+  };
+}
+
 function MapView(){
-  const {trip,theme=localStorage.getItem('it_theme')||'light'}=Store.useStore();
+  const {trip:realTrip,theme=localStorage.getItem('it_theme')||'light'}=Store.useStore();
   const mapEl=React.useRef(null),mapRef=React.useRef(null),cardRef=React.useRef(null);
   const readoutRef=React.useRef(null),needleRef=React.useRef(null);
   const spinRef=React.useRef(true),markersRef=React.useRef({day:[],step:[]});
   const tourRef=React.useRef({on:false,timer:null}),styleCache=React.useRef({});
   const searchTimer=React.useRef(null);
-  const T=MAP_TRIP;
-  const {trip:realTrip}=Store.useStore();
+  const T=tripToMapTrip(realTrip);
 
   const [sel,setSel]=React.useState(null);
   const {selectedDayIndex}=Store.useStore();

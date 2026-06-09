@@ -5106,3 +5106,121 @@ button {
     font-size: 10px;
   }
 }
+
+/* ════════════════════════════════════════════════════════════
+   Nouvelle dépense — popup Atelier v2
+   ════════════════════════════════════════════════════════════ */
+
+.expense-v2-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  padding: 24px;
+  display: grid;
+  place-items: center;
+  background: rgba(21, 48, 42, 0.28);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.expense-v2-modal {
+  position: relative;
+  width: min(100%, 360px);
+  border: 1px solid rgba(212, 196, 179, 0.8);
+  border-radius: 24px;
+  padding: 24px;
+  background: var(--surface);
+  box-shadow: 0 24px 70px rgba(21, 48, 42, 0.2);
+}
+
+.expense-v2-modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: var(--surface-container);
+  color: var(--secondary);
+}
+
+.expense-v2-modal-close .material-symbols-outlined {
+  font-size: 18px;
+}
+
+.expense-v2-modal h3 {
+  margin: 6px 0 18px;
+  color: var(--petrol-dark);
+  font-family: var(--font-serif);
+  font-size: 26px;
+  line-height: 32px;
+  font-weight: 400;
+}
+
+.expense-v2-modal-field {
+  min-height: 50px;
+  border: 1px solid var(--outline-variant);
+  border-radius: 14px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--surface-container-lowest);
+  color: var(--outline);
+}
+
+.expense-v2-modal-field:focus-within {
+  border-color: var(--tan-accent);
+  box-shadow: 0 0 0 3px rgba(217, 182, 126, 0.2);
+}
+
+.expense-v2-modal-field .material-symbols-outlined {
+  font-size: 20px;
+}
+
+.expense-v2-modal-field input {
+  width: 100%;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--on-surface);
+  font-family: var(--font-sans);
+  font-size: 15.5px;
+  line-height: 22px;
+  outline: none;
+}
+
+.expense-v2-modal-field input::placeholder {
+  color: var(--outline);
+}
+
+.expense-v2-modal-actions {
+  margin-top: 18px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.expense-v2-modal-actions button {
+  min-height: 40px;
+  border: 0;
+  border-radius: 999px;
+  padding: 0 16px;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 800;
+}
+
+.expense-v2-modal-actions .secondary {
+  background: var(--surface-container);
+  color: var(--on-surface-variant);
+}
+
+.expense-v2-modal-actions .primary {
+  background: var(--primary);
+  color: var(--on-primary);
+  box-shadow: 0 8px 24px rgba(124, 84, 16, 0.18);
+}

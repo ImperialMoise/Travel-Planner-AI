@@ -148,6 +148,7 @@ let selectedExpenseCategory = 'meal';
 let selectedExpensePayer = 'me';
 let selectedExpenseSplit = 'equal';
 let isEditingExpenseCategories = false;
+let expenseModal = null;
 let editingExpenseGroupIndex = null;
 let editingExpenseItemIndex = null;
 
@@ -1422,14 +1423,109 @@ function getExpenseCategories() {
   ].filter(Boolean);
 }
 
-function handleAddExpenseCategory() {
-  const label = prompt('Nom de la nouvelle catégorie :');
+function openExpenseModal(type) {
+  expenseModal = {
+    type,
+    value: ''
+  };
 
-  if (!label || !label.trim()) return;
+  renderNewExpense();
+}
 
+function closeExpenseModal() {
+  expenseModal = null;
+  renderNewExpense();
+}
+
+function getExpenseModalCopy() {
+  if (!expenseModal) return null;
+
+  if (expenseModal.type === 'person') {
+    return {
+      title: 'Ajouter une personne',
+      label: 'Nom de la personne',
+      placeholder: 'Ex : Sarah',
+      actionLabel: 'Ajouter'
+    };
+  }
+
+  return {
+    title: 'Nouvelle catégorie',
+    label: 'Nom de la catégorie',
+    placeholder: 'Ex : Visites',
+    actionLabel: 'Ajouter'
+  };
+}
+
+function renderExpenseModal() {
+  if (!expenseModal) return '';
+
+  const copy = getExpenseModalCopy();
+
+  return `
+    <div class="expense-v2-modal-backdrop" role="presentation">
+      <section class="expense-v2-modal" role="dialog" aria-modal="true" aria-labelledby="expense-modal-title">
+        <button
+          class="expense-v2-modal-close"
+          type="button"
+          data-action="close-expense-modal"
+          aria-label="Fermer"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">close</span>
+        </button>
+
+        <span class="expense-v2-kicker">${copy.title}</span>
+        <h3 id="expense-modal-title">${copy.label}</h3>
+
+        <label class="expense-v2-modal-field">
+          <span class="material-symbols-outlined" aria-hidden="true">
+            ${expenseModal.type === 'person' ? 'person_add' : 'category'}
+          </span>
+          <input
+            id="expense-modal-input"
+            type="text"
+            value="${escapeHtml(expenseModal.value || '')}"
+            placeholder="${copy.placeholder}"
+            autocomplete="off"
+          >
+        </label>
+
+        <div class="expense-v2-modal-actions">
+          <button type="button" class="secondary" data-action="close-expense-modal">
+            Annuler
+          </button>
+
+          <button type="button" class="primary" data-action="confirm-expense-modal">
+            ${copy.actionLabel}
+          </button>
+        </div>
+      </section>
+    </div>
+  `;
+}
+
+async function confirmExpenseModal() {
+  const value = document.querySelector('#expense-modal-input')?.value.trim();
+
+  if (!expenseModal || !value) return;
+
+  if (expenseModal.type === 'person') {
+    await addBudgetPersonByName(value);
+  }
+
+  if (expenseModal.type === 'category') {
+    addExpenseCategoryByName(value);
+  }
+
+  expenseModal = null;
+  renderNewExpense();
+}
+
+function addExpenseCategoryByName(label) {
   const cleanLabel = label.trim();
-  const id = `custom-${Date.now()}`;
+  if (!cleanLabel) return;
 
+  const id = `custom-${Date.now()}`;
   const customCategories = getCustomExpenseCategories();
 
   customCategories.push({
@@ -1445,8 +1541,10 @@ function handleAddExpenseCategory() {
 
   selectedExpenseCategory = id;
   isEditingExpenseCategories = false;
+}
 
-  renderNewExpense();
+function handleAddExpenseCategory() {
+  openExpenseModal('category');
 }
 
 function handleDeleteExpenseCategory(categoryId) {
@@ -1478,19 +1576,58 @@ function toggleExpenseCategoryEdition() {
   renderNewExpense();
 }
 
+async function addBudgetPersonByName(name) {
+  const cleanName = name.trim();
+  if (!cleanName) return;
+
+  if (activeTrip?.id && window.SB?.addParticipant) {
+    await window.SB.addParticipant(activeTrip.id, cleanName, activeTrip.participants?.length || 0);
+    await refreshMobileTrips(activeTrip.id);
+    return;
+  }
+
+  const localPeople = getLocalBudgetPeople();
+  localPeople.push({
+    id: `local-person-${Date.now()}`,
+    name: cleanName
+  });
+  saveLocalBudgetPeople(localPeople);
+}
+
+function handleAddBudgetPerson() {
+  openExpenseModal('person');
+}
+
+function getLocalBudgetPeople() {
+  try {
+    return JSON.parse(localStorage.getItem('atelierBudgetPeople')) || [];
+  } catch {
+    return [];
+  }
+}
+
+function saveLocalBudgetPeople(people) {
+  localStorage.setItem('atelierBudgetPeople', JSON.stringify(people));
+}
+
 function getBudgetPeople() {
   const participants = activeTrip?.participants || [];
 
   if (participants.length) {
-    return participants.map(person => ({
-      id: person.id,
-      name: person.name
-    }));
+    return participants.map(function(person) {
+      return {
+        id: person.id,
+        name: person.name
+      };
+    });
   }
+
+  const localPeople = getLocalBudgetPeople();
 
   return [
     { id: 'me', name: 'Moi' },
-    { id: 'partner', name: 'Partenaire' }
+    { id: 'partner', name: 'Partenaire' },
+    ...localPeople
   ];
 }
 
@@ -1772,6 +1909,8 @@ function renderNewExpense() {
           <span>${editingItem ? 'Enregistrer les modifications' : 'Ajouter la dépense'}</span>
         </button>
       </div>
+
+      ${renderExpenseModal()}
     </div>
   `;
 }
@@ -2533,6 +2672,16 @@ if (action === 'delete-trip') {
     return;
   }
 
+  if (action === 'close-expense-modal') {
+  closeExpenseModal();
+  return;
+  }
+
+  if (action === 'confirm-expense-modal') {
+  confirmExpenseModal();
+  return;
+}
+
     if (action === 'save-expense') {
     handleSaveExpense();
     return;
@@ -2677,7 +2826,14 @@ window.addEventListener('submit', event => {
 });
 
 window.addEventListener('keydown', event => {
+  if (event.key === 'Enter' && event.target?.id === 'expense-modal-input') {
+    event.preventDefault();
+    confirmExpenseModal();
+    return;
+  }
+
   if (event.key !== 'Enter' && event.key !== ' ') return;
+
   const detailTrigger = event.target.closest('[data-action="activity-detail"]');
   if (!detailTrigger) return;
 

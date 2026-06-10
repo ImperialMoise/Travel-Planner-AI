@@ -8026,9 +8026,12 @@ button {
 
 .mobile-route-calculator.open.is-compact {
   top: auto;
-  bottom: calc(92px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(178px + env(safe-area-inset-bottom, 0px));
+  left: 16px;
+  right: 16px;
+  z-index: 36;
   max-height: none;
-  padding: 12px;
+  padding: 10px;
 }
 
 .mobile-route-calculator.is-compact .mobile-route-header,
@@ -8053,4 +8056,34 @@ button {
 .mobile-route-calculator.is-compact .mobile-route-result a {
   min-height: 48px;
   padding-inline: 18px;
+}
+
+.mobile-route-result-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mobile-route-result-actions button {
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: rgba(217, 182, 126, 0.28);
+  color: var(--primary);
+}
+
+.mobile-route-calculator.is-compact .mobile-route-result {
+  padding: 12px;
+}
+
+.mobile-route-calculator.is-compact .mobile-route-result-actions a {
+  min-height: 42px;
+}
+
+.theme-dark .mobile-route-result-actions button {
+  background: rgba(248, 241, 232, 0.12);
+  color: #f8f1e8;
 }

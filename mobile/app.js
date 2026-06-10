@@ -1456,10 +1456,20 @@ function renderMap() {
                     ${(mobileRouteCalculatorDraft.waypoints || []).length ? ` · ${(mobileRouteCalculatorDraft.waypoints || []).length + 2} points` : ''}
                   </span>
                 </div>
-                <a href="${getMobileRouteGoogleMapsUrl()}" target="_blank" rel="noopener">
-                  <span class="material-symbols-outlined" aria-hidden="true">open_in_new</span>
-                  Maps
-                </a>
+                <div class="mobile-route-result-actions">
+  <button type="button" data-action="map-route-expand" aria-label="Afficher le calculateur">
+    <span class="material-symbols-outlined" aria-hidden="true">keyboard_arrow_up</span>
+  </button>
+
+  <a href="${getMobileRouteGoogleMapsUrl()}" target="_blank" rel="noopener">
+    <span class="material-symbols-outlined" aria-hidden="true">open_in_new</span>
+    Maps
+  </a>
+
+  <button type="button" data-action="map-route-dismiss" aria-label="Supprimer le trajet">
+    <span class="material-symbols-outlined" aria-hidden="true">close</span>
+  </button>
+</div>
               </div>
             ` : ''}
           </div>
@@ -2881,10 +2891,20 @@ function refreshMobileRouteCalculatorPanel() {
                 ${(mobileRouteCalculatorDraft.waypoints || []).length ? ` · ${(mobileRouteCalculatorDraft.waypoints || []).length + 2} points` : ''}
               </span>
             </div>
-            <a href="${getMobileRouteGoogleMapsUrl()}" target="_blank" rel="noopener">
-              <span class="material-symbols-outlined" aria-hidden="true">open_in_new</span>
-              Maps
-            </a>
+            <div class="mobile-route-result-actions">
+  <button type="button" data-action="map-route-expand" aria-label="Afficher le calculateur">
+    <span class="material-symbols-outlined" aria-hidden="true">keyboard_arrow_up</span>
+  </button>
+
+  <a href="${getMobileRouteGoogleMapsUrl()}" target="_blank" rel="noopener">
+    <span class="material-symbols-outlined" aria-hidden="true">open_in_new</span>
+    Maps
+  </a>
+
+  <button type="button" data-action="map-route-dismiss" aria-label="Supprimer le trajet">
+    <span class="material-symbols-outlined" aria-hidden="true">close</span>
+  </button>
+</div>
           </div>
         ` : ''}
       </div>
@@ -5779,6 +5799,22 @@ if (action === 'delete-step') {
     maybeAutoCalculateMobileRoute();
     return;
   }
+
+  if (action === 'map-route-expand') {
+  mobileRouteCalculatorCompact = false;
+  mobileRouteCalculatorOpen = true;
+  refreshMobileRouteCalculatorPanel();
+  return;
+}
+
+if (action === 'map-route-dismiss') {
+  mobileRouteCalculatorOpen = false;
+  mobileRouteCalculatorCompact = false;
+  mobileRouteCalculatorResult = null;
+  clearMobileRouteCalculatorLayer();
+  refreshMobileRouteCalculatorPanel();
+  return;
+}
 
     if (action === 'map-route-reset') {
     resetMobileRouteCalculator();

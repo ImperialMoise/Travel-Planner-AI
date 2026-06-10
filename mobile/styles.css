@@ -7728,3 +7728,146 @@ button {
 .theme-dark .mobile-route-suggestions button + button {
   border-top-color: rgba(248, 241, 232, 0.1);
 }
+
+.theme-dark .mobile-map-results {
+  background: #102821;
+  border: 1px solid rgba(248, 241, 232, 0.14);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.34);
+}
+
+.theme-dark .mobile-map-results button {
+  color: #f8f1e8;
+  border-bottom-color: rgba(248, 241, 232, 0.1);
+}
+
+.theme-dark .mobile-map-results .material-symbols-outlined {
+  color: #e3c37f;
+}
+
+.theme-dark .mobile-map-days-fab,
+.theme-dark .mobile-map-tools-fab,
+.theme-dark .mobile-map-actions-fab {
+  background: rgba(248, 241, 232, 0.9);
+  color: #17352d;
+  border-color: rgba(248, 241, 232, 0.18);
+}
+
+.theme-dark .mobile-map-days-menu,
+.theme-dark .mobile-map-tools-menu,
+.theme-dark .mobile-map-actions-menu {
+  background: rgba(20, 36, 31, 0.94);
+  border-color: rgba(248, 241, 232, 0.14);
+  color: #f8f1e8;
+}
+
+.theme-dark .mobile-map-days-menu > button,
+.theme-dark .mobile-map-tools-menu > button,
+.theme-dark .mobile-map-actions-menu > button {
+  color: #f8f1e8;
+}
+
+.theme-dark .mobile-map-days-menu > button.active {
+  background: #dfbe78;
+  color: #17352d;
+}
+
+.theme-dark .mobile-map-tools-menu .material-symbols-outlined,
+.theme-dark .mobile-map-actions-menu .material-symbols-outlined {
+  color: #e3c37f;
+}
+
+.theme-dark .mobile-map-tools-zoom button {
+  background: rgba(248, 241, 232, 0.12);
+  color: #f8f1e8;
+}
+
+.theme-dark .mobile-map-card,
+.theme-dark .mobile-map-place-card,
+.theme-dark .mobile-map-focused-step-card {
+  background: rgba(20, 36, 31, 0.92);
+  border-color: rgba(248, 241, 232, 0.14);
+  color: #f8f1e8;
+}
+
+.theme-dark .mobile-map-card h1,
+.theme-dark .mobile-map-card h2,
+.theme-dark .mobile-map-place-card h2,
+.theme-dark .mobile-map-focused-step-card h2 {
+  color: #f8f1e8;
+}
+
+.theme-dark .mobile-map-card-subtitle,
+.theme-dark .mobile-map-place-card p,
+.theme-dark .mobile-map-focused-step-card p,
+.theme-dark .mobile-map-step small,
+.theme-dark .mobile-map-unlocated small {
+  color: rgba(248, 241, 232, 0.72);
+}
+
+.theme-dark .mobile-map-step,
+.theme-dark .mobile-map-unlocated button {
+  background: rgba(248, 241, 232, 0.1);
+  color: #f8f1e8;
+}
+
+.theme-dark .mobile-map-step strong,
+.theme-dark .mobile-map-unlocated strong {
+  color: #f8f1e8;
+}
+
+.theme-dark .mobile-map-step.active {
+  background: rgba(223, 190, 120, 0.22);
+  border-color: rgba(223, 190, 120, 0.55);
+}
+
+.theme-dark .mobile-map-step .material-symbols-outlined,
+.theme-dark .mobile-map-unlocated .material-symbols-outlined {
+  background: #dfbe78;
+  color: #17352d;
+}
+
+.theme-dark .mobile-map-step-actions button {
+  background: rgba(223, 190, 120, 0.22);
+  color: #f8f1e8;
+}
+
+.theme-dark .mobile-map-day-picker button,
+.theme-dark .mobile-map-day-tabs button {
+  background: rgba(248, 241, 232, 0.1);
+  border-color: rgba(248, 241, 232, 0.14);
+  color: #f8f1e8;
+}
+
+.theme-dark .mobile-map-day-picker button.active,
+.theme-dark .mobile-map-day-tabs button.active {
+  background: #dfbe78;
+  border-color: #dfbe78;
+  color: #17352d;
+}
+
+.theme-dark .mobile-map-place-card button,
+.theme-dark .mobile-map-focused-actions button,
+.theme-dark .mobile-map-focused-actions a {
+  background: rgba(248, 241, 232, 0.1);
+  color: #f8f1e8;
+}
+
+.theme-dark .mobile-map-place-card button.active,
+.theme-dark .mobile-map-place-actions button:last-child {
+  background: #dfbe78;
+  color: #17352d;
+}
+
+.theme-dark .map-shell .bottom-nav {
+  background: rgba(12, 31, 26, 0.94);
+  border-top: 1px solid rgba(248, 241, 232, 0.1);
+}
+
+.theme-dark .map-shell .bottom-nav a,
+.theme-dark .map-shell .bottom-nav button {
+  color: rgba(248, 241, 232, 0.68);
+}
+
+.theme-dark .map-shell .bottom-nav .active {
+  color: #dfbe78;
+}

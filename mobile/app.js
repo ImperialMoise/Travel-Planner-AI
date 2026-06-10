@@ -2783,10 +2783,13 @@ async function calculateMobileRoute() {
 }
 
 function refreshMobileRouteCalculatorPanel() {
-  if (!mobileRouteCalculatorOpen) return;
-
   const panel = document.querySelector('.mobile-route-calculator');
   if (!panel) return;
+
+  if (!mobileRouteCalculatorOpen) {
+    panel.classList.remove('open');
+    return;
+  }
 
   const fromValue = escapeHtml(mobileRouteCalculatorDraft.from);
   const toValue = escapeHtml(mobileRouteCalculatorDraft.to);
@@ -5676,13 +5679,18 @@ if (action === 'delete-step') {
   }
 
       if (action === 'map-days-toggle') {
-    mobileMapDaysOpen = !mobileMapDaysOpen;
-    mobileMapToolsOpen = false;
-    mobileMapActionsOpen = false;
-    refreshMobileMapDaysMenu();
-    refreshMobileMapToolsMenu();
-    return;
-  }
+  mobileMapDaysOpen = !mobileMapDaysOpen;
+  mobileMapToolsOpen = false;
+  mobileMapActionsOpen = false;
+  mobileRouteCalculatorOpen = false;
+
+  refreshMobileMapDaysMenu();
+  refreshMobileMapToolsMenu();
+  refreshMobileMapActionsMenu();
+  refreshMobileRouteCalculatorPanel();
+
+  return;
+}
 
    if (action === 'map-actions-toggle') {
     mobileMapActionsOpen = !mobileMapActionsOpen;
@@ -5768,13 +5776,18 @@ if (action === 'delete-step') {
   }
 
   if (action === 'map-tools-toggle') {
-    mobileMapToolsOpen = !mobileMapToolsOpen;
-    mobileMapDaysOpen = false;
-    mobileMapActionsOpen = false;
-    refreshMobileMapToolsMenu();
-    refreshMobileMapDaysMenu();
-    return;
-  }
+  mobileMapToolsOpen = !mobileMapToolsOpen;
+  mobileMapDaysOpen = false;
+  mobileMapActionsOpen = false;
+  mobileRouteCalculatorOpen = false;
+
+  refreshMobileMapToolsMenu();
+  refreshMobileMapDaysMenu();
+  refreshMobileMapActionsMenu();
+  refreshMobileRouteCalculatorPanel();
+
+  return;
+}
 
     if (action === 'map-fit') {
   mobileMapToolsOpen = false;

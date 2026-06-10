@@ -6871,8 +6871,8 @@ button {
 
 /* Mobile map bottom sheet */
 .mobile-map-card.is-compact {
-  max-height: 92px;
-  padding: 14px;
+  max-height: 82px;
+  padding: 12px 14px;
 }
 
 .mobile-map-card.is-compact .mobile-map-day-nav,
@@ -8026,12 +8026,13 @@ button {
 
 .mobile-route-calculator.open.is-compact {
   top: auto;
-  bottom: calc(178px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(172px + env(safe-area-inset-bottom, 0px));
   left: 16px;
   right: 16px;
-  z-index: 36;
+  z-index: 38;
   max-height: none;
   padding: 10px;
+  border-radius: 18px;
 }
 
 .mobile-route-calculator.is-compact .mobile-route-header,
@@ -8086,4 +8087,113 @@ button {
 .theme-dark .mobile-route-result-actions button {
   background: rgba(248, 241, 232, 0.12);
   color: #f8f1e8;
+}
+
+.mobile-route-calculator.is-compact .mobile-route-result {
+  min-height: 74px;
+}
+
+.mobile-route-calculator.is-compact + .mobile-map-place-card,
+.mobile-route-calculator.is-compact ~ .mobile-map-card {
+  pointer-events: auto;
+}
+
+@media (max-height: 760px) {
+  .mobile-route-calculator.open.is-compact {
+    bottom: calc(158px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .mobile-route-calculator.is-compact .mobile-route-result {
+    min-height: 66px;
+  }
+}
+
+.mobile-route-calculator.open.is-compact {
+  top: auto;
+  left: 12px;
+  right: 12px;
+  bottom: calc(168px + env(safe-area-inset-bottom, 0px));
+  z-index: 38;
+  max-height: 92px;
+  min-height: 82px;
+  padding: 14px;
+  border-radius: 18px;
+  display: grid;
+  gap: 0;
+}
+
+.mobile-route-calculator.is-compact .mobile-route-header,
+.mobile-route-calculator.is-compact .mobile-route-fields > :not(.mobile-route-result) {
+  display: none;
+}
+
+.mobile-route-calculator.is-compact .mobile-route-fields {
+  gap: 0;
+}
+
+.mobile-route-calculator.is-compact .mobile-route-result {
+  min-height: 54px;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  background: transparent;
+}
+
+.mobile-route-calculator.is-compact .mobile-route-result strong {
+  font-size: 24px;
+  line-height: 26px;
+}
+
+.mobile-route-calculator.is-compact .mobile-route-result span {
+  font-size: 13px;
+  line-height: 16px;
+}
+
+.mobile-route-result-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.mobile-route-result-actions button,
+.mobile-route-result-actions a {
+  width: 42px;
+  height: 42px;
+  min-height: 42px;
+  border: 0;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  background: rgba(217, 182, 126, 0.32);
+  color: var(--primary);
+  text-decoration: none;
+}
+
+.mobile-route-result-actions a {
+  width: auto;
+  padding-inline: 14px;
+  display: inline-flex;
+  gap: 6px;
+  background: var(--primary-fixed);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.mobile-route-result-actions .material-symbols-outlined {
+  font-size: 20px;
+}
+
+.theme-dark .mobile-route-result-actions button {
+  background: rgba(248, 241, 232, 0.12);
+  color: #f8f1e8;
+}
+
+.theme-dark .mobile-route-result-actions a {
+  background: #dfbe78;
+  color: #17352d;
 }

@@ -1461,10 +1461,20 @@ function renderMap() {
     <span class="material-symbols-outlined" aria-hidden="true">keyboard_arrow_up</span>
   </button>
 
+  <div class="mobile-route-result-actions">
+  <button type="button" data-action="map-route-dismiss" aria-label="Supprimer le trajet">
+    <span class="material-symbols-outlined" aria-hidden="true">close</span>
+  </button>
+
+  <button type="button" data-action="map-route-expand" aria-label="Afficher le calculateur">
+    <span class="material-symbols-outlined" aria-hidden="true">keyboard_arrow_up</span>
+  </button>
+
   <a href="${getMobileRouteGoogleMapsUrl()}" target="_blank" rel="noopener">
     <span class="material-symbols-outlined" aria-hidden="true">open_in_new</span>
     Maps
   </a>
+</div>
 
   <button type="button" data-action="map-route-dismiss" aria-label="Supprimer le trajet">
     <span class="material-symbols-outlined" aria-hidden="true">close</span>
@@ -1670,9 +1680,11 @@ function initMobileRealMap() {
     console.warn('Mobile map tile/style warning:', event?.error || event);
   });
 
-  mobileMapInstance.on('load', async () => {
-    renderMobileMapRoute();
-    renderMobileMapMarkers();
+mobileMapInstance.on('load', async () => {
+  document.querySelector('.mobile-map-error')?.remove();
+
+  renderMobileMapRoute();
+  renderMobileMapMarkers();
 
     if (steps.length) {
       fitMobileMapToSteps({ duration: 0, maxZoom: 8 });
@@ -2896,10 +2908,20 @@ function refreshMobileRouteCalculatorPanel() {
     <span class="material-symbols-outlined" aria-hidden="true">keyboard_arrow_up</span>
   </button>
 
+  <div class="mobile-route-result-actions">
+  <button type="button" data-action="map-route-dismiss" aria-label="Supprimer le trajet">
+    <span class="material-symbols-outlined" aria-hidden="true">close</span>
+  </button>
+
+  <button type="button" data-action="map-route-expand" aria-label="Afficher le calculateur">
+    <span class="material-symbols-outlined" aria-hidden="true">keyboard_arrow_up</span>
+  </button>
+
   <a href="${getMobileRouteGoogleMapsUrl()}" target="_blank" rel="noopener">
     <span class="material-symbols-outlined" aria-hidden="true">open_in_new</span>
     Maps
   </a>
+</div>
 
   <button type="button" data-action="map-route-dismiss" aria-label="Supprimer le trajet">
     <span class="material-symbols-outlined" aria-hidden="true">close</span>
@@ -5816,6 +5838,22 @@ if (action === 'map-route-dismiss') {
   return;
 }
 
+if (action === 'map-route-expand') {
+  mobileRouteCalculatorCompact = false;
+  mobileRouteCalculatorOpen = true;
+  refreshMobileRouteCalculatorPanel();
+  return;
+}
+
+if (action === 'map-route-dismiss') {
+  mobileRouteCalculatorOpen = false;
+  mobileRouteCalculatorCompact = false;
+  mobileRouteCalculatorResult = null;
+  clearMobileRouteCalculatorLayer();
+  refreshMobileRouteCalculatorPanel();
+  return;
+}
+
     if (action === 'map-route-reset') {
     resetMobileRouteCalculator();
     return;
@@ -5936,8 +5974,10 @@ if (action === 'map-route-dismiss') {
     if (mobileMapInstance) {
       mobileMapInstance.setStyle(getMobileMapStyleUrl());
       mobileMapInstance.once('style.load', async () => {
-        renderMobileMapRoute();
-        renderMobileMapMarkers();
+  document.querySelector('.mobile-map-error')?.remove();
+
+  renderMobileMapRoute();
+  renderMobileMapMarkers();
 
         if (getMobileMapSteps().length) {
           fitMobileMapToSteps();

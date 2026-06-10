@@ -1599,7 +1599,10 @@ function renderMap() {
     </div>
   `;
 
-  setTimeout(initMobileRealMap, 0);
+  setTimeout(() => {
+    initMobileRealMap();
+    initMobileRouteAutocomplete();
+  }, 0);
 }
 
 function renderMobileMapError(message = 'Impossible de charger la carte.') {
@@ -2633,7 +2636,12 @@ function setMobileRouteEndpoint(kind, step) {
 
   mobileRouteCalculatorOpen = true;
   mobileMapActionsOpen = false;
+  mobileMapToolsOpen = false;
+  mobileMapDaysOpen = false;
+
   refreshMobileMapActionsMenu();
+  refreshMobileMapToolsMenu();
+  refreshMobileMapDaysMenu();
   refreshMobileRouteCalculatorPanel();
   maybeAutoCalculateMobileRoute();
 
@@ -2654,7 +2662,15 @@ function setMobileRouteEndpointFromPlace(kind, place) {
 
   mobileRouteCalculatorOpen = true;
   mobileMapActionsOpen = false;
+  mobileMapToolsOpen = false;
+  mobileMapDaysOpen = false;
+
+  const placeCard = document.querySelector('#mobile-map-place-card');
+  if (placeCard) placeCard.hidden = true;
+
   refreshMobileMapActionsMenu();
+  refreshMobileMapToolsMenu();
+  refreshMobileMapDaysMenu();
   refreshMobileRouteCalculatorPanel();
   maybeAutoCalculateMobileRoute();
 }
@@ -2850,6 +2866,99 @@ function refreshMobileRouteCalculatorPanel() {
       </div>
     </article>
   `;
+
+  initMobileRouteAutocomplete();
+}
+
+function initMobileRouteAutocomplete() {
+  document.querySelectorAll('#mobile-route-from, #mobile-route-to').forEach(input => {
+    if (!input || input.dataset.routeAcReady) return;
+
+    input.dataset.routeAcReady = 'true';
+
+    const kind = input.id === 'mobile-route-from' ? 'from' : 'to';
+    const wrapper = input.closest('label') || input.parentElement;
+    if (!wrapper) return;
+
+    wrapper.style.position = 'relative';
+
+    const dropdown = document.createElement('div');
+    dropdown.className = 'mobile-route-suggestions';
+    wrapper.appendChild(dropdown);
+
+    let timer = null;
+
+    input.addEventListener('input', () => {
+      clearTimeout(timer);
+
+      const query = input.value.trim();
+
+      mobileRouteCalculatorDraft = {
+        ...mobileRouteCalculatorDraft,
+        [kind]: input.value,
+        [`${kind}Lat`]: null,
+        [`${kind}Lng`]: null
+      };
+
+      mobileRouteCalculatorResult = null;
+      clearMobileRouteCalculatorLayer();
+
+      if (query.length < 2) {
+        dropdown.innerHTML = '';
+        dropdown.style.display = 'none';
+        return;
+      }
+
+      timer = setTimeout(async () => {
+        try {
+          const response = await fetch(`https://api.maptiler.com/geocoding/${encodeURIComponent(query)}.json?key=${MAPTILER_KEY}&language=fr&limit=5`);
+          const data = await response.json();
+          const features = data.features || [];
+
+          dropdown.innerHTML = features.map((feature, index) => `
+            <button type="button" data-route-suggestion="${index}">
+              <span class="material-symbols-outlined" aria-hidden="true">location_on</span>
+              <span>${escapeHtml(feature.place_name)}</span>
+            </button>
+          `).join('');
+
+          dropdown.style.display = features.length ? 'grid' : 'none';
+
+          dropdown.querySelectorAll('[data-route-suggestion]').forEach(button => {
+            button.addEventListener('click', () => {
+              const feature = features[Number(button.dataset.routeSuggestion)];
+              if (!feature?.center) return;
+
+              input.value = feature.place_name;
+
+              mobileRouteCalculatorDraft = {
+                ...mobileRouteCalculatorDraft,
+                [kind]: feature.place_name,
+                [`${kind}Lat`]: Number(feature.center[1]),
+                [`${kind}Lng`]: Number(feature.center[0])
+              };
+
+              dropdown.innerHTML = '';
+              dropdown.style.display = 'none';
+
+              refreshMobileRouteCalculatorPanel();
+              maybeAutoCalculateMobileRoute();
+            });
+          });
+        } catch (error) {
+          console.warn('Route autocomplete error:', error);
+          dropdown.innerHTML = '';
+          dropdown.style.display = 'none';
+        }
+      }, 300);
+    });
+
+    input.addEventListener('blur', () => {
+      setTimeout(() => {
+        dropdown.style.display = 'none';
+      }, 180);
+    });
+  });
 }
 
 function initMobileMapSearch() {

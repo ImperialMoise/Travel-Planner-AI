@@ -7603,3 +7603,128 @@ button {
 .mobile-route-reset:active {
   background: var(--surface-container);
 }
+
+.mobile-route-suggestions {
+  position: absolute;
+  z-index: 80;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  display: none;
+  gap: 0;
+  max-height: 220px;
+  overflow-y: auto;
+  border-radius: 16px;
+  background: var(--surface);
+  border: 1px solid var(--faint-border);
+  box-shadow: var(--shadow-card);
+}
+
+.mobile-route-suggestions button {
+  width: 100%;
+  border: 0;
+  padding: 12px 14px;
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  align-items: center;
+  gap: 10px;
+  background: transparent;
+  color: var(--on-surface);
+  text-align: left;
+  font: inherit;
+  font-size: 12.5px;
+}
+
+.mobile-route-suggestions button + button {
+  border-top: 1px solid var(--faint-border);
+}
+
+.mobile-route-suggestions .material-symbols-outlined {
+  color: var(--primary);
+  font-size: 19px;
+}
+
+.theme-dark .map-shell {
+  background: #0f2721;
+  color: #f8f1e8;
+}
+
+.theme-dark .map-shell .glass-panel {
+  background: rgba(20, 36, 31, 0.9);
+  border-color: rgba(248, 241, 232, 0.14);
+  color: #f8f1e8;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.28);
+}
+
+.theme-dark .mobile-map-search input,
+.theme-dark .mobile-route-fields input {
+  color: #f8f1e8;
+}
+
+.theme-dark .mobile-map-search input::placeholder,
+.theme-dark .mobile-route-fields input::placeholder {
+  color: rgba(248, 241, 232, 0.58);
+}
+
+.theme-dark .mobile-route-header h2,
+.theme-dark .mobile-map-card h1,
+.theme-dark .mobile-map-place-card h2,
+.theme-dark .mobile-map-focused-step-card h2 {
+  color: #f8f1e8;
+}
+
+.theme-dark .mobile-route-header .kicker,
+.theme-dark .mobile-route-fields label > span,
+.theme-dark .mobile-map-card .kicker,
+.theme-dark .mobile-map-place-card .kicker,
+.theme-dark .mobile-map-focused-step-card .kicker {
+  color: #e3c37f;
+}
+
+.theme-dark .mobile-route-fields label input {
+  background: rgba(248, 241, 232, 0.1);
+  border-color: rgba(248, 241, 232, 0.12);
+}
+
+.theme-dark .mobile-route-current,
+.theme-dark .mobile-route-reset {
+  background: rgba(8, 24, 20, 0.92);
+  color: #f8f1e8;
+}
+
+.theme-dark .mobile-route-modes button {
+  background: rgba(248, 241, 232, 0.1);
+  color: #f8f1e8;
+  border-color: rgba(248, 241, 232, 0.14);
+}
+
+.theme-dark .mobile-route-modes button.active,
+.theme-dark .mobile-route-submit {
+  background: #dfbe78;
+  color: #17352d;
+}
+
+.theme-dark .mobile-route-swap,
+.theme-dark .mobile-route-result a {
+  background: #dfbe78;
+  color: #17352d;
+}
+
+.theme-dark .mobile-route-result {
+  background: rgba(248, 241, 232, 0.1);
+  border-color: rgba(248, 241, 232, 0.14);
+  color: #f8f1e8;
+}
+
+.theme-dark .mobile-route-suggestions {
+  background: #102821;
+  border-color: rgba(248, 241, 232, 0.14);
+}
+
+.theme-dark .mobile-route-suggestions button {
+  color: #f8f1e8;
+}
+
+.theme-dark .mobile-route-suggestions button + button {
+  border-top-color: rgba(248, 241, 232, 0.1);
+}

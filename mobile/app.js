@@ -2030,7 +2030,15 @@ function focusMobileMapStep(index) {
   const step = getMobileMapSteps()[index];
   if (!step) return;
     mobileMapFocusedStepIndex = index;
+  mobileMapToolsOpen = false;
+  mobileMapDaysOpen = false;
+  mobileMapActionsOpen = false;
+  mobileRouteCalculatorOpen = false;
   renderMobileMapFocusedStepCard(step, index);
+  refreshMobileMapToolsMenu();
+  refreshMobileMapDaysMenu();
+  refreshMobileMapActionsMenu();
+  refreshMobileRouteCalculatorPanel();
 
     document.querySelectorAll('.mobile-map-marker').forEach((marker, markerIndex) => {
     marker.classList.toggle('active', markerIndex === index);
@@ -2551,8 +2559,12 @@ function setMobileRouteFromCurrentDay() {
 
   mobileRouteCalculatorOpen = true;
   mobileMapActionsOpen = false;
+  mobileMapToolsOpen = false;
+  mobileMapDaysOpen = false;
 
   refreshMobileMapActionsMenu();
+  refreshMobileMapToolsMenu();
+  refreshMobileMapDaysMenu();
   refreshMobileRouteCalculatorPanel();
   maybeAutoCalculateMobileRoute();
 }
@@ -5837,9 +5849,15 @@ if (action === 'delete-step') {
 
     mobileMapPanelDayIndex = selectedDayIndex;
     mobileMapDaysOpen = false;
+    mobileMapToolsOpen = false;
+    mobileMapActionsOpen = false;
+    mobileRouteCalculatorOpen = false;
     showAllMobileMapSteps = false;
 
     renderMap();
+    refreshMobileMapToolsMenu();
+    refreshMobileMapActionsMenu();
+    refreshMobileRouteCalculatorPanel();
 
     setTimeout(() => {
       fitMobileMapToDay(selectedDayIndex, {

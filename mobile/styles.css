@@ -7344,8 +7344,14 @@ button {
   display: grid;
   place-items: center;
   color: var(--primary);
-  background: var(--surface-container-lowest);
+  background: rgba(254, 249, 239, 0.86);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   box-shadow: var(--shadow-card);
+}
+
+:root.theme-dark .mobile-map-actions-fab {
+  background: rgba(21, 48, 42, 0.86);
 }
 
 .mobile-map-actions-menu {
@@ -7428,7 +7434,7 @@ button {
   border-radius: 999px;
   display: grid;
   place-items: center;
-  background: var(--surface-container);
+  background: transparent;
   color: var(--on-surface);
 }
 

@@ -1390,7 +1390,7 @@ function renderMap() {
               <span class="kicker">Outils</span>
               <h2>Calculateur d’itinéraire</h2>
             </div>
-            <button type="button" data-action="map-route-calculator-toggle" aria-label="Fermer">
+            <button type="button" data-action="map-route-calculator-close" aria-label="Fermer">
               <span class="material-symbols-outlined" aria-hidden="true">close</span>
             </button>
           </div>
@@ -5349,6 +5349,12 @@ if (action === 'delete-step') {
     refreshMobileMapActionsMenu();
     refreshMobileRouteCalculatorPanel();
 
+    return;
+  }
+
+    if (action === 'map-route-calculator-close') {
+    mobileRouteCalculatorOpen = false;
+    refreshMobileRouteCalculatorPanel();
     return;
   }
 

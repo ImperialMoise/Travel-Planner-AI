@@ -11,6 +11,58 @@ let showAllTrips = false;
 let mobileSupabaseReady = false;
 let mobileSupabaseError = '';
 
+function getMobileTheme() {
+  return localStorage.getItem('mobileTheme') || 'light';
+}
+
+function applyMobileTheme(theme = getMobileTheme()) {
+  document.documentElement.classList.toggle('theme-dark', theme === 'dark');
+  localStorage.setItem('mobileTheme', theme);
+}
+
+function toggleMobileTheme() {
+  const nextTheme = getMobileTheme() === 'dark' ? 'light' : 'dark';
+  applyMobileTheme(nextTheme);
+  renderAccount();
+}
+
+async function handleUpdateMobileProfile() {
+  const input = document.querySelector('#account-display-name');
+  const displayName = input?.value.trim();
+
+  if (!displayName) {
+    alert('Le pseudo ne peut pas être vide.');
+    return;
+  }
+
+  try {
+    await window.SB.sb.auth.updateUser({
+      data: { display_name: displayName }
+    });
+
+    if (mobileUser?.id) {
+      await window.SB.sb
+        .from('profiles')
+        .update({ display_name: displayName })
+        .eq('id', mobileUser.id);
+    }
+
+    mobileUser = {
+      ...mobileUser,
+      user_metadata: {
+        ...(mobileUser?.user_metadata || {}),
+        display_name: displayName
+      }
+    };
+
+    renderAccount();
+  } catch (error) {
+    alert('Erreur mise à jour profil : ' + (error.message || error));
+  }
+}
+
+applyMobileTheme();
+
 async function bootMobileSupabase() {
   if (window.SB) {
     mobileSB = window.SB;
@@ -474,6 +526,19 @@ let showAllMobileMapSteps = false;
 let mobileMapDestinationMarker = null;
 let mobileMapSearchMarker = null;
 let mobileMapToolsOpen = false;
+let mobileMapActionsOpen = false;
+let mobileRouteCalculatorOpen = false;
+let mobileRouteCalculatorResult = null;
+let mobileRouteCalculatorBusy = false;
+let mobileRouteCalculatorDraft = {
+  from: '',
+  fromLat: null,
+  fromLng: null,
+  to: '',
+  toLat: null,
+  toLng: null,
+  mode: 'driving'
+};
 let mobileMapSheetOpen = false;
 let mobileMapDaysOpen = false;
 let mobileMapRestoreCamera = null;
@@ -1254,6 +1319,23 @@ function renderMap() {
           </div>
         </div>
 
+                <div class="mobile-map-actions-tool">
+          <button class="mobile-map-actions-fab glass-panel" type="button" data-action="map-actions-toggle" aria-label="Ouvrir les outils">
+            <span class="material-symbols-outlined" aria-hidden="true">${mobileMapActionsOpen ? 'close' : 'construction'}</span>
+          </button>
+
+          <div class="mobile-map-actions-menu glass-panel ${mobileMapActionsOpen ? 'open' : ''}">
+            <button type="button" data-action="map-route-calculator-toggle">
+              <span class="material-symbols-outlined" aria-hidden="true">route</span>
+              <span>Calculateur d’itinéraire</span>
+            </button>
+
+            <button type="button" data-action="map-clear-route">
+              <span class="material-symbols-outlined" aria-hidden="true">ink_eraser</span>
+              <span>Effacer le trajet</span>
+            </button>
+          </div>
+        </div>
         <div class="mobile-map-tools">
           <button class="mobile-map-tools-fab glass-panel" type="button" data-action="map-tools-toggle" aria-label="Ouvrir les outils de carte">
             <span class="material-symbols-outlined" aria-hidden="true">${mobileMapToolsOpen ? 'close' : 'tune'}</span>
@@ -1290,6 +1372,61 @@ function renderMap() {
             </div>
           </div>
         </div>
+
+                <article class="mobile-route-calculator glass-panel ${mobileRouteCalculatorOpen ? 'open' : ''}">
+          <div class="mobile-route-header">
+            <div>
+              <span class="kicker">Outils</span>
+              <h2>Calculateur d’itinéraire</h2>
+            </div>
+            <button type="button" data-action="map-route-calculator-toggle" aria-label="Fermer">
+              <span class="material-symbols-outlined" aria-hidden="true">close</span>
+            </button>
+          </div>
+
+          <div class="mobile-route-fields">
+            <label>
+              <span>Départ</span>
+              <input id="mobile-route-from" type="search" value="${escapeHtml(mobileRouteCalculatorDraft.from)}" placeholder="Ville, adresse, gare...">
+            </label>
+
+            <button class="mobile-route-swap" type="button" data-action="map-route-swap" aria-label="Inverser">
+              <span class="material-symbols-outlined" aria-hidden="true">swap_vert</span>
+            </button>
+
+            <label>
+              <span>Arrivée</span>
+              <input id="mobile-route-to" type="search" value="${escapeHtml(mobileRouteCalculatorDraft.to)}" placeholder="Ville, adresse, hôtel...">
+            </label>
+
+            <div class="mobile-route-modes">
+              <button type="button" class="${mobileRouteCalculatorDraft.mode === 'driving' ? 'active' : ''}" data-action="map-route-mode" data-route-mode="driving">
+                <span class="material-symbols-outlined" aria-hidden="true">directions_car</span>
+                Voiture
+              </button>
+              <button type="button" class="${mobileRouteCalculatorDraft.mode === 'walking' ? 'active' : ''}" data-action="map-route-mode" data-route-mode="walking">
+                <span class="material-symbols-outlined" aria-hidden="true">directions_walk</span>
+                Marche
+              </button>
+              <button type="button" class="${mobileRouteCalculatorDraft.mode === 'cycling' ? 'active' : ''}" data-action="map-route-mode" data-route-mode="cycling">
+                <span class="material-symbols-outlined" aria-hidden="true">directions_bike</span>
+                Vélo
+              </button>
+            </div>
+
+            <button class="mobile-route-submit" type="button" data-action="map-route-calculate">
+              <span class="material-symbols-outlined" aria-hidden="true">route</span>
+              <span>${mobileRouteCalculatorBusy ? 'Calcul...' : 'Calculer le trajet'}</span>
+            </button>
+
+            ${mobileRouteCalculatorResult ? `
+              <div class="mobile-route-result">
+                <strong>${escapeHtml(mobileRouteCalculatorResult.durationLabel)}</strong>
+                <span>${escapeHtml(mobileRouteCalculatorResult.distanceLabel)}</span>
+              </div>
+            ` : ''}
+          </div>
+        </article>
 
         <article id="mobile-map-place-card" class="mobile-map-place-card glass-panel" hidden></article>
         <article class="mobile-map-card glass-panel ${mobileMapSheetOpen ? 'is-open' : 'is-compact'}">
@@ -2225,6 +2362,237 @@ function setMobileMapSearchMarker(center) {
     .addTo(mobileMapInstance);
 }
 
+function formatMobileRouteDistance(meters) {
+  if (!Number.isFinite(meters)) return '';
+  if (meters < 1000) return `${Math.round(meters)} m`;
+  return `${(meters / 1000).toFixed(1)} km`;
+}
+
+function formatMobileRouteDuration(seconds) {
+  if (!Number.isFinite(seconds)) return '';
+  if (seconds < 60) return '< 1 min';
+
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return `${minutes} min`;
+
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  return `${hours}h${String(rest).padStart(2, '0')}`;
+}
+
+function getOsrmProfile(mode) {
+  if (mode === 'walking') return 'foot';
+  if (mode === 'cycling') return 'bike';
+  return 'driving';
+}
+
+async function geocodeMobileRoutePoint(query) {
+  const cleanQuery = query.trim();
+  if (!cleanQuery) throw new Error('Adresse manquante');
+
+  const response = await fetch(`https://api.maptiler.com/geocoding/${encodeURIComponent(cleanQuery)}.json?key=${MAPTILER_KEY}&language=fr&limit=1`);
+  const data = await response.json();
+  const feature = data.features?.[0];
+
+  if (!feature?.center) {
+    throw new Error(`Lieu introuvable : ${cleanQuery}`);
+  }
+
+  return {
+    label: feature.place_name || cleanQuery,
+    lng: feature.center[0],
+    lat: feature.center[1]
+  };
+}
+
+function clearMobileRouteCalculatorLayer() {
+  if (!mobileMapInstance) return;
+
+  try { mobileMapInstance.removeLayer('mobile-route-calculator-glow'); } catch (error) {}
+  try { mobileMapInstance.removeLayer('mobile-route-calculator-line'); } catch (error) {}
+  try { mobileMapInstance.removeSource('mobile-route-calculator'); } catch (error) {}
+}
+
+function drawMobileRouteCalculator(routeGeometry) {
+  if (!mobileMapInstance || !routeGeometry?.coordinates?.length) return;
+
+  clearMobileRouteCalculatorLayer();
+
+  mobileMapInstance.addSource('mobile-route-calculator', {
+    type: 'geojson',
+    data: {
+      type: 'Feature',
+      geometry: routeGeometry
+    }
+  });
+
+  mobileMapInstance.addLayer({
+    id: 'mobile-route-calculator-glow',
+    type: 'line',
+    source: 'mobile-route-calculator',
+    layout: { 'line-cap': 'round', 'line-join': 'round' },
+    paint: {
+      'line-color': '#7c5410',
+      'line-width': 12,
+      'line-opacity': 0.18,
+      'line-blur': 6
+    }
+  });
+
+  mobileMapInstance.addLayer({
+    id: 'mobile-route-calculator-line',
+    type: 'line',
+    source: 'mobile-route-calculator',
+    layout: { 'line-cap': 'round', 'line-join': 'round' },
+    paint: {
+      'line-color': '#7c5410',
+      'line-width': 4,
+      'line-opacity': 0.95
+    }
+  });
+
+  const bounds = routeGeometry.coordinates.reduce((box, coord) => box.extend(coord), new maplibregl.LngLatBounds(routeGeometry.coordinates[0], routeGeometry.coordinates[0]));
+
+  mobileMapInstance.fitBounds(bounds, {
+    padding: { top: 130, right: 40, bottom: 260, left: 40 },
+    maxZoom: 14,
+    duration: 700
+  });
+}
+
+function syncMobileRouteInputs() {
+  const fromInput = document.querySelector('#mobile-route-from');
+  const toInput = document.querySelector('#mobile-route-to');
+
+  if (fromInput) mobileRouteCalculatorDraft.from = fromInput.value.trim();
+  if (toInput) mobileRouteCalculatorDraft.to = toInput.value.trim();
+}
+
+async function calculateMobileRoute() {
+  if (!mobileMapInstance) return;
+
+  syncMobileRouteInputs();
+
+  try {
+    mobileRouteCalculatorBusy = true;
+    refreshMobileRouteCalculatorPanel();
+
+    const from = mobileRouteCalculatorDraft.fromLat && mobileRouteCalculatorDraft.fromLng
+      ? {
+          label: mobileRouteCalculatorDraft.from,
+          lat: mobileRouteCalculatorDraft.fromLat,
+          lng: mobileRouteCalculatorDraft.fromLng
+        }
+      : await geocodeMobileRoutePoint(mobileRouteCalculatorDraft.from);
+
+    const to = mobileRouteCalculatorDraft.toLat && mobileRouteCalculatorDraft.toLng
+      ? {
+          label: mobileRouteCalculatorDraft.to,
+          lat: mobileRouteCalculatorDraft.toLat,
+          lng: mobileRouteCalculatorDraft.toLng
+        }
+      : await geocodeMobileRoutePoint(mobileRouteCalculatorDraft.to);
+
+    mobileRouteCalculatorDraft = {
+      ...mobileRouteCalculatorDraft,
+      from: from.label,
+      fromLat: from.lat,
+      fromLng: from.lng,
+      to: to.label,
+      toLat: to.lat,
+      toLng: to.lng
+    };
+
+    const profile = getOsrmProfile(mobileRouteCalculatorDraft.mode);
+    const url = `https://router.project-osrm.org/route/v1/${profile}/${from.lng},${from.lat};${to.lng},${to.lat}?overview=full&geometries=geojson`;
+
+    const response = await fetch(url);
+    const data = await response.json();
+    const route = data.routes?.[0];
+
+    if (!route) throw new Error('Aucun trajet trouvé');
+
+    mobileRouteCalculatorResult = {
+      distanceLabel: formatMobileRouteDistance(route.distance),
+      durationLabel: formatMobileRouteDuration(route.duration)
+    };
+
+    drawMobileRouteCalculator(route.geometry);
+  } catch (error) {
+    alert('Erreur calcul trajet : ' + (error.message || error));
+  } finally {
+    mobileRouteCalculatorBusy = false;
+    refreshMobileRouteCalculatorPanel();
+  }
+}
+
+function refreshMobileRouteCalculatorPanel() {
+  if (!mobileRouteCalculatorOpen) return;
+
+  const panel = document.querySelector('.mobile-route-calculator');
+  if (!panel) return;
+
+  const fromValue = escapeHtml(mobileRouteCalculatorDraft.from);
+  const toValue = escapeHtml(mobileRouteCalculatorDraft.to);
+
+  panel.outerHTML = `
+    <article class="mobile-route-calculator glass-panel open">
+      <div class="mobile-route-header">
+        <div>
+          <span class="kicker">Outils</span>
+          <h2>Calculateur d’itinéraire</h2>
+        </div>
+        <button type="button" data-action="map-route-calculator-toggle" aria-label="Fermer">
+          <span class="material-symbols-outlined" aria-hidden="true">close</span>
+        </button>
+      </div>
+
+      <div class="mobile-route-fields">
+        <label>
+          <span>Départ</span>
+          <input id="mobile-route-from" type="search" value="${fromValue}" placeholder="Ville, adresse, gare...">
+        </label>
+
+        <button class="mobile-route-swap" type="button" data-action="map-route-swap" aria-label="Inverser">
+          <span class="material-symbols-outlined" aria-hidden="true">swap_vert</span>
+        </button>
+
+        <label>
+          <span>Arrivée</span>
+          <input id="mobile-route-to" type="search" value="${toValue}" placeholder="Ville, adresse, hôtel...">
+        </label>
+
+        <div class="mobile-route-modes">
+          <button type="button" class="${mobileRouteCalculatorDraft.mode === 'driving' ? 'active' : ''}" data-action="map-route-mode" data-route-mode="driving">
+            <span class="material-symbols-outlined" aria-hidden="true">directions_car</span>
+            Voiture
+          </button>
+          <button type="button" class="${mobileRouteCalculatorDraft.mode === 'walking' ? 'active' : ''}" data-action="map-route-mode" data-route-mode="walking">
+            <span class="material-symbols-outlined" aria-hidden="true">directions_walk</span>
+            Marche
+          </button>
+          <button type="button" class="${mobileRouteCalculatorDraft.mode === 'cycling' ? 'active' : ''}" data-action="map-route-mode" data-route-mode="cycling">
+            <span class="material-symbols-outlined" aria-hidden="true">directions_bike</span>
+            Vélo
+          </button>
+        </div>
+
+        <button class="mobile-route-submit" type="button" data-action="map-route-calculate">
+          <span class="material-symbols-outlined" aria-hidden="true">route</span>
+          <span>${mobileRouteCalculatorBusy ? 'Calcul...' : 'Calculer le trajet'}</span>
+        </button>
+
+        ${mobileRouteCalculatorResult ? `
+          <div class="mobile-route-result">
+            <strong>${escapeHtml(mobileRouteCalculatorResult.durationLabel)}</strong>
+            <span>${escapeHtml(mobileRouteCalculatorResult.distanceLabel)}</span>
+          </div>
+        ` : ''}
+      </div>
+    </article>
+  `;
+}
+
 function initMobileMapSearch() {
   const input = document.querySelector('#mobile-map-search');
   const results = document.querySelector('#mobile-map-results');
@@ -2377,21 +2745,58 @@ function renderAuth() {
 
 function renderAccount() {
   const name = mobileUser?.user_metadata?.display_name || mobileUser?.email?.split('@')[0] || 'Voyageur';
+  const theme = getMobileTheme();
+  const tripCount = mobileTrips.length;
 
   app.innerHTML = `
     <div class="mobile-shell">
       ${topbar()}
 
-      <main class="home-main">
-        <section class="home-hero">
+      <main class="home-main account-main">
+        <section class="home-hero account-hero">
           <p class="kicker">Mon compte</p>
           <h2 class="hero-title">${escapeHtml(name)}</h2>
           <p class="docs-subtitle">${escapeHtml(mobileUser?.email || '')}</p>
         </section>
 
+        <section class="account-card">
+          <div class="section-heading compact">
+            <h3>Profil</h3>
+          </div>
+
+          <label class="field-group" for="account-display-name">
+            <span class="kicker">Pseudo</span>
+            <div class="input-shell">
+              <span class="material-symbols-outlined form-icon" aria-hidden="true">person</span>
+              <input id="account-display-name" type="text" value="${escapeHtml(name)}" autocomplete="nickname">
+            </div>
+          </label>
+
+          <button class="docs-action-primary full-width" type="button" data-action="save-profile">
+            <span class="material-symbols-outlined">check</span>
+            <span>Enregistrer le profil</span>
+          </button>
+        </section>
+
+        <section class="account-card">
+          <div class="section-heading compact">
+            <h3>Préférences</h3>
+          </div>
+
+          <button class="account-setting-row" type="button" data-action="toggle-theme">
+            <span class="material-symbols-outlined">${theme === 'dark' ? 'dark_mode' : 'light_mode'}</span>
+            <span>
+              <strong>Thème ${theme === 'dark' ? 'sombre' : 'clair'}</strong>
+              <small>Changer l’apparence de l’app mobile</small>
+            </span>
+            <span class="material-symbols-outlined">chevron_right</span>
+          </button>
+        </section>
+
         <section>
           <div class="section-heading">
             <h3>Mes Voyages</h3>
+            <span>${tripCount}</span>
           </div>
 
           <div class="docs-grid">
@@ -2413,7 +2818,7 @@ function renderAccount() {
           <span>Créer une nouvelle aventure</span>
         </button>
 
-        <button class="create-adventure" type="button" data-action="logout">
+        <button class="create-adventure danger-action" type="button" data-action="logout">
           <span class="material-symbols-outlined">logout</span>
           <span>Déconnexion</span>
         </button>
@@ -4684,6 +5089,16 @@ window.addEventListener('click', event => {
     return;
   }
 
+  if (action === 'save-profile') {
+    handleUpdateMobileProfile();
+    return;
+  }
+
+  if (action === 'toggle-theme') {
+    toggleMobileTheme();
+    return;
+  }
+
   if (action === 'add-friend') {
     handleAddFriend();
     return;
@@ -4895,14 +5310,69 @@ if (action === 'delete-step') {
       if (action === 'map-days-toggle') {
     mobileMapDaysOpen = !mobileMapDaysOpen;
     mobileMapToolsOpen = false;
+    mobileMapActionsOpen = false;
     refreshMobileMapDaysMenu();
     refreshMobileMapToolsMenu();
+    return;
+  }
+
+    if (action === 'map-actions-toggle') {
+    mobileMapActionsOpen = !mobileMapActionsOpen;
+    mobileMapToolsOpen = false;
+    mobileMapDaysOpen = false;
+    mobileRouteCalculatorOpen = false;
+    renderMap();
+    return;
+  }
+
+  if (action === 'map-route-calculator-toggle') {
+    syncMobileRouteInputs();
+    mobileRouteCalculatorOpen = !mobileRouteCalculatorOpen;
+    mobileMapActionsOpen = false;
+    renderMap();
+    return;
+  }
+
+  if (action === 'map-route-mode') {
+    const mode = event.target.closest('[data-route-mode]')?.dataset.routeMode;
+    if (mode) mobileRouteCalculatorDraft.mode = mode;
+    refreshMobileRouteCalculatorPanel();
+    return;
+  }
+
+  if (action === 'map-route-swap') {
+    syncMobileRouteInputs();
+
+    mobileRouteCalculatorDraft = {
+      ...mobileRouteCalculatorDraft,
+      from: mobileRouteCalculatorDraft.to,
+      fromLat: mobileRouteCalculatorDraft.toLat,
+      fromLng: mobileRouteCalculatorDraft.toLng,
+      to: mobileRouteCalculatorDraft.from,
+      toLat: mobileRouteCalculatorDraft.fromLat,
+      toLng: mobileRouteCalculatorDraft.fromLng
+    };
+
+    refreshMobileRouteCalculatorPanel();
+    return;
+  }
+
+  if (action === 'map-route-calculate') {
+    calculateMobileRoute();
+    return;
+  }
+
+  if (action === 'map-clear-route') {
+    mobileRouteCalculatorResult = null;
+    clearMobileRouteCalculatorLayer();
+    renderMap();
     return;
   }
 
   if (action === 'map-tools-toggle') {
     mobileMapToolsOpen = !mobileMapToolsOpen;
     mobileMapDaysOpen = false;
+    mobileMapActionsOpen = false;
     refreshMobileMapToolsMenu();
     refreshMobileMapDaysMenu();
     return;

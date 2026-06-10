@@ -1341,6 +1341,11 @@ function renderMap() {
               <span>Calculateur d’itinéraire</span>
             </button>
 
+            <button type="button" data-action="map-route-current-day">
+              <span class="material-symbols-outlined" aria-hidden="true">today</span>
+              <span>Trajet du jour</span>
+            </button>
+
             <button type="button" data-action="map-clear-route">
               <span class="material-symbols-outlined" aria-hidden="true">ink_eraser</span>
               <span>Effacer le trajet</span>
@@ -1432,8 +1437,14 @@ function renderMap() {
 
             ${mobileRouteCalculatorResult ? `
               <div class="mobile-route-result">
-                <strong>${escapeHtml(mobileRouteCalculatorResult.durationLabel)}</strong>
-                <span>${escapeHtml(mobileRouteCalculatorResult.distanceLabel)}</span>
+                <div>
+                  <strong>${escapeHtml(mobileRouteCalculatorResult.durationLabel)}</strong>
+                  <span>${escapeHtml(mobileRouteCalculatorResult.distanceLabel)}</span>
+                </div>
+                <a href="${getMobileRouteGoogleMapsUrl()}" target="_blank" rel="noopener">
+                  <span class="material-symbols-outlined" aria-hidden="true">open_in_new</span>
+                  Maps
+                </a>
               </div>
             ` : ''}
           </div>
@@ -2079,6 +2090,16 @@ function renderMobileMapSelectedPlace() {
         <span>Voir</span>
       </button>
 
+            <button type="button" data-action="map-set-route-from-place">
+        <span class="material-symbols-outlined" aria-hidden="true">trip_origin</span>
+        <span>Départ</span>
+      </button>
+
+      <button type="button" data-action="map-set-route-to-place">
+        <span class="material-symbols-outlined" aria-hidden="true">location_on</span>
+        <span>Arrivée</span>
+      </button>
+
       <button type="button" data-action="map-add-place">
         <span class="material-symbols-outlined" aria-hidden="true">add_location_alt</span>
         <span>Ajouter</span>
@@ -2288,6 +2309,16 @@ function renderMobileMapFocusedStepCard(step, index) {
         <span>Voir</span>
       </button>
 
+            <button type="button" data-action="map-set-route-from-focused-step">
+        <span class="material-symbols-outlined" aria-hidden="true">trip_origin</span>
+        <span>Départ</span>
+      </button>
+
+      <button type="button" data-action="map-set-route-to-focused-step">
+        <span class="material-symbols-outlined" aria-hidden="true">location_on</span>
+        <span>Arrivée</span>
+      </button>
+
             <button type="button" data-action="map-route-focused-step">
         <span class="material-symbols-outlined" aria-hidden="true">route</span>
         <span>Trajet</span>
@@ -2373,6 +2404,25 @@ function setMobileMapSearchMarker(center) {
     .addTo(mobileMapInstance);
 }
 
+function getMobileRouteGoogleMapsUrl() {
+  const fromLat = mobileRouteCalculatorDraft.fromLat;
+  const fromLng = mobileRouteCalculatorDraft.fromLng;
+  const toLat = mobileRouteCalculatorDraft.toLat;
+  const toLng = mobileRouteCalculatorDraft.toLng;
+
+  if (![fromLat, fromLng, toLat, toLng].every(value => Number.isFinite(Number(value)))) {
+    return '';
+  }
+
+  const travelMode = mobileRouteCalculatorDraft.mode === 'walking'
+    ? 'walking'
+    : mobileRouteCalculatorDraft.mode === 'cycling'
+      ? 'bicycling'
+      : 'driving';
+
+  return `https://www.google.com/maps/dir/?api=1&origin=${fromLat},${fromLng}&destination=${toLat},${toLng}&travelmode=${travelMode}`;
+}
+
 function formatMobileRouteDistance(meters) {
   if (!Number.isFinite(meters)) return '';
   if (meters < 1000) return `${Math.round(meters)} m`;
@@ -2422,6 +2472,52 @@ function clearMobileRouteCalculatorLayer() {
   try { mobileMapInstance.removeLayer('mobile-route-calculator-glow'); } catch (error) {}
   try { mobileMapInstance.removeLayer('mobile-route-calculator-line'); } catch (error) {}
   try { mobileMapInstance.removeSource('mobile-route-calculator'); } catch (error) {}
+}
+
+function resetMobileRouteCalculator() {
+  mobileRouteCalculatorDraft = {
+    from: '',
+    fromLat: null,
+    fromLng: null,
+    to: '',
+    toLat: null,
+    toLng: null,
+    mode: mobileRouteCalculatorDraft.mode || 'driving'
+  };
+
+  mobileRouteCalculatorResult = null;
+  clearMobileRouteCalculatorLayer();
+  refreshMobileRouteCalculatorPanel();
+}
+
+function setMobileRouteFromCurrentDay() {
+  const steps = getMobileMapPanelSteps()
+    .filter(step => Number.isFinite(Number(step.lat)) && Number.isFinite(Number(step.lng)));
+
+  if (steps.length < 2) {
+    alert('Il faut au moins deux points géolocalisés sur ce jour.');
+    return;
+  }
+
+  const first = steps[0];
+  const last = steps[steps.length - 1];
+
+  mobileRouteCalculatorDraft = {
+    ...mobileRouteCalculatorDraft,
+    from: first.label || first.title || first.lieu || first.place || 'Premier point',
+    fromLat: Number(first.lat),
+    fromLng: Number(first.lng),
+    to: last.label || last.title || last.lieu || last.place || 'Dernier point',
+    toLat: Number(last.lat),
+    toLng: Number(last.lng)
+  };
+
+  mobileRouteCalculatorOpen = true;
+  mobileMapActionsOpen = false;
+
+  refreshMobileMapActionsMenu();
+  refreshMobileRouteCalculatorPanel();
+  maybeAutoCalculateMobileRoute();
 }
 
 function drawMobileRouteCalculator(routeGeometry) {
@@ -2477,6 +2573,95 @@ function syncMobileRouteInputs() {
 
   if (fromInput) mobileRouteCalculatorDraft.from = fromInput.value.trim();
   if (toInput) mobileRouteCalculatorDraft.to = toInput.value.trim();
+}
+
+function maybeAutoCalculateMobileRoute() {
+  const hasFrom = Number.isFinite(Number(mobileRouteCalculatorDraft.fromLat))
+    && Number.isFinite(Number(mobileRouteCalculatorDraft.fromLng));
+  const hasTo = Number.isFinite(Number(mobileRouteCalculatorDraft.toLat))
+    && Number.isFinite(Number(mobileRouteCalculatorDraft.toLng));
+
+  if (!hasFrom || !hasTo || mobileRouteCalculatorBusy) return;
+
+  calculateMobileRoute();
+}
+
+function setMobileRouteEndpoint(kind, step) {
+  if (!step || !Number.isFinite(Number(step.lat)) || !Number.isFinite(Number(step.lng))) {
+    alert('Cette étape n’a pas encore de position GPS.');
+    return;
+  }
+
+  const patch = {
+    [`${kind}`]: step.label || step.title || step.lieu || step.place || 'Étape',
+    [`${kind}Lat`]: Number(step.lat),
+    [`${kind}Lng`]: Number(step.lng)
+  };
+
+  mobileRouteCalculatorDraft = {
+    ...mobileRouteCalculatorDraft,
+    ...patch
+  };
+
+  mobileRouteCalculatorOpen = true;
+  mobileMapActionsOpen = false;
+  refreshMobileMapActionsMenu();
+  refreshMobileRouteCalculatorPanel();
+  maybeAutoCalculateMobileRoute();
+
+}
+
+function setMobileRouteEndpointFromPlace(kind, place) {
+  if (!place?.center?.length) {
+    alert('Ce lieu n’a pas encore de position GPS.');
+    return;
+  }
+
+  mobileRouteCalculatorDraft = {
+    ...mobileRouteCalculatorDraft,
+    [`${kind}`]: place.place_name || place.text || 'Lieu sélectionné',
+    [`${kind}Lat`]: Number(place.center[1]),
+    [`${kind}Lng`]: Number(place.center[0])
+  };
+
+  mobileRouteCalculatorOpen = true;
+  mobileMapActionsOpen = false;
+  refreshMobileMapActionsMenu();
+  refreshMobileRouteCalculatorPanel();
+  maybeAutoCalculateMobileRoute();
+}
+
+function setMobileRouteFromCurrentPosition() {
+  if (!navigator.geolocation) {
+    alert('Géolocalisation indisponible sur cet appareil.');
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(position => {
+    mobileRouteCalculatorDraft = {
+      ...mobileRouteCalculatorDraft,
+      from: 'Ma position',
+      fromLat: position.coords.latitude,
+      fromLng: position.coords.longitude
+    };
+
+    mobileRouteCalculatorOpen = true;
+    refreshMobileRouteCalculatorPanel();
+    maybeAutoCalculateMobileRoute();
+
+    if (mobileMapInstance) {
+      mobileMapInstance.flyTo({
+        center: [position.coords.longitude, position.coords.latitude],
+        zoom: Math.max(mobileMapInstance.getZoom(), 13),
+        duration: 600
+      });
+    }
+  }, () => {
+    alert('Impossible de récupérer votre position.');
+  }, {
+    enableHighAccuracy: true,
+    timeout: 8000
+  });
 }
 
 async function calculateMobileRoute() {
@@ -2564,6 +2749,11 @@ function refreshMobileRouteCalculatorPanel() {
           <input id="mobile-route-from" type="search" value="${fromValue}" placeholder="Ville, adresse, gare...">
         </label>
 
+                <button class="mobile-route-current" type="button" data-action="map-route-current-position">
+          <span class="material-symbols-outlined" aria-hidden="true">my_location</span>
+          <span>Ma position en départ</span>
+        </button>
+
         <button class="mobile-route-swap" type="button" data-action="map-route-swap" aria-label="Inverser">
           <span class="material-symbols-outlined" aria-hidden="true">swap_vert</span>
         </button>
@@ -2587,6 +2777,11 @@ function refreshMobileRouteCalculatorPanel() {
             Vélo
           </button>
         </div>
+
+        <button class="mobile-route-reset" type="button" data-action="map-route-reset">
+          <span class="material-symbols-outlined" aria-hidden="true">restart_alt</span>
+          <span>Réinitialiser</span>
+        </button>
 
         <button class="mobile-route-submit" type="button" data-action="map-route-calculate">
           <span class="material-symbols-outlined" aria-hidden="true">route</span>
@@ -5341,6 +5536,11 @@ if (action === 'delete-step') {
     return;
   }
 
+    if (action === 'map-route-current-day') {
+    setMobileRouteFromCurrentDay();
+    return;
+  }
+  
   if (action === 'map-route-calculator-toggle') {
     syncMobileRouteInputs();
     mobileRouteCalculatorOpen = !mobileRouteCalculatorOpen;
@@ -5365,6 +5565,11 @@ if (action === 'delete-step') {
     return;
   }
 
+    if (action === 'map-route-current-position') {
+    setMobileRouteFromCurrentPosition();
+    return;
+  }
+
   if (action === 'map-route-swap') {
     syncMobileRouteInputs();
 
@@ -5379,6 +5584,12 @@ if (action === 'delete-step') {
     };
 
     refreshMobileRouteCalculatorPanel();
+    maybeAutoCalculateMobileRoute();
+    return;
+  }
+
+    if (action === 'map-route-reset') {
+    resetMobileRouteCalculator();
     return;
   }
 
@@ -5554,6 +5765,18 @@ if (action === 'delete-step') {
     return;
   }
 
+    if (action === 'map-set-route-from-focused-step') {
+    const step = getMobileMapSteps()[mobileMapFocusedStepIndex];
+    setMobileRouteEndpoint('from', step);
+    return;
+  }
+
+  if (action === 'map-set-route-to-focused-step') {
+    const step = getMobileMapSteps()[mobileMapFocusedStepIndex];
+    setMobileRouteEndpoint('to', step);
+    return;
+  }
+
   if (action === 'map-route-focused-step') {
     if (mobileMapFocusedStepIndex !== null) {
       renderMobileCalculatedRouteToStep(mobileMapFocusedStepIndex);
@@ -5621,6 +5844,16 @@ if (action === 'delete-step') {
       });
     }
 
+    return;
+  }
+
+    if (action === 'map-set-route-from-place') {
+    setMobileRouteEndpointFromPlace('from', mobileMapSelectedPlace);
+    return;
+  }
+
+  if (action === 'map-set-route-to-place') {
+    setMobileRouteEndpointFromPlace('to', mobileMapSelectedPlace);
     return;
   }
 

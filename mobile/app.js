@@ -2314,10 +2314,16 @@ function renderMobileMapFocusedStepCard(step, index) {
   }
 
   card.innerHTML = `
-    <div>
-      <span class="kicker">Étape sélectionnée</span>
-      <h2>${escapeHtml(step.label || step.title || 'Étape')}</h2>
-      <p>${escapeHtml(step.lieu || step.place || step.dayTitle || '')}</p>
+    <div class="mobile-map-focused-head">
+      <div>
+        <span class="kicker">Étape sélectionnée</span>
+        <h2>${escapeHtml(step.label || step.title || 'Étape')}</h2>
+        <p>${escapeHtml(step.lieu || step.place || step.dayTitle || '')}</p>
+      </div>
+
+      <button class="mobile-map-place-close" type="button" data-action="map-clear-focused-step" aria-label="Fermer">
+        <span class="material-symbols-outlined" aria-hidden="true">close</span>
+      </button>
     </div>
 
     <div class="mobile-map-focused-actions">
@@ -5827,6 +5833,8 @@ if (action === 'delete-step') {
     const value = event.target.closest('[data-panel-day]')?.dataset.panelDay;
     const selectedDayIndex = value === 'all' ? null : Number(value);
 
+    rememberMobileMapCamera();
+
     mobileMapPanelDayIndex = selectedDayIndex;
     mobileMapDaysOpen = false;
     showAllMobileMapSteps = false;
@@ -5980,6 +5988,21 @@ if (action === 'delete-step') {
     navigate('new-step');
     return;
   }
+
+  if (action === 'map-clear-focused-step') {
+  mobileMapFocusedStepIndex = null;
+  document.querySelector('#mobile-map-focused-step-card')?.remove();
+
+  document.querySelectorAll('.mobile-map-marker').forEach(marker => {
+    marker.classList.remove('active');
+  });
+
+  document.querySelectorAll('.mobile-map-step').forEach(button => {
+    button.classList.remove('active');
+  });
+
+  return;
+}
 
   if (action === 'map-clear-place') {
     mobileMapSelectedPlace = null;

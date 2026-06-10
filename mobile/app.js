@@ -5302,11 +5302,36 @@ function handleDeleteStep(stepIndex) {
   const step = itinerarySteps[stepIndex];
   if (!step) return;
 
-  const ok = confirm(`Supprimer "${step.title}" ?`);
-  if (!ok) return;
+  openStepDeleteModal(stepIndex, step);
+}
 
-  itinerarySteps.splice(stepIndex, 1);
-  renderItinerary();
+function openStepDeleteModal(stepIndex, step) {
+  document.querySelector('.step-delete-backdrop')?.remove();
+
+  const modal = document.createElement('div');
+  modal.className = 'step-delete-backdrop';
+  modal.innerHTML = `
+    <article class="step-delete-modal" role="dialog" aria-modal="true" aria-labelledby="step-delete-title">
+      <button class="step-delete-close" type="button" data-action="step-delete-cancel" aria-label="Fermer">
+        <span class="material-symbols-outlined" aria-hidden="true">close</span>
+      </button>
+
+      <span class="step-delete-kicker">Suppression</span>
+      <h2 id="step-delete-title">Supprimer cette étape ?</h2>
+      <p>
+        “${escapeHtml(step.title || 'Cette étape')}” sera retirée de votre itinéraire.
+      </p>
+
+      <div class="step-delete-actions">
+        <button class="secondary" type="button" data-action="step-delete-cancel">Annuler</button>
+        <button class="danger" type="button" data-action="step-delete-confirm" data-step-index="${stepIndex}">
+          Supprimer
+        </button>
+      </div>
+    </article>
+  `;
+
+  document.body.appendChild(modal);
 }
 
 async function handleAddStepToProgram() {
@@ -5700,6 +5725,21 @@ if (action === 'edit-step') {
 if (action === 'delete-step') {
   const stepIndex = Number(event.target.closest('[data-step-index]')?.dataset.stepIndex);
   handleDeleteStep(stepIndex);
+  return;
+}
+
+if (action === 'step-delete-cancel') {
+  document.querySelector('.step-delete-backdrop')?.remove();
+  return;
+}
+
+if (action === 'step-delete-confirm') {
+  const stepIndex = Number(event.target.closest('[data-step-index]')?.dataset.stepIndex);
+  if (!Number.isNaN(stepIndex)) {
+    itinerarySteps.splice(stepIndex, 1);
+    document.querySelector('.step-delete-backdrop')?.remove();
+    renderItinerary();
+  }
   return;
 }
 

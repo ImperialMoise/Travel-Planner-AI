@@ -1407,6 +1407,11 @@ function renderMap() {
               <input id="mobile-route-from" type="search" value="${escapeHtml(mobileRouteCalculatorDraft.from)}" placeholder="Ville, adresse, gare...">
             </label>
 
+            <button class="mobile-route-current" type="button" data-action="map-route-current-position">
+              <span class="material-symbols-outlined" aria-hidden="true">my_location</span>
+              <span>Ma position en départ</span>
+            </button>
+
             <button class="mobile-route-swap" type="button" data-action="map-route-swap" aria-label="Inverser">
               <span class="material-symbols-outlined" aria-hidden="true">swap_vert</span>
             </button>
@@ -1431,6 +1436,11 @@ function renderMap() {
               </button>
             </div>
 
+            <button class="mobile-route-reset" type="button" data-action="map-route-reset">
+              <span class="material-symbols-outlined" aria-hidden="true">restart_alt</span>
+              <span>Réinitialiser</span>
+            </button>
+
             <button class="mobile-route-submit" type="button" data-action="map-route-calculate">
               <span class="material-symbols-outlined" aria-hidden="true">route</span>
               <span>${mobileRouteCalculatorBusy ? 'Calcul...' : 'Calculer le trajet'}</span>
@@ -1440,7 +1450,10 @@ function renderMap() {
               <div class="mobile-route-result">
                 <div>
                   <strong>${escapeHtml(mobileRouteCalculatorResult.durationLabel)}</strong>
-                  <span>${escapeHtml(mobileRouteCalculatorResult.distanceLabel)}</span>
+                  <span>
+                    ${escapeHtml(mobileRouteCalculatorResult.distanceLabel)}
+                    ${(mobileRouteCalculatorDraft.waypoints || []).length ? ` · ${(mobileRouteCalculatorDraft.waypoints || []).length + 2} points` : ''}
+                  </span>
                 </div>
                 <a href="${getMobileRouteGoogleMapsUrl()}" target="_blank" rel="noopener">
                   <span class="material-symbols-outlined" aria-hidden="true">open_in_new</span>
@@ -2421,7 +2434,14 @@ function getMobileRouteGoogleMapsUrl() {
       ? 'bicycling'
       : 'driving';
 
-  return `https://www.google.com/maps/dir/?api=1&origin=${fromLat},${fromLng}&destination=${toLat},${toLng}&travelmode=${travelMode}`;
+  const waypoints = (mobileRouteCalculatorDraft.waypoints || [])
+    .filter(point => Number.isFinite(Number(point.lat)) && Number.isFinite(Number(point.lng)))
+    .map(point => `${point.lat},${point.lng}`)
+    .join('|');
+
+  const waypointParam = waypoints ? `&waypoints=${encodeURIComponent(waypoints)}` : '';
+
+  return `https://www.google.com/maps/dir/?api=1&origin=${fromLat},${fromLng}&destination=${toLat},${toLng}${waypointParam}&travelmode=${travelMode}`;
 }
 
 function formatMobileRouteDistance(meters) {
@@ -2681,19 +2701,25 @@ async function calculateMobileRoute() {
     mobileRouteCalculatorBusy = true;
     refreshMobileRouteCalculatorPanel();
 
-    const from = mobileRouteCalculatorDraft.fromLat && mobileRouteCalculatorDraft.fromLng
+    const fromHasCoords = [mobileRouteCalculatorDraft.fromLat, mobileRouteCalculatorDraft.fromLng]
+      .every(value => Number.isFinite(Number(value)));
+
+    const toHasCoords = [mobileRouteCalculatorDraft.toLat, mobileRouteCalculatorDraft.toLng]
+      .every(value => Number.isFinite(Number(value)));
+
+    const from = fromHasCoords
       ? {
           label: mobileRouteCalculatorDraft.from,
-          lat: mobileRouteCalculatorDraft.fromLat,
-          lng: mobileRouteCalculatorDraft.fromLng
+          lat: Number(mobileRouteCalculatorDraft.fromLat),
+          lng: Number(mobileRouteCalculatorDraft.fromLng)
         }
       : await geocodeMobileRoutePoint(mobileRouteCalculatorDraft.from);
 
-    const to = mobileRouteCalculatorDraft.toLat && mobileRouteCalculatorDraft.toLng
+    const to = toHasCoords
       ? {
           label: mobileRouteCalculatorDraft.to,
-          lat: mobileRouteCalculatorDraft.toLat,
-          lng: mobileRouteCalculatorDraft.toLng
+          lat: Number(mobileRouteCalculatorDraft.toLat),
+          lng: Number(mobileRouteCalculatorDraft.toLng)
         }
       : await geocodeMobileRoutePoint(mobileRouteCalculatorDraft.to);
 
@@ -2756,7 +2782,7 @@ function refreshMobileRouteCalculatorPanel() {
           <span class="kicker">Outils</span>
           <h2>Calculateur d’itinéraire</h2>
         </div>
-        <button type="button" data-action="map-route-calculator-toggle" aria-label="Fermer">
+        <button type="button" data-action="map-route-calculator-close" aria-label="Fermer">
           <span class="material-symbols-outlined" aria-hidden="true">close</span>
         </button>
       </div>
@@ -2808,11 +2834,17 @@ function refreshMobileRouteCalculatorPanel() {
 
         ${mobileRouteCalculatorResult ? `
           <div class="mobile-route-result">
-            <strong>${escapeHtml(mobileRouteCalculatorResult.durationLabel)}</strong>
-            <span>
-            ${escapeHtml(mobileRouteCalculatorResult.distanceLabel)}
-            ${(mobileRouteCalculatorDraft.waypoints || []).length ? ` · ${(mobileRouteCalculatorDraft.waypoints || []).length + 2} points` : ''}
-            </span>
+            <div>
+              <strong>${escapeHtml(mobileRouteCalculatorResult.durationLabel)}</strong>
+              <span>
+                ${escapeHtml(mobileRouteCalculatorResult.distanceLabel)}
+                ${(mobileRouteCalculatorDraft.waypoints || []).length ? ` · ${(mobileRouteCalculatorDraft.waypoints || []).length + 2} points` : ''}
+              </span>
+            </div>
+            <a href="${getMobileRouteGoogleMapsUrl()}" target="_blank" rel="noopener">
+              <span class="material-symbols-outlined" aria-hidden="true">open_in_new</span>
+              Maps
+            </a>
           </div>
         ` : ''}
       </div>

@@ -1447,39 +1447,33 @@ function renderMap() {
               <span>${mobileRouteCalculatorBusy ? 'Calcul...' : 'Calculer le trajet'}</span>
             </button>
 
-            ${mobileRouteCalculatorResult ? `
+                        ${mobileRouteCalculatorResult ? `
               <div class="mobile-route-result">
-                <div>
-                  <strong>${escapeHtml(mobileRouteCalculatorResult.durationLabel)}</strong>
-                  <span>
-                    ${escapeHtml(mobileRouteCalculatorResult.distanceLabel)}
-                    ${(mobileRouteCalculatorDraft.waypoints || []).length ? ` · ${(mobileRouteCalculatorDraft.waypoints || []).length + 2} points` : ''}
-                  </span>
+                <div class="mobile-route-result-copy">
+                  <span class="kicker">Calcul d'itinéraire</span>
+                  <h1>
+                    <span class="material-symbols-outlined" aria-hidden="true">
+                      ${mobileRouteCalculatorDraft.mode === 'walking' ? 'directions_walk' : mobileRouteCalculatorDraft.mode === 'cycling' ? 'directions_bike' : 'directions_car'}
+                    </span>
+                    ${escapeHtml(mobileRouteCalculatorDraft.from || 'Départ')} → ${escapeHtml(mobileRouteCalculatorDraft.to || 'Arrivée')}
+                  </h1>
+                  <p>${escapeHtml(mobileRouteCalculatorResult.durationLabel)} · ${escapeHtml(mobileRouteCalculatorResult.distanceLabel)}</p>
                 </div>
+
                 <div class="mobile-route-result-actions">
-  <button type="button" data-action="map-route-expand" aria-label="Afficher le calculateur">
-    <span class="material-symbols-outlined" aria-hidden="true">keyboard_arrow_up</span>
-  </button>
+                  <button type="button" data-action="map-route-dismiss" aria-label="Supprimer le trajet">
+                    <span class="material-symbols-outlined" aria-hidden="true">close</span>
+                  </button>
 
-  <div class="mobile-route-result-actions">
-  <button type="button" data-action="map-route-dismiss" aria-label="Supprimer le trajet">
-    <span class="material-symbols-outlined" aria-hidden="true">close</span>
-  </button>
+                  <button type="button" data-action="map-route-expand" aria-label="Afficher le calculateur">
+                    <span class="material-symbols-outlined" aria-hidden="true">keyboard_arrow_up</span>
+                  </button>
 
-  <button type="button" data-action="map-route-expand" aria-label="Afficher le calculateur">
-    <span class="material-symbols-outlined" aria-hidden="true">keyboard_arrow_up</span>
-  </button>
-
-  <a href="${getMobileRouteGoogleMapsUrl()}" target="_blank" rel="noopener">
-    <span class="material-symbols-outlined" aria-hidden="true">open_in_new</span>
-    Maps
-  </a>
-</div>
-
-  <button type="button" data-action="map-route-dismiss" aria-label="Supprimer le trajet">
-    <span class="material-symbols-outlined" aria-hidden="true">close</span>
-  </button>
-</div>
+                  <a href="${getMobileRouteGoogleMapsUrl()}" target="_blank" rel="noopener">
+                    <span class="material-symbols-outlined" aria-hidden="true">open_in_new</span>
+                    Maps
+                  </a>
+                </div>
               </div>
             ` : ''}
           </div>
@@ -2896,38 +2890,34 @@ function refreshMobileRouteCalculatorPanel() {
 
         ${mobileRouteCalculatorResult ? `
           <div class="mobile-route-result">
-            <div>
-              <strong>${escapeHtml(mobileRouteCalculatorResult.durationLabel)}</strong>
-              <span>
-                ${escapeHtml(mobileRouteCalculatorResult.distanceLabel)}
-                ${(mobileRouteCalculatorDraft.waypoints || []).length ? ` · ${(mobileRouteCalculatorDraft.waypoints || []).length + 2} points` : ''}
-              </span>
-            </div>
-            <div class="mobile-route-result-actions">
-  <button type="button" data-action="map-route-expand" aria-label="Afficher le calculateur">
-    <span class="material-symbols-outlined" aria-hidden="true">keyboard_arrow_up</span>
-  </button>
+  <div class="mobile-route-result-copy">
+    <span class="kicker">Calcul d'itinéraire</span>
+
+    <h1>
+      <span class="material-symbols-outlined" aria-hidden="true">
+        ${mobileRouteCalculatorDraft.mode === 'walking' ? 'directions_walk' : mobileRouteCalculatorDraft.mode === 'cycling' ? 'directions_bike' : 'directions_car'}
+      </span>
+      ${escapeHtml(mobileRouteCalculatorDraft.from || 'Départ')} → ${escapeHtml(mobileRouteCalculatorDraft.to || 'Arrivée')}
+    </h1>
+
+    <p>${escapeHtml(mobileRouteCalculatorResult.durationLabel)} · ${escapeHtml(mobileRouteCalculatorResult.distanceLabel)}</p>
+  </div>
 
   <div class="mobile-route-result-actions">
-  <button type="button" data-action="map-route-dismiss" aria-label="Supprimer le trajet">
-    <span class="material-symbols-outlined" aria-hidden="true">close</span>
-  </button>
+    <button type="button" data-action="map-route-dismiss" aria-label="Supprimer le trajet">
+      <span class="material-symbols-outlined" aria-hidden="true">close</span>
+    </button>
 
-  <button type="button" data-action="map-route-expand" aria-label="Afficher le calculateur">
-    <span class="material-symbols-outlined" aria-hidden="true">keyboard_arrow_up</span>
-  </button>
+    <button type="button" data-action="map-route-expand" aria-label="Afficher le calculateur">
+      <span class="material-symbols-outlined" aria-hidden="true">keyboard_arrow_up</span>
+    </button>
 
-  <a href="${getMobileRouteGoogleMapsUrl()}" target="_blank" rel="noopener">
-    <span class="material-symbols-outlined" aria-hidden="true">open_in_new</span>
-    Maps
-  </a>
+    <a href="${getMobileRouteGoogleMapsUrl()}" target="_blank" rel="noopener">
+      <span class="material-symbols-outlined" aria-hidden="true">open_in_new</span>
+      Maps
+    </a>
+  </div>
 </div>
-
-  <button type="button" data-action="map-route-dismiss" aria-label="Supprimer le trajet">
-    <span class="material-symbols-outlined" aria-hidden="true">close</span>
-  </button>
-</div>
-          </div>
         ` : ''}
       </div>
     </article>
@@ -5822,37 +5812,21 @@ if (action === 'delete-step') {
     return;
   }
 
-  if (action === 'map-route-expand') {
-  mobileRouteCalculatorCompact = false;
-  mobileRouteCalculatorOpen = true;
-  refreshMobileRouteCalculatorPanel();
-  return;
-}
+    if (action === 'map-route-expand') {
+    mobileRouteCalculatorCompact = false;
+    mobileRouteCalculatorOpen = true;
+    refreshMobileRouteCalculatorPanel();
+    return;
+  }
 
-if (action === 'map-route-dismiss') {
-  mobileRouteCalculatorOpen = false;
-  mobileRouteCalculatorCompact = false;
-  mobileRouteCalculatorResult = null;
-  clearMobileRouteCalculatorLayer();
-  refreshMobileRouteCalculatorPanel();
-  return;
-}
-
-if (action === 'map-route-expand') {
-  mobileRouteCalculatorCompact = false;
-  mobileRouteCalculatorOpen = true;
-  refreshMobileRouteCalculatorPanel();
-  return;
-}
-
-if (action === 'map-route-dismiss') {
-  mobileRouteCalculatorOpen = false;
-  mobileRouteCalculatorCompact = false;
-  mobileRouteCalculatorResult = null;
-  clearMobileRouteCalculatorLayer();
-  refreshMobileRouteCalculatorPanel();
-  return;
-}
+  if (action === 'map-route-dismiss') {
+    mobileRouteCalculatorOpen = false;
+    mobileRouteCalculatorCompact = false;
+    mobileRouteCalculatorResult = null;
+    clearMobileRouteCalculatorLayer();
+    refreshMobileRouteCalculatorPanel();
+    return;
+  }
 
     if (action === 'map-route-reset') {
     resetMobileRouteCalculator();

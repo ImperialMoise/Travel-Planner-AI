@@ -537,6 +537,7 @@ let mobileRouteCalculatorDraft = {
   to: '',
   toLat: null,
   toLng: null,
+  waypoints: [],
   mode: 'driving'
 };
 let mobileMapSheetOpen = false;
@@ -2482,6 +2483,7 @@ function resetMobileRouteCalculator() {
     to: '',
     toLat: null,
     toLng: null,
+    waypoints: [],
     mode: mobileRouteCalculatorDraft.mode || 'driving'
   };
 
@@ -2501,6 +2503,11 @@ function setMobileRouteFromCurrentDay() {
 
   const first = steps[0];
   const last = steps[steps.length - 1];
+  const middle = steps.slice(1, -1).map(step => ({
+    label: step.label || step.title || step.lieu || step.place || 'Étape',
+    lat: Number(step.lat),
+    lng: Number(step.lng)
+  }));
 
   mobileRouteCalculatorDraft = {
     ...mobileRouteCalculatorDraft,
@@ -2509,7 +2516,8 @@ function setMobileRouteFromCurrentDay() {
     fromLng: Number(first.lng),
     to: last.label || last.title || last.lieu || last.place || 'Dernier point',
     toLat: Number(last.lat),
-    toLng: Number(last.lng)
+    toLng: Number(last.lng),
+    waypoints: middle
   };
 
   mobileRouteCalculatorOpen = true;
@@ -2700,7 +2708,17 @@ async function calculateMobileRoute() {
     };
 
     const profile = getOsrmProfile(mobileRouteCalculatorDraft.mode);
-    const url = `https://router.project-osrm.org/route/v1/${profile}/${from.lng},${from.lat};${to.lng},${to.lat}?overview=full&geometries=geojson`;
+    const waypointCoords = (mobileRouteCalculatorDraft.waypoints || [])
+      .filter(point => Number.isFinite(Number(point.lat)) && Number.isFinite(Number(point.lng)))
+      .map(point => `${point.lng},${point.lat}`);
+
+    const coordString = [
+      `${from.lng},${from.lat}`,
+      ...waypointCoords,
+      `${to.lng},${to.lat}`
+    ].join(';');
+
+    const url = `https://router.project-osrm.org/route/v1/${profile}/${coordString}?overview=full&geometries=geojson`;
 
     const response = await fetch(url);
     const data = await response.json();
@@ -2791,7 +2809,10 @@ function refreshMobileRouteCalculatorPanel() {
         ${mobileRouteCalculatorResult ? `
           <div class="mobile-route-result">
             <strong>${escapeHtml(mobileRouteCalculatorResult.durationLabel)}</strong>
-            <span>${escapeHtml(mobileRouteCalculatorResult.distanceLabel)}</span>
+            <span>
+            ${escapeHtml(mobileRouteCalculatorResult.distanceLabel)}
+            ${(mobileRouteCalculatorDraft.waypoints || []).length ? ` · ${(mobileRouteCalculatorDraft.waypoints || []).length + 2} points` : ''}
+            </span>
           </div>
         ` : ''}
       </div>
@@ -5540,7 +5561,7 @@ if (action === 'delete-step') {
     setMobileRouteFromCurrentDay();
     return;
   }
-  
+
   if (action === 'map-route-calculator-toggle') {
     syncMobileRouteInputs();
     mobileRouteCalculatorOpen = !mobileRouteCalculatorOpen;

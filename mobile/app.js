@@ -1251,6 +1251,17 @@ function refreshMobileMapDaysMenu() {
   if (menu) menu.classList.toggle('open', mobileMapDaysOpen);
 }
 
+function refreshMobileMapActionsMenu() {
+  const actions = document.querySelector('.mobile-map-actions-tool');
+  if (!actions) return;
+
+  const buttonIcon = actions.querySelector('.mobile-map-actions-fab .material-symbols-outlined');
+  const menu = actions.querySelector('.mobile-map-actions-menu');
+
+  if (buttonIcon) buttonIcon.textContent = mobileMapActionsOpen ? 'close' : 'construction';
+  if (menu) menu.classList.toggle('open', mobileMapActionsOpen);
+}
+
 function refreshMobileMapToolsMenu() {
   const tools = document.querySelector('.mobile-map-tools');
   if (!tools) return;
@@ -5316,12 +5327,17 @@ if (action === 'delete-step') {
     return;
   }
 
-    if (action === 'map-actions-toggle') {
+   if (action === 'map-actions-toggle') {
     mobileMapActionsOpen = !mobileMapActionsOpen;
     mobileMapToolsOpen = false;
     mobileMapDaysOpen = false;
     mobileRouteCalculatorOpen = false;
-    renderMap();
+
+    refreshMobileMapActionsMenu();
+    refreshMobileMapToolsMenu();
+    refreshMobileMapDaysMenu();
+    refreshMobileRouteCalculatorPanel();
+
     return;
   }
 
@@ -5329,7 +5345,10 @@ if (action === 'delete-step') {
     syncMobileRouteInputs();
     mobileRouteCalculatorOpen = !mobileRouteCalculatorOpen;
     mobileMapActionsOpen = false;
-    renderMap();
+
+    refreshMobileMapActionsMenu();
+    refreshMobileRouteCalculatorPanel();
+
     return;
   }
 
@@ -5365,7 +5384,7 @@ if (action === 'delete-step') {
   if (action === 'map-clear-route') {
     mobileRouteCalculatorResult = null;
     clearMobileRouteCalculatorLayer();
-    renderMap();
+    refreshMobileRouteCalculatorPanel();
     return;
   }
 

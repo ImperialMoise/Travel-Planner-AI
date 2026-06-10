@@ -7344,6 +7344,8 @@ button {
   display: grid;
   place-items: center;
   color: var(--primary);
+  background: var(--surface-container-lowest);
+  box-shadow: var(--shadow-card);
 }
 
 .mobile-map-actions-menu {
@@ -7351,10 +7353,18 @@ button {
   top: 58px;
   right: 0;
   width: 230px;
-  padding: 10px;
+  padding: 12px;
   display: none;
   gap: 6px;
-  border-radius: 18px;
+  border-radius: 22px;
+  background: rgba(254, 249, 239, 0.88);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: var(--shadow-card);
+}
+
+:root.theme-dark .mobile-map-actions-menu {
+  background: rgba(21, 48, 42, 0.88);
 }
 
 .mobile-map-actions-menu.open {

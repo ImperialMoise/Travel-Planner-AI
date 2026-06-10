@@ -518,6 +518,7 @@ let mobileMapSelectedPlace = null;
 let mobileMapSelectedPlaceType = 'activity';
 let mobileMapSelectedDayIndex = 0;
 let mobileMapFocusedStepIndex = null;
+let pendingMobileMapFocus = null;
 let mobileMapLocatingStep = null;
 let mobileMapPanelDayIndex = null;
 let mobileMapTourTimer = null;
@@ -894,8 +895,12 @@ function getCurrentTimelineSteps() {
   const firstDay = activeTrip?.days?.[0];
 
   if (firstDay?.steps?.length) {
-    return firstDay.steps.map(step => ({
+    return firstDay.steps.map((step, stepIndex) => ({
       id: step.id,
+      dayId: firstDay.id,
+      dayIndex: 0,
+      stepIndex,
+      rawStep: step,
       time: step.time || '09:00',
       type: getStepTypeLabel(step.type),
       title: getStepDisplayTitle(step),
@@ -906,8 +911,9 @@ function getCurrentTimelineSteps() {
     }));
   }
 
-  return itinerarySteps.map(step => ({
+  return itinerarySteps.map((step, stepIndex) => ({
     ...step,
+    stepIndex,
     synced: false
   }));
 }
@@ -1680,7 +1686,14 @@ mobileMapInstance.on('load', async () => {
   renderMobileMapRoute();
   renderMobileMapMarkers();
 
-    if (steps.length) {
+    if (pendingMobileMapFocus) {
+      const focused = focusMobileMapStepByIdentity(pendingMobileMapFocus);
+      pendingMobileMapFocus = null;
+
+      if (!focused && steps.length) {
+        fitMobileMapToSteps({ duration: 0, maxZoom: 8 });
+      }
+    } else if (steps.length) {
       fitMobileMapToSteps({ duration: 0, maxZoom: 8 });
     } else {
       await renderMobileMapDestination();
@@ -2040,30 +2053,45 @@ function fitMobileMapToSteps(options = {}) {
   });
 }
 
+function focusMobileMapStepByIdentity(target) {
+  if (!target) return false;
+
+  const mapSteps = getMobileMapSteps();
+  const index = mapSteps.findIndex(step =>
+    Number(step.dayIndex) === Number(target.dayIndex) &&
+    Number(step.parentStepIndex ?? step.stepIndex) === Number(target.stepIndex) &&
+    step.pointKind === 'step'
+  );
+
+  if (index === -1) return false;
+
+  focusMobileMapStep(index);
+  return true;
+}
+
 function focusMobileMapStep(index) {
   if (!mobileMapInstance) return;
 
   const step = getMobileMapSteps()[index];
   if (!step) return;
-    mobileMapFocusedStepIndex = index;
-  mobileMapToolsOpen = false;
-  mobileMapDaysOpen = false;
-  mobileMapActionsOpen = false;
-  mobileRouteCalculatorOpen = false;
-  renderMobileMapFocusedStepCard(step, index);
-  refreshMobileMapToolsMenu();
-  refreshMobileMapDaysMenu();
-  refreshMobileMapActionsMenu();
-  refreshMobileRouteCalculatorPanel();
 
-    document.querySelectorAll('.mobile-map-marker').forEach((marker, markerIndex) => {
+  mobileMapFocusedStepIndex = index;
+  renderMobileMapFocusedStepCard(step, index);
+
+  mobileMapInstance.flyTo({
+    center: [step.lng, step.lat],
+    zoom: Math.max(mobileMapInstance.getZoom(), 12),
+    duration: 520,
+    essential: true
+  });
+
+  document.querySelectorAll('.mobile-map-marker').forEach((marker, markerIndex) => {
     marker.classList.toggle('active', markerIndex === index);
   });
 
   document.querySelectorAll('.mobile-map-step').forEach((button, buttonIndex) => {
     button.classList.toggle('active', buttonIndex === index);
   });
-
 }
 
 function renderMobileMapSelectedPlace() {
@@ -2747,6 +2775,12 @@ async function calculateMobileRoute(options = {}) {
   if (!mobileMapInstance) return;
 
   syncMobileRouteInputs();
+    if (!mobileRouteCalculatorDraft.from?.trim() || !mobileRouteCalculatorDraft.to?.trim()) {
+    mobileRouteCalculatorBusy = false;
+    refreshMobileRouteCalculatorPanel();
+    alert('Choisis un départ et une arrivée avant de calculer le trajet.');
+    return;
+  }
 
   try {
     mobileRouteCalculatorBusy = true;
@@ -3404,9 +3438,20 @@ function renderItinerary() {
                   <h3>${step.title}</h3>
                   <p>${step.description}</p>
 <div class="item-actions">
+  <button
+    class="icon-mini"
+    type="button"
+    data-action="show-step-on-map"
+    data-step-index="${stepIndex}"
+    aria-label="Voir l'étape sur la carte"
+  >
+    <span class="material-symbols-outlined">map</span>
+  </button>
+
   <button class="icon-mini" type="button" data-action="edit-step" data-step-index="${stepIndex}" aria-label="Modifier l'étape">
     <span class="material-symbols-outlined">edit</span>
   </button>
+
   <button class="icon-mini danger" type="button" data-action="delete-step" data-step-index="${stepIndex}" aria-label="Supprimer l'étape">
     <span class="material-symbols-outlined">close</span>
   </button>
@@ -5299,7 +5344,7 @@ function handleEditStep(stepIndex) {
 }
 
 function handleDeleteStep(stepIndex) {
-  const step = itinerarySteps[stepIndex];
+  const step = getCurrentTimelineSteps()[stepIndex];
   if (!step) return;
 
   openStepDeleteModal(stepIndex, step);
@@ -5332,6 +5377,23 @@ function openStepDeleteModal(stepIndex, step) {
   `;
 
   document.body.appendChild(modal);
+}
+
+async function confirmDeleteStep(stepIndex) {
+  const step = getCurrentTimelineSteps()[stepIndex];
+  if (!step) return;
+
+  if (activeTrip?.id && step.id && window.SB?.deleteStep) {
+    await window.SB.deleteStep(step.id);
+    await refreshMobileTrips(activeTrip.id);
+  } else if (activeTrip?.days?.[step.dayIndex || 0]?.steps) {
+    activeTrip.days[step.dayIndex || 0].steps.splice(step.stepIndex, 1);
+  } else {
+    itinerarySteps.splice(step.stepIndex ?? stepIndex, 1);
+  }
+
+  document.querySelector('.step-delete-backdrop')?.remove();
+  renderItinerary();
 }
 
 async function handleAddStepToProgram() {
@@ -5716,6 +5778,21 @@ if (action === 'delete-expense') {
   return;
 }
 
+if (action === 'show-step-on-map') {
+  const stepIndex = Number(event.target.closest('[data-step-index]')?.dataset.stepIndex);
+  const step = getCurrentTimelineSteps()[stepIndex];
+
+  if (step) {
+    pendingMobileMapFocus = {
+      dayIndex: step.dayIndex ?? 0,
+      stepIndex: step.stepIndex ?? stepIndex
+    };
+  }
+
+  navigate('map');
+  return;
+}
+
 if (action === 'edit-step') {
   const stepIndex = Number(event.target.closest('[data-step-index]')?.dataset.stepIndex);
   handleEditStep(stepIndex);
@@ -5736,9 +5813,7 @@ if (action === 'step-delete-cancel') {
 if (action === 'step-delete-confirm') {
   const stepIndex = Number(event.target.closest('[data-step-index]')?.dataset.stepIndex);
   if (!Number.isNaN(stepIndex)) {
-    itinerarySteps.splice(stepIndex, 1);
-    document.querySelector('.step-delete-backdrop')?.remove();
-    renderItinerary();
+    confirmDeleteStep(stepIndex);
   }
   return;
 }
@@ -5874,9 +5949,9 @@ if (action === 'step-delete-confirm') {
   }
 
     if (action === 'map-route-calculate') {
-    calculateMobileRoute({ compactOnSuccess: true });
-    return;
-  }
+  calculateMobileRoute({ compactOnSuccess: true });
+  return;
+}
 
   if (action === 'map-clear-route') {
     mobileRouteCalculatorResult = null;

@@ -1029,13 +1029,24 @@ function renderHome() {
                   </div>
 
                   <div class="item-actions">
-                    <button class="icon-mini" type="button" data-action="rename-trip" data-trip-id="${trip.id}" aria-label="Renommer le voyage">
-                      <span class="material-symbols-outlined">edit</span>
-                    </button>
-                    <button class="icon-mini danger" type="button" data-action="delete-trip" data-trip-id="${trip.id}" aria-label="Supprimer le voyage">
-                      <span class="material-symbols-outlined">close</span>
-                    </button>
-                  </div>
+  <button
+    class="icon-mini"
+    type="button"
+    data-action="show-step-on-map"
+    data-step-index="${stepIndex}"
+    aria-label="Voir l'étape sur la carte"
+  >
+    <span class="material-symbols-outlined">map</span>
+  </button>
+
+  <button class="icon-mini" type="button" data-action="edit-step" data-step-index="${stepIndex}" aria-label="Modifier l'étape">
+    <span class="material-symbols-outlined">edit</span>
+  </button>
+
+  <button class="icon-mini danger" type="button" data-action="delete-step" data-step-index="${stepIndex}" aria-label="Supprimer l'étape">
+    <span class="material-symbols-outlined">close</span>
+  </button>
+</div>
                 </div>
               </article>
             `).join('') : `
@@ -2775,12 +2786,15 @@ async function calculateMobileRoute(options = {}) {
   if (!mobileMapInstance) return;
 
   syncMobileRouteInputs();
-    if (!mobileRouteCalculatorDraft.from?.trim() || !mobileRouteCalculatorDraft.to?.trim()) {
+
+  if (!mobileRouteCalculatorDraft.from?.trim() || !mobileRouteCalculatorDraft.to?.trim()) {
     mobileRouteCalculatorBusy = false;
     refreshMobileRouteCalculatorPanel();
     alert('Choisis un départ et une arrivée avant de calculer le trajet.');
     return;
   }
+
+  try {
 
   try {
     mobileRouteCalculatorBusy = true;
@@ -5383,17 +5397,22 @@ async function confirmDeleteStep(stepIndex) {
   const step = getCurrentTimelineSteps()[stepIndex];
   if (!step) return;
 
-  if (activeTrip?.id && step.id && window.SB?.deleteStep) {
-    await window.SB.deleteStep(step.id);
-    await refreshMobileTrips(activeTrip.id);
-  } else if (activeTrip?.days?.[step.dayIndex || 0]?.steps) {
-    activeTrip.days[step.dayIndex || 0].steps.splice(step.stepIndex, 1);
-  } else {
-    itinerarySteps.splice(step.stepIndex ?? stepIndex, 1);
-  }
+  try {
+    if (activeTrip?.id && step.id && window.SB?.deleteStep) {
+      await window.SB.deleteStep(step.id);
+      await refreshMobileTrips(activeTrip.id);
+    } else if (activeTrip?.days?.[step.dayIndex || 0]?.steps) {
+      activeTrip.days[step.dayIndex || 0].steps.splice(Number(step.stepIndex), 1);
+    } else {
+      itinerarySteps.splice(step.stepIndex ?? stepIndex, 1);
+    }
 
-  document.querySelector('.step-delete-backdrop')?.remove();
-  renderItinerary();
+    document.querySelector('.step-delete-backdrop')?.remove();
+    renderItinerary();
+  } catch (error) {
+    console.error('Delete step error:', error);
+    alert('Impossible de supprimer cette étape pour le moment.');
+  }
 }
 
 async function handleAddStepToProgram() {

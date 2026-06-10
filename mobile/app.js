@@ -529,6 +529,7 @@ let mobileMapToolsOpen = false;
 let mobileMapActionsOpen = false;
 let mobileRouteCalculatorOpen = false;
 let mobileRouteCalculatorResult = null;
+let mobileRouteCalculatorCompact = false;
 let mobileRouteCalculatorBusy = false;
 let mobileRouteCalculatorDraft = {
   from: '',
@@ -1390,7 +1391,7 @@ function renderMap() {
           </div>
         </div>
 
-                <article class="mobile-route-calculator glass-panel ${mobileRouteCalculatorOpen ? 'open' : ''}">
+                <article class="mobile-route-calculator glass-panel ${mobileRouteCalculatorOpen ? 'open' : ''} ${mobileRouteCalculatorCompact ? 'is-compact' : ''}">
           <div class="mobile-route-header">
             <div>
               <span class="kicker">Outils</span>
@@ -1655,9 +1656,8 @@ function initMobileRealMap() {
   mobileMapInstance.addControl(new maplibregl.NavigationControl({ showCompass: true }), 'bottom-right');
   mobileMapInstance.doubleClickZoom.disable();
 
-    mobileMapInstance.on('error', event => {
-    console.warn('Mobile map error:', event?.error || event);
-    renderMobileMapError('Le fond de carte n’a pas pu être chargé.');
+  mobileMapInstance.on('error', event => {
+    console.warn('Mobile map tile/style warning:', event?.error || event);
   });
 
   mobileMapInstance.on('load', async () => {
@@ -2525,6 +2525,7 @@ function resetMobileRouteCalculator() {
   };
 
   mobileRouteCalculatorResult = null;
+  mobileRouteCalculatorCompact = false;
   clearMobileRouteCalculatorLayer();
   refreshMobileRouteCalculatorPanel();
 }
@@ -2726,7 +2727,7 @@ function setMobileRouteFromCurrentPosition() {
   });
 }
 
-async function calculateMobileRoute() {
+async function calculateMobileRoute(options = {}) {
   if (!mobileMapInstance) return;
 
   syncMobileRouteInputs();
@@ -2791,6 +2792,8 @@ async function calculateMobileRoute() {
       durationLabel: formatMobileRouteDuration(route.duration)
     };
 
+    mobileRouteCalculatorCompact = Boolean(options.compactOnSuccess);
+
     drawMobileRouteCalculator(route.geometry);
   } catch (error) {
     alert('Erreur calcul trajet : ' + (error.message || error));
@@ -2813,7 +2816,7 @@ function refreshMobileRouteCalculatorPanel() {
   const toValue = escapeHtml(mobileRouteCalculatorDraft.to);
 
   panel.outerHTML = `
-    <article class="mobile-route-calculator glass-panel open">
+    <article class="mobile-route-calculator glass-panel open ${mobileRouteCalculatorCompact ? 'is-compact' : ''}">
       <div class="mobile-route-header">
         <div>
           <span class="kicker">Outils</span>
@@ -2922,6 +2925,7 @@ function initMobileRouteAutocomplete() {
       };
 
       mobileRouteCalculatorResult = null;
+      mobileRouteCalculatorCompact = false;
       clearMobileRouteCalculatorLayer();
 
       if (query.length < 2) {
@@ -5781,8 +5785,8 @@ if (action === 'delete-step') {
     return;
   }
 
-  if (action === 'map-route-calculate') {
-    calculateMobileRoute();
+    if (action === 'map-route-calculate') {
+    calculateMobileRoute({ compactOnSuccess: true });
     return;
   }
 

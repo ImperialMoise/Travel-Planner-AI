@@ -911,11 +911,7 @@ function getCurrentTimelineSteps() {
     }));
   }
 
-  return itinerarySteps.map((step, stepIndex) => ({
-    ...step,
-    stepIndex,
-    synced: false
-  }));
+  return [];
 }
 
 function getActiveTripDayForNewStep() {

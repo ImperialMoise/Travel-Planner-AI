@@ -1028,26 +1028,7 @@ function renderHome() {
                     ${trip.start_date ? formatDateLabel(trip.start_date, '') : 'Sans date'}
                   </div>
 
-                  <div class="item-actions">
-  <button
-    class="icon-mini"
-    type="button"
-    data-action="show-step-on-map"
-    data-step-index="${stepIndex}"
-    aria-label="Voir l'étape sur la carte"
-  >
-    <span class="material-symbols-outlined">map</span>
-  </button>
-
-  <button class="icon-mini" type="button" data-action="edit-step" data-step-index="${stepIndex}" aria-label="Modifier l'étape">
-    <span class="material-symbols-outlined">edit</span>
-  </button>
-
-  <button class="icon-mini danger" type="button" data-action="delete-step" data-step-index="${stepIndex}" aria-label="Supprimer l'étape">
-    <span class="material-symbols-outlined">close</span>
-  </button>
-</div>
-                </div>
+                  </div>
               </article>
             `).join('') : `
               <p class="companion-empty">

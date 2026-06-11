@@ -63,6 +63,14 @@ window.ErrorBoundary = ErrorBoundary;
 
 function AppShell() {
   const { user, authReady, view, trips, activeTripId, trip, toast, settingsOpen } = Store.useStore();
+  const isCompactShell = typeof window !== 'undefined' && window.innerWidth < 1320;
+  const isNarrowShell = typeof window !== 'undefined' && window.innerWidth < 1100;
+  const sideWidth = isCompactShell ? 260 : 300;
+  const toolWidth = isCompactShell ? 280 : 320;
+  const [toolboxOpen, setToolboxOpen] = React.useState(false);
+  const isTinyShell = typeof window !== 'undefined' && window.innerWidth < 900;
+  const [daySpineOpen, setDaySpineOpen] = React.useState(false);
+  const isTopbarCompact = typeof window !== 'undefined' && window.innerWidth < 1180;
 
   // ─── Vue active ───────────────────────────────────────────
   let CurrentView = null;
@@ -92,7 +100,7 @@ function AppShell() {
       background: 'var(--bg)'
     }}>
       {/* On cache la Topbar de l'app si le design de Claude est affiché (car il a la sienne) */}
-      <Topbar />
+      <Topbar compact={isTopbarCompact} />
       
       <main style={{
         flex: '1 1 0',
@@ -106,7 +114,26 @@ function AppShell() {
          !activeTripId ? <NoTripHome /> :
          !trip ? <LoadingTrip /> :
          <>
-           <DaySpine />
+           {!isTinyShell && <DaySpine width={sideWidth} />}
+{isTinyShell && daySpineOpen && (
+  <div
+    onClick={() => setDaySpineOpen(false)}
+    style={{
+      position: 'fixed',
+      inset: 0,
+      zIndex: 790,
+      background: 'rgba(21,48,42,.28)',
+      backdropFilter: 'blur(4px)',
+      WebkitBackdropFilter: 'blur(4px)',
+      display: 'flex',
+      justifyContent: 'flex-start'
+    }}
+  >
+    <div onClick={e => e.stopPropagation()} style={{ height: '100%', maxWidth: 320, width: '86vw' }}>
+      <DaySpine width="100%" onPickDay={() => setDaySpineOpen(false)} />
+    </div>
+  </div>
+)}
            <div style={{
              flex: '1 1 0',
              width: 0,
@@ -119,10 +146,86 @@ function AppShell() {
             }}>
              {CurrentView ? <CurrentView /> : <div style={{ padding: 40, color: 'var(--muted)' }}>Vue inconnue : {view}</div>}
            </div>
-           <Toolbox />
+           {!isNarrowShell && <Toolbox width={toolWidth} />}
+{isNarrowShell && toolboxOpen && (
+  <div
+    onClick={() => setToolboxOpen(false)}
+    style={{
+      position: 'fixed',
+      inset: 0,
+      zIndex: 800,
+      background: 'rgba(21,48,42,.28)',
+      backdropFilter: 'blur(4px)',
+      WebkitBackdropFilter: 'blur(4px)',
+      display: 'flex',
+      justifyContent: 'flex-end'
+    }}
+  >
+    <div onClick={e => e.stopPropagation()} style={{ height: '100%', maxWidth: 320, width: '86vw' }}>
+      <Toolbox width="100%" />
+    </div>
+  </div>
+)}
          </>}
       </main>
-                
+
+{isTinyShell && user && activeTripId && trip && (
+  <button
+    onClick={() => setDaySpineOpen(true)}
+    title="Ouvrir les jours"
+    style={{
+      position: 'fixed',
+      left: 18,
+      bottom: 18,
+      zIndex: 700,
+      height: 52,
+      minWidth: 52,
+      padding: '0 16px',
+      borderRadius: 999,
+      border: '1px solid var(--outline-variant)',
+      background: 'var(--card)',
+      color: 'var(--text)',
+      boxShadow: 'var(--shadow-lg)',
+      cursor: 'pointer',
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      fontFamily: 'inherit',
+      fontSize: 13,
+      fontWeight: 800
+    }}
+  >
+    <Icon name="cal" size={18} />
+    Jours
+  </button>
+)}
+
+{isNarrowShell && user && activeTripId && trip && (
+  <button
+    onClick={() => setToolboxOpen(true)}
+    title="Ouvrir la boîte à outils"
+    style={{
+      position: 'fixed',
+      right: 18,
+      bottom: 18,
+      zIndex: 700,
+      width: 52,
+      height: 52,
+      borderRadius: '50%',
+      border: '1px solid var(--outline-variant)',
+      background: 'var(--accent)',
+      color: 'var(--accent-ink)',
+      boxShadow: 'var(--shadow-lg)',
+      cursor: 'pointer',
+      display: 'grid',
+      placeItems: 'center'
+    }}
+  >
+    <Icon name="gear" size={20} />
+  </button>
+)}
+
       {settingsOpen && window.SettingsModal && <window.SettingsModal />}
       {toast && <div className="toast show">{toast.msg}</div>}
     </div>
@@ -130,20 +233,25 @@ function AppShell() {
 }
 
 // ─── Topbar ─────────────────────────────────────────────────
-function DaySpine() {
+function DaySpine({ width = 300, onPickDay }) {
   const { trip, selectedDayIndex } = Store.useStore();
   if (!trip || !trip.days) return null;
   const days = trip.days;
   const sel = selectedDayIndex || 0;
 
   return (
-    <aside style={{
-      width: 300, flexShrink: 0,
-      borderRight: '1px solid var(--outline-variant)',
-      background: 'var(--bg)',
-      display: 'flex', flexDirection: 'column', minHeight: 0,
-      boxShadow: '4px 0 24px rgba(45,73,63,0.05)'
-    }}>
+  <aside style={{
+    width: width,
+    flexShrink: 0,
+    height: '100%',
+    minHeight: 0,
+    overflow: 'hidden',
+    borderRight: '1px solid var(--outline-variant)',
+    background: 'var(--bg)',
+    display: 'flex',
+    flexDirection: 'column',
+    boxShadow: '4px 0 24px rgba(45,73,63,0.05)'
+  }}>
       {/* ── En-tête ── */}
       <div style={{
         padding: '24px 24px 20px',
@@ -170,9 +278,12 @@ function DaySpine() {
 
       {/* ── Timeline ── */}
       <div style={{
-        flex: 1, overflowY: 'auto', padding: '16px 16px 32px',
-        position: 'relative'
-      }}>
+  flex: '1 1 0',
+  minHeight: 0,
+  overflowY: 'auto',
+  padding: '16px 16px 32px',
+  position: 'relative'
+}}>
         {days.map((d, i) => {
           const on = i === sel;
           const past = i < sel;
@@ -190,7 +301,10 @@ function DaySpine() {
                 opacity: past && !on ? 0.55 : 1,
                 cursor: 'pointer'
               }}
-              onClick={() => Store.set({ selectedDayIndex: i })}
+              onClick={() => {
+  Store.set({ selectedDayIndex: i });
+  if (onPickDay) onPickDay();
+}}
             >
               {/* Ligne verticale */}
               {!isLast && (
@@ -331,7 +445,7 @@ function DaySpine() {
   );
 }
 // ─── Boîte à outils (colonne droite, tous onglets) ──────────
-function Toolbox() {
+function Toolbox({ width = 320 }) {
   const st = Store.useStore();
   const trip = st.trip, view = st.view || 'itinerary', selIdx = st.selectedDayIndex || 0;
   if (!trip || !trip.days || !trip.days.length) return null;
@@ -355,6 +469,7 @@ function Toolbox() {
   const [pinned, setPinned] = React.useState(() => loadPins(view));
   const [editMode, setEditMode] = React.useState(false);
   const [done, setDone] = React.useState({});
+  
   /* ── Calculateur d'itinéraire ── */
   const [calcFrom, setCalcFrom] = React.useState('');
   const [calcTo, setCalcTo] = React.useState('');
@@ -705,14 +820,32 @@ function Toolbox() {
   const unpinned = ORDER.filter(id => pinned.indexOf(id) === -1);
 
   return (
-    <aside style={{ width: 320, flexShrink: 0, borderLeft: '1px solid var(--outline-variant)', background: 'var(--bg)', display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
+<aside style={{
+  width: width,
+  flexShrink: 0,
+  height: '100%',
+  minHeight: 0,
+  overflow: 'hidden',
+  borderLeft: '1px solid var(--outline-variant)',
+  background: 'var(--bg)',
+  display: 'flex',
+  flexDirection: 'column'
+}}>
       <div style={{ padding: '16px 16px 8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase', color: 'var(--muted)' }}>Bo{'\u00ee'}te {'\u00e0'} outils</div>
         <button onClick={() => setEditMode(e => !e)} title={editMode ? 'Termin\u00e9' : 'Personnaliser'} style={{ width: 28, height: 28, borderRadius: '50%', background: editMode ? 'var(--accent)' : 'transparent', border: 'none', cursor: 'pointer', color: editMode ? 'var(--accent-ink)' : 'var(--faint)', display: 'grid', placeItems: 'center' }}>
           <Icon name="gear" size={16} />
         </button>
       </div>
-      <div style={{ flex: 1, overflowY: 'auto', padding: '8px 16px 16px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{
+  flex: '1 1 0',
+  minHeight: 0,
+  overflowY: 'auto',
+  padding: '8px 16px 16px',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 16
+}}>
         {pinned.map(id => BLOCKS[id] ? BLOCKS[id].render() : null)}
         {editMode && unpinned.length > 0 && (
           <div style={{ borderRadius: 12, border: '1px dashed var(--outline-variant)', padding: 12 }}>
@@ -736,7 +869,7 @@ function Toolbox() {
   );
 }
 
-function Topbar() {
+function Topbar({ compact = false }) {
   const { user, trips, activeTripId, trip, view, theme = localStorage.getItem('it_theme') || 'light' } = Store.useStore();
   const [authOpen, setAuthOpen] = React.useState(false);
     React.useEffect(() => {
@@ -764,21 +897,32 @@ function Topbar() {
 
   const pseudo = user?.user_metadata?.display_name || user?.email?.split('@')[0] || '';
   const initials = pseudo.slice(0, 2).toUpperCase();
+  const displayName = pseudo.length > 14 ? pseudo.slice(0, 13) + '…' : pseudo;
+  const navLabels = {
+  itinerary: compact ? 'Plan' : 'Itinéraire',
+  map: 'Carte',
+  budget: compact ? '€' : 'Budget',
+  docs: compact ? 'Docs' : 'Docs'
+};
 
   return (
     <header style={{
-      height: 64, flexShrink: 0,
+  height: compact ? 56 : 64,
+  flexShrink: 0,
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      padding: '0 16px',
+      padding: compact ? '0 10px' : '0 16px',
       background: 'var(--topbar)',
       borderBottom: '1px solid var(--outline-variant)',
       position: 'sticky', top: 0, zIndex: 100
     }}>
       {/* ── Gauche : marque + sélecteur voyage ── */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: compact ? 10 : 24, minWidth: 0 }}>
         <div style={{
           fontFamily: 'var(--font-serif)', fontStyle: 'italic',
-          fontSize: 26, lineHeight: '32px', color: 'var(--accent)'
+          fontSize: compact ? 22 : 26,
+lineHeight: compact ? '28px' : '32px',
+color: 'var(--accent)',
+whiteSpace: 'nowrap'
         }}>L'Atelier</div>
 
         {user && (
@@ -795,7 +939,7 @@ function Topbar() {
                 color: 'var(--text)', transition: 'background .15s'
               }}
             >
-              <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 180 }}>
+              <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: compact ? 110 : 180 }}>
                 {trip?.name || (activeTripId ? 'Chargement\u2026' : 'Choisir un voyage')}
               </span>
               <Icon name="chevdown" size={14} style={{ color: 'var(--faint)' }} />
@@ -872,12 +1016,15 @@ function Topbar() {
                 background: on ? 'var(--accent)' : 'transparent',
                 color: on ? 'var(--accent-ink)' : 'var(--muted)',
                 cursor: 'pointer',
-                fontSize: 13, fontWeight: 600, fontFamily: 'inherit',
-                padding: '8px 16px', borderRadius: 999,
+                fontSize: compact ? 12 : 13,
+                fontWeight: 600,
+                fontFamily: 'inherit',
+                padding: compact ? '7px 10px' : '8px 16px',
+                borderRadius: 999,
                 transition: 'all .2s'
               }}
             >
-              {it.label}
+              {navLabels[it.id] || it.label}
             </button>
           );
         })}
@@ -914,7 +1061,7 @@ function Topbar() {
 
             <button
               onClick={() => Store.set({ settingsOpen: true })}
-              title={pseudo}
+              title={!compact && displayName}
               style={{
                 display: 'flex', alignItems: 'center', gap: 8,
                 padding: '6px 12px',

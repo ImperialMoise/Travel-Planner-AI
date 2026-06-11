@@ -45,7 +45,18 @@ const MV_CSS=`
 .mv-map-wrap{flex:1;position:relative;min-width:0;background:var(--inset)}
 #mv-map{position:absolute;inset:0}
 #mv-map .maplibregl-ctrl-attrib{font-size:9px;background:rgba(255,255,255,.7);border-radius:8px 0 0 0}
-.mv-card{width:320px;background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:0 18px 50px rgba(31,46,40,.22);overflow:hidden}
+.mv-card{
+  width:320px;
+  max-width:calc(100vw - 36px);
+  max-height:calc(100dvh - 180px);
+  display:flex;
+  flex-direction:column;
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:18px;
+  box-shadow:0 18px 50px rgba(31,46,40,.22);
+  overflow:hidden;
+}
 .mv-card .mv-hero{position:relative;height:120px;background:linear-gradient(150deg,hsl(152,36%,64%),hsl(152,40%,50%))}
 .mv-card.mv-r-busan .mv-hero{background:linear-gradient(150deg,hsl(30,42%,62%),hsl(30,46%,48%))}
 .mv-card.mv-r-vol .mv-hero{background:linear-gradient(150deg,hsl(212,28%,60%),hsl(212,32%,46%))}
@@ -55,14 +66,25 @@ const MV_CSS=`
 .mv-card .mv-hero-pill{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:700;margin-bottom:5px;text-shadow:0 1px 6px rgba(0,0,0,.5)}
 .mv-card .mv-hj{font-family:var(--font-serif);font-style:italic;font-size:28px;line-height:.82;text-shadow:0 2px 12px rgba(0,0,0,.5)}
 .mv-card .mv-hn{font-family:var(--font-serif);font-style:italic;font-size:17.5px;line-height:1.05;text-shadow:0 2px 10px rgba(0,0,0,.55)}
-.mv-card-body{padding:13px 15px 15px;max-height:160px;overflow-y:auto}
-.mv-card-body.expanded{max-height:none}
+.mv-card-body{
+  padding:13px 15px 15px;
+  max-height:220px;
+  overflow-y:auto;
+  min-height:0;
+}
+.mv-card-body.expanded{max-height:calc(100dvh - 340px)}
 .mv-card-body::-webkit-scrollbar{width:3px}
 .mv-card-body::-webkit-scrollbar-thumb{background:var(--outline-variant);border-radius:3px}
 .mv-card-note{font-size:12px;color:var(--muted);font-style:italic;line-height:1.5;margin-bottom:11px}
 .mv-step-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line2);cursor:pointer}
 .mv-step-row:last-child{border-bottom:none}
 .mv-step-row:hover .mv-step-name{color:var(--accent)}
+.mv-step-row[data-missing="1"]{border:1px dashed var(--outline-variant);border-radius:10px;padding:8px 10px;margin:6px 0;background:var(--accent-soft);}
+.mv-step-row[data-missing="1"] .mv-step-ic{background:var(--card);}
+.mv-step-row[data-missing="1"]:hover{background:var(--accent);}
+.mv-step-row[data-missing="1"]:hover .mv-step-name,
+.mv-step-row[data-missing="1"]:hover .mv-step-sub,
+.mv-step-row[data-missing="1"]:hover .mv-step-time{color:var(--accent-ink);}
 .mv-step-ic{width:30px;height:30px;border-radius:9px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;flex-shrink:0}
 .mv-step-name{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)}
 .mv-step-sub{font-size:11px;color:var(--muted)}
@@ -209,6 +231,21 @@ function MapView(){
 
   const [sel,setSel]=React.useState(null);
   const { selectedDayIndex, mapFocusStepId, mapLocateStep, mapPickResult } = Store.useStore();
+  const locatingStepName = React.useMemo(function() {
+  if (!mapLocateStep || !realTrip || !Array.isArray(realTrip.days)) return '';
+
+  for (const day of realTrip.days) {
+    const step = (day.steps || []).find(function(item) {
+      return String(item.id || '') === String(mapLocateStep.stepId || '');
+    });
+
+    if (step) {
+      return step.label || step.lieu || step.arrivee || step.depart || step.type || 'cette étape';
+    }
+  }
+
+  return '';
+}, [mapLocateStep, realTrip]);
   const firstRender=React.useRef(true);
   React.useEffect(()=>{
   if (firstRender.current) {
@@ -337,7 +374,117 @@ React.useEffect(() => {
 
   // ── Cards ──
   function renderWelcome(){if(!cardRef.current)return;cardRef.current.innerHTML='<div class="mv-card"><div class="mv-welcome-pad"><div style="font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--accent)">Le voyage</div><div style="font-family:var(--font-serif);font-style:italic;font-size:24px;margin-top:3px;color:var(--text)">'+T.name+'</div><div class="mv-welcome-line">Un fil d\'or relie chaque étape. Cliquez un jour pour plonger du globe jusqu\'au niveau des rues.</div><div class="mv-legend"><div class="mv-lg-row"><span class="mv-lg-dot" style="background:var(--accent)"></span>Séoul & environs</div><div class="mv-lg-row"><span class="mv-lg-dot" style="background:#c98a3c"></span>Busan, l\'échappée du Sud</div><div class="mv-lg-row"><span class="mv-lg-dot" style="background:var(--card);border-color:var(--faint)"></span>Vols Paris ⇄ Séoul</div></div></div></div>';}
-  function renderDayCard(i){if(!cardRef.current)return;const d=T.days[i];const rc=mvRegClass(d.region);const pc=d.region==='Busan'?'#c98a3c':d.region==='Vol'?'var(--faint)':'var(--accent)';let rows='';d.steps.forEach((s,k)=>{rows+='<div class="mv-step-row" data-si="'+k+'"><div class="mv-step-ic">'+mvSvg(mvStepIcon(s),16)+'</div><div style="flex:1;min-width:0"><div class="mv-step-name">'+s.l+'</div><div class="mv-step-sub">'+(s.s||'')+'</div></div><div class="mv-step-time">'+(s.time||'')+'</div></div>';});cardRef.current.innerHTML='<div class="mv-card '+rc+'"><div class="mv-hero"><div class="mv-hero-ov"></div><div class="mv-hero-tag">'+d.tag+'</div><div class="mv-hero-cap"><div class="mv-hero-pill"><span class="pdot" style="background:'+pc+'"></span>'+d.wd+' '+mvFmtDate(d.date)+' · '+d.region+'</div><div style="display:flex;align-items:flex-end;gap:9px"><span class="mv-hj">J'+d.n+'</span><span class="mv-hn">'+d.title+'</span></div></div></div><div class="mv-card-body">'+(d.note?'<div class="mv-card-note">'+d.note+'</div>':'')+rows+'<div class="mv-card-foot"><button id="mv-fly-btn">'+mvSvg('route',14)+'Recadrer</button>'+(d.steps.length>2?'<button id="mv-expand-btn">'+mvSvg('chevdown',12)+'Tout voir ('+d.steps.length+')</button>':'')+'</div></div></div>';const map=mapRef.current;cardRef.current.querySelectorAll('.mv-step-row').forEach(r=>{r.addEventListener('click',()=>{const s=d.steps[+r.dataset.si];if(s.c&&map)map.flyTo({center:s.c,zoom:Math.max(map.getZoom(),15.5),duration:1400});});});const fb=document.getElementById('mv-fly-btn');if(fb)fb.addEventListener('click',()=>flyDay(i));const eb=document.getElementById('mv-expand-btn');const cbody=cardRef.current.querySelector('.mv-card-body');if(eb&&cbody){eb.addEventListener('click',function(){var ex=cbody.classList.toggle('expanded');eb.innerHTML=ex?(mvSvg('chevdown',12)+'Replier'):(mvSvg('chevdown',12)+'Tout voir ('+d.steps.length+')');if(ex)eb.querySelector('svg').style.transform='rotate(180deg)';});}/* Auto-image */if(window.fetchAutoImage){var imgKey='hero_img_mv_'+i;var cached=localStorage.getItem(imgKey);function applyImg(url){var hero=cardRef.current&&cardRef.current.querySelector('.mv-hero');if(hero){hero.style.backgroundImage='url('+url+')';hero.style.backgroundSize='cover';hero.style.backgroundPosition='center';}}if(cached){try{applyImg(JSON.parse(cached).url);}catch(e){}}else{var q=d.title+(d.region&&d.region!=='Vol'?' '+d.region:'');fetchAutoImage(q).then(function(result){if(result&&result.url){localStorage.setItem(imgKey,JSON.stringify(result));applyImg(result.url);}});}}}
+  function renderDayCard(i) {
+  if (!cardRef.current) return;
+
+  const d = T.days[i];
+  const rc = mvRegClass(d.region);
+  const pc = d.region === 'Busan' ? '#c98a3c' : d.region === 'Vol' ? 'var(--faint)' : 'var(--accent)';
+
+  let rows = '';
+
+  d.steps.forEach((s, k) => {
+    const hasCoords = !!s.c;
+
+    rows += '<div class="mv-step-row" data-si="' + k + '" data-missing="' + (!hasCoords ? '1' : '0') + '">' +
+      '<div class="mv-step-ic">' + mvSvg(hasCoords ? mvStepIcon(s) : 'pin', 16) + '</div>' +
+      '<div style="flex:1;min-width:0">' +
+        '<div class="mv-step-name">' + (s.l || 'Étape') + '</div>' +
+        '<div class="mv-step-sub">' + (hasCoords ? (s.s || '') : 'Position à définir') + '</div>' +
+      '</div>' +
+      '<div class="mv-step-time">' + (hasCoords ? (s.time || '') : 'À localiser') + '</div>' +
+    '</div>';
+  });
+
+  cardRef.current.innerHTML =
+    '<div class="mv-card ' + rc + '">' +
+      '<div class="mv-hero">' +
+        '<div class="mv-hero-ov"></div>' +
+        '<div class="mv-hero-tag">' + d.tag + '</div>' +
+        '<div class="mv-hero-cap">' +
+          '<div class="mv-hero-pill"><span class="pdot" style="background:' + pc + '"></span>' + d.wd + ' ' + mvFmtDate(d.date) + ' · ' + d.region + '</div>' +
+          '<div style="display:flex;align-items:flex-end;gap:9px"><span class="mv-hj">J' + d.n + '</span><span class="mv-hn">' + d.title + '</span></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="mv-card-body">' +
+        (d.note ? '<div class="mv-card-note">' + d.note + '</div>' : '') +
+        rows +
+        '<div class="mv-card-foot">' +
+          '<button id="mv-fly-btn">' + mvSvg('route', 14) + 'Recadrer</button>' +
+          (d.steps.length > 2 ? '<button id="mv-expand-btn">' + mvSvg('chevdown', 12) + 'Tout voir (' + d.steps.length + ')</button>' : '') +
+        '</div>' +
+      '</div>' +
+    '</div>';
+
+  const map = mapRef.current;
+
+  cardRef.current.querySelectorAll('.mv-step-row').forEach(r => {
+    r.addEventListener('click', () => {
+      const s = d.steps[+r.dataset.si];
+
+      if (s.c && map) {
+        map.flyTo({
+          center: s.c,
+          zoom: Math.max(map.getZoom(), 15.5),
+          duration: 1400
+        });
+        return;
+      }
+
+      Store.set({
+        mapPickMode: 'locate-step',
+        mapLocateStep: {
+          tripId: realTrip && realTrip.id,
+          dayId: d.id,
+          stepId: s.id || null
+        }
+      });
+    });
+  });
+
+  const fb = document.getElementById('mv-fly-btn');
+  if (fb) fb.addEventListener('click', () => flyDay(i));
+
+  const eb = document.getElementById('mv-expand-btn');
+  const cbody = cardRef.current.querySelector('.mv-card-body');
+
+  if (eb && cbody) {
+    eb.addEventListener('click', function() {
+      var ex = cbody.classList.toggle('expanded');
+      eb.innerHTML = ex
+        ? (mvSvg('chevdown', 12) + 'Replier')
+        : (mvSvg('chevdown', 12) + 'Tout voir (' + d.steps.length + ')');
+
+      if (ex) eb.querySelector('svg').style.transform = 'rotate(180deg)';
+    });
+  }
+
+  if (window.fetchAutoImage) {
+    var imgKey = 'hero_img_mv_' + i;
+    var cached = localStorage.getItem(imgKey);
+
+    function applyImg(url) {
+      var hero = cardRef.current && cardRef.current.querySelector('.mv-hero');
+      if (hero) {
+        hero.style.backgroundImage = 'url(' + url + ')';
+        hero.style.backgroundSize = 'cover';
+        hero.style.backgroundPosition = 'center';
+      }
+    }
+
+    if (cached) {
+      try { applyImg(JSON.parse(cached).url); } catch(e) {}
+    } else {
+      var q = d.title + (d.region && d.region !== 'Vol' ? ' ' + d.region : '');
+      fetchAutoImage(q).then(function(result) {
+        if (result && result.url) {
+          localStorage.setItem(imgKey, JSON.stringify(result));
+          applyImg(result.url);
+        }
+      });
+    }
+  }
+}
 
   // ── Navigation ──
   function flyDay(i){const map=mapRef.current;if(!map)return;const d=T.days[i];var pts=d.steps.filter(function(s){return s.c;}).map(function(s){return s.c;});if(pts.length>1){var b=new maplibregl.LngLatBounds();pts.forEach(function(p){b.extend(p);});map.fitBounds(b,{padding:{top:80,bottom:140,left:60,right:60},pitch:42,bearing:0,duration:2200,maxZoom:15.5});}else{map.flyTo({center:d.c,zoom:d.z,pitch:d.region==='Vol'?0:42,bearing:0,duration:2200,curve:1.5,essential:true});}}
@@ -391,7 +538,51 @@ React.useEffect(() => {
 
   // ── Search ──
   function doSearch(q){setQuery(q);clearTimeout(searchTimer.current);if(!q.trim()){setResults([]);return;}searchTimer.current=setTimeout(async()=>{try{const r=await fetch('https://api.maptiler.com/geocoding/'+encodeURIComponent(q)+'.json?key='+MT_KEY+'&language=fr&limit=6');const j=await r.json();setResults(j.features||[]);}catch(e){setResults([]);}},350);}
-  function pickResult(f){setResults([]);setQuery('');const map=mapRef.current;if(!map)return;map.flyTo({center:f.center,zoom:15,duration:1600});setFoundPlace({name:f.text||'',address:f.place_name||'',lat:f.center[1],lng:f.center[0]});setPickingDay(false);setEditorOpen(null);}
+  function pickMapPoint(text, coords, address) {
+  const map = mapRef.current;
+  if (!map || !coords) return;
+
+  const pick = Store.get().mapPickMode;
+
+  if (pick) {
+    Store.set({
+      mapPickResult: {
+        field: pick,
+        text: text || address || 'Point sélectionné',
+        coords: coords
+      },
+      mapPickMode: null
+    });
+    return;
+  }
+
+  map.flyTo({
+    center: coords,
+    zoom: 15,
+    duration: 1600
+  });
+
+  setFoundPlace({
+    name: text || '',
+    address: address || '',
+    lat: coords[1],
+    lng: coords[0]
+  });
+
+  setPickingDay(false);
+  setEditorOpen(null);
+}
+
+function pickResult(f) {
+  setResults([]);
+  setQuery('');
+
+  pickMapPoint(
+    f.text || '',
+    f.center,
+    f.place_name || ''
+  );
+}
   function openEditorForDay(i){if(!realTrip)return;const day=realTrip.days[i];if(!day)return;setPickingDay(false);setEditorOpen({dayId:day.id,dayIndex:i,stepCount:day.steps.length});}
   function onEditorClose(){setEditorOpen(null);setFoundPlace(null);}
   function onEditorSaved(){if(realTrip)window.SB.loadTrip(realTrip.id).then(t=>Store.set({trip:t}));}
@@ -421,6 +612,12 @@ function initContent() {
 }
     map.on('load',initContent);setTimeout(initContent,3000);
     map.on('click',e=>{
+      if (e.originalEvent && e.originalEvent.target && e.originalEvent.target.closest && e.originalEvent.target.closest('.mv-glass, .mv-card, button, input')) {
+        return;
+      }
+
+      /* Mode pick pour le calculateur d'itinéraire */
+      var pick=Store.get().mapPickMode;
       /* Mode pick pour le calculateur d'itinéraire */
       var pick=Store.get().mapPickMode;
       if(pick){
@@ -430,10 +627,10 @@ function initContent() {
           .then(function(r){return r.json();})
           .then(function(j){
             var name=(j.features&&j.features[0])?(j.features[0].place_name||j.features[0].text):(lat.toFixed(4)+', '+lng.toFixed(4));
-            Store.set({mapPickResult:{field:pick,text:name,coords:[lng,lat]},mapPickMode:null});
+            pickMapPoint(name, [lng, lat], name);
           })
           .catch(function(){
-            Store.set({mapPickResult:{field:pick,text:lat.toFixed(4)+', '+lng.toFixed(4),coords:[lng,lat]},mapPickMode:null});
+            pickMapPoint(lat.toFixed(4) + ', ' + lng.toFixed(4), [lng, lat], '');
           });
         return;
       }
@@ -521,20 +718,29 @@ if(!realTrip)return null;
 
       const updatedTrip = await window.SB.loadTrip(realTrip.id);
 
-      Store.set({
-        trip: updatedTrip,
-        mapPickResult: null,
-        mapLocateStep: null,
-        mapPickMode: null,
-        mapFocusStepId: sourceStep.id
-      });
+      const updatedDayIndex = (updatedTrip.days || []).findIndex(function(item) {
+  return String(item.id) === String(sourceDay.id);
+});
 
-      if (Store.showToast) Store.showToast('Étape localisée.');
+Store.set({
+  trip: updatedTrip,
+  selectedDayIndex: updatedDayIndex >= 0 ? updatedDayIndex : selectedDayIndex,
+  mapPickResult: null,
+  mapLocateStep: null,
+  mapPickMode: null,
+  mapFocusStepId: sourceStep.id
+});
+      if (Store.showToast) Store.showToast('Étape localisée sur la carte.');
     } catch (error) {
-      console.error('Erreur localisation étape', error);
-      Store.set({ mapPickResult: null, mapLocateStep: null, mapPickMode: null });
-      alert('Impossible de localiser cette étape.');
-    }
+  console.error('Erreur localisation étape', error);
+  Store.set({ mapPickResult: null, mapLocateStep: null, mapPickMode: null });
+
+  if (Store.showToast) {
+    Store.showToast('Impossible de localiser cette étape.');
+  } else {
+    alert('Impossible de localiser cette étape.');
+  }
+}
   })();
 }, [mapPickResult, mapLocateStep, realTrip && realTrip.id]);
   React.useEffect(()=>{
@@ -545,7 +751,15 @@ if(!realTrip)return null;
   // Curseur pointeur sur les POIs
   React.useEffect(()=>{
     const map=mapRef.current;if(!map)return;
-    const onMove=e=>{const fs=map.queryRenderedFeatures(e.point).filter(f=>f.layer.type==='symbol'&&(f.properties.name||f.properties['name:fr']));map.getCanvas().style.cursor=fs.length?'pointer':'';};
+    const onMove=e=>{
+  if (Store.get().mapPickMode) {
+    map.getCanvas().style.cursor = 'crosshair';
+    return;
+  }
+
+  const fs=map.queryRenderedFeatures(e.point).filter(f=>f.layer.type==='symbol'&&(f.properties.name||f.properties['name:fr']));
+  map.getCanvas().style.cursor=fs.length?'pointer':'';
+};
     map.on('mousemove',onMove);
     return()=>map.off('mousemove',onMove);
   });
@@ -558,19 +772,21 @@ if(!realTrip)return null;
       {/* Bannière mode pick */}
       {pickMode && (
         <div className="mv-glass" style={{
-          position:'absolute', top:14, left:'50%', transform:'translateX(-50%)', zIndex:20,
+          position:'absolute', top:66, left:'50%', transform:'translateX(-50%)', zIndex:20,
           padding:'10px 20px', borderRadius:999, display:'flex', alignItems:'center', gap:10,
           fontSize:13, fontWeight:700, color:'var(--accent)',
           boxShadow:'0 4px 20px rgba(0,0,0,.12)'
         }}>
           <Icon name="pin" size={16}/>
-          Cliquez sur la carte pour choisir un point
-          <button onClick={()=>Store.set({mapPickMode:null})} style={{border:'none',background:'transparent',color:'var(--faint)',cursor:'pointer',padding:2,marginLeft:4}}><Icon name="x" size={14}/></button>
+          {pickMode === 'locate-step'
+  ? 'Cliquez sur la position exacte de ' + (locatingStepName || 'cette étape')
+  : 'Cliquez sur la carte pour choisir un point'}
+          onClick={() => Store.set({ mapPickMode: null, mapLocateStep: null })} style={{border:'none',background:'transparent',color:'var(--faint)',cursor:'pointer',padding:2,marginLeft:4}}><Icon name="x" size={14}/></button>
         </div>
       )}
 
       {/* ═══ RECHERCHE (centre haut) ═══ */}
-      <div style={{position:'absolute',top:14,left:'50%',transform:'translateX(-50%)',zIndex:7,width:380,maxWidth:'calc(100% - 200px)'}}>
+      <div style={{position:'absolute',top:14,left:'50%',transform:'translateX(-50%)',zIndex:22,width:380,maxWidth:'calc(100% - 200px)'}}>
         <div style={{position:'relative'}}>
           <input value={query} onChange={e=>doSearch(e.target.value)} placeholder="Rechercher un lieu\u2026" className="mv-glass" style={{width:'100%',padding:'10px 14px 10px 38px',borderRadius:999,color:'var(--text)',fontFamily:'inherit',fontSize:13.5,outline:'none'}}/>
           <Icon name="pin" size={14} style={{position:'absolute',left:13,top:12,color:'var(--accent)'}}/>
@@ -898,7 +1114,10 @@ if(!realTrip)return null;
     position:'absolute',
     left:16,
     bottom:16,
-    zIndex:5
+    zIndex:5,
+    maxWidth:'calc(100% - 32px)',
+    maxHeight:'calc(100% - 96px)',
+    pointerEvents:'auto'
   }}
 />
 

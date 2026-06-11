@@ -628,223 +628,40 @@ function AtelierV2() {
 
   /* ——— step card (Stitch) ——— */
    function StepCard({ s: step }) {
-    var v = stepView(step);
-    var accentMap = { transport: 'var(--tertiary-soft)', logement: 'var(--accent)', restaurant: 'var(--tan)', activite: 'var(--accent)', autre: 'var(--faint)' };
-    var ac = accentMap[step.type] || 'var(--faint)';
-    var timeText = (v.range || '\u2014').split('\u2013')[0];
-    var hasCoords = Number.isFinite(Number(step.lat)) && Number.isFinite(Number(step.lng));
+  var v = stepView(step);
+  var accentMap = { transport: 'var(--tertiary-soft)', logement: 'var(--accent)', restaurant: 'var(--tan)', activite: 'var(--accent)', autre: 'var(--faint)' };
+  var ac = accentMap[step.type] || 'var(--faint)';
+  var timeText = (v.range || '\u2014').split('\u2013')[0];
+  var hasCoords = Number.isFinite(Number(step.lat)) && Number.isFinite(Number(step.lng));
+  var needsLocation = !hasCoords;
 
-    return React.createElement('article', {
-      onClick: function() { setEditor({ open: true, dayId: day.id, step: step }); },
-      style: {
-        background: 'var(--card)',
-        borderRadius: 12,
-        padding: '18px 20px',
-        boxShadow: 'var(--shadow)',
-        border: '1px solid var(--outline-variant)',
-        display: 'flex',
-        gap: 16,
-        position: 'relative',
-        overflow: 'hidden',
-        cursor: 'pointer',
-        transition: 'box-shadow .3s'
-      }
-    },
-      React.createElement('div', {
-        style: {
-          position: 'absolute',
-          left: 0,
-          top: 0,
-          bottom: 0,
-          width: 3,
-          background: ac
-        }
-      }),
-
-      React.createElement('div', {
-        style: {
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          minWidth: 60,
-          paddingTop: 2
-        }
-      },
-        React.createElement('div', {
-          style: {
-            fontFamily: 'var(--font-mono)',
-            fontSize: 11,
-            lineHeight: '14px',
-            fontWeight: 700,
-            color: ac
-          }
-        }, timeText),
-        React.createElement('div', {
-          style: {
-            width: 1,
-            flex: 1,
-            background: 'var(--outline-variant)',
-            margin: '8px 0',
-            minHeight: 12
-          }
-        }),
-        React.createElement('div', { style: { color: ac } },
-          React.createElement(Icon, { name: v.icon, size: 20 })
-        )
-      ),
-
-      React.createElement('div', { style: { flex: 1, minWidth: 0 } },
-        React.createElement('div', {
-          style: {
-            fontSize: 11,
-            fontWeight: 700,
-            letterSpacing: '.16em',
-            textTransform: 'uppercase',
-            color: ac,
-            marginBottom: 4
-          }
-        }, v.kind),
-
-        step.type === 'transport' && !step.label
-          ? React.createElement('div', {
-              style: {
-                fontFamily: 'var(--font-serif)',
-                fontSize: 20,
-                lineHeight: '28px',
-                color: 'var(--text)',
-                marginBottom: 8,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8
-              }
-            },
-              React.createElement('span', null, step.from),
-              React.createElement(Icon, { name: 'arrowsm', size: 16, style: { color: 'var(--faint)' } }),
-              React.createElement('span', null, step.to)
-            )
-          : React.createElement('div', {
-              style: {
-                fontFamily: 'var(--font-serif)',
-                fontSize: 20,
-                lineHeight: '28px',
-                color: 'var(--text)',
-                marginBottom: 8
-              }
-            }, v.title),
-
-        v.sub && React.createElement('p', {
-          style: {
-            fontSize: 13.5,
-            lineHeight: '20px',
-            color: 'var(--muted)',
-            marginBottom: 10
-          }
-        }, v.sub),
-
-        step.note && React.createElement('p', {
-          style: {
-            fontSize: 13.5,
-            lineHeight: '20px',
-            color: 'var(--muted)',
-            fontStyle: 'italic',
-            marginBottom: 10
-          }
-        }, step.note),
-
-        React.createElement('div', {
-          style: {
-            display: 'flex',
-            flexWrap: 'wrap',
-            alignItems: 'center',
-            gap: 8
-          }
-        },
-          v.badge && React.createElement('span', {
-            style: {
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 5,
-              padding: '4px 10px',
-              borderRadius: 6,
-              background: 'var(--soft)',
-              color: 'var(--muted)',
-              fontFamily: 'var(--font-mono)',
-              fontSize: 10
-            }
-          },
-            React.createElement(Icon, { name: 'moon', size: 12 }),
-            v.badge
-          ),
-
-          step.dur && React.createElement('span', {
-            style: {
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 5,
-              padding: '4px 10px',
-              borderRadius: 6,
-              background: 'var(--soft)',
-              color: 'var(--muted)',
-              fontFamily: 'var(--font-mono)',
-              fontSize: 10
-            }
-          },
-            React.createElement(Icon, { name: 'clock', size: 12 }),
-            step.dur
-          ),
-
-          v.range && v.range.indexOf('\u2013') > -1 && React.createElement('span', {
-            style: {
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 5,
-              padding: '4px 10px',
-              borderRadius: 6,
-              background: 'var(--soft)',
-              color: 'var(--muted)',
-              fontFamily: 'var(--font-mono)',
-              fontSize: 10
-            }
-          },
-            React.createElement(Icon, { name: 'clock', size: 12 }),
-            v.range
-          ),
-
-          React.createElement('button', {
-  type: 'button',
-  onClick: function(e) {
+  function openStepOnMap(e) {
     e.stopPropagation();
+
+    if (!hasCoords) {
+      Store.set({
+        view: 'map',
+        selectedDayIndex: sel,
+        mapPickMode: 'locate-step',
+        mapLocateStep: {
+          tripId: realTrip && realTrip.id,
+          dayId: day && day.id,
+          stepId: step.id || null
+        }
+      });
+      return;
+    }
+
     Store.set({
       view: 'map',
       selectedDayIndex: sel,
       mapFocusStepId: step.id || null
     });
-  },
-  title: hasCoords ? 'Voir sur la carte' : 'Ouvrir la carte',
-  style: {
-    marginLeft: 'auto',
-    border: `1px solid ${C.line}`,
-    background: C.inset,
-    color: C.text,
-    borderRadius: 999,
-    padding: '6px 10px',
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: 6,
-    cursor: 'pointer',
-    fontFamily: 'inherit',
-    fontSize: 11,
-    fontWeight: 800
   }
-},
-  React.createElement('span', { style: { fontSize: 14, lineHeight: 1 } }, '⌖'),
-  'Carte'
-),
 
-!hasCoords && React.createElement('button', {
-  type: 'button',
-  onClick: function(e) {
+  function locateStep(e) {
     e.stopPropagation();
+
     Store.set({
       view: 'map',
       selectedDayIndex: sel,
@@ -855,30 +672,252 @@ function AtelierV2() {
         stepId: step.id || null
       }
     });
-  },
-  title: 'Localiser cette étape',
-  style: {
-    border: `1px solid ${C.line}`,
-    background: C.accentSoft,
-    color: C.accent,
-    borderRadius: 999,
-    padding: '6px 10px',
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: 6,
-    cursor: 'pointer',
-    fontFamily: 'inherit',
-    fontSize: 11,
-    fontWeight: 800
   }
-},
-  React.createElement('span', { style: { fontSize: 14, lineHeight: 1 } }, '＋'),
-  'Localiser'
-)
+
+  return React.createElement('article', {
+    onClick: function() { setEditor({ open: true, dayId: day.id, step: step }); },
+    style: {
+      background: 'var(--card)',
+      borderRadius: 12,
+      padding: '18px 20px',
+      boxShadow: 'var(--shadow)',
+      border: '1px solid var(--outline-variant)',
+      display: 'flex',
+      gap: 16,
+      position: 'relative',
+      overflow: 'hidden',
+      cursor: 'pointer',
+      transition: 'box-shadow .3s'
+    }
+  },
+    React.createElement('div', {
+      style: {
+        position: 'absolute',
+        left: 0,
+        top: 0,
+        bottom: 0,
+        width: 3,
+        background: ac
+      }
+    }),
+
+    React.createElement('div', {
+      style: {
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        minWidth: 60,
+        paddingTop: 2
+      }
+    },
+      React.createElement('div', {
+        style: {
+          fontFamily: 'var(--font-mono)',
+          fontSize: 11,
+          lineHeight: '14px',
+          fontWeight: 700,
+          color: ac
+        }
+      }, timeText),
+      React.createElement('div', {
+        style: {
+          width: 1,
+          flex: 1,
+          background: 'var(--outline-variant)',
+          margin: '8px 0',
+          minHeight: 12
+        }
+      }),
+      React.createElement('div', { style: { color: ac } },
+        React.createElement(Icon, { name: v.icon, size: 20 })
+      )
+    ),
+
+    React.createElement('div', { style: { flex: 1, minWidth: 0 } },
+      React.createElement('div', {
+        style: {
+          fontSize: 11,
+          fontWeight: 700,
+          letterSpacing: '.16em',
+          textTransform: 'uppercase',
+          color: ac,
+          marginBottom: 4
+        }
+      }, v.kind),
+
+      step.type === 'transport' && !step.label
+        ? React.createElement('div', {
+            style: {
+              fontFamily: 'var(--font-serif)',
+              fontSize: 20,
+              lineHeight: '28px',
+              color: 'var(--text)',
+              marginBottom: 8,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8
+            }
+          },
+            React.createElement('span', null, step.from),
+            React.createElement(Icon, { name: 'arrowsm', size: 16, style: { color: 'var(--faint)' } }),
+            React.createElement('span', null, step.to)
+          )
+        : React.createElement('div', {
+            style: {
+              fontFamily: 'var(--font-serif)',
+              fontSize: 20,
+              lineHeight: '28px',
+              color: 'var(--text)',
+              marginBottom: 8
+            }
+          }, v.title),
+
+      v.sub && React.createElement('p', {
+        style: {
+          fontSize: 13.5,
+          lineHeight: '20px',
+          color: 'var(--muted)',
+          marginBottom: 10
+        }
+      }, v.sub),
+
+      step.note && React.createElement('p', {
+        style: {
+          fontSize: 13.5,
+          lineHeight: '20px',
+          color: 'var(--muted)',
+          fontStyle: 'italic',
+          marginBottom: 10
+        }
+      }, step.note),
+
+      React.createElement('div', {
+        style: {
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          gap: 8
+        }
+      },
+        v.badge && React.createElement('span', {
+          style: {
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 5,
+            padding: '4px 10px',
+            borderRadius: 6,
+            background: 'var(--soft)',
+            color: 'var(--muted)',
+            fontFamily: 'var(--font-mono)',
+            fontSize: 10
+          }
+        },
+          React.createElement(Icon, { name: 'moon', size: 12 }),
+          v.badge
+        ),
+
+        step.dur && React.createElement('span', {
+          style: {
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 5,
+            padding: '4px 10px',
+            borderRadius: 6,
+            background: 'var(--soft)',
+            color: 'var(--muted)',
+            fontFamily: 'var(--font-mono)',
+            fontSize: 10
+          }
+        },
+          React.createElement(Icon, { name: 'clock', size: 12 }),
+          step.dur
+        ),
+
+        v.range && v.range.indexOf('\u2013') > -1 && React.createElement('span', {
+          style: {
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 5,
+            padding: '4px 10px',
+            borderRadius: 6,
+            background: 'var(--soft)',
+            color: 'var(--muted)',
+            fontFamily: 'var(--font-mono)',
+            fontSize: 10
+          }
+        },
+          React.createElement(Icon, { name: 'clock', size: 12 }),
+          v.range
+        ),
+
+        needsLocation && React.createElement('span', {
+          style: {
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 5,
+            padding: '4px 10px',
+            borderRadius: 999,
+            background: C.accentSoft,
+            color: C.accent,
+            fontFamily: 'var(--font-mono)',
+            fontSize: 10,
+            fontWeight: 800
+          }
+        },
+          React.createElement('span', { style: { fontSize: 12, lineHeight: 1 } }, '⌖'),
+          'À localiser'
+        ),
+
+        React.createElement('button', {
+          type: 'button',
+          onClick: openStepOnMap,
+          title: hasCoords ? 'Voir sur la carte' : 'Localiser cette étape',
+          style: {
+            marginLeft: 'auto',
+            border: `1px solid ${C.line}`,
+            background: C.inset,
+            color: C.text,
+            borderRadius: 999,
+            padding: '6px 10px',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            cursor: 'pointer',
+            fontFamily: 'inherit',
+            fontSize: 11,
+            fontWeight: 800
+          }
+        },
+          React.createElement('span', { style: { fontSize: 14, lineHeight: 1 } }, '⌖'),
+          'Carte'
+        ),
+
+        needsLocation && React.createElement('button', {
+          type: 'button',
+          onClick: locateStep,
+          title: 'Choisir la position de cette étape',
+          style: {
+            border: `1px solid ${C.line}`,
+            background: C.accentSoft,
+            color: C.accent,
+            borderRadius: 999,
+            padding: '6px 10px',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            cursor: 'pointer',
+            fontFamily: 'inherit',
+            fontSize: 11,
+            fontWeight: 800
+          }
+        },
+          React.createElement('span', { style: { fontSize: 14, lineHeight: 1 } }, '+'),
+          'Localiser'
         )
       )
-    );
-  }
+    )
+  );
+}
 
   /* ——— blocs épinglables ——— */
   const dayPts = (() => {

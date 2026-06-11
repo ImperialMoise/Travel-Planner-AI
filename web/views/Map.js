@@ -208,9 +208,24 @@ function MapView(){
   const T=tripToMapTrip(realTrip);
 
   const [sel,setSel]=React.useState(null);
-  const {selectedDayIndex}=Store.useStore();
+  const {selectedDayIndex, mapFocusStepId}=Store.useStore();
   const firstRender=React.useRef(true);
-  React.useEffect(()=>{if(firstRender.current){firstRender.current=false;return;}if(selectedDayIndex!=null&&selectedDayIndex!==sel){doSelect(selectedDayIndex,true);};},[selectedDayIndex]);
+  React.useEffect(()=>{
+  if (firstRender.current) {
+    firstRender.current = false;
+    return;
+  }
+
+  if (selectedDayIndex != null && selectedDayIndex !== sel) {
+    doSelect(selectedDayIndex, true);
+  }
+}, [selectedDayIndex]);
+
+React.useEffect(()=>{
+  if (!mapFocusStepId) return;
+  focusStepById(mapFocusStepId);
+}, [mapFocusStepId, T]);
+
   const [curStyle,setCurStyle]=React.useState('minimal');
   const [layersOpen,setLayersOpen]=React.useState(false);
   const [query,setQuery]=React.useState('');
@@ -321,6 +336,44 @@ function MapView(){
 
   // ── Navigation ──
   function flyDay(i){const map=mapRef.current;if(!map)return;const d=T.days[i];var pts=d.steps.filter(function(s){return s.c;}).map(function(s){return s.c;});if(pts.length>1){var b=new maplibregl.LngLatBounds();pts.forEach(function(p){b.extend(p);});map.fitBounds(b,{padding:{top:80,bottom:140,left:60,right:60},pitch:42,bearing:0,duration:2200,maxZoom:15.5});}else{map.flyTo({center:d.c,zoom:d.z,pitch:d.region==='Vol'?0:42,bearing:0,duration:2200,curve:1.5,essential:true});}}
+    function focusStepById(stepId) {
+    const map = mapRef.current;
+    if (!map || !stepId || !T || !T.days) return false;
+
+    for (let dayIndex = 0; dayIndex < T.days.length; dayIndex++) {
+      const day = T.days[dayIndex];
+      const stepIndex = (day.steps || []).findIndex(function(step) {
+        return String(step.id || '') === String(stepId || '');
+      });
+
+      if (stepIndex === -1) continue;
+
+      const step = day.steps[stepIndex];
+
+      doSelect(dayIndex, false);
+
+      if (step.c) {
+        spinRef.current = false;
+        map.flyTo({
+          center: step.c,
+          zoom: Math.max(map.getZoom(), 16),
+          pitch: 42,
+          duration: 1200,
+          essential: true
+        });
+      } else {
+        flyDay(dayIndex);
+        Store.showToast && Store.showToast('Cette étape n’a pas encore de localisation.');
+      }
+
+      Store.set({ mapFocusStepId: null });
+      return true;
+    }
+
+    Store.set({ mapFocusStepId: null });
+    return false;
+  }
+
   function doSelect(i,fly){spinRef.current=false;setSel(i);Store.set({selectedDayIndex:i});const map=mapRef.current;if(!map)return;markersRef.current.day.forEach((dm,k)=>{dm.el.classList.toggle('active',k===i);dm.el.classList.toggle('faded',k!==i);});showStepMarkers(map,T.days[i]);renderDayCard(i);if(fly)flyDay(i);}
   function showGlobe(){spinRef.current=true;setSel(null);clearStepMarkers();markersRef.current.day.forEach(dm=>{dm.el.classList.remove('active');dm.el.classList.remove('faded');});renderWelcome();const map=mapRef.current;if(!map)return;map.flyTo({center:[64,44],zoom:1.6,pitch:0,bearing:0,duration:2400,curve:1.4});setTimeout(()=>{if(spinRef.current)spinGlobe();},2500);}
   function fitAll(){spinRef.current=false;setSel(null);clearStepMarkers();markersRef.current.day.forEach(dm=>{dm.el.classList.remove('active');dm.el.classList.remove('faded');});renderWelcome();const map=mapRef.current;if(!map)return;const b=new maplibregl.LngLatBounds();T.days.forEach(d=>b.extend(d.c));map.fitBounds(b,{padding:90,duration:2000,pitch:0,bearing:0});}

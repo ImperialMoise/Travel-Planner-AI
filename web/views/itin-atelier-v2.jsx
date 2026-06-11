@@ -812,9 +812,13 @@ function AtelierV2() {
           React.createElement('button', {
             type: 'button',
             onClick: function(e) {
-              e.stopPropagation();
-              Store.set({ view: 'map', selectedDayIndex: selectedDayIndex || 0 });
-            },
+  e.stopPropagation();
+  Store.set({
+    view: 'map',
+    selectedDayIndex: selectedDayIndex || 0,
+    mapFocusStepId: step.id || null
+  });
+},
             title: 'Voir sur la carte',
             style: {
               marginLeft: 'auto',

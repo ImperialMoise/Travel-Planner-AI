@@ -2795,8 +2795,6 @@ async function calculateMobileRoute(options = {}) {
   }
 
   try {
-
-  try {
     mobileRouteCalculatorBusy = true;
     refreshMobileRouteCalculatorPanel();
 

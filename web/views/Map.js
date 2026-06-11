@@ -781,7 +781,7 @@ Store.set({
           {pickMode === 'locate-step'
   ? 'Cliquez sur la position exacte de ' + (locatingStepName || 'cette étape')
   : 'Cliquez sur la carte pour choisir un point'}
-          onClick={() => Store.set({ mapPickMode: null, mapLocateStep: null })} style={{border:'none',background:'transparent',color:'var(--faint)',cursor:'pointer',padding:2,marginLeft:4}}><Icon name="x" size={14}/></button>
+          <button onClick={() => Store.set({ mapPickMode: null, mapLocateStep: null })} style={{border:'none',background:'transparent',color:'var(--faint)',cursor:'pointer',padding:2,marginLeft:4}}><Icon name="x" size={14}/></button>
         </div>
       )}
 

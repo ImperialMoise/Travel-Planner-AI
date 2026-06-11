@@ -917,13 +917,17 @@ function Topbar({ compact = false }) {
     }}>
       {/* ── Gauche : marque + sélecteur voyage ── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: compact ? 10 : 24, minWidth: 0 }}>
-        <div style={{
-          fontFamily: 'var(--font-serif)', fontStyle: 'italic',
-          fontSize: compact ? 22 : 26,
-lineHeight: compact ? '28px' : '32px',
-color: 'var(--accent)',
-whiteSpace: 'nowrap'
-        }}>L'Atelier</div>
+         <div
+          onClick={() => Store.set({ activeTripId: null, trip: null })}
+          style={{
+            fontFamily: 'var(--font-serif)', fontStyle: 'italic',
+            fontSize: compact ? 22 : 26,
+            lineHeight: compact ? '28px' : '32px',
+            color: 'var(--accent)',
+            whiteSpace: 'nowrap',
+            cursor: 'pointer'
+          }}
+        >L'Atelier</div>
 
         {user && (
           <div ref={menuRef} style={{ position: 'relative' }}>

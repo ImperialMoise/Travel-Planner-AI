@@ -69,6 +69,7 @@ function StepEditor({ open, tripId, dayId, step, stepCount, onClose, onSaved }) 
   };
   const [f, setF] = React.useState(blank);
   const [busy, setBusy] = React.useState(false);
+  const [deleteAsk, setDeleteAsk] = React.useState(false);
   const set = (k, v) => setF(prev => ({ ...prev, [k]: v }));
   const addEscale = () => setF(prev => ({
     ...prev,
@@ -87,6 +88,7 @@ function StepEditor({ open, tripId, dayId, step, stepCount, onClose, onSaved }) 
 
   React.useEffect(() => {
     if (!open) return;
+        setDeleteAsk(false);
     if (step) {
       setF({
         ...blank, ...step,
@@ -150,9 +152,14 @@ function StepEditor({ open, tripId, dayId, step, stepCount, onClose, onSaved }) 
     }
   }
 
-  async function handleDelete() {
+  function handleDelete() {
     if (!step || !step.id) return;
-    if (!window.confirm('Supprimer cette étape définitivement ?')) return;
+    setDeleteAsk(true);
+  }
+
+  async function confirmDelete() {
+    if (!step || !step.id) return;
+
     setBusy(true);
     try {
       await window.SB.deleteStep(step.id);
@@ -162,6 +169,7 @@ function StepEditor({ open, tripId, dayId, step, stepCount, onClose, onSaved }) 
       alert('Erreur : ' + e.message);
     } finally {
       setBusy(false);
+      setDeleteAsk(false);
     }
   }
 
@@ -175,8 +183,8 @@ function StepEditor({ open, tripId, dayId, step, stepCount, onClose, onSaved }) 
   const twoCol = (a, b) => <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>{a}{b}</div>;
 
   return ReactDOM.createPortal(
-    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 300, background: theme === 'light' ? 'rgba(31,46,40,.34)' : 'rgba(0,0,0,.55)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', display: 'grid', placeItems: 'center', padding: 24 }}>
-      <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 520, maxHeight: '90vh', display: 'flex', flexDirection: 'column', background: C.card, border: `1px solid ${C.line}`, borderRadius: 20, overflow: 'hidden', boxShadow: '0 40px 90px rgba(0,0,0,.4)' }}>
+        <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 300, background: theme === 'light' ? 'rgba(31,46,40,.34)' : 'rgba(0,0,0,.55)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '76px 24px 24px' }}>
+      <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 520, maxHeight: 'calc(100vh - 100px)', display: 'flex', flexDirection: 'column', background: C.card, border: `1px solid ${C.line}`, borderRadius: 20, overflow: 'hidden', boxShadow: '0 40px 90px rgba(0,0,0,.4)' }}>
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 20px', borderBottom: `1px solid ${C.line}` }}>
           <div>
@@ -440,6 +448,24 @@ function StepEditor({ open, tripId, dayId, step, stepCount, onClose, onSaved }) 
           <button onClick={onClose} disabled={busy} style={ghost}>Annuler</button>
           <button onClick={handleSave} disabled={busy} style={primary}>{busy ? '…' : (step ? 'Enregistrer' : 'Ajouter')}</button>
         </div>
+                {deleteAsk && (
+          <div style={{ position: 'absolute', inset: 0, zIndex: 5, display: 'grid', placeItems: 'center', padding: 24, background: theme === 'light' ? 'rgba(31,46,40,.22)' : 'rgba(0,0,0,.38)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}>
+            <div style={{ width: '100%', maxWidth: 360, border: `1px solid ${C.line}`, borderRadius: 18, padding: 22, background: C.card, boxShadow: '0 30px 70px rgba(0,0,0,.28)' }}>
+              <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '.16em', textTransform: 'uppercase', color: C.accent, marginBottom: 8 }}>Suppression</div>
+              <div style={{ fontFamily: serif, fontStyle: 'italic', fontSize: 25, lineHeight: '30px', color: C.text, marginBottom: 10 }}>Supprimer cette étape ?</div>
+              <p style={{ margin: '0 0 18px', color: C.muted, fontSize: 13.5, lineHeight: '20px' }}>
+                “{f.label || step.label || step.lieu || 'Cette étape'}” sera retirée définitivement de votre programme.
+              </p>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+                <button type="button" onClick={() => setDeleteAsk(false)} disabled={busy} style={ghost}>Annuler</button>
+                <button type="button" onClick={confirmDelete} disabled={busy} style={{ ...primary, background: '#c0563f', color: '#fff' }}>
+                  {busy ? '…' : 'Supprimer'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>,
     document.body
@@ -639,14 +665,41 @@ function AtelierV2() {
         v.sub && React.createElement('p', { style: { fontSize: 13.5, lineHeight: '20px', color: 'var(--muted)', marginBottom: 10 } }, v.sub),
         step.note && React.createElement('p', { style: { fontSize: 13.5, lineHeight: '20px', color: 'var(--muted)', fontStyle: 'italic', marginBottom: 10 } }, step.note),
 
-        /* Tags metadata */
-        React.createElement('div', { style: { display: 'flex', flexWrap: 'wrap', gap: 8 } },
+                /* Tags metadata + actions */
+        React.createElement('div', { style: { display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 } },
           v.badge && React.createElement('span', { style: { display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 10px', borderRadius: 6, background: 'var(--soft)', color: 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: 10 } },
             React.createElement(Icon, { name: 'moon', size: 12 }), v.badge),
           step.dur && React.createElement('span', { style: { display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 10px', borderRadius: 6, background: 'var(--soft)', color: 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: 10 } },
             React.createElement(Icon, { name: 'clock', size: 12 }), step.dur),
           v.range && v.range.indexOf('\u2013') > -1 && React.createElement('span', { style: { display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 10px', borderRadius: 6, background: 'var(--soft)', color: 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: 10 } },
-            React.createElement(Icon, { name: 'clock', size: 12 }), v.range)))
+            React.createElement(Icon, { name: 'clock', size: 12 }), v.range),
+
+          React.createElement('button', {
+            type: 'button',
+            onClick: function(e) {
+              e.stopPropagation();
+              Store.set({ view: 'map', selectedDayIndex: selectedDayIndex || 0 });
+            },
+            title: 'Voir sur la carte',
+            style: {
+              marginLeft: 'auto',
+              border: `1px solid ${C.line}`,
+              background: C.inset,
+              color: C.text,
+              borderRadius: 999,
+              padding: '6px 10px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              fontSize: 11,
+              fontWeight: 800
+            }
+          },
+            React.createElement(Icon, { name: 'map', size: 14 }),
+            'Carte'
+          ))
     );
   }
 

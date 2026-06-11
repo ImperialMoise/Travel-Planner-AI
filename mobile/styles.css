@@ -8406,7 +8406,7 @@ button {
   position: absolute;
   left: 16px;
   right: 16px;
-  bottom: calc(116px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(118px + env(safe-area-inset-bottom, 0px));
   z-index: 38;
   min-height: 0;
   padding: 0 !important;
@@ -8416,12 +8416,9 @@ button {
   pointer-events: none;
 }
 
-.mobile-route-calculator.is-compact > * {
-  display: block !important;
-}
-
 .mobile-route-calculator.is-compact .mobile-route-header,
 .mobile-route-calculator.is-compact .mobile-route-field,
+.mobile-route-calculator.is-compact .mobile-route-fields > :not(.mobile-route-result),
 .mobile-route-calculator.is-compact .mobile-route-swap,
 .mobile-route-calculator.is-compact .mobile-route-modes,
 .mobile-route-calculator.is-compact .mobile-route-reset,
@@ -8429,21 +8426,27 @@ button {
   display: none !important;
 }
 
+.mobile-route-calculator.is-compact .mobile-route-fields {
+  display: block !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
 .mobile-route-calculator.is-compact .mobile-route-result {
   pointer-events: auto;
   width: 100%;
-  min-height: 92px;
+  min-height: 88px;
   margin: 0;
-  padding: 14px 16px;
+  padding: 13px 15px;
   display: grid !important;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 12px;
   border: 1px solid rgba(255, 250, 240, 0.12);
   border-radius: 18px;
-  background: rgba(25, 49, 40, 0.96);
+  background: rgba(25, 49, 40, 0.97);
   color: #fffaf0;
-  box-shadow: 0 18px 44px rgba(18, 33, 27, 0.28);
+  box-shadow: 0 18px 44px rgba(18, 33, 27, 0.3);
 }
 
 .mobile-route-calculator.is-compact .mobile-route-result-copy {
@@ -8457,7 +8460,7 @@ button {
   font-family: var(--font-mono);
   font-size: 10px;
   line-height: 14px;
-  font-weight: 800;
+  font-weight: 900;
   letter-spacing: 0.16em;
   text-transform: uppercase;
 }
@@ -8501,9 +8504,9 @@ button {
 
 .mobile-route-calculator.is-compact .mobile-route-result-actions button,
 .mobile-route-calculator.is-compact .mobile-route-result-actions a {
-  width: 40px;
-  min-width: 40px;
-  height: 40px;
+  width: 38px;
+  min-width: 38px;
+  height: 38px;
   padding: 0;
   border: 0;
   border-radius: 999px;
@@ -8518,7 +8521,7 @@ button {
 
 .mobile-route-calculator.is-compact .mobile-route-result-actions a {
   width: auto;
-  min-width: 80px;
+  min-width: 78px;
   padding: 0 13px;
   gap: 5px;
   background: #e7c47e;
@@ -8531,6 +8534,25 @@ button {
   color: inherit;
   font-size: 20px;
 }
+
+.mobile-route-calculator.is-compact + .mobile-map-place-card,
+.mobile-route-calculator.is-compact ~ .mobile-map-card {
+  transform: translateY(-106px);
+}
+
+@media (max-width: 380px) {
+  .mobile-route-calculator.is-compact {
+    left: 12px;
+    right: 12px;
+  }
+
+  .mobile-route-calculator.is-compact .mobile-route-result {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .mobile-route-calculator.is-compact .mobile-route-result-actions {
+    justify-content:
 
 /* Modale suppression étape */
 .step-delete-backdrop {

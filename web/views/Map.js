@@ -208,7 +208,7 @@ function MapView(){
   const T=tripToMapTrip(realTrip);
 
   const [sel,setSel]=React.useState(null);
-  const {selectedDayIndex, mapFocusStepId}=Store.useStore();
+  const { selectedDayIndex, mapFocusStepId, mapLocateStep, mapPickResult } = Store.useStore();
   const firstRender=React.useRef(true);
   React.useEffect(()=>{
   if (firstRender.current) {
@@ -221,10 +221,15 @@ function MapView(){
   }
 }, [selectedDayIndex]);
 
-React.useEffect(()=>{
+React.useEffect(() => {
   if (!mapFocusStepId) return;
-  focusStepById(mapFocusStepId);
-}, [mapFocusStepId, T]);
+
+  const timer = setTimeout(() => {
+    focusStepById(mapFocusStepId);
+  }, 220);
+
+  return () => clearTimeout(timer);
+}, [mapFocusStepId, realTrip && realTrip.id]);
 
   const [curStyle,setCurStyle]=React.useState('minimal');
   const [layersOpen,setLayersOpen]=React.useState(false);
@@ -337,42 +342,43 @@ React.useEffect(()=>{
   // ── Navigation ──
   function flyDay(i){const map=mapRef.current;if(!map)return;const d=T.days[i];var pts=d.steps.filter(function(s){return s.c;}).map(function(s){return s.c;});if(pts.length>1){var b=new maplibregl.LngLatBounds();pts.forEach(function(p){b.extend(p);});map.fitBounds(b,{padding:{top:80,bottom:140,left:60,right:60},pitch:42,bearing:0,duration:2200,maxZoom:15.5});}else{map.flyTo({center:d.c,zoom:d.z,pitch:d.region==='Vol'?0:42,bearing:0,duration:2200,curve:1.5,essential:true});}}
     function focusStepById(stepId) {
-    const map = mapRef.current;
-    if (!map || !stepId || !T || !T.days) return false;
+  const map = mapRef.current;
+  if (!map || !stepId || !T || !Array.isArray(T.days)) return false;
 
-    for (let dayIndex = 0; dayIndex < T.days.length; dayIndex++) {
-      const day = T.days[dayIndex];
-      const stepIndex = (day.steps || []).findIndex(function(step) {
-        return String(step.id || '') === String(stepId || '');
+  for (let dayIndex = 0; dayIndex < T.days.length; dayIndex += 1) {
+    const currentDay = T.days[dayIndex];
+    const steps = currentDay.steps || [];
+
+    const foundStep = steps.find(function(item) {
+      return String(item.id || '') === String(stepId || '');
+    });
+
+    if (!foundStep) continue;
+
+    spinRef.current = false;
+    doSelect(dayIndex, false);
+
+    if (foundStep.c) {
+      map.flyTo({
+        center: foundStep.c,
+        zoom: Math.max(map.getZoom(), 16),
+        pitch: 42,
+        bearing: 0,
+        duration: 1200,
+        essential: true
       });
-
-      if (stepIndex === -1) continue;
-
-      const step = day.steps[stepIndex];
-
-      doSelect(dayIndex, false);
-
-      if (step.c) {
-        spinRef.current = false;
-        map.flyTo({
-          center: step.c,
-          zoom: Math.max(map.getZoom(), 16),
-          pitch: 42,
-          duration: 1200,
-          essential: true
-        });
-      } else {
-        flyDay(dayIndex);
-        Store.showToast && Store.showToast('Cette étape n’a pas encore de localisation.');
-      }
-
-      Store.set({ mapFocusStepId: null });
-      return true;
+    } else {
+      flyDay(dayIndex);
+      if (Store.showToast) Store.showToast('Cette étape n’a pas encore de localisation.');
     }
 
     Store.set({ mapFocusStepId: null });
-    return false;
+    return true;
   }
+
+  Store.set({ mapFocusStepId: null });
+  return false;
+}
 
   function doSelect(i,fly){spinRef.current=false;setSel(i);Store.set({selectedDayIndex:i});const map=mapRef.current;if(!map)return;markersRef.current.day.forEach((dm,k)=>{dm.el.classList.toggle('active',k===i);dm.el.classList.toggle('faded',k!==i);});showStepMarkers(map,T.days[i]);renderDayCard(i);if(fly)flyDay(i);}
   function showGlobe(){spinRef.current=true;setSel(null);clearStepMarkers();markersRef.current.day.forEach(dm=>{dm.el.classList.remove('active');dm.el.classList.remove('faded');});renderWelcome();const map=mapRef.current;if(!map)return;map.flyTo({center:[64,44],zoom:1.6,pitch:0,bearing:0,duration:2400,curve:1.4});setTimeout(()=>{if(spinRef.current)spinGlobe();},2500);}
@@ -397,7 +403,22 @@ React.useEffect(()=>{
     const map=new maplibregl.Map({container:mapEl.current,style:theme==='dark'?MV_DARK:MV_LIGHT,center:[64,44],zoom:1.6,attributionControl:{compact:true},dragRotate:true,maxPitch:70});
     mapRef.current=map;
     map.on('style.load',()=>{applyGlobe(map);addRoutes(map);map.getStyle().layers.forEach(l=>{if(l.type==='symbol'&&map.getLayoutProperty(l.id,'text-field')){try{map.setLayoutProperty(l.id,'text-field',['coalesce',['get','name:fr'],['get','name:latin'],['get','name']]);}catch(e){}}});});
-    let inited=false;function initContent(){if(inited)return;inited=true;buildDayMarkers(map);setTimeout(spinGlobe,400);}
+    let inited = false;
+function initContent() {
+  if (inited) return;
+  inited = true;
+
+  buildDayMarkers(map);
+
+  const focusId = Store.get().mapFocusStepId;
+  if (focusId) {
+    setTimeout(function() {
+      focusStepById(focusId);
+    }, 300);
+  } else {
+    setTimeout(spinGlobe, 400);
+  }
+}
     map.on('load',initContent);setTimeout(initContent,3000);
     map.on('click',e=>{
       /* Mode pick pour le calculateur d'itinéraire */
@@ -463,6 +484,59 @@ if(!realTrip)return null;
 
   /* ── Mode pick : curseur + bannière ── */
   const {mapPickMode: pickMode}=Store.useStore();
+  React.useEffect(() => {
+  if (!mapPickResult || mapPickResult.field !== 'locate-step') return;
+  if (!mapLocateStep || !realTrip || !window.SB) return;
+
+  const coords = mapPickResult.coords || [];
+  const lng = Number(coords[0]);
+  const lat = Number(coords[1]);
+
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    Store.set({ mapPickResult: null, mapLocateStep: null, mapPickMode: null });
+    return;
+  }
+
+  const sourceDay = (realTrip.days || []).find(function(item) {
+    return String(item.id) === String(mapLocateStep.dayId);
+  });
+
+  const sourceStep = sourceDay && (sourceDay.steps || []).find(function(item) {
+    return String(item.id) === String(mapLocateStep.stepId);
+  });
+
+  if (!sourceDay || !sourceStep) {
+    Store.set({ mapPickResult: null, mapLocateStep: null, mapPickMode: null });
+    return;
+  }
+
+  (async function() {
+    try {
+      await window.SB.saveStep(realTrip.id, sourceDay.id, {
+        ...sourceStep,
+        lat: lat,
+        lng: lng,
+        lieu: sourceStep.lieu || mapPickResult.text || sourceStep.label || ''
+      });
+
+      const updatedTrip = await window.SB.loadTrip(realTrip.id);
+
+      Store.set({
+        trip: updatedTrip,
+        mapPickResult: null,
+        mapLocateStep: null,
+        mapPickMode: null,
+        mapFocusStepId: sourceStep.id
+      });
+
+      if (Store.showToast) Store.showToast('Étape localisée.');
+    } catch (error) {
+      console.error('Erreur localisation étape', error);
+      Store.set({ mapPickResult: null, mapLocateStep: null, mapPickMode: null });
+      alert('Impossible de localiser cette étape.');
+    }
+  })();
+}, [mapPickResult, mapLocateStep, realTrip && realTrip.id]);
   React.useEffect(()=>{
     const map=mapRef.current;if(!map)return;
     if(pickMode){map.getCanvas().style.cursor='crosshair';}

@@ -424,17 +424,19 @@ function Toolbox() {
   /* Recevoir le résultat du pick carte */
   const { mapPickResult } = Store.useStore();
   React.useEffect(() => {
-    if (!mapPickResult) return;
-    var f = mapPickResult.field, t = mapPickResult.text, c = mapPickResult.coords;
-    if (f === 'from') { setCalcFrom(t); setCalcFromCoords(c); }
-    else if (f === 'to') { setCalcTo(t); setCalcToCoords(c); }
-    else if (f && f.startsWith('stop-')) {
-      var idx = parseInt(f.split('-')[1]);
-      setCalcStops(s => s.map((st, i) => i === idx ? { text: t, coords: c } : st));
-    }
-    setCalcResult(null);
-    Store.set({ mapPickResult: null });
-  }, [mapPickResult]);
+  if (!mapPickResult) return;
+  if (mapPickResult.field === 'locate-step') return;
+
+  var f = mapPickResult.field, t = mapPickResult.text, c = mapPickResult.coords;
+  if (f === 'from') { setCalcFrom(t); setCalcFromCoords(c); }
+  else if (f === 'to') { setCalcTo(t); setCalcToCoords(c); }
+  else if (f && f.startsWith('stop-')) {
+    var idx = parseInt(f.split('-')[1]);
+    setCalcStops(s => s.map((st, i) => i === idx ? { text: t, coords: c } : st));
+  }
+  setCalcResult(null);
+  Store.set({ mapPickResult: null });
+}, [mapPickResult]);
 
   function togglePin(id) {
     setPinned(prev => {

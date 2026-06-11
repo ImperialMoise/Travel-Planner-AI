@@ -632,6 +632,7 @@ function AtelierV2() {
     var accentMap = { transport: 'var(--tertiary-soft)', logement: 'var(--accent)', restaurant: 'var(--tan)', activite: 'var(--accent)', autre: 'var(--faint)' };
     var ac = accentMap[step.type] || 'var(--faint)';
     var timeText = (v.range || '\u2014').split('\u2013')[0];
+    var hasCoords = Number.isFinite(Number(step.lat)) && Number.isFinite(Number(step.lng));
 
     return React.createElement('article', {
       onClick: function() { setEditor({ open: true, dayId: day.id, step: step }); },
@@ -810,35 +811,70 @@ function AtelierV2() {
           ),
 
           React.createElement('button', {
-            type: 'button',
-            onClick: function(e) {
-  e.stopPropagation();
-  Store.set({
-    view: 'map',
-    selectedDayIndex: selectedDayIndex || 0,
-    mapFocusStepId: step.id || null
-  });
+  type: 'button',
+  onClick: function(e) {
+    e.stopPropagation();
+    Store.set({
+      view: 'map',
+      selectedDayIndex: sel,
+      mapFocusStepId: step.id || null
+    });
+  },
+  title: hasCoords ? 'Voir sur la carte' : 'Ouvrir la carte',
+  style: {
+    marginLeft: 'auto',
+    border: `1px solid ${C.line}`,
+    background: C.inset,
+    color: C.text,
+    borderRadius: 999,
+    padding: '6px 10px',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 6,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    fontSize: 11,
+    fontWeight: 800
+  }
 },
-            title: 'Voir sur la carte',
-            style: {
-              marginLeft: 'auto',
-              border: `1px solid ${C.line}`,
-              background: C.inset,
-              color: C.text,
-              borderRadius: 999,
-              padding: '6px 10px',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              cursor: 'pointer',
-              fontFamily: 'inherit',
-              fontSize: 11,
-              fontWeight: 800
-            }
-          },
-            React.createElement('span', { style: { fontSize: 14, lineHeight: 1 } }, '⌖'),
-            'Carte'
-          )
+  React.createElement('span', { style: { fontSize: 14, lineHeight: 1 } }, '⌖'),
+  'Carte'
+),
+
+!hasCoords && React.createElement('button', {
+  type: 'button',
+  onClick: function(e) {
+    e.stopPropagation();
+    Store.set({
+      view: 'map',
+      selectedDayIndex: sel,
+      mapPickMode: 'locate-step',
+      mapLocateStep: {
+        tripId: realTrip && realTrip.id,
+        dayId: day && day.id,
+        stepId: step.id || null
+      }
+    });
+  },
+  title: 'Localiser cette étape',
+  style: {
+    border: `1px solid ${C.line}`,
+    background: C.accentSoft,
+    color: C.accent,
+    borderRadius: 999,
+    padding: '6px 10px',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 6,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    fontSize: 11,
+    fontWeight: 800
+  }
+},
+  React.createElement('span', { style: { fontSize: 14, lineHeight: 1 } }, '＋'),
+  'Localiser'
+)
         )
       )
     );

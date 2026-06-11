@@ -696,8 +696,8 @@ function AtelierV2() {
               fontSize: 11,
               fontWeight: 800
             }
-          },
-            React.createElement(Icon, { name: 'map', size: 14 }),
+                    },
+            React.createElement('span', { style: { fontSize: 14, lineHeight: 1 } }, '⌖'),
             'Carte'
           ))
     );

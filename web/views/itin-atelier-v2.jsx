@@ -464,7 +464,7 @@ function AtelierV2() {
       const demoDay = window.TRIP.days[i % window.TRIP.days.length]; 
       return {
         ...demoDay, 
-        id: d.id, 
+        id: d.id,
         n: d.index + 1,
         dateISO: d.dateISO,
         title: d.title || 'Journée libre',
@@ -473,7 +473,7 @@ function AtelierV2() {
           ...s, // garde l'id + tous les champs bruts (indispensable pour la modification)
           label: s.label || s.lieu,
           place: s.lieu,
-          mode: s.transportType || 'car',
+            mode: s.transportType || 'car',
           from: s.depart,
           to: s.arrivee,
           nights: s.nuits,
@@ -481,7 +481,7 @@ function AtelierV2() {
           checkout: s.timeCheckOut,
           ref: s.ref,
           dur: s.dureeEstimee || s.duree,
-          escales: s.escales || [],
+            escales: s.escales || [],
           over: s.nextDay ? ' +1' : ''
         }))
       };

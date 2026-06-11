@@ -81,17 +81,42 @@ function AppShell() {
   }
 
   return (
-    <>
+    <div style={{
+      height: '100dvh',
+      maxHeight: '100dvh',
+      width: '100vw',
+      maxWidth: '100vw',
+      display: 'flex',
+      flexDirection: 'column',
+      overflow: 'hidden',
+      background: 'var(--bg)'
+    }}>
       {/* On cache la Topbar de l'app si le design de Claude est affiché (car il a la sienne) */}
       <Topbar />
       
-      <main style={{ flex: 1, minHeight: 0, display: 'flex', overflow: 'hidden' }}>
+      <main style={{
+        flex: '1 1 0',
+        height: 0,
+        minHeight: 0,
+        minWidth: 0,
+        display: 'flex',
+        overflow: 'hidden'
+      }}>
         {!user ? <LoggedOutHome /> :
          !activeTripId ? <NoTripHome /> :
          !trip ? <LoadingTrip /> :
          <>
            <DaySpine />
-           <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+           <div style={{
+             flex: '1 1 0',
+             width: 0,
+             minWidth: 0,
+             height: '100%',
+             minHeight: 0,
+             display: 'flex',
+             flexDirection: 'column',
+             overflow: 'hidden'
+            }}>
              {CurrentView ? <CurrentView /> : <div style={{ padding: 40, color: 'var(--muted)' }}>Vue inconnue : {view}</div>}
            </div>
            <Toolbox />
@@ -100,7 +125,7 @@ function AppShell() {
                 
       {settingsOpen && window.SettingsModal && <window.SettingsModal />}
       {toast && <div className="toast show">{toast.msg}</div>}
-    </>
+    </div>
   );
 }
 

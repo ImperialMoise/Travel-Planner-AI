@@ -373,7 +373,7 @@ function MapView(){
   },[]);
   React.useEffect(()=>{const map=mapRef.current;if(!map)return;(async()=>{map.setStyle(curStyle==='sat'?await buildSat():await buildBase());})();},[theme,curStyle]);
 
-  if(!trip)return null;
+if(!realTrip)return null;
   const segBtn=(on)=>({border:'none',cursor:'pointer',padding:'7px 14px',borderRadius:9,fontSize:12.5,fontWeight:700,fontFamily:'inherit',background:on?'var(--accent)':'transparent',color:on?'var(--accent-ink)':'var(--muted)',transition:'all .15s'});
 
   /* ── Route calculée depuis la Toolbox ── */

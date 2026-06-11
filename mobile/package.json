@@ -1,0 +1,15 @@
+{
+  "name": "atelier-mobile",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build:mobile": "mkdir -p www && cp -R mobile/* www/",
+    "cap:sync": "npx cap sync android"
+  },
+  "dependencies": {
+    "@capacitor/android": "latest",
+    "@capacitor/cli": "latest",
+    "@capacitor/core": "latest"
+  },
+  "devDependencies": {}
+}

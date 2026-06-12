@@ -115,12 +115,45 @@ async function fetchOpenMeteoDay(coords, dateISO) {
   if (index === -1) return null;
 
   return {
+    kind: 'forecast',
     code: data.daily.weather_code[index],
     label: weatherCodeLabel(data.daily.weather_code[index]),
     tempMax: Math.round(data.daily.temperature_2m_max[index]),
     tempMin: Math.round(data.daily.temperature_2m_min[index]),
     precipitation: Math.round(data.daily.precipitation_sum[index] || 0),
     wind: Math.round(data.daily.wind_speed_10m_max[index] || 0)
+  };
+}
+
+async function fetchOpenMeteoClimateEstimate(coords, dateISO) {
+  if (!coords || !dateISO) return null;
+
+  const url = 'https://climate-api.open-meteo.com/v1/climate'
+    + '?latitude=' + encodeURIComponent(coords.lat)
+    + '&longitude=' + encodeURIComponent(coords.lng)
+    + '&start_date=' + encodeURIComponent(dateISO)
+    + '&end_date=' + encodeURIComponent(dateISO)
+    + '&models=EC_Earth3P_HR'
+    + '&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max'
+    + '&timezone=auto';
+
+  const res = await fetch(url);
+  if (!res.ok) return null;
+
+  const data = await res.json();
+  const daily = data.daily || {};
+
+  if (!daily.temperature_2m_max || daily.temperature_2m_max[0] == null) return null;
+
+  const rain = Math.round(daily.precipitation_sum && daily.precipitation_sum[0] || 0);
+
+  return {
+    kind: 'climate',
+    label: rain >= 8 ? 'Tendance humide' : rain >= 2 ? 'Pluie possible' : 'Tendance saisonnière',
+    tempMax: Math.round(daily.temperature_2m_max[0]),
+    tempMin: Math.round(daily.temperature_2m_min && daily.temperature_2m_min[0] || daily.temperature_2m_max[0]),
+    precipitation: rain,
+    wind: Math.round(daily.wind_speed_10m_max && daily.wind_speed_10m_max[0] || 0)
   };
 }
 
@@ -679,17 +712,35 @@ function AtelierV2() {
 
     setWeatherState('loading');
 
-    fetchOpenMeteoDay(coords, day.dateISO)
-      .then(function(result) {
+     fetchOpenMeteoDay(coords, day.dateISO)
+      .then(async function(result) {
         if (!alive) return;
-        setWeather(result);
-        setWeatherState(result ? 'ready' : 'future');
-      })
-      .catch(function() {
-        if (!alive) return;
-        setWeatherState('error');
-      });
 
+        if (result) {
+          setWeather(result);
+          setWeatherState('ready');
+          return;
+        }
+
+        const climate = await fetchOpenMeteoClimateEstimate(coords, day.dateISO);
+        if (!alive) return;
+
+        setWeather(climate);
+        setWeatherState(climate ? 'climate' : 'future');
+      })
+      .catch(async function() {
+        if (!alive) return;
+
+        try {
+          const climate = await fetchOpenMeteoClimateEstimate(coords, day.dateISO);
+          if (!alive) return;
+          setWeather(climate);
+          setWeatherState(climate ? 'climate' : 'error');
+        } catch (error) {
+          if (!alive) return;
+          setWeatherState('error');
+        }
+      });
     return function() { alive = false; };
   }, [day.id, day.dateISO, day.steps.length]);
 
@@ -1475,10 +1526,10 @@ function AtelierV2() {
               color: C.text,
               marginTop: 4
             }
-          }, 'Prévoir la journée')
+          }, weatherState === 'climate' ? 'Tendance saisonnière' : 'Prévoir la journée')
         ),
 
-        React.createElement('div', {
+                React.createElement('div', {
           style: {
             flex: 1,
             minHeight: 0,
@@ -1510,7 +1561,7 @@ function AtelierV2() {
                   lineHeight: '34px',
                   color: C.text
                 }
-              }, '—°'),
+              }, weather ? weather.tempMax + '°' : '—°'),
               React.createElement('div', {
                 style: {
                   width: 46,
@@ -1529,7 +1580,15 @@ function AtelierV2() {
                 lineHeight: '20px',
                 color: C.muted
               }
-            }, 'Météo bientôt synchronisée avec la ville du jour.')
+            },
+              weatherState === 'loading' ? 'Chargement de la météo…' :
+              weatherState === 'missing' ? 'Localisez une étape du jour pour afficher la météo.' :
+              weatherState === 'climate' ? 'Prévision réelle disponible 16 jours avant. En attendant : tendance saisonnière.' :
+              weatherState === 'future' ? 'La météo précise sera disponible 16 jours avant cette date.' :
+              weatherState === 'error' ? 'Météo indisponible pour le moment.' :
+              weather ? weather.label + ' · min. ' + weather.tempMin + '°' :
+              'Météo non disponible.'
+            )
           ),
 
           React.createElement('div', {
@@ -1547,7 +1606,7 @@ function AtelierV2() {
               }
             },
               React.createElement('div', { style: { fontSize: 10, color: C.faint, marginBottom: 4 } }, 'Pluie'),
-              React.createElement('div', { style: { fontWeight: 800, color: C.text } }, '—')
+              React.createElement('div', { style: { fontWeight: 800, color: C.text } }, weather ? weather.precipitation + ' mm' : '—')
             ),
             React.createElement('div', {
               style: {
@@ -1557,7 +1616,7 @@ function AtelierV2() {
               }
             },
               React.createElement('div', { style: { fontSize: 10, color: C.faint, marginBottom: 4 } }, 'Vent'),
-              React.createElement('div', { style: { fontWeight: 800, color: C.text } }, '—')
+              React.createElement('div', { style: { fontWeight: 800, color: C.text } }, weather ? weather.wind + ' km/h' : '—')
             ),
             React.createElement('div', {
               style: {
@@ -1567,7 +1626,7 @@ function AtelierV2() {
               }
             },
               React.createElement('div', { style: { fontSize: 10, color: C.faint, marginBottom: 4 } }, 'Conseil'),
-              React.createElement('div', { style: { fontWeight: 800, color: C.text } }, '—')
+              React.createElement('div', { style: { fontWeight: 800, color: C.text } }, weatherAdvice(weather))
             )
           )
         )

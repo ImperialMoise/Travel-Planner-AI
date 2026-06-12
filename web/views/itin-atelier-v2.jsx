@@ -42,6 +42,120 @@ function calcNuits(a, b) {
   return n > 0 ? n : 0;
 }
 
+function getStepCoords(step) {
+  const lat = Number(step && step.lat);
+  const lng = Number(step && step.lng);
+  if (Number.isFinite(lat) && Number.isFinite(lng)) return { lat, lng };
+  return null;
+}
+
+function getDayCoords(day) {
+  const steps = (day && day.steps) || [];
+
+  for (const step of steps) {
+    const coords = getStepCoords(step);
+    if (coords) return coords;
+  }
+
+  return null;
+}
+
+function weatherCodeLabel(code) {
+  const map = {
+    0: 'Ciel clair',
+    1: 'Plutôt clair',
+    2: 'Partiellement nuageux',
+    3: 'Couvert',
+    45: 'Brouillard',
+    48: 'Brouillard givrant',
+    51: 'Bruine légère',
+    53: 'Bruine',
+    55: 'Bruine forte',
+    61: 'Pluie légère',
+    63: 'Pluie',
+    65: 'Forte pluie',
+    71: 'Neige légère',
+    73: 'Neige',
+    75: 'Forte neige',
+    80: 'Averses légères',
+    81: 'Averses',
+    82: 'Fortes averses',
+    95: 'Orage'
+  };
+
+  return map[code] || 'Météo variable';
+}
+
+function weatherAdvice(weather) {
+  if (!weather) return 'À vérifier';
+  if ((weather.precipitation || 0) >= 5) return 'Prévoir pluie';
+  if ((weather.wind || 0) >= 35) return 'Vent fort';
+  if ((weather.tempMax || 0) >= 30) return 'Hydratation';
+  if ((weather.tempMin || 20) <= 5) return 'Veste chaude';
+  return 'RAS';
+}
+
+async function fetchOpenMeteoDay(coords, dateISO) {
+  if (!coords || !dateISO) return null;
+
+  const url = 'https://api.open-meteo.com/v1/forecast'
+    + '?latitude=' + encodeURIComponent(coords.lat)
+    + '&longitude=' + encodeURIComponent(coords.lng)
+    + '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max'
+    + '&timezone=auto'
+    + '&forecast_days=16';
+
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('Météo indisponible');
+
+  const data = await res.json();
+  const times = (data.daily && data.daily.time) || [];
+  const index = times.indexOf(dateISO);
+
+  if (index === -1) return null;
+
+  return {
+    code: data.daily.weather_code[index],
+    label: weatherCodeLabel(data.daily.weather_code[index]),
+    tempMax: Math.round(data.daily.temperature_2m_max[index]),
+    tempMin: Math.round(data.daily.temperature_2m_min[index]),
+    precipitation: Math.round(data.daily.precipitation_sum[index] || 0),
+    wind: Math.round(data.daily.wind_speed_10m_max[index] || 0)
+  };
+}
+
+async function searchNearbyRestaurants(coords) {
+  if (!coords) return [];
+
+  const url = 'https://api.maptiler.com/geocoding/restaurant.json'
+    + '?key=08IwMKKAkP3BQJss5poF'
+    + '&language=fr,en,ko,ja'
+    + '&proximity=' + encodeURIComponent(coords.lng + ',' + coords.lat)
+    + '&types=poi'
+    + '&limit=6';
+
+  const res = await fetch(url);
+  if (!res.ok) return [];
+
+  const data = await res.json();
+
+  return ((data && data.features) || []).map(function(feature) {
+    const center = feature.center || [];
+    const context = feature.context || [];
+    const localName = feature.text || feature.place_name || 'Restaurant';
+    const fullName = feature.place_name_fr || feature.place_name_en || feature.place_name || localName;
+
+    return {
+      id: feature.id || localName,
+      label: localName,
+      place: fullName,
+      lat: center[1],
+      lng: center[0],
+      context: context.map(function(item) { return item.text; }).filter(Boolean).join(', ')
+    };
+  });
+}
+
 function StepEditor({ open, tripId, dayId, step, stepCount, onClose, onSaved }) {
   const { theme = localStorage.getItem('it_theme') || 'light' } = Store.useStore();
   const C = palette(theme);
@@ -546,6 +660,39 @@ function AtelierV2() {
   const stt = statusOf(sel, T.todayIndex);
   const pct = Math.round((T.todayIndex + 1) / T.duration * 100);
   const [editor, setEditor] = React.useState({ open: false, dayId: null, step: null });
+
+    const [weather, setWeather] = React.useState(null);
+  const [weatherState, setWeatherState] = React.useState('idle');
+  const [restaurantSuggestions, setRestaurantSuggestions] = React.useState([]);
+  const [restaurantState, setRestaurantState] = React.useState('idle');
+
+  React.useEffect(function() {
+    let alive = true;
+    const coords = getDayCoords(day);
+
+    setWeather(null);
+
+    if (!coords || !day.dateISO) {
+      setWeatherState('missing');
+      return function() { alive = false; };
+    }
+
+    setWeatherState('loading');
+
+    fetchOpenMeteoDay(coords, day.dateISO)
+      .then(function(result) {
+        if (!alive) return;
+        setWeather(result);
+        setWeatherState(result ? 'ready' : 'future');
+      })
+      .catch(function() {
+        if (!alive) return;
+        setWeatherState('error');
+      });
+
+    return function() { alive = false; };
+  }, [day.id, day.dateISO, day.steps.length]);
+
   /* ── Auto-image du hero ── */
   const [heroImg, setHeroImg] = React.useState(null);
   React.useEffect(function() {
@@ -1111,6 +1258,26 @@ function AtelierV2() {
   });
 
   function MealRail() {
+        async function findRestaurantsAroundDay() {
+      const coords = getDayCoords(day);
+
+      if (!coords) {
+        setRestaurantState('missing');
+        setRestaurantSuggestions([]);
+        return;
+      }
+
+      setRestaurantState('loading');
+
+      try {
+        const results = await searchNearbyRestaurants(coords);
+        setRestaurantSuggestions(results);
+        setRestaurantState(results.length ? 'ready' : 'empty');
+      } catch (error) {
+        setRestaurantSuggestions([]);
+        setRestaurantState('error');
+      }
+    }
     return React.createElement('aside', {
       style: {
         minWidth: 0,
@@ -1147,23 +1314,53 @@ function AtelierV2() {
             }
           }, 'Où manger ?')
         ),
-        React.createElement('button', {
-          type: 'button',
-          onClick: function() {
-            setEditor({ open: true, dayId: day.id, step: { type: 'restaurant' } });
-          },
+                React.createElement('div', {
           style: {
-            width: 38,
-            height: 38,
-            borderRadius: 999,
-            border: `1px solid ${C.line}`,
-            background: C.accent,
-            color: C.accentInk,
-            display: 'grid',
-            placeItems: 'center',
-            cursor: 'pointer'
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8
           }
-        }, React.createElement(Icon, { name: 'plus', size: 16 }))
+        },
+          React.createElement('button', {
+            type: 'button',
+            onClick: findRestaurantsAroundDay,
+            title: 'Chercher des restaurants autour',
+            style: {
+              height: 38,
+              padding: '0 13px',
+              borderRadius: 999,
+              border: `1px solid ${C.line}`,
+              background: C.inset,
+              color: C.text,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 7,
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              fontSize: 12,
+              fontWeight: 800
+            }
+          },
+            restaurantState === 'loading' ? '…' : 'Autour'
+          ),
+          React.createElement('button', {
+            type: 'button',
+            onClick: function() {
+              setEditor({ open: true, dayId: day.id, step: { type: 'restaurant' } });
+            },
+            style: {
+              width: 38,
+              height: 38,
+              borderRadius: 999,
+              border: `1px solid ${C.line}`,
+              background: C.accent,
+              color: C.accentInk,
+              display: 'grid',
+              placeItems: 'center',
+              cursor: 'pointer'
+            }
+          }, React.createElement(Icon, { name: 'plus', size: 16 }))
+        )
       ),
 
        React.createElement('div', {

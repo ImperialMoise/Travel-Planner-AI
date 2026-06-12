@@ -1166,9 +1166,9 @@ function AtelierV2() {
         }, React.createElement(Icon, { name: 'plus', size: 16 }))
       ),
 
-      React.createElement('div', {
+       React.createElement('div', {
         style: {
-          flex: 1,
+          flex: '1 1 0',
           minHeight: 0,
           overflowY: 'auto',
           display: 'flex',
@@ -1250,6 +1250,130 @@ function AtelierV2() {
             background: C.inset
           }
         }, 'Aucune table prévue pour ce jour.')
+      ),
+
+      React.createElement('section', {
+        style: {
+          flex: '1 1 0',
+          minHeight: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          borderTop: `1px solid ${C.line}`,
+          paddingTop: 16,
+          overflow: 'hidden'
+        }
+      },
+        React.createElement('div', {
+          style: {
+            flexShrink: 0,
+            marginBottom: 12
+          }
+        },
+          React.createElement('div', { style: s.kicker }, 'Météo'),
+          React.createElement('div', {
+            style: {
+              fontFamily: serif,
+              fontSize: 22,
+              lineHeight: '28px',
+              color: C.text,
+              marginTop: 4
+            }
+          }, 'Prévoir la journée')
+        ),
+
+        React.createElement('div', {
+          style: {
+            flex: 1,
+            minHeight: 0,
+            border: `1px solid ${C.line}`,
+            background: C.card,
+            borderRadius: 14,
+            padding: 16,
+            boxShadow: C.shadow,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            gap: 16
+          }
+        },
+          React.createElement('div', null,
+            React.createElement('div', {
+              style: {
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 12,
+                marginBottom: 10
+              }
+            },
+              React.createElement('div', {
+                style: {
+                  fontFamily: serif,
+                  fontSize: 32,
+                  lineHeight: '34px',
+                  color: C.text
+                }
+              }, '—°'),
+              React.createElement('div', {
+                style: {
+                  width: 46,
+                  height: 46,
+                  borderRadius: 999,
+                  background: C.accentSoft,
+                  color: C.accent,
+                  display: 'grid',
+                  placeItems: 'center'
+                }
+              }, React.createElement(Icon, { name: 'sparkle', size: 22 }))
+            ),
+            React.createElement('div', {
+              style: {
+                fontSize: 13.5,
+                lineHeight: '20px',
+                color: C.muted
+              }
+            }, 'Météo bientôt synchronisée avec la ville du jour.')
+          ),
+
+          React.createElement('div', {
+            style: {
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, 1fr)',
+              gap: 8
+            }
+          },
+            React.createElement('div', {
+              style: {
+                background: C.inset,
+                borderRadius: 10,
+                padding: '10px 8px'
+              }
+            },
+              React.createElement('div', { style: { fontSize: 10, color: C.faint, marginBottom: 4 } }, 'Pluie'),
+              React.createElement('div', { style: { fontWeight: 800, color: C.text } }, '—')
+            ),
+            React.createElement('div', {
+              style: {
+                background: C.inset,
+                borderRadius: 10,
+                padding: '10px 8px'
+              }
+            },
+              React.createElement('div', { style: { fontSize: 10, color: C.faint, marginBottom: 4 } }, 'Vent'),
+              React.createElement('div', { style: { fontWeight: 800, color: C.text } }, '—')
+            ),
+            React.createElement('div', {
+              style: {
+                background: C.inset,
+                borderRadius: 10,
+                padding: '10px 8px'
+              }
+            },
+              React.createElement('div', { style: { fontSize: 10, color: C.faint, marginBottom: 4 } }, 'Conseil'),
+              React.createElement('div', { style: { fontWeight: 800, color: C.text } }, '—')
+            )
+          )
+        )
       )
     );
   }

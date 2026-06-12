@@ -1,8 +1,0 @@
-{
-  "appId": "com.mathismichaud.ateliermobile",
-  "appName": "L'Atelier Mobile",
-  "webDir": "www",
-  "server": {
-    "androidScheme": "https"
-  }
-}

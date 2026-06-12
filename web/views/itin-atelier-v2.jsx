@@ -95,6 +95,13 @@ function weatherAdvice(weather) {
   return 'RAS';
 }
 
+function weatherExternalUrl(coords) {
+  if (!coords) return 'https://www.windy.com/';
+  const lat = Number(coords.lat).toFixed(4);
+  const lng = Number(coords.lng).toFixed(4);
+  return 'https://www.windy.com/?' + lat + ',' + lng + ',8';
+}
+
 async function fetchOpenMeteoDay(coords, dateISO) {
   if (!coords || !dateISO) return null;
 
@@ -827,9 +834,22 @@ function AtelierV2() {
   /* ——— step card (Stitch) ——— */
    function StepCard({ s: step }) {
   var v = stepView(step);
-  var accentMap = { transport: 'var(--tertiary-soft)', logement: 'var(--accent)', restaurant: 'var(--tan)', activite: 'var(--accent)', autre: 'var(--faint)' };
-  var ac = accentMap[step.type] || 'var(--faint)';
-  var timeText = (v.range || '\u2014').split('\u2013')[0];
+  var toneMap = {
+    transport: { accent: '#597b72', soft: 'rgba(89,123,114,.12)', label: 'Transport' },
+    logement: { accent: '#9a6508', soft: 'rgba(154,101,8,.12)', label: 'Logement' },
+    restaurant: { accent: '#b4843e', soft: 'rgba(180,132,62,.14)', label: 'Table' },
+    activite: { accent: '#496f92', soft: 'rgba(73,111,146,.12)', label: 'Activité' },
+    autre: { accent: '#827567', soft: 'rgba(130,117,103,.12)', label: 'Étape' }
+  };
+  var tone = toneMap[step.type] || toneMap.autre;
+  var ac = tone.accent;
+  var rangeParts = String(v.range || '').split('–').map(function(part) { return part.trim(); });
+  var startTime = step.time || rangeParts[0] || '';
+  var endTime = step.timeEnd || rangeParts[1] || '';
+  if (step.type === 'logement') {
+    startTime = step.timeCheckIn ? 'arr. ' + step.timeCheckIn : startTime;
+    endTime = step.timeCheckOut ? 'dep. ' + step.timeCheckOut : endTime;
+  }
   var hasCoords = Number.isFinite(Number(step.lat)) && Number.isFinite(Number(step.lng));
   var needsLocation = !hasCoords;
 
@@ -915,10 +935,22 @@ function AtelierV2() {
           fontFamily: 'var(--font-mono)',
           fontSize: 11,
           lineHeight: '14px',
-          fontWeight: 700,
-          color: ac
+          fontWeight: 800,
+          color: ac,
+          textAlign: 'center'
         }
-      }, timeText),
+      }, startTime || '—'),
+      endTime && React.createElement('div', {
+        style: {
+          fontFamily: 'var(--font-mono)',
+          fontSize: 10,
+          lineHeight: '13px',
+          fontWeight: 700,
+          color: 'var(--muted)',
+          textAlign: 'center',
+          marginTop: 3
+        }
+      }, endTime),
       React.createElement('div', {
         style: {
           width: 1,
@@ -936,14 +968,21 @@ function AtelierV2() {
     React.createElement('div', { style: { flex: 1, minWidth: 0 } },
       React.createElement('div', {
         style: {
-          fontSize: 11,
-          fontWeight: 700,
+          display: 'inline-flex',
+          width: 'fit-content',
+          alignItems: 'center',
+          gap: 6,
+          fontSize: 10,
+          fontWeight: 900,
           letterSpacing: '.16em',
           textTransform: 'uppercase',
           color: ac,
-          marginBottom: 4
+          background: tone.soft,
+          borderRadius: 999,
+          padding: '5px 9px',
+          marginBottom: 7
         }
-      }, v.kind),
+      }, tone.label),
 
       step.type === 'transport' && !step.label
         ? React.createElement('div', {
@@ -1562,17 +1601,24 @@ function AtelierV2() {
                   color: C.text
                 }
               }, weather ? weather.tempMax + '°' : '—°'),
-              React.createElement('div', {
+              React.createElement('button', {
+                type: 'button',
+                title: 'Ouvrir la météo détaillée',
+                onClick: function() {
+                  window.open(weatherExternalUrl(getDayCoords(day)), '_blank', 'noopener,noreferrer');
+                },
                 style: {
                   width: 46,
                   height: 46,
                   borderRadius: 999,
+                  border: `1px solid ${C.line}`,
                   background: C.accentSoft,
                   color: C.accent,
                   display: 'grid',
-                  placeItems: 'center'
+                  placeItems: 'center',
+                  cursor: 'pointer'
                 }
-              }, React.createElement(Icon, { name: 'sparkle', size: 22 }))
+              }, React.createElement(Icon, { name: 'map', size: 21 }))
             ),
             React.createElement('div', {
               style: {

@@ -239,211 +239,234 @@ function DaySpine({ width = 300, onPickDay }) {
   const days = trip.days;
   const sel = selectedDayIndex || 0;
 
+  // ── Grouper les jours par semaine (7 jours max par groupe) ──
+  // On essaye d'extraire la ville principale du premier logement de chaque semaine
+  const weeks = [];
+  for (let i = 0; i < days.length; i += 7) {
+    const chunk = days.slice(i, i + 7);
+    // Cherche un logement dans cette semaine pour nommer le groupe
+    let city = '';
+    for (const d of chunk) {
+      const lodge = (d.steps || []).find(s => s.type === 'logement');
+      if (lodge && (lodge.place || lodge.label)) { city = lodge.place || lodge.label; break; }
+    }
+    weeks.push({
+      label: `Semaine ${weeks.length + 1}${city ? ' : ' + city : ''}`,
+      startIndex: i,
+      days: chunk
+    });
+  }
+
+  // La semaine qui contient le jour sélectionné est ouverte par défaut
+  const activeWeekIdx = Math.floor(sel / 7);
+  const [openWeeks, setOpenWeeks] = React.useState({ [activeWeekIdx]: true });
+
+  // Quand le jour sélectionné change, ouvrir sa semaine
+  React.useEffect(() => {
+    const wi = Math.floor(sel / 7);
+    setOpenWeeks(prev => ({ ...prev, [wi]: true }));
+  }, [sel]);
+
+  function toggleWeek(wi) {
+    setOpenWeeks(prev => ({ ...prev, [wi]: !prev[wi] }));
+  }
+
+  // ── Couleurs des tags de type d'étape ──
+  const TAG_COLORS = {
+    transport: { bg: 'rgba(192,125,86,0.12)', color: '#c07d56', label: 'Transport' },
+    logement:  { bg: 'rgba(180,132,62,0.12)',  color: '#b4843e', label: 'Logement' },
+    activite:  { bg: 'rgba(89,123,114,0.12)',  color: '#597b72', label: 'Activité' },
+    restaurant:{ bg: 'rgba(123,158,137,0.12)', color: '#7b9e89', label: 'Table' },
+    autre:     { bg: 'rgba(130,117,103,0.12)', color: '#827567', label: 'Étape' }
+  };
+
   return (
-  <aside style={{
-    width: width,
-    flexShrink: 0,
-    height: '100%',
-    minHeight: 0,
-    overflow: 'hidden',
-    borderRight: '1px solid var(--outline-variant)',
-    background: 'var(--bg)',
-    display: 'flex',
-    flexDirection: 'column',
-    boxShadow: '4px 0 24px rgba(45,73,63,0.05)'
-  }}>
+    <aside style={{
+      width, flexShrink: 0, height: '100%', minHeight: 0,
+      overflow: 'hidden', borderRight: '1px solid var(--outline-variant)',
+      background: 'var(--bg)', display: 'flex', flexDirection: 'column',
+      boxShadow: '4px 0 24px rgba(45,73,63,0.05)'
+    }}>
+
       {/* ── En-tête ── */}
-      <div style={{
-        padding: '24px 24px 20px',
-        borderBottom: '1px solid var(--outline-variant)'
-      }}>
+      <div style={{ padding: '24px 24px 20px', borderBottom: '1px solid var(--outline-variant)' }}>
         <div style={{
           fontSize: 11, fontWeight: 700, letterSpacing: '.2em',
-          textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 8
-        }}>{trip.name ? 'Itin\u00e9raire' : 'Voyage'}</div>
+          textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 4
+        }}>Itinéraire</div>
         <div style={{
           fontFamily: 'var(--font-serif)', fontStyle: 'italic',
-          fontSize: 26, lineHeight: '32px', color: 'var(--text)'
+          fontSize: 24, lineHeight: '30px', color: 'var(--text)'
         }}>{trip.name || 'Mon voyage'}</div>
         <div style={{
-          fontFamily: 'var(--font-sans)', fontSize: 13.5, lineHeight: '20px',
-          color: 'var(--muted)', marginTop: 8,
+          fontSize: 13, color: 'var(--muted)', marginTop: 6,
           display: 'flex', alignItems: 'center', gap: 8
         }}>
-          <Icon name="cal" size={16} style={{ color: 'var(--muted)' }} />
+          <Icon name="cal" size={15} style={{ color: 'var(--muted)' }} />
           {days.length} jour{days.length > 1 ? 's' : ''}
-          {trip.startDate ? ' \u00b7 ' + fmtDate(trip.startDate) : ''}
+          {trip.startDate ? ' · ' + fmtDate(trip.startDate) : ''}
         </div>
       </div>
 
-      {/* ── Timeline ── */}
-      <div style={{
-  flex: '1 1 0',
-  minHeight: 0,
-  overflowY: 'auto',
-  padding: '16px 16px 32px',
-  position: 'relative'
-}}>
-        {days.map((d, i) => {
-          const on = i === sel;
-          const past = i < sel;
-          const future = i > sel;
-          const isLast = i === days.length - 1;
-          const dayTitle = d.title || 'Journ\u00e9e libre';
-          const steps = d.steps || [];
+      {/* ── Semaines pliables ── */}
+      <div style={{ flex: '1 1 0', minHeight: 0, overflowY: 'auto', padding: '12px 12px 20px' }}>
+
+        {weeks.map((week, wi) => {
+          const isOpen = !!openWeeks[wi];
+          const containsSelected = sel >= week.startIndex && sel < week.startIndex + week.days.length;
 
           return (
-            <div
-              key={d.id || i}
-              style={{
-                position: 'relative', paddingLeft: 40,
-                marginBottom: isLast ? 0 : on ? 32 : 24,
-                opacity: past && !on ? 0.55 : 1,
-                cursor: 'pointer'
-              }}
-              onClick={() => {
-  Store.set({ selectedDayIndex: i });
-  if (onPickDay) onPickDay();
-}}
-            >
-              {/* Ligne verticale */}
-              {!isLast && (
-                <div style={{
-                  position: 'absolute', left: 18, top: 22, bottom: -24,
-                  width: 2, background: 'var(--outline-variant)', zIndex: 0
-                }} />
-              )}
+            <div key={wi} style={{ marginBottom: 10 }}>
 
-              {/* Cercle */}
-              {on ? (
-                <div style={{
-                  position: 'absolute', left: 8, top: 0,
-                  width: 24, height: 24, borderRadius: '50%',
-                  background: 'var(--tan)', color: 'var(--petrol)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 10, fontWeight: 700,
-                  boxShadow: '0 2px 8px rgba(217,182,126,0.4)',
-                  zIndex: 1
-                }}>{String(i + 1).padStart(2, '0')}</div>
-              ) : past ? (
-                <div style={{
-                  position: 'absolute', left: 12, top: 4,
-                  width: 16, height: 16, borderRadius: '50%',
-                  background: 'var(--bg)',
-                  border: '2px solid var(--outline-variant)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  zIndex: 1
-                }}>
-                  <div style={{
-                    width: 6, height: 6, borderRadius: '50%',
-                    background: 'var(--outline-variant)'
-                  }} />
-                </div>
-              ) : (
-                <div style={{
-                  position: 'absolute', left: 12, top: 4,
-                  width: 16, height: 16, borderRadius: '50%',
-                  background: 'var(--bg)',
-                  border: '2px solid var(--outline-variant)',
-                  zIndex: 1
-                }} />
-              )}
+              {/* ── Header de semaine (cliquer pour plier/déplier) ── */}
+              <button onClick={() => toggleWeek(wi)} style={{
+                width: '100%', display: 'flex', alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '10px 14px', borderRadius: 10, border: 'none',
+                cursor: 'pointer', fontFamily: 'inherit', transition: 'all .15s',
+                background: containsSelected ? 'var(--accent)' : 'var(--inset)',
+                color: containsSelected ? 'var(--accent-ink)' : 'var(--muted)'
+              }}>
+                <span style={{
+                  fontSize: 11, fontWeight: 700, letterSpacing: '.12em',
+                  textTransform: 'uppercase'
+                }}>{week.label}</span>
+                <Icon name={isOpen ? 'chevdown' : 'chevright'} size={14}
+                  style={{ opacity: 0.7 }} />
+              </button>
 
-              {/* Contenu */}
-              <div>
-                {on ? (
-                  <div style={{
-                    fontSize: 11, fontWeight: 700, letterSpacing: '.16em',
-                    textTransform: 'uppercase', color: 'var(--accent)',
-                    marginBottom: 2
-                  }}>{"Aujourd\u0027hui"}</div>
-                ) : (
-                  <div style={{
-                    fontFamily: 'var(--font-mono)', fontSize: 11, lineHeight: '14px',
-                    textTransform: 'uppercase', letterSpacing: '.1em',
-                    color: past ? 'var(--muted)' : 'var(--faint)',
-                    marginBottom: 2
-                  }}>Jour {i + 1}</div>
-                )}
+              {/* ── Liste des jours de cette semaine ── */}
+              {isOpen && (
+                <div style={{ paddingLeft: 8, paddingTop: 6 }}>
+                  {week.days.map((d, di) => {
+                    const globalIdx = week.startIndex + di;
+                    const on = globalIdx === sel;
+                    const dayTitle = d.title || 'Journée libre';
+                    const steps = d.steps || [];
 
-                <div style={{
-                  fontFamily: 'var(--font-serif)', fontSize: 20, lineHeight: '28px',
-                  color: 'var(--text)'
-                }}>{dayTitle}</div>
+                    // Extraire les types d'étapes uniques pour les tags
+                    const stepTypes = [...new Set(steps.map(s => s.type))];
 
-                {/* Détails des étapes pour le jour actif */}
-                {on && steps.length > 0 && (
-                  <div style={{
-                    display: 'flex', flexDirection: 'column', gap: 10, marginTop: 12
-                  }}>
-                    {steps.slice(0, 3).map((st, k) => {
-                      const v = stepView(st);
-                      return (
-                        <div key={k} style={{
-                          padding: '12px 14px',
-                          background: 'var(--surface-high)',
-                          borderRadius: 12,
-                          border: '1px solid rgba(217,182,126,0.3)',
-                          boxShadow: '0 1px 4px rgba(82,98,91,0.04)'
+                    return (
+                      <div key={d.id || globalIdx}
+                        onClick={() => {
+                          Store.set({ selectedDayIndex: globalIdx });
+                          if (onPickDay) onPickDay();
+                        }}
+                        style={{
+                          position: 'relative', cursor: 'pointer',
+                          padding: on ? '14px 14px 14px 16px' : '10px 14px 10px 16px',
+                          borderLeft: on ? '3px solid var(--accent)' : '3px solid transparent',
+                          marginBottom: 2, borderRadius: '0 8px 8px 0',
+                          background: on ? 'var(--accent-soft)' : 'transparent',
+                          opacity: globalIdx < sel && !on ? 0.5 : 1,
+                          transition: 'all .15s'
                         }}>
-                          <div style={{
-                            display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6
-                          }}>
-                            <Icon name={v.icon} size={16} style={{ color: 'var(--accent)' }} />
-                            {v.range && (
-                              <span style={{
-                                fontFamily: 'var(--font-mono)', fontSize: 11,
-                                color: 'var(--accent)', fontWeight: 700
-                              }}>{(v.range || '').split('\u2013')[0]}</span>
+
+                        {/* Numéro du jour + label */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: on ? 6 : 2 }}>
+                          {on && (
+                            <span style={{
+                              width: 22, height: 22, borderRadius: '50%',
+                              background: 'var(--accent)', color: 'var(--accent-ink)',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              fontSize: 10, fontWeight: 800, flexShrink: 0
+                            }}>{String(globalIdx + 1).padStart(2, '0')}</span>
+                          )}
+                          <span style={{
+                            fontSize: 11, fontWeight: 700, letterSpacing: '.12em',
+                            textTransform: 'uppercase',
+                            color: on ? 'var(--accent)' : 'var(--faint)'
+                          }}>{on ? 'Aujourd\'hui' : 'Jour ' + (globalIdx + 1)}</span>
+                        </div>
+
+                        {/* Titre du jour */}
+                        <div style={{
+                          fontFamily: on ? 'var(--font-serif)' : 'inherit',
+                          fontSize: on ? 17 : 14, fontWeight: on ? 400 : 600,
+                          fontStyle: on ? 'italic' : 'normal',
+                          lineHeight: '22px', color: 'var(--text)',
+                          marginBottom: on && stepTypes.length > 0 ? 10 : 0
+                        }}>{dayTitle}</div>
+
+                        {/* Tags des étapes (jour actif seulement : détaillés) */}
+                        {on && steps.length > 0 && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                            {steps.slice(0, 4).map((st, k) => {
+                              const v = stepView(st);
+                              const tag = TAG_COLORS[st.type] || TAG_COLORS.autre;
+                              return (
+                                <div key={k} style={{
+                                  display: 'flex', alignItems: 'center', gap: 8
+                                }}>
+                                  <span style={{
+                                    fontSize: 9, fontWeight: 800, letterSpacing: '.05em',
+                                    textTransform: 'uppercase', padding: '3px 7px',
+                                    borderRadius: 4, background: tag.bg, color: tag.color,
+                                    flexShrink: 0
+                                  }}>{tag.label}</span>
+                                  <span style={{
+                                    fontSize: 12.5, color: 'var(--muted)',
+                                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
+                                  }}>{v.title || st.label || st.lieu || st.place || ''}</span>
+                                </div>
+                              );
+                            })}
+                            {steps.length > 4 && (
+                              <span style={{ fontSize: 11, color: 'var(--faint)', fontWeight: 600 }}>
+                                + {steps.length - 4} étape{steps.length - 4 > 1 ? 's' : ''}
+                              </span>
                             )}
                           </div>
-                          <div style={{
-                            fontSize: 15.5, fontWeight: 700, lineHeight: '22px',
-                            color: 'var(--text)'
-                          }}>{v.title || st.label || st.lieu || 'Sans titre'}</div>
-                          {v.sub && (
-                            <div style={{
-                              fontSize: 13.5, lineHeight: '20px',
-                              color: 'var(--muted)', marginTop: 2
-                            }}>{v.sub}</div>
-                          )}
-                        </div>
-                      );
-                    })}
-                    {steps.length > 3 && (
-                      <div style={{
-                        fontSize: 12, color: 'var(--faint)', fontWeight: 600,
-                        paddingLeft: 4
-                      }}>+ {steps.length - 3} {'\u00e9tape'}{steps.length - 3 > 1 ? 's' : ''}</div>
-                    )}
-                  </div>
-                )}
+                        )}
 
-                {/* Résumé transport pour les jours non-actifs */}
-                {!on && steps.length > 0 && (() => {
-                  const transport = steps.find(st => st.type === 'transport');
-                  if (!transport) return null;
-                  const v = stepView(transport);
-                  return (
-                    <div style={{
-                      display: 'flex', alignItems: 'center', gap: 8,
-                      marginTop: 6, paddingLeft: 2
-                    }}>
-                      <Icon name={v.icon} size={16} style={{ color: 'var(--muted)' }} />
-                      <span style={{
-                        fontSize: 13.5, color: 'var(--muted)'
-                      }}>{v.title || (transport.from + ' \u2192 ' + transport.to)}</span>
-                    </div>
-                  );
-                })()}
-              </div>
+                        {/* Tags résumé (jours non-actifs) */}
+                        {!on && stepTypes.length > 0 && (
+                          <div style={{ display: 'flex', gap: 5, marginTop: 4, flexWrap: 'wrap' }}>
+                            {stepTypes.slice(0, 3).map(type => {
+                              const tag = TAG_COLORS[type] || TAG_COLORS.autre;
+                              return (
+                                <span key={type} style={{
+                                  fontSize: 9, fontWeight: 700, letterSpacing: '.04em',
+                                  textTransform: 'uppercase', padding: '2px 6px',
+                                  borderRadius: 3, background: tag.bg, color: tag.color
+                                }}>{tag.label}</span>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           );
         })}
       </div>
+
+      {/* ── Bouton ajouter (bas de sidebar) ── */}
+      <div style={{ padding: '12px 16px 16px', borderTop: '1px solid var(--outline-variant)' }}>
+        <button onClick={() => {
+          // Bascule sur l'itinéraire si on n'y est pas déjà
+          Store.set({ view: 'itinerary' });
+        }} style={{
+          width: '100%', padding: '11px 0', borderRadius: 10,
+          border: '1px solid var(--accent)', background: 'transparent',
+          color: 'var(--accent)', fontSize: 11, fontWeight: 700,
+          letterSpacing: '.14em', textTransform: 'uppercase',
+          cursor: 'pointer', fontFamily: 'inherit',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          transition: 'all .15s'
+        }}>
+          <Icon name="plus" size={14} />
+          Nouvelle étape
+        </button>
+      </div>
     </aside>
   );
 }
+
 // ─── Boîte à outils (colonne droite, tous onglets) ──────────
 function Toolbox({ width = 320 }) {
   const st = Store.useStore();

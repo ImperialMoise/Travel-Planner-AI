@@ -445,24 +445,7 @@ function DaySpine({ width = 300, onPickDay }) {
         })}
       </div>
 
-      {/* ── Bouton ajouter (bas de sidebar) ── */}
-      <div style={{ padding: '12px 16px 16px', borderTop: '1px solid var(--outline-variant)' }}>
-        <button onClick={() => {
-          // Bascule sur l'itinéraire si on n'y est pas déjà
-          Store.set({ view: 'itinerary' });
-        }} style={{
-          width: '100%', padding: '11px 0', borderRadius: 10,
-          border: '1px solid var(--accent)', background: 'transparent',
-          color: 'var(--accent)', fontSize: 11, fontWeight: 700,
-          letterSpacing: '.14em', textTransform: 'uppercase',
-          cursor: 'pointer', fontFamily: 'inherit',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-          transition: 'all .15s'
-        }}>
-          <Icon name="plus" size={14} />
-          Nouvelle étape
-        </button>
-      </div>
+      {/* Bouton "Nouvelle étape" retiré : l'ajout se fait depuis la journée active. */}
     </aside>
   );
 }

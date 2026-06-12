@@ -687,7 +687,9 @@ function AtelierV2() {
       position: 'relative',
       overflow: 'hidden',
       cursor: 'pointer',
-      transition: 'box-shadow .3s'
+      transition: 'box-shadow .3s',
+      flexShrink: 0,
+      minHeight: 124
     }
   },
     React.createElement('div', {
@@ -1100,6 +1102,157 @@ function AtelierV2() {
   const pillTxt = stt === 'today' ? "Aujourd'hui" : stt === 'past' ? 'Passé' : 'À venir';
   const pillCol = stt === 'today' ? C.accent : stt === 'past' ? C.faint : C.muted;
   const unpinned = ORDER.filter(id => !pinned.includes(id));
+    const mealSteps = (day.steps || []).filter(function(step) {
+    return step.type === 'restaurant' || step.type === 'table';
+  });
+
+  const otherSteps = (day.steps || []).filter(function(step) {
+    return step.type !== 'restaurant' && step.type !== 'table';
+  });
+
+  function MealRail() {
+    return React.createElement('aside', {
+      style: {
+        minWidth: 0,
+        height: '100%',
+        minHeight: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 12,
+        background: 'rgba(255,255,255,.42)',
+        border: `1px solid ${C.line}`,
+        borderRadius: 16,
+        padding: 16,
+        overflow: 'hidden'
+      }
+    },
+      React.createElement('div', {
+        style: {
+          flexShrink: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 12
+        }
+      },
+        React.createElement('div', null,
+          React.createElement('div', { style: s.kicker }, 'Tables & pauses'),
+          React.createElement('div', {
+            style: {
+              fontFamily: serif,
+              fontSize: 22,
+              lineHeight: '28px',
+              color: C.text,
+              marginTop: 4
+            }
+          }, 'Où manger ?')
+        ),
+        React.createElement('button', {
+          type: 'button',
+          onClick: function() {
+            setEditor({ open: true, dayId: day.id, step: { type: 'restaurant' } });
+          },
+          style: {
+            width: 38,
+            height: 38,
+            borderRadius: 999,
+            border: `1px solid ${C.line}`,
+            background: C.accent,
+            color: C.accentInk,
+            display: 'grid',
+            placeItems: 'center',
+            cursor: 'pointer'
+          }
+        }, React.createElement(Icon, { name: 'plus', size: 16 }))
+      ),
+
+      React.createElement('div', {
+        style: {
+          flex: 1,
+          minHeight: 0,
+          overflowY: 'auto',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 10,
+          paddingRight: 4
+        }
+      },
+        mealSteps.length ? mealSteps.map(function(step, k) {
+          var v = stepView(step);
+          return React.createElement('button', {
+            key: step.id || k,
+            type: 'button',
+            onClick: function() { setEditor({ open: true, dayId: day.id, step: step }); },
+            style: {
+              width: '100%',
+              textAlign: 'left',
+              border: `1px solid ${C.line}`,
+              background: C.card,
+              color: C.text,
+              borderRadius: 13,
+              padding: 14,
+              cursor: 'pointer',
+              boxShadow: C.shadow,
+              fontFamily: 'inherit'
+            }
+          },
+            React.createElement('div', {
+              style: {
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 10,
+                marginBottom: 8
+              }
+            },
+              React.createElement('span', {
+                style: {
+                  fontSize: 11,
+                  fontWeight: 800,
+                  letterSpacing: '.14em',
+                  textTransform: 'uppercase',
+                  color: C.accent
+                }
+              }, v.kind || 'Table'),
+              React.createElement('span', {
+                style: {
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 11,
+                  color: C.muted
+                }
+              }, v.range || step.time || '')
+            ),
+            React.createElement('div', {
+              style: {
+                fontFamily: serif,
+                fontSize: 18,
+                lineHeight: '23px',
+                color: C.text,
+                marginBottom: 6
+              }
+            }, v.title || step.label || 'Adresse à choisir'),
+            React.createElement('div', {
+              style: {
+                fontSize: 12.5,
+                lineHeight: '18px',
+                color: C.muted
+              }
+            }, v.sub || step.lieu || step.place || 'Aucun lieu renseigné')
+          );
+        }) : React.createElement('div', {
+          style: {
+            border: `1px dashed ${C.line}`,
+            borderRadius: 14,
+            padding: 16,
+            color: C.muted,
+            fontSize: 13,
+            lineHeight: '19px',
+            background: C.inset
+          }
+        }, 'Aucune table prévue pour ce jour.')
+      )
+    );
+  }
 
   return React.createElement('div', { style: { flex: 1, display: 'flex', minHeight: 0, overflow: 'hidden', position: 'relative' } },
     React.createElement('style', null, '@keyframes itdash{to{stroke-dashoffset:-160}} .it-journey{animation:itdash 9s linear infinite}'),
@@ -1125,20 +1278,65 @@ function AtelierV2() {
           !day.note && React.createElement('div', { style: { marginBottom: 24 } }))),
         heroImg && heroImg.credit && React.createElement('a', { href: heroImg.link, target: '_blank', rel: 'noopener', style: { position: 'absolute', bottom: 8, right: 12, fontSize: 10, color: 'rgba(255,255,255,0.5)', textDecoration: 'none', zIndex: 5 } }, '\u00a9 ' + heroImg.credit),
       
-      React.createElement('div', { style: { flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', gap: 11 } },
-        day.steps.map(function(step, k) { return React.createElement(StepCard, { key: k, s: step }); }),
-        React.createElement('button', {
-          onClick: function() { setEditor({ open: true, dayId: day.id, step: null }); },
+            React.createElement('div', {
+        style: {
+          flex: 1,
+          minHeight: 0,
+          display: 'grid',
+          gridTemplateColumns: 'minmax(0, 2fr) minmax(260px, 1fr)',
+          gap: 16,
+          overflow: 'hidden'
+        }
+      },
+        React.createElement('section', {
           style: {
-            width: '100%', marginTop: 16, padding: '16px 0',
-            borderRadius: 12, border: '2px dashed var(--outline-variant)',
-            background: 'rgba(254,249,239,0.5)',
-            color: 'var(--muted)', cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-            fontFamily: 'inherit', fontSize: 13, fontWeight: 600,
-            transition: 'all .2s'
+            minWidth: 0,
+            minHeight: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 11,
+            overflow: 'hidden'
           }
-        }, React.createElement(Icon, { name: 'plus', size: 16 }), 'Ajouter une étape')
+        },
+          React.createElement('div', {
+            style: {
+              flex: 1,
+              minHeight: 0,
+              overflowY: 'auto',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 11,
+              paddingRight: 6
+            }
+          },
+            otherSteps.map(function(step, k) {
+              return React.createElement(StepCard, { key: step.id || k, s: step });
+            })
+          ),
+          React.createElement('button', {
+            onClick: function() { setEditor({ open: true, dayId: day.id, step: null }); },
+            style: {
+              flexShrink: 0,
+              width: '100%',
+              padding: '15px 0',
+              borderRadius: 12,
+              border: '2px dashed var(--outline-variant)',
+              background: 'rgba(254,249,239,0.5)',
+              color: 'var(--muted)',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              fontFamily: 'inherit',
+              fontSize: 13,
+              fontWeight: 700,
+              transition: 'all .2s'
+            }
+          }, React.createElement(Icon, { name: 'plus', size: 16 }), 'Ajouter une étape')
+        ),
+
+        React.createElement(MealRail, null)
       )
     ),
 

@@ -450,6 +450,305 @@ function DaySpine({ width = 300, onPickDay }) {
   );
 }
 
+function parseTimeToMinutes(value) {
+  if (!value || typeof value !== 'string') return null;
+
+  var match = value.match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) return null;
+
+  var h = parseInt(match[1], 10);
+  var m = parseInt(match[2], 10);
+
+  if (isNaN(h) || isNaN(m)) return null;
+  return h * 60 + m;
+}
+
+function distanceKmBetweenSteps(a, b) {
+  if (!a || !b) return null;
+
+  var lat1 = a.lat;
+  var lng1 = a.lng;
+  var lat2 = b.lat;
+  var lng2 = b.lng;
+
+  if (lat1 == null || lng1 == null || lat2 == null || lng2 == null) return null;
+
+  var R = 6371;
+  var dLat = (lat2 - lat1) * Math.PI / 180;
+  var dLng = (lng2 - lng1) * Math.PI / 180;
+  var rLat1 = lat1 * Math.PI / 180;
+  var rLat2 = lat2 * Math.PI / 180;
+
+  var x =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(rLat1) * Math.cos(rLat2) *
+    Math.sin(dLng / 2) * Math.sin(dLng / 2);
+
+  return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
+}
+
+function stepDisplayName(step) {
+  if (!step) return 'Étape';
+  return step.label || step.lieu || step.place || step.arrivee || step.depart || 'Étape';
+}
+
+function computeDayScore(day) {
+  var steps = (day && day.steps) || [];
+  var score = 100;
+  var issues = [];
+  var tips = [];
+
+  if (!steps.length) {
+    return {
+      score: 0,
+      label: 'Journée vide',
+      issues: ['Aucune étape prévue pour cette journée.'],
+      tips: ['Ajoute quelques étapes avant de demander un diagnostic.']
+    };
+  }
+
+  if (steps.length === 1) {
+    score -= 15;
+    tips.push('Une seule étape : tu peux ajouter un repas, un transport ou une idée à proximité.');
+  }
+
+  if (steps.length > 7) {
+    score -= 15;
+    issues.push('Journée assez dense : plus de 7 étapes prévues.');
+    tips.push('Prévois des marges ou regroupe certaines étapes par quartier.');
+  }
+
+  var missingCoords = steps.filter(function(step) {
+    return step.lat == null || step.lng == null;
+  });
+
+  if (missingCoords.length) {
+    score -= Math.min(25, missingCoords.length * 6);
+    issues.push(missingCoords.length + ' étape' + (missingCoords.length > 1 ? 's' : '') + ' sans coordonnées.');
+    tips.push('Ajoute une localisation précise pour améliorer les trajets et la carte.');
+  }
+
+  var timedSteps = steps
+    .map(function(step, index) {
+      return {
+        step: step,
+        index: index,
+        start: parseTimeToMinutes(step.time),
+        end: parseTimeToMinutes(step.timeEnd)
+      };
+    })
+    .filter(function(item) {
+      return item.start !== null;
+    })
+    .sort(function(a, b) {
+      return a.start - b.start;
+    });
+
+  for (var i = 0; i < timedSteps.length - 1; i++) {
+    var current = timedSteps[i];
+    var next = timedSteps[i + 1];
+
+    var currentEnd = current.end !== null ? current.end : current.start + 60;
+    var gap = next.start - currentEnd;
+
+    if (gap < 0) {
+      score -= 18;
+      issues.push('Chevauchement possible entre “' + stepDisplayName(current.step) + '” et “' + stepDisplayName(next.step) + '”.');
+      tips.push('Décale une des deux étapes ou ajoute une marge.');
+    } else if (gap < 20) {
+      score -= 8;
+      issues.push('Marge courte entre “' + stepDisplayName(current.step) + '” et “' + stepDisplayName(next.step) + '”.');
+      tips.push('Prévois au moins 20 à 30 min entre deux lieux différents.');
+    } else if (gap > 240) {
+      score -= 5;
+      tips.push('Grand trou dans la journée : tu peux ajouter une pause, une balade ou laisser ce temps libre volontairement.');
+    }
+  }
+
+  var knownDistances = [];
+  for (var j = 0; j < steps.length - 1; j++) {
+    var dist = distanceKmBetweenSteps(steps[j], steps[j + 1]);
+    if (dist !== null) {
+      knownDistances.push(dist);
+
+      if (dist > 8) {
+        score -= 12;
+        issues.push('Trajet probablement long entre “' + stepDisplayName(steps[j]) + '” et “' + stepDisplayName(steps[j + 1]) + '”.');
+        tips.push('Teste bus, métro, voiture ou vélo dans l’outil Itinéraire pour vérifier le meilleur mode.');
+      } else if (dist > 3) {
+        score -= 5;
+        tips.push('Un trajet de plus de 3 km peut être pénible à pied : compare avec vélo, bus ou métro.');
+      }
+    }
+  }
+
+  var hasRestaurant = steps.some(function(step) {
+    return step.type === 'restaurant';
+  });
+
+  if (!hasRestaurant && steps.length >= 3) {
+    score -= 6;
+    tips.push('Aucun repas prévu : pense à réserver une pause déjeuner ou dîner.');
+  }
+
+  score = Math.max(0, Math.min(100, Math.round(score)));
+
+  var label = 'Très cohérent';
+  if (score < 50) label = 'À revoir';
+  else if (score < 70) label = 'Correct, à ajuster';
+  else if (score < 85) label = 'Bien équilibré';
+
+  if (!issues.length) {
+    issues.push('Aucun gros problème détecté avec les informations disponibles.');
+  }
+
+  if (!tips.length) {
+    tips.push('La journée semble cohérente. Vérifie quand même les horaires réels, réservations et temps de transport.');
+  }
+
+  return {
+    score: score,
+    label: label,
+    issues: issues.slice(0, 4),
+    tips: tips.slice(0, 4)
+  };
+}
+
+function DayScoreWidget({ day, editMode, onRemove }) {
+  var result = computeDayScore(day);
+
+  var scoreColor = 'var(--accent)';
+  if (result.score < 50) scoreColor = 'var(--danger)';
+  else if (result.score < 70) scoreColor = 'var(--tan)';
+
+  return (
+    <div
+      key="dayScore"
+      style={{
+        background: 'var(--card)',
+        borderRadius: 12,
+        boxShadow: '0 2px 8px rgba(82,98,91,0.05)',
+        border: '1px solid var(--outline-variant)',
+        overflow: 'hidden'
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '12px 16px',
+          borderBottom: '1px solid var(--outline-variant)',
+          background: 'var(--soft)'
+        }}
+      >
+        <span
+          style={{
+            fontSize: 13,
+            fontWeight: 600,
+            color: 'var(--text)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8
+          }}
+        >
+          <Icon name="route" size={16} style={{ color: scoreColor }} />
+          Score & trajets
+        </span>
+
+        {editMode && (
+          <button
+            onClick={onRemove}
+            style={{
+              width: 22,
+              height: 22,
+              borderRadius: 7,
+              border: 'none',
+              cursor: 'pointer',
+              background: 'var(--accent-soft)',
+              color: 'var(--accent)',
+              display: 'grid',
+              placeItems: 'center',
+              fontSize: 15
+            }}
+          >
+            {'\u00d7'}
+          </button>
+        )}
+      </div>
+
+      <div style={{ padding: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 14 }}>
+          <div
+            style={{
+              width: 58,
+              height: 58,
+              borderRadius: '50%',
+              background: 'var(--inset)',
+              border: '2px solid ' + scoreColor,
+              display: 'grid',
+              placeItems: 'center',
+              flexShrink: 0
+            }}
+          >
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontFamily: 'var(--font-serif)', fontSize: 22, lineHeight: 1, color: scoreColor }}>
+                {result.score}
+              </div>
+              <div style={{ fontSize: 9, fontWeight: 800, color: 'var(--faint)' }}>
+                /100
+              </div>
+            </div>
+          </div>
+
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text)', marginBottom: 3 }}>
+              {result.label}
+            </div>
+            <div style={{ fontSize: 12.5, lineHeight: '18px', color: 'var(--muted)' }}>
+              Diagnostic indicatif basé sur les étapes, horaires et coordonnées disponibles.
+            </div>
+          </div>
+        </div>
+
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--faint)', marginBottom: 7 }}>
+            Points à vérifier
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {result.issues.map(function(issue, i) {
+              return (
+                <div key={i} style={{ display: 'flex', gap: 8, fontSize: 12.5, lineHeight: '18px', color: 'var(--text)' }}>
+                  <span style={{ color: scoreColor, fontWeight: 900 }}>•</span>
+                  <span>{issue}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div>
+          <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--faint)', marginBottom: 7 }}>
+            Pistes pratiques
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {result.tips.map(function(tip, i) {
+              return (
+                <div key={i} style={{ display: 'flex', gap: 8, fontSize: 12.5, lineHeight: '18px', color: 'var(--muted)' }}>
+                  <Icon name="sparkle" size={12} style={{ color: 'var(--tan)', flexShrink: 0, marginTop: 2 }} />
+                  <span>{tip}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function GlobalNoteWidget({ trip, editMode, onRemove }) {
   const [draft, setDraft] = React.useState(trip?.globalNote || '');
   const [saving, setSaving] = React.useState(false);
@@ -616,8 +915,8 @@ function Toolbox({ width = 320 }) {
   const mode = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
 
   const DEFAULTS = {
-    itinerary: ['checklist', 'note', 'globalNote', 'stats'],
-    map: ['calc', 'globalNote', 'checklist'],
+    itinerary: ['dayScore', 'checklist', 'note', 'globalNote', 'stats'],
+    map: ['calc', 'dayScore', 'globalNote', 'checklist'],
     budget: ['stats', 'globalNote', 'note'],
     docs: ['globalNote', 'checklist', 'note']
   };
@@ -836,6 +1135,17 @@ if (!data.routes || !data.routes[0]) {
             );
           }) : <div style={{ fontSize: 13, color: 'var(--faint)', fontStyle: 'italic' }}>Rien de pr{'\u00e9'}vu pour ce jour.</div>}
         </WidgetShell>
+      );
+    }},
+
+        dayScore: { label: 'Score & trajets', icon: 'route', render() {
+      return (
+        <DayScoreWidget
+          key="dayScore"
+          day={day}
+          editMode={editMode}
+          onRemove={() => togglePin('dayScore')}
+        />
       );
     }},
 
@@ -1163,7 +1473,7 @@ if (!data.routes || !data.routes[0]) {
     }}
   };
 
-  const ORDER = ['calc', 'checklist', 'globalNote', 'note', 'stats', 'people'];
+  const ORDER = ['calc', 'dayScore', 'checklist', 'globalNote', 'note', 'stats', 'people'];
   const unpinned = ORDER.filter(id => pinned.indexOf(id) === -1);
 
   return (

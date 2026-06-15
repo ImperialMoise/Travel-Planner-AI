@@ -76,6 +76,101 @@ async function getUserFromRequest(req: Request, supabaseUrl: string, anonKey: st
   return data.user || null;
 }
 
+function hasKorean(value: string) {
+  return /[\u3130-\u318F\uAC00-\uD7AF]/.test(String(value || ""));
+}
+
+function toTitleCase(value: string) {
+  return String(value || "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
+function readableNameFromQuery(query: string) {
+  const text = String(query || "")
+    .replace(/corée du sud/gi, "")
+    .replace(/coree du sud/gi, "")
+    .replace(/south korea/gi, "")
+    .replace(/korea/gi, "")
+    .replace(/république de corée/gi, "")
+    .replace(/republique de coree/gi, "")
+    .replace(/séoul/gi, "")
+    .replace(/seoul/gi, "")
+    .replace(/busan/gi, "")
+    .replace(/,/g, " ")
+    .trim();
+
+  return toTitleCase(text);
+}
+
+function cleanFrenchPlaceText(value: string) {
+  const text = String(value || "").trim();
+  if (!text) return "";
+
+  return text
+    .replaceAll("서울특별시", "Séoul")
+    .replaceAll("서울", "Séoul")
+    .replaceAll("부산광역시", "Busan")
+    .replaceAll("부산", "Busan")
+    .replaceAll("인천광역시", "Incheon")
+    .replaceAll("인천", "Incheon")
+    .replaceAll("대구", "Daegu")
+    .replaceAll("대전", "Daejeon")
+    .replaceAll("광주", "Gwangju")
+    .replaceAll("제주", "Jeju")
+    .replaceAll("경주", "Gyeongju")
+    .replaceAll("전주", "Jeonju")
+    .replaceAll("강릉", "Gangneung")
+    .replaceAll("수원", "Suwon");
+}
+
+function pickLocalizedName(p: any, query: string) {
+  const candidates = [
+    p["name:fr"],
+    p.name_fr,
+    p["official_name:fr"],
+    p.official_name_fr,
+    p["alt_name:fr"],
+    p.alt_name_fr,
+    p["name:en"],
+    p.name_en,
+    p.int_name,
+    p["int_name"],
+    p.address_line1,
+    p.formatted,
+    p.name,
+  ].filter(Boolean).map((item) => cleanFrenchPlaceText(String(item)));
+
+  const latin = candidates.find((item) => item && !hasKorean(item));
+  if (latin) return latin;
+
+  const fromQuery = readableNameFromQuery(query);
+  if (fromQuery) return fromQuery;
+
+  return candidates[0] || "Lieu";
+}
+
+function pickLocalizedAddress(p: any) {
+  return cleanFrenchPlaceText(p.formatted || p.address_line2 || "");
+}
+
+function pickLocalizedCity(p: any) {
+  return cleanFrenchPlaceText(p.city || p.town || p.village || "");
+}
+
+function pickLocalizedCountry(p: any) {
+  const country = cleanFrenchPlaceText(p.country || "");
+
+  if (country.toLowerCase() === "south korea") return "Corée du Sud";
+  if (country.toLowerCase() === "republic of korea") return "Corée du Sud";
+  if (country === "대한민국") return "Corée du Sud";
+
+  return country;
+}
+
 function mapTypeToGeoapify(type: string) {
   const t = String(type || "").toLowerCase();
 
@@ -138,10 +233,10 @@ async function callGeoapifyAutocomplete(params: {
     return {
       provider: "geoapify",
       placeId: p.place_id || p.datasource?.raw?.osm_id || p.formatted,
-      label: p.name || p.address_line1 || p.formatted || "Lieu",
-      address: p.formatted || p.address_line2 || "",
-      city: p.city || p.town || p.village || "",
-      country: p.country || "",
+      label: pickLocalizedName(p, params.query),
+      address: pickLocalizedAddress(p),
+      city: pickLocalizedCity(p),
+      country: pickLocalizedCountry(p),
       postcode: p.postcode || "",
       lat: coords[1] ?? p.lat ?? null,
       lng: coords[0] ?? p.lon ?? null,

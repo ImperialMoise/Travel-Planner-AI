@@ -1321,6 +1321,396 @@ function GlobalNoteWidget({ trip, editMode, onRemove }) {
   );
 }
 
+function CurrencyWidget({ editMode, onRemove }) {
+  const CURRENCY_OPTIONS = [
+    { code: 'EUR', label: 'Euro' },
+    { code: 'KRW', label: 'Won sud-coréen' },
+    { code: 'USD', label: 'Dollar américain' },
+    { code: 'JPY', label: 'Yen japonais' },
+    { code: 'GBP', label: 'Livre sterling' },
+    { code: 'CHF', label: 'Franc suisse' },
+    { code: 'CAD', label: 'Dollar canadien' },
+    { code: 'AUD', label: 'Dollar australien' }
+  ];
+
+  const FALLBACK_RATES = {
+    EUR_KRW: 1600,
+    KRW_EUR: 0.000625,
+    EUR_USD: 1.08,
+    USD_EUR: 0.93,
+    EUR_JPY: 165,
+    JPY_EUR: 0.0061,
+    EUR_GBP: 0.86,
+    GBP_EUR: 1.16,
+    EUR_CHF: 0.95,
+    CHF_EUR: 1.05
+  };
+
+  const [amount, setAmount] = React.useState('100');
+  const [from, setFrom] = React.useState('EUR');
+  const [to, setTo] = React.useState('KRW');
+  const [rate, setRate] = React.useState(1600);
+  const [manualRate, setManualRate] = React.useState('1600');
+  const [rateDate, setRateDate] = React.useState('');
+  const [loading, setLoading] = React.useState(false);
+  const [autoRate, setAutoRate] = React.useState(true);
+
+  function pairKey(a, b) {
+    return a + '_' + b;
+  }
+
+  function fallbackRate(a, b) {
+    if (a === b) return 1;
+    return FALLBACK_RATES[pairKey(a, b)] || 1;
+  }
+
+  function formatMoney(value, code) {
+    const n = Number(value) || 0;
+    const max = code === 'KRW' || code === 'JPY' ? 0 : 2;
+
+    return n.toLocaleString('fr-FR', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: max
+    }) + ' ' + code;
+  }
+
+  async function fetchRate(a, b) {
+    if (!a || !b) return;
+    if (a === b) {
+      setRate(1);
+      setManualRate('1');
+      setRateDate('');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const url =
+        'https://api.frankfurter.dev/v1/latest?from=' +
+        encodeURIComponent(a) +
+        '&to=' +
+        encodeURIComponent(b);
+
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Taux indisponible');
+
+      const data = await res.json();
+      const nextRate = data && data.rates ? Number(data.rates[b]) : 0;
+
+      if (!nextRate) throw new Error('Taux introuvable');
+
+      setRate(nextRate);
+      setManualRate(String(nextRate));
+      setRateDate(data.date || '');
+
+      localStorage.setItem('atelier_currency_rate_' + pairKey(a, b), String(nextRate));
+      if (data.date) localStorage.setItem('atelier_currency_date_' + pairKey(a, b), data.date);
+    } catch (e) {
+      const saved = Number(localStorage.getItem('atelier_currency_rate_' + pairKey(a, b)));
+      const nextRate = saved || fallbackRate(a, b);
+
+      setRate(nextRate);
+      setManualRate(String(nextRate));
+      setRateDate(localStorage.getItem('atelier_currency_date_' + pairKey(a, b)) || 'manuel');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  React.useEffect(() => {
+    if (autoRate) {
+      fetchRate(from, to);
+    } else {
+      const saved = Number(localStorage.getItem('atelier_currency_rate_' + pairKey(from, to)));
+      const nextRate = saved || fallbackRate(from, to);
+      setRate(nextRate);
+      setManualRate(String(nextRate));
+      setRateDate(localStorage.getItem('atelier_currency_date_' + pairKey(from, to)) || 'manuel');
+    }
+  }, [from, to, autoRate]);
+
+  const amountNumber = Number(String(amount || '').replace(',', '.')) || 0;
+  const rateNumber = Number(String(manualRate || '').replace(',', '.')) || 0;
+  const converted = amountNumber * rateNumber;
+
+  const selectStyle = {
+    width: '100%',
+    padding: '8px 9px',
+    borderRadius: 9,
+    border: '1px solid var(--outline-variant)',
+    background: 'var(--inset)',
+    color: 'var(--text)',
+    fontFamily: 'inherit',
+    fontSize: 12.5,
+    outline: 'none'
+  };
+
+  const inputStyle = {
+    width: '100%',
+    padding: '9px 10px',
+    borderRadius: 9,
+    border: '1px solid var(--outline-variant)',
+    background: 'var(--inset)',
+    color: 'var(--text)',
+    fontFamily: 'inherit',
+    fontSize: 13,
+    outline: 'none'
+  };
+
+  function swap() {
+    setFrom(to);
+    setTo(from);
+  }
+
+  function saveManualRate(value) {
+    setManualRate(value);
+    setRate(Number(String(value || '').replace(',', '.')) || 0);
+    localStorage.setItem('atelier_currency_rate_' + pairKey(from, to), value);
+    localStorage.setItem('atelier_currency_date_' + pairKey(from, to), 'manuel');
+    setRateDate('manuel');
+  }
+
+  return (
+    <div style={{
+      background: 'var(--card)',
+      borderRadius: 12,
+      boxShadow: '0 2px 8px rgba(82,98,91,0.05)',
+      border: '1px solid var(--outline-variant)',
+      overflow: 'hidden'
+    }}>
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '12px 16px',
+        borderBottom: '1px solid var(--outline-variant)',
+        background: 'var(--soft)'
+      }}>
+        <span style={{
+          fontSize: 13,
+          fontWeight: 600,
+          color: 'var(--text)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8
+        }}>
+          <Icon name="arrow" size={16} style={{ color: 'var(--accent)' }} />
+          Convertisseur
+        </span>
+
+        {editMode && (
+          <button
+            onClick={onRemove}
+            style={{
+              width: 22,
+              height: 22,
+              borderRadius: 7,
+              border: 'none',
+              cursor: 'pointer',
+              background: 'var(--accent-soft)',
+              color: 'var(--accent)',
+              display: 'grid',
+              placeItems: 'center',
+              fontSize: 15
+            }}
+          >
+            {'\u00d7'}
+          </button>
+        )}
+      </div>
+
+      <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div>
+          <div style={{
+            fontSize: 10.5,
+            fontWeight: 800,
+            letterSpacing: '.1em',
+            textTransform: 'uppercase',
+            color: 'var(--faint)',
+            marginBottom: 5
+          }}>
+            Montant
+          </div>
+
+          <input
+            value={amount}
+            onChange={e => setAmount(e.target.value)}
+            inputMode="decimal"
+            placeholder="100"
+            style={{
+              ...inputStyle,
+              fontSize: 18,
+              fontWeight: 800
+            }}
+          />
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 34px 1fr', gap: 8, alignItems: 'end' }}>
+          <div>
+            <div style={{
+              fontSize: 10.5,
+              fontWeight: 800,
+              letterSpacing: '.1em',
+              textTransform: 'uppercase',
+              color: 'var(--faint)',
+              marginBottom: 5
+            }}>
+              Depuis
+            </div>
+
+            <select value={from} onChange={e => setFrom(e.target.value)} style={selectStyle}>
+              {CURRENCY_OPTIONS.map(c => (
+                <option key={c.code} value={c.code}>{c.code} · {c.label}</option>
+              ))}
+            </select>
+          </div>
+
+          <button
+            type="button"
+            onClick={swap}
+            title="Inverser"
+            style={{
+              height: 34,
+              width: 34,
+              borderRadius: 9,
+              border: '1px solid var(--outline-variant)',
+              background: 'var(--card)',
+              color: 'var(--accent)',
+              cursor: 'pointer',
+              display: 'grid',
+              placeItems: 'center'
+            }}
+          >
+            <Icon name="arrow" size={14} />
+          </button>
+
+          <div>
+            <div style={{
+              fontSize: 10.5,
+              fontWeight: 800,
+              letterSpacing: '.1em',
+              textTransform: 'uppercase',
+              color: 'var(--faint)',
+              marginBottom: 5
+            }}>
+              Vers
+            </div>
+
+            <select value={to} onChange={e => setTo(e.target.value)} style={selectStyle}>
+              {CURRENCY_OPTIONS.map(c => (
+                <option key={c.code} value={c.code}>{c.code} · {c.label}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div style={{
+          background: 'var(--inset)',
+          border: '1px solid var(--outline-variant)',
+          borderRadius: 12,
+          padding: '12px 13px'
+        }}>
+          <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 4 }}>
+            Résultat estimé
+          </div>
+
+          <div style={{
+            fontFamily: 'var(--font-serif)',
+            fontSize: 26,
+            lineHeight: '30px',
+            color: 'var(--accent)'
+          }}>
+            {formatMoney(converted, to)}
+          </div>
+
+          <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>
+            {formatMoney(amountNumber, from)} ≈ {formatMoney(converted, to)}
+          </div>
+        </div>
+
+        <label style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          fontSize: 12.5,
+          color: 'var(--muted)',
+          cursor: 'pointer'
+        }}>
+          <input
+            type="checkbox"
+            checked={autoRate}
+            onChange={e => setAutoRate(e.target.checked)}
+            style={{ accentColor: 'var(--accent)' }}
+          />
+          Taux automatique
+        </label>
+
+        <div>
+          <div style={{
+            fontSize: 10.5,
+            fontWeight: 800,
+            letterSpacing: '.1em',
+            textTransform: 'uppercase',
+            color: 'var(--faint)',
+            marginBottom: 5
+          }}>
+            Taux utilisé
+          </div>
+
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <span style={{ fontSize: 12, color: 'var(--muted)', whiteSpace: 'nowrap' }}>
+              1 {from} =
+            </span>
+
+            <input
+              value={manualRate}
+              onChange={e => {
+                setAutoRate(false);
+                saveManualRate(e.target.value);
+              }}
+              inputMode="decimal"
+              style={inputStyle}
+            />
+
+            <span style={{ fontSize: 12, color: 'var(--muted)' }}>
+              {to}
+            </span>
+          </div>
+
+          <div style={{ fontSize: 11.5, color: 'var(--faint)', marginTop: 6, lineHeight: '16px' }}>
+            {loading
+              ? 'Mise à jour du taux…'
+              : autoRate
+                ? 'Taux récupéré automatiquement' + (rateDate ? ' · ' + rateDate : '')
+                : 'Taux manuel' + (rateDate ? ' · ' + rateDate : '')}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => fetchRate(from, to)}
+            style={{
+              marginTop: 8,
+              width: '100%',
+              border: '1px solid var(--outline-variant)',
+              background: 'var(--card)',
+              color: 'var(--text)',
+              borderRadius: 9,
+              padding: '8px 10px',
+              fontFamily: 'inherit',
+              fontSize: 12,
+              fontWeight: 800,
+              cursor: 'pointer'
+            }}
+          >
+            {loading ? 'Mise à jour…' : 'Actualiser le taux'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Boîte à outils (colonne droite, tous onglets) ──────────
 function Toolbox({ width = 320 }) {
   const st = Store.useStore();
@@ -1351,77 +1741,6 @@ function Toolbox({ width = 320 }) {
   const [done, setDone] = React.useState({});
   const [todoDraft, setTodoDraft] = React.useState('');
   const [savingTodo, setSavingTodo] = React.useState(false);
-  const CURRENCY_OPTIONS = [
-  { code: 'EUR', label: 'Euro', symbol: '€' },
-  { code: 'KRW', label: 'Won sud-coréen', symbol: '₩' },
-  { code: 'USD', label: 'Dollar américain', symbol: '$' },
-  { code: 'JPY', label: 'Yen japonais', symbol: '¥' },
-  { code: 'GBP', label: 'Livre sterling', symbol: '£' },
-  { code: 'CHF', label: 'Franc suisse', symbol: 'CHF' },
-  { code: 'CAD', label: 'Dollar canadien', symbol: 'C$' },
-  { code: 'AUD', label: 'Dollar australien', symbol: 'A$' }
-];
-
-const CURRENCY_DEFAULT_RATES = {
-  EUR_KRW: '1600',
-  KRW_EUR: '0.000625',
-  EUR_USD: '1.08',
-  USD_EUR: '0.93',
-  EUR_JPY: '165',
-  JPY_EUR: '0.0061',
-  EUR_GBP: '0.86',
-  GBP_EUR: '1.16',
-  EUR_CHF: '0.95',
-  CHF_EUR: '1.05'
-};
-
-const [currencyAmount, setCurrencyAmount] = React.useState('100');
-const [currencyFrom, setCurrencyFrom] = React.useState('EUR');
-const [currencyTo, setCurrencyTo] = React.useState('KRW');
-const [currencyRate, setCurrencyRate] = React.useState(() => {
-  return localStorage.getItem('atelier_currency_rate_EUR_KRW') || CURRENCY_DEFAULT_RATES.EUR_KRW || '1';
-});
-
-function currencyPairKey(from, to) {
-  return from + '_' + to;
-}
-
-function getCurrencyMeta(code) {
-  return CURRENCY_OPTIONS.find(c => c.code === code) || { code, label: code, symbol: code };
-}
-
-function loadCurrencyRate(from, to) {
-  const key = currencyPairKey(from, to);
-  return localStorage.getItem('atelier_currency_rate_' + key) || CURRENCY_DEFAULT_RATES[key] || '1';
-}
-
-function saveCurrencyRate(value) {
-  setCurrencyRate(value);
-  localStorage.setItem('atelier_currency_rate_' + currencyPairKey(currencyFrom, currencyTo), value);
-}
-
-function swapCurrency() {
-  const oldFrom = currencyFrom;
-  const oldTo = currencyTo;
-
-  setCurrencyFrom(oldTo);
-  setCurrencyTo(oldFrom);
-  setCurrencyRate(loadCurrencyRate(oldTo, oldFrom));
-}
-
-function formatCurrencyValue(value, code) {
-  const n = Number(value) || 0;
-  const max = code === 'KRW' || code === 'JPY' ? 0 : 2;
-
-  return n.toLocaleString('fr-FR', {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: max
-  }) + ' ' + code;
-}
-
-React.useEffect(() => {
-  setCurrencyRate(loadCurrencyRate(currencyFrom, currencyTo));
-}, [currencyFrom, currencyTo]);
   const todoInputRef = React.useRef(null);
 
 async function saveTodoItems(nextItems) {
@@ -2036,167 +2355,15 @@ function getUsefulAroundTip(step) {
     }},
 
     currency: { label: 'Convertisseur', icon: 'arrow', render() {
-  const fromMeta = getCurrencyMeta(currencyFrom);
-  const toMeta = getCurrencyMeta(currencyTo);
-
-  const amountNumber = Number(String(currencyAmount || '').replace(',', '.')) || 0;
-  const rateNumber = Number(String(currencyRate || '').replace(',', '.')) || 0;
-  const converted = amountNumber * rateNumber;
-
-  const selectStyle = {
-    width: '100%',
-    padding: '8px 9px',
-    borderRadius: 9,
-    border: '1px solid var(--outline-variant)',
-    background: 'var(--inset)',
-    color: 'var(--text)',
-    fontFamily: 'inherit',
-    fontSize: 12.5,
-    outline: 'none'
-  };
-
-  const inputStyle = {
-    width: '100%',
-    padding: '9px 10px',
-    borderRadius: 9,
-    border: '1px solid var(--outline-variant)',
-    background: 'var(--inset)',
-    color: 'var(--text)',
-    fontFamily: 'inherit',
-    fontSize: 13,
-    outline: 'none'
-  };
-
   return (
-    <WidgetShell key="currency" id="currency" title="Convertisseur de devise" icon="arrow" iconColor="var(--accent)">
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <div>
-          <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--faint)', marginBottom: 5 }}>
-            Montant
-          </div>
-
-          <input
-            value={currencyAmount}
-            onChange={e => setCurrencyAmount(e.target.value)}
-            inputMode="decimal"
-            placeholder="100"
-            style={{
-              ...inputStyle,
-              fontSize: 18,
-              fontWeight: 800,
-              color: 'var(--text)'
-            }}
-          />
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 34px 1fr', gap: 8, alignItems: 'end' }}>
-          <div>
-            <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--faint)', marginBottom: 5 }}>
-              Depuis
-            </div>
-
-            <select
-              value={currencyFrom}
-              onChange={e => setCurrencyFrom(e.target.value)}
-              style={selectStyle}
-            >
-              {CURRENCY_OPTIONS.map(c => (
-                <option key={c.code} value={c.code}>{c.code} · {c.label}</option>
-              ))}
-            </select>
-          </div>
-
-          <button
-            type="button"
-            onClick={swapCurrency}
-            title="Inverser"
-            style={{
-              height: 34,
-              width: 34,
-              borderRadius: 9,
-              border: '1px solid var(--outline-variant)',
-              background: 'var(--card)',
-              color: 'var(--accent)',
-              cursor: 'pointer',
-              display: 'grid',
-              placeItems: 'center'
-            }}
-          >
-            <Icon name="arrow" size={14} />
-          </button>
-
-          <div>
-            <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--faint)', marginBottom: 5 }}>
-              Vers
-            </div>
-
-            <select
-              value={currencyTo}
-              onChange={e => setCurrencyTo(e.target.value)}
-              style={selectStyle}
-            >
-              {CURRENCY_OPTIONS.map(c => (
-                <option key={c.code} value={c.code}>{c.code} · {c.label}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <div style={{
-          background: 'var(--inset)',
-          border: '1px solid var(--outline-variant)',
-          borderRadius: 12,
-          padding: '12px 13px'
-        }}>
-          <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 4 }}>
-            Résultat estimé
-          </div>
-
-          <div style={{
-            fontFamily: 'var(--font-serif)',
-            fontSize: 26,
-            lineHeight: '30px',
-            color: 'var(--accent)'
-          }}>
-            {formatCurrencyValue(converted, currencyTo)}
-          </div>
-
-          <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>
-            {formatCurrencyValue(amountNumber, currencyFrom)} ≈ {formatCurrencyValue(converted, currencyTo)}
-          </div>
-        </div>
-
-        <div>
-          <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--faint)', marginBottom: 5 }}>
-            Taux utilisé
-          </div>
-
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <span style={{ fontSize: 12, color: 'var(--muted)', whiteSpace: 'nowrap' }}>
-              1 {currencyFrom} =
-            </span>
-
-            <input
-              value={currencyRate}
-              onChange={e => saveCurrencyRate(e.target.value)}
-              inputMode="decimal"
-              style={inputStyle}
-            />
-
-            <span style={{ fontSize: 12, color: 'var(--muted)' }}>
-              {currencyTo}
-            </span>
-          </div>
-
-          <div style={{ fontSize: 11.5, color: 'var(--faint)', marginTop: 6, lineHeight: '16px' }}>
-            Taux manuel modifiable. Pratique pour voyager, surtout quand tu veux convertir rapidement sans dépendre d’une API.
-          </div>
-        </div>
-      </div>
-    </WidgetShell>
+    <CurrencyWidget
+      key="currency"
+      editMode={editMode}
+      onRemove={() => togglePin('currency')}
+    />
   );
 }},
-
+ 
     people: { label: 'Voyageurs', icon: 'users', render() {
       return (
         <WidgetShell key="people" id="people" title="Voyageurs" icon="users" iconColor="var(--tertiary)">

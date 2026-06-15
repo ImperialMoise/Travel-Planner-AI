@@ -685,19 +685,114 @@ if (!data.routes || !data.routes[0]) {
     }},
 
     note: { label: 'Journal du jour', icon: 'sparkle', render() {
+      const [noteDraft, setNoteDraft] = React.useState(day.note || '');
+      const [savingNote, setSavingNote] = React.useState(false);
+
+      React.useEffect(() => {
+        setNoteDraft(day.note || '');
+      }, [day.id]);
+
+      const dirty = noteDraft !== (day.note || '');
+
+      async function saveNote() {
+        if (!day.id || savingNote) return;
+
+        setSavingNote(true);
+        try {
+          await window.SB.updateDay(day.id, { note: noteDraft });
+
+          const updatedTrip = await window.SB.loadTrip(trip.id);
+          Store.set({ trip: updatedTrip });
+
+          Store.showToast(dirty ? 'Journal sauvegardé' : 'Journal à jour');
+        } catch (error) {
+          Store.showToast('Erreur journal : ' + (error.message || error));
+        } finally {
+          setSavingNote(false);
+        }
+      }
+
       return (
         <div key="note" style={{ background: 'var(--soft)', borderRadius: 12, boxShadow: '0 2px 8px rgba(82,98,91,0.05)', border: '1px solid rgba(217,182,126,0.3)', padding: 16, position: 'relative', overflow: 'hidden' }}>
           <div style={{ position: 'absolute', top: 0, right: 0, width: 32, height: 32, background: 'rgba(217,182,126,0.1)', borderRadius: '0 0 0 12px' }} />
+
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
             <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8 }}>
               <Icon name="sparkle" size={16} style={{ color: 'var(--tan)' }} />
               Journal du jour
             </span>
-            {editMode && <button onClick={() => togglePin('note')} style={{ width: 22, height: 22, borderRadius: 7, border: 'none', cursor: 'pointer', background: 'var(--accent-soft)', color: 'var(--accent)', display: 'grid', placeItems: 'center', fontSize: 15 }}>{'\u00d7'}</button>}
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <button
+                onClick={saveNote}
+                disabled={savingNote || !dirty}
+                style={{
+                  border: 'none',
+                  cursor: savingNote || !dirty ? 'default' : 'pointer',
+                  background: dirty ? 'var(--accent)' : 'var(--inset)',
+                  color: dirty ? 'var(--accent-ink)' : 'var(--faint)',
+                  borderRadius: 8,
+                  padding: '5px 9px',
+                  fontSize: 11,
+                  fontWeight: 800,
+                  fontFamily: 'inherit'
+                }}
+              >
+                {savingNote ? '...' : dirty ? 'Sauver' : 'À jour'}
+              </button>
+
+              {editMode && (
+                <button
+                  onClick={() => togglePin('note')}
+                  style={{
+                    width: 22,
+                    height: 22,
+                    borderRadius: 7,
+                    border: 'none',
+                    cursor: 'pointer',
+                    background: 'var(--accent-soft)',
+                    color: 'var(--accent)',
+                    display: 'grid',
+                    placeItems: 'center',
+                    fontSize: 15
+                  }}
+                >
+                  {'\u00d7'}
+                </button>
+              )}
+            </div>
           </div>
-          {day.note
-            ? <div style={{ fontSize: 13.5, lineHeight: '20px', color: 'var(--muted)', fontStyle: 'italic' }}>{day.note}</div>
-            : <div style={{ fontSize: 13, color: 'var(--faint)', fontStyle: 'italic' }}>Aucune note pour ce jour.</div>}
+
+          <textarea
+            value={noteDraft}
+            onChange={e => setNoteDraft(e.target.value)}
+            placeholder="Écris une note pour cette journée..."
+            rows={5}
+            style={{
+              width: '100%',
+              minHeight: 92,
+              resize: 'vertical',
+              border: '1px solid var(--outline-variant)',
+              borderRadius: 11,
+              background: 'var(--card)',
+              color: 'var(--text)',
+              padding: '10px 12px',
+              fontFamily: 'inherit',
+              fontSize: 13.5,
+              lineHeight: '20px',
+              outline: 'none',
+              boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)'
+            }}
+          />
+
+          <div style={{
+            marginTop: 8,
+            fontSize: 11.5,
+            color: dirty ? 'var(--accent)' : 'var(--faint)',
+            fontWeight: 700
+          }}>
+            {dirty ? 'Modifications non sauvegardées' : 'Sauvegardé sur ce jour'}
+          </div>
         </div>
       );
     }},

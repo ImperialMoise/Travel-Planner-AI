@@ -145,6 +145,27 @@ export async function updateTrip(tripId, patch) {
   return data;
 }
 
+export async function updateDay(dayId, patch) {
+  if (!dayId) throw new Error('Jour introuvable');
+
+  const row = {};
+
+  if (patch.title !== undefined) row.title = patch.title || '';
+  if (patch.note !== undefined) row.note = patch.note || '';
+  if (patch.dateLabel !== undefined) row.date_label = patch.dateLabel || '';
+  if (patch.dateISO !== undefined) row.date_iso = patch.dateISO || null;
+
+  const { data, error } = await sb
+    .from('trip_days')
+    .update(row)
+    .eq('id', dayId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
 export async function deleteTrip(tripId) {
   const { error } = await sb.from('trips').delete().eq('id', tripId);
   if (error) throw error;

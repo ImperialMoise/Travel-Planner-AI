@@ -171,16 +171,6 @@ export async function deleteTrip(tripId) {
   if (error) throw error;
 }
 
-// ─── Jours (modifier titre / note) ────────────────────────
-export async function updateDay(dayId, patch) {
-  const row = {};
-  if (patch.title !== undefined) row.title = patch.title;
-  if (patch.note !== undefined)  row.note = patch.note;
-  const { data, error } = await sb.from('trip_days').update(row).eq('id', dayId).select().single();
-  if (error) throw error;
-  return data;
-}
-
 // ─── Réordonnement des étapes (drag & drop / tri horaire) ──
 export async function reorderSteps(steps) {
   const promises = steps.map(s =>

@@ -537,7 +537,138 @@ React.useEffect(() => {
   function startTour(){tourRef.current.on=true;spinRef.current=false;setTouring(true);let i=0;const step=()=>{if(!tourRef.current.on)return;doSelect(i,true);i++;if(i>=T.days.length){tourRef.current.timer=setTimeout(()=>{if(tourRef.current.on)stopTour();},2600);return;}tourRef.current.timer=setTimeout(step,2700);};step();}
 
   // ── Search ──
-  function doSearch(q){setQuery(q);clearTimeout(searchTimer.current);if(!q.trim()){setResults([]);return;}searchTimer.current=setTimeout(async()=>{try{const r=await fetch('https://api.maptiler.com/geocoding/'+encodeURIComponent(q)+'.json?key='+MT_KEY+'&language=fr&limit=6');const j=await r.json();setResults(j.features||[]);}catch(e){setResults([]);}},350);}
+    function hasKoreanText(value) {
+    return /[\u3130-\u318F\uAC00-\uD7AF]/.test(String(value || ''));
+  }
+
+  function frenchKoreaName(value) {
+    const raw = String(value || '').trim();
+    const key = raw.toLowerCase();
+
+    const map = {
+      '서울': 'Séoul',
+      '서울특별시': 'Séoul',
+      'seoul': 'Séoul',
+
+      '부산': 'Busan',
+      '부산광역시': 'Busan',
+      'busan': 'Busan',
+
+      '인천': 'Incheon',
+      '인천광역시': 'Incheon',
+      'incheon': 'Incheon',
+
+      '대구': 'Daegu',
+      'daegu': 'Daegu',
+
+      '대전': 'Daejeon',
+      'daejeon': 'Daejeon',
+
+      '광주': 'Gwangju',
+      'gwangju': 'Gwangju',
+
+      '제주': 'Jeju',
+      'jeju': 'Jeju',
+
+      '경주': 'Gyeongju',
+      'gyeongju': 'Gyeongju',
+
+      '전주': 'Jeonju',
+      'jeonju': 'Jeonju',
+
+      '강릉': 'Gangneung',
+      'gangneung': 'Gangneung',
+
+      '수원': 'Suwon',
+      'suwon': 'Suwon'
+    };
+
+    return map[key] || map[raw] || raw;
+  }
+
+  function cleanFrenchPlaceText(value) {
+    const text = String(value || '').trim();
+    if (!text) return '';
+
+    return text
+      .replaceAll('서울특별시', 'Séoul')
+      .replaceAll('서울', 'Séoul')
+      .replaceAll('부산광역시', 'Busan')
+      .replaceAll('부산', 'Busan')
+      .replaceAll('인천광역시', 'Incheon')
+      .replaceAll('인천', 'Incheon')
+      .replaceAll('대구', 'Daegu')
+      .replaceAll('대전', 'Daejeon')
+      .replaceAll('광주', 'Gwangju')
+      .replaceAll('제주', 'Jeju')
+      .replaceAll('경주', 'Gyeongju')
+      .replaceAll('전주', 'Jeonju')
+      .replaceAll('강릉', 'Gangneung')
+      .replaceAll('수원', 'Suwon');
+  }
+
+  function preferredPlaceLabel(f) {
+    const candidates = [
+      f.label,
+      f.name,
+      f.text,
+      f.address,
+      f.formatted,
+      f.place_name
+    ].filter(Boolean).map(cleanFrenchPlaceText);
+
+    const latin = candidates.find(function(item) {
+      return item && !hasKoreanText(item);
+    });
+
+    return latin || candidates[0] || 'Lieu';
+  }
+
+  function preferredPlaceSubtitle(f) {
+    const parts = [
+      f.address,
+      f.city,
+      f.country
+    ].filter(Boolean).map(cleanFrenchPlaceText);
+
+    const subtitle = parts.join(' · ');
+
+    if (subtitle) return subtitle;
+
+    return cleanFrenchPlaceText(f.formatted || f.place_name || '');
+  }
+  function doSearch(q) {
+  setQuery(q);
+  clearTimeout(searchTimer.current);
+
+  if (!q.trim()) {
+    setResults([]);
+    return;
+  }
+
+  searchTimer.current = setTimeout(async function() {
+    try {
+      if (!window.SB || !window.SB.searchPlaces) {
+        setResults([]);
+        return;
+      }
+
+      const data = await window.SB.searchPlaces({
+        query: q.trim(),
+        language: 'fr',
+        country: '',
+        type: 'place',
+        limit: 6
+      });
+
+      setResults((data && data.results) || []);
+    } catch (e) {
+      console.error('Recherche carte indisponible :', e);
+      setResults([]);
+    }
+  }, 350);
+}
+
   function pickMapPoint(text, coords, address) {
   const map = mapRef.current;
   if (!map || !coords) return;
@@ -577,12 +708,22 @@ function pickResult(f) {
   setResults([]);
   setQuery('');
 
-  pickMapPoint(
-    f.text || '',
-    f.center,
-    f.place_name || ''
-  );
+  const label = preferredPlaceLabel(f);
+  const address = preferredPlaceSubtitle(f) || label;
+
+  let coords = null;
+
+  if (Number.isFinite(Number(f.lng)) && Number.isFinite(Number(f.lat))) {
+    coords = [Number(f.lng), Number(f.lat)];
+  } else if (Array.isArray(f.center)) {
+    coords = f.center;
+  }
+
+  if (!coords) return;
+
+  pickMapPoint(label, coords, address);
 }
+
   function openEditorForDay(i){if(!realTrip)return;const day=realTrip.days[i];if(!day)return;setPickingDay(false);setEditorOpen({dayId:day.id,dayIndex:i,stepCount:day.steps.length});}
   function onEditorClose(){setEditorOpen(null);setFoundPlace(null);}
   function onEditorSaved(){if(realTrip)window.SB.loadTrip(realTrip.id).then(t=>Store.set({trip:t}));}
@@ -795,7 +936,14 @@ Store.set({
               {results.map((f,k)=>(
                 <button key={k} onClick={()=>pickResult(f)} style={{width:'100%',display:'flex',alignItems:'center',gap:10,padding:'10px 14px',border:'none',borderBottom:'1px solid var(--line2)',background:'transparent',cursor:'pointer',fontFamily:'inherit',textAlign:'left',color:'var(--text)'}} onMouseEnter={e=>e.currentTarget.style.background='var(--accent-soft)'} onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
                   <div style={{width:28,height:28,borderRadius:8,background:'var(--accent-soft)',color:'var(--accent)',display:'grid',placeItems:'center',flexShrink:0}}><Icon name="pin" size={13}/></div>
-                  <div style={{flex:1,minWidth:0}}><div style={{fontSize:13,fontWeight:700}}>{f.text}</div><div style={{fontSize:11,color:'var(--muted)',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{f.place_name}</div></div>
+                  <div style={{flex:1,minWidth:0}}>
+  <div style={{fontSize:13,fontWeight:700}}>
+    {preferredPlaceLabel(f)}
+  </div>
+  <div style={{fontSize:11,color:'var(--muted)',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
+    {preferredPlaceSubtitle(f)}
+  </div>
+</div>
                 </button>
               ))}
             </div>

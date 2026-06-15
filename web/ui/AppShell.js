@@ -1335,10 +1335,10 @@ function Toolbox({ width = 320 }) {
   const mode = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
 
   const DEFAULTS = {
-    itinerary: ['dayScore', 'aroundStep', 'checklist', 'note', 'globalNote', 'stats'],
-    map: ['calc', 'dayScore', 'globalNote', 'checklist'],
-    budget: ['stats', 'globalNote', 'note'],
-    docs: ['globalNote', 'checklist', 'note']
+    itinerary: ['dayScore', 'aroundStep', 'checklist', 'currency', 'note', 'globalNote', 'stats'],
+    map: ['calc', 'currency', 'dayScore', 'globalNote', 'checklist'],
+    budget: ['currency', 'stats', 'globalNote', 'note'],
+    docs: ['globalNote', 'checklist', 'currency', 'note']
   };
 
   function loadPins(v) {
@@ -1351,6 +1351,77 @@ function Toolbox({ width = 320 }) {
   const [done, setDone] = React.useState({});
   const [todoDraft, setTodoDraft] = React.useState('');
   const [savingTodo, setSavingTodo] = React.useState(false);
+  const CURRENCY_OPTIONS = [
+  { code: 'EUR', label: 'Euro', symbol: '€' },
+  { code: 'KRW', label: 'Won sud-coréen', symbol: '₩' },
+  { code: 'USD', label: 'Dollar américain', symbol: '$' },
+  { code: 'JPY', label: 'Yen japonais', symbol: '¥' },
+  { code: 'GBP', label: 'Livre sterling', symbol: '£' },
+  { code: 'CHF', label: 'Franc suisse', symbol: 'CHF' },
+  { code: 'CAD', label: 'Dollar canadien', symbol: 'C$' },
+  { code: 'AUD', label: 'Dollar australien', symbol: 'A$' }
+];
+
+const CURRENCY_DEFAULT_RATES = {
+  EUR_KRW: '1600',
+  KRW_EUR: '0.000625',
+  EUR_USD: '1.08',
+  USD_EUR: '0.93',
+  EUR_JPY: '165',
+  JPY_EUR: '0.0061',
+  EUR_GBP: '0.86',
+  GBP_EUR: '1.16',
+  EUR_CHF: '0.95',
+  CHF_EUR: '1.05'
+};
+
+const [currencyAmount, setCurrencyAmount] = React.useState('100');
+const [currencyFrom, setCurrencyFrom] = React.useState('EUR');
+const [currencyTo, setCurrencyTo] = React.useState('KRW');
+const [currencyRate, setCurrencyRate] = React.useState(() => {
+  return localStorage.getItem('atelier_currency_rate_EUR_KRW') || CURRENCY_DEFAULT_RATES.EUR_KRW || '1';
+});
+
+function currencyPairKey(from, to) {
+  return from + '_' + to;
+}
+
+function getCurrencyMeta(code) {
+  return CURRENCY_OPTIONS.find(c => c.code === code) || { code, label: code, symbol: code };
+}
+
+function loadCurrencyRate(from, to) {
+  const key = currencyPairKey(from, to);
+  return localStorage.getItem('atelier_currency_rate_' + key) || CURRENCY_DEFAULT_RATES[key] || '1';
+}
+
+function saveCurrencyRate(value) {
+  setCurrencyRate(value);
+  localStorage.setItem('atelier_currency_rate_' + currencyPairKey(currencyFrom, currencyTo), value);
+}
+
+function swapCurrency() {
+  const oldFrom = currencyFrom;
+  const oldTo = currencyTo;
+
+  setCurrencyFrom(oldTo);
+  setCurrencyTo(oldFrom);
+  setCurrencyRate(loadCurrencyRate(oldTo, oldFrom));
+}
+
+function formatCurrencyValue(value, code) {
+  const n = Number(value) || 0;
+  const max = code === 'KRW' || code === 'JPY' ? 0 : 2;
+
+  return n.toLocaleString('fr-FR', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: max
+  }) + ' ' + code;
+}
+
+React.useEffect(() => {
+  setCurrencyRate(loadCurrencyRate(currencyFrom, currencyTo));
+}, [currencyFrom, currencyTo]);
   const todoInputRef = React.useRef(null);
 
 async function saveTodoItems(nextItems) {
@@ -1964,6 +2035,168 @@ function getUsefulAroundTip(step) {
       );
     }},
 
+    currency: { label: 'Convertisseur', icon: 'arrow', render() {
+  const fromMeta = getCurrencyMeta(currencyFrom);
+  const toMeta = getCurrencyMeta(currencyTo);
+
+  const amountNumber = Number(String(currencyAmount || '').replace(',', '.')) || 0;
+  const rateNumber = Number(String(currencyRate || '').replace(',', '.')) || 0;
+  const converted = amountNumber * rateNumber;
+
+  const selectStyle = {
+    width: '100%',
+    padding: '8px 9px',
+    borderRadius: 9,
+    border: '1px solid var(--outline-variant)',
+    background: 'var(--inset)',
+    color: 'var(--text)',
+    fontFamily: 'inherit',
+    fontSize: 12.5,
+    outline: 'none'
+  };
+
+  const inputStyle = {
+    width: '100%',
+    padding: '9px 10px',
+    borderRadius: 9,
+    border: '1px solid var(--outline-variant)',
+    background: 'var(--inset)',
+    color: 'var(--text)',
+    fontFamily: 'inherit',
+    fontSize: 13,
+    outline: 'none'
+  };
+
+  return (
+    <WidgetShell key="currency" id="currency" title="Convertisseur de devise" icon="arrow" iconColor="var(--accent)">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div>
+          <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--faint)', marginBottom: 5 }}>
+            Montant
+          </div>
+
+          <input
+            value={currencyAmount}
+            onChange={e => setCurrencyAmount(e.target.value)}
+            inputMode="decimal"
+            placeholder="100"
+            style={{
+              ...inputStyle,
+              fontSize: 18,
+              fontWeight: 800,
+              color: 'var(--text)'
+            }}
+          />
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 34px 1fr', gap: 8, alignItems: 'end' }}>
+          <div>
+            <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--faint)', marginBottom: 5 }}>
+              Depuis
+            </div>
+
+            <select
+              value={currencyFrom}
+              onChange={e => setCurrencyFrom(e.target.value)}
+              style={selectStyle}
+            >
+              {CURRENCY_OPTIONS.map(c => (
+                <option key={c.code} value={c.code}>{c.code} · {c.label}</option>
+              ))}
+            </select>
+          </div>
+
+          <button
+            type="button"
+            onClick={swapCurrency}
+            title="Inverser"
+            style={{
+              height: 34,
+              width: 34,
+              borderRadius: 9,
+              border: '1px solid var(--outline-variant)',
+              background: 'var(--card)',
+              color: 'var(--accent)',
+              cursor: 'pointer',
+              display: 'grid',
+              placeItems: 'center'
+            }}
+          >
+            <Icon name="arrow" size={14} />
+          </button>
+
+          <div>
+            <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--faint)', marginBottom: 5 }}>
+              Vers
+            </div>
+
+            <select
+              value={currencyTo}
+              onChange={e => setCurrencyTo(e.target.value)}
+              style={selectStyle}
+            >
+              {CURRENCY_OPTIONS.map(c => (
+                <option key={c.code} value={c.code}>{c.code} · {c.label}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div style={{
+          background: 'var(--inset)',
+          border: '1px solid var(--outline-variant)',
+          borderRadius: 12,
+          padding: '12px 13px'
+        }}>
+          <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 4 }}>
+            Résultat estimé
+          </div>
+
+          <div style={{
+            fontFamily: 'var(--font-serif)',
+            fontSize: 26,
+            lineHeight: '30px',
+            color: 'var(--accent)'
+          }}>
+            {formatCurrencyValue(converted, currencyTo)}
+          </div>
+
+          <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>
+            {formatCurrencyValue(amountNumber, currencyFrom)} ≈ {formatCurrencyValue(converted, currencyTo)}
+          </div>
+        </div>
+
+        <div>
+          <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--faint)', marginBottom: 5 }}>
+            Taux utilisé
+          </div>
+
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <span style={{ fontSize: 12, color: 'var(--muted)', whiteSpace: 'nowrap' }}>
+              1 {currencyFrom} =
+            </span>
+
+            <input
+              value={currencyRate}
+              onChange={e => saveCurrencyRate(e.target.value)}
+              inputMode="decimal"
+              style={inputStyle}
+            />
+
+            <span style={{ fontSize: 12, color: 'var(--muted)' }}>
+              {currencyTo}
+            </span>
+          </div>
+
+          <div style={{ fontSize: 11.5, color: 'var(--faint)', marginTop: 6, lineHeight: '16px' }}>
+            Taux manuel modifiable. Pratique pour voyager, surtout quand tu veux convertir rapidement sans dépendre d’une API.
+          </div>
+        </div>
+      </div>
+    </WidgetShell>
+  );
+}},
+
     people: { label: 'Voyageurs', icon: 'users', render() {
       return (
         <WidgetShell key="people" id="people" title="Voyageurs" icon="users" iconColor="var(--tertiary)">
@@ -2174,7 +2407,7 @@ function getUsefulAroundTip(step) {
     }}
   };
 
-  const ORDER = ['calc', 'dayScore', 'aroundStep', 'checklist', 'globalNote', 'note', 'stats', 'people'];
+  const ORDER = ['calc', 'currency', 'dayScore', 'aroundStep', 'checklist', 'globalNote', 'note', 'stats', 'people'];
   const unpinned = ORDER.filter(id => pinned.indexOf(id) === -1);
 
   return (

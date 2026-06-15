@@ -1350,7 +1350,7 @@ function Toolbox({ width = 320 }) {
   const [editMode, setEditMode] = React.useState(false);
   const [done, setDone] = React.useState({});
   const [todoDraft, setTodoDraft] = React.useState('');
-const [savingTodo, setSavingTodo] = React.useState(false);
+  const [savingTodo, setSavingTodo] = React.useState(false);
 
 async function saveTodoItems(nextItems) {
   if (!day || !day.id || !window.SB || !window.SB.updateDay) return;
@@ -1799,25 +1799,31 @@ function getUsefulAroundTip(step) {
 
         <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
           <input
-            value={todoDraft}
-            onChange={e => setTodoDraft(e.target.value)}
-            onKeyDown={e => {
-              if (e.key === 'Enter') addTodoItem();
-            }}
-            placeholder="Passeport, billets, adaptateur…"
-            style={{
-              flex: 1,
-              minWidth: 0,
-              border: '1px solid var(--line)',
-              background: 'var(--inset)',
-              color: 'var(--text)',
-              borderRadius: 10,
-              padding: '8px 10px',
-              fontFamily: 'inherit',
-              fontSize: 13,
-              outline: 'none'
-            }}
-          />
+  ref={todoInputRef}
+  value={todoDraft}
+  onChange={e => {
+    setTodoDraft(e.target.value);
+    setTimeout(() => {
+      if (todoInputRef.current) todoInputRef.current.focus();
+    }, 0);
+  }}
+  onKeyDown={e => {
+    if (e.key === 'Enter') addTodoItem();
+  }}
+  placeholder="Passeport, billets, adaptateur…"
+  style={{
+    flex: 1,
+    minWidth: 0,
+    border: '1px solid var(--line)',
+    background: 'var(--inset)',
+    color: 'var(--text)',
+    borderRadius: 10,
+    padding: '8px 10px',
+    fontFamily: 'inherit',
+    fontSize: 13,
+    outline: 'none'
+  }}
+/>
 
           <button
             type="button"

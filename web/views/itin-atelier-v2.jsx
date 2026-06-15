@@ -1525,33 +1525,6 @@ function AtelierV2() {
           return React.createElement('button', {
             key: step.id || k,
             type: 'button',
-            React.createElement('button', {
-          type: 'button',
-          onClick: function(e) {
-            e.stopPropagation();
-            Store.set({ selectedStepId: step.id || null });
-            Store.showToast('Étape sélectionnée pour “Autour de ce lieu”');
-          },
-          title: 'Explorer autour de cette étape',
-          style: {
-            marginLeft: 'auto',
-            border: `1px solid ${C.line}`,
-            background: C.accentSoft,
-            color: C.accent,
-            borderRadius: 999,
-            padding: '6px 10px',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 6,
-            cursor: 'pointer',
-            fontFamily: 'inherit',
-            fontSize: 11,
-            fontWeight: 800
-          }
-        },
-          React.createElement(Icon, { name: 'sparkle', size: 13 }),
-          'Autour'
-        ),
             onClick: function() {
               Store.set({ selectedStepId: step.id || null });
               setEditor({ open: true, dayId: day.id, step: step });

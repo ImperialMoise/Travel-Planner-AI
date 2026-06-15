@@ -450,6 +450,161 @@ function DaySpine({ width = 300, onPickDay }) {
   );
 }
 
+function GlobalNoteWidget({ trip, editMode, onRemove }) {
+  const [draft, setDraft] = React.useState(trip?.globalNote || '');
+  const [saving, setSaving] = React.useState(false);
+
+  React.useEffect(() => {
+    setDraft(trip?.globalNote || '');
+  }, [trip?.id, trip?.globalNote]);
+
+  if (!trip) return null;
+
+  const dirty = draft !== (trip.globalNote || '');
+
+  async function saveGlobalNote() {
+    if (!trip.id || saving) return;
+
+    setSaving(true);
+    try {
+      await window.SB.updateTrip(trip.id, { globalNote: draft });
+
+      const updatedTrip = await window.SB.loadTrip(trip.id);
+      Store.set({ trip: updatedTrip });
+
+      Store.showToast(dirty ? 'Note globale sauvegardée' : 'Note globale à jour');
+    } catch (error) {
+      Store.showToast('Erreur note globale : ' + (error.message || error));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div
+      key="globalNote"
+      style={{
+        background: 'var(--card)',
+        borderRadius: 12,
+        boxShadow: '0 2px 8px rgba(82,98,91,0.05)',
+        border: '1px solid var(--outline-variant)',
+        padding: 16,
+        position: 'relative',
+        overflow: 'hidden'
+      }}
+    >
+      <div
+        style={{
+          position: 'absolute',
+          top: 0,
+          right: 0,
+          width: 32,
+          height: 32,
+          background: 'var(--accent-soft)',
+          borderRadius: '0 0 0 12px'
+        }}
+      />
+
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: 12,
+          gap: 8
+        }}
+      >
+        <span
+          style={{
+            fontSize: 13,
+            fontWeight: 600,
+            color: 'var(--text)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8
+          }}
+        >
+          <Icon name="file" size={16} style={{ color: 'var(--accent)' }} />
+          Note globale
+        </span>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <button
+            onClick={saveGlobalNote}
+            disabled={saving || !dirty}
+            style={{
+              border: 'none',
+              cursor: saving || !dirty ? 'default' : 'pointer',
+              background: dirty ? 'var(--accent)' : 'var(--inset)',
+              color: dirty ? 'var(--accent-ink)' : 'var(--faint)',
+              borderRadius: 8,
+              padding: '5px 9px',
+              fontSize: 11,
+              fontWeight: 800,
+              fontFamily: 'inherit'
+            }}
+          >
+            {saving ? '...' : dirty ? 'Sauver' : 'À jour'}
+          </button>
+
+          {editMode && (
+            <button
+              onClick={onRemove}
+              style={{
+                width: 22,
+                height: 22,
+                borderRadius: 7,
+                border: 'none',
+                cursor: 'pointer',
+                background: 'var(--accent-soft)',
+                color: 'var(--accent)',
+                display: 'grid',
+                placeItems: 'center',
+                fontSize: 15
+              }}
+            >
+              {'\u00d7'}
+            </button>
+          )}
+        </div>
+      </div>
+
+      <textarea
+        value={draft}
+        onChange={e => setDraft(e.target.value)}
+        placeholder="Note valable pour tout le voyage : idées, rappels, choses à vérifier..."
+        rows={6}
+        style={{
+          width: '100%',
+          minHeight: 110,
+          resize: 'vertical',
+          border: '1px solid var(--outline-variant)',
+          borderRadius: 11,
+          background: 'var(--inset)',
+          color: 'var(--text)',
+          padding: '10px 12px',
+          fontFamily: 'inherit',
+          fontSize: 13.5,
+          lineHeight: '20px',
+          outline: 'none',
+          boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)'
+        }}
+      />
+
+      <div
+        style={{
+          marginTop: 8,
+          fontSize: 11.5,
+          color: dirty ? 'var(--accent)' : 'var(--faint)',
+          fontWeight: 700
+        }}
+      >
+        {dirty ? 'Modifications non sauvegardées' : 'Visible dans toute l’app'}
+      </div>
+    </div>
+  );
+}
+
 // ─── Boîte à outils (colonne droite, tous onglets) ──────────
 function Toolbox({ width = 320 }) {
   const st = Store.useStore();
@@ -461,10 +616,10 @@ function Toolbox({ width = 320 }) {
   const mode = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
 
   const DEFAULTS = {
-    itinerary: ['checklist', 'note', 'stats'],
-    map: ['calc', 'checklist'],
-    budget: ['stats', 'note'],
-    docs: ['checklist', 'note']
+    itinerary: ['checklist', 'note', 'globalNote', 'stats'],
+    map: ['calc', 'globalNote', 'checklist'],
+    budget: ['stats', 'globalNote', 'note'],
+    docs: ['globalNote', 'checklist', 'note']
   };
 
   function loadPins(v) {
@@ -681,6 +836,17 @@ if (!data.routes || !data.routes[0]) {
             );
           }) : <div style={{ fontSize: 13, color: 'var(--faint)', fontStyle: 'italic' }}>Rien de pr{'\u00e9'}vu pour ce jour.</div>}
         </WidgetShell>
+      );
+    }},
+
+        globalNote: { label: 'Note globale', icon: 'file', render() {
+      return (
+        <GlobalNoteWidget
+          key="globalNote"
+          trip={trip}
+          editMode={editMode}
+          onRemove={() => togglePin('globalNote')}
+        />
       );
     }},
 
@@ -997,7 +1163,7 @@ if (!data.routes || !data.routes[0]) {
     }}
   };
 
-  const ORDER = ['calc', 'checklist', 'note', 'stats', 'people'];
+  const ORDER = ['calc', 'checklist', 'globalNote', 'note', 'stats', 'people'];
   const unpinned = ORDER.filter(id => pinned.indexOf(id) === -1);
 
   return (

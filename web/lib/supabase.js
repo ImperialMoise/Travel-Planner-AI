@@ -114,6 +114,7 @@ export async function loadTrip(tripId) {
     name: trip.name,
     startDate: trip.start_date,
     ownerId: trip.owner_id,
+    globalNote: trip.global_note || '',
     days: (days ?? []).map(d => ({
       id: d.id,
       index: d.day_index,
@@ -133,6 +134,7 @@ export async function updateTrip(tripId, patch) {
 
   if (patch.name !== undefined) row.name = patch.name;
   if (patch.startDate !== undefined) row.start_date = patch.startDate || null;
+  if (patch.globalNote !== undefined) row.global_note = patch.globalNote || '';
 
   const { data, error } = await sb
     .from('trips')

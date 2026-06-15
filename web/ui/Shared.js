@@ -143,95 +143,188 @@ function Btn({ variant = 'ghost', icon, children, onClick, style, ...rest }) {
 }
 
 // ─── Composant Auto-complétion de lieu (Nominatim — résultats en français) ────
+// ─── Composant Auto-complétion de lieu sécurisé ─────────────
 function LocationInput({ value, onChange, onSelect, placeholder, style }) {
   const [query, setQuery] = React.useState(value || '');
   const [results, setResults] = React.useState([]);
   const [open, setOpen] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
-
-  React.useEffect(() => { setQuery(value || ''); }, [value]);
+  const [errorMsg, setErrorMsg] = React.useState('');
 
   React.useEffect(() => {
-    if (!query || query.length < 2 || !open) {
+    setQuery(value || '');
+  }, [value]);
+
+  function inferTypeFromPlaceholder(text) {
+    const t = String(text || '').toLowerCase();
+
+    if (t.includes('restaurant') || t.includes('quartier')) return 'restaurant';
+    if (t.includes('hôtel') || t.includes('hotel') || t.includes('logement')) return 'logement';
+    if (t.includes('gare') || t.includes('aéroport') || t.includes('aeroport')) return 'transport';
+
+    return 'place';
+  }
+
+  React.useEffect(() => {
+    if (!query || query.trim().length < 3 || !open) {
       setResults([]);
+      setErrorMsg('');
       return;
     }
+
+    let alive = true;
+
     const delay = setTimeout(async () => {
       setLoading(true);
+      setErrorMsg('');
+
       try {
-        // Nominatim (OpenStreetMap) — résultats en français, trouve les POIs
-        const url = 'https://nominatim.openstreetmap.org/search'
-          + '?q=' + encodeURIComponent(query)
-          + '&format=jsonv2'
-          + '&accept-language=fr'
-          + '&addressdetails=1'
-          + '&limit=6';
-        const res = await fetch(url, {
-          headers: { 'User-Agent': 'LAtelier-TravelApp/1.0' }
+        if (!window.SB || !window.SB.searchPlaces) {
+          throw new Error('Recherche enrichie indisponible');
+        }
+
+        const data = await window.SB.searchPlaces({
+          query: query.trim(),
+          language: 'fr',
+          country: '',
+          type: inferTypeFromPlaceholder(placeholder),
+          limit: 5
         });
-        const data = await res.json();
-        setResults(Array.isArray(data) ? data : []);
+
+        if (!alive) return;
+
+        if (data && data.error) {
+          setResults([]);
+          setErrorMsg(data.error);
+          return;
+        }
+
+        setResults((data && data.results) || []);
       } catch (e) {
-        console.error("Erreur de recherche:", e);
+        if (!alive) return;
+        console.error('Erreur de recherche de lieu :', e);
+        setResults([]);
+        setErrorMsg('Recherche indisponible');
       } finally {
-        setLoading(false);
+        if (alive) setLoading(false);
       }
-    }, 400);
-    return () => clearTimeout(delay);
-  }, [query, open]);
+    }, 350);
+
+    return () => {
+      alive = false;
+      clearTimeout(delay);
+    };
+  }, [query, open, placeholder]);
+
+  function handleSelect(place) {
+    const label = place.label || place.address || 'Lieu';
+
+    setQuery(label);
+    onChange(label);
+    setOpen(false);
+
+    if (onSelect) {
+      onSelect({
+        label,
+        address: place.address || '',
+        city: place.city || '',
+        country: place.country || '',
+        postcode: place.postcode || '',
+        lat: place.lat,
+        lng: place.lng,
+        provider: place.provider || 'geoapify',
+        placeId: place.placeId || ''
+      });
+    }
+  }
 
   return (
     <div style={{ position: 'relative', width: '100%' }}>
       <input
         value={query}
-        onChange={e => { setQuery(e.target.value); onChange(e.target.value); setOpen(true); }}
+        onChange={e => {
+          setQuery(e.target.value);
+          onChange(e.target.value);
+          setOpen(true);
+        }}
         onFocus={() => setOpen(true)}
-        onBlur={() => setTimeout(() => setOpen(false), 250)}
+        onBlur={() => setTimeout(() => setOpen(false), 200)}
         placeholder={placeholder}
         style={style}
         autoComplete="off"
       />
-      {open && (results.length > 0 || loading) && (
+
+      {open && (results.length > 0 || loading || errorMsg) && (
         <div style={{
-          position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0,
-          background: 'var(--card)', border: '1px solid var(--line)',
-          borderRadius: 10, boxShadow: 'var(--shadow-lg)', zIndex: 9999,
-          overflow: 'hidden', maxHeight: 260, overflowY: 'auto'
+          position: 'absolute',
+          top: 'calc(100% + 4px)',
+          left: 0,
+          right: 0,
+          background: 'var(--card)',
+          border: '1px solid var(--line)',
+          borderRadius: 10,
+          boxShadow: 'var(--shadow-lg)',
+          zIndex: 9999,
+          overflow: 'hidden'
         }}>
-          {loading && results.length === 0 && <div style={{ padding: '8px 12px', fontSize: 13, color: 'var(--muted)' }}>Recherche…</div>}
-          {results.map((r, i) => {
-            // Nominatim renvoie display_name = "Tour Eiffel, 7e, Paris, Île-de-France, France"
-            const parts = (r.display_name || '').split(', ');
-            const mainName = r.name || parts[0] || '';
-            const context = parts.slice(1, 4).join(', ');
+          {loading && results.length === 0 && (
+            <div style={{
+              padding: '8px 12px',
+              fontSize: 13,
+              color: 'var(--muted)'
+            }}>
+              Recherche…
+            </div>
+          )}
+
+          {!loading && errorMsg && (
+            <div style={{
+              padding: '8px 12px',
+              fontSize: 13,
+              color: 'var(--muted)'
+            }}>
+              {errorMsg}
+            </div>
+          )}
+
+          {results.map((place, i) => {
+            const label = place.label || place.address || 'Lieu';
+            const sub = [
+              place.address && place.address !== label ? place.address : '',
+              place.city,
+              place.country
+            ].filter(Boolean).join(' · ');
+
             return (
-              <div key={i}
-                onMouseDown={e => e.preventDefault()}
-                onClick={() => {
-                  const label = mainName + (context ? ', ' + context : '');
-                  setQuery(label);
-                  onChange(label);
-                  setOpen(false);
-                  if (onSelect) onSelect({
-                    label,
-                    lat: parseFloat(r.lat),
-                    lng: parseFloat(r.lon)
-                  });
-                }}
+              <div
+                key={place.placeId || i}
+                onClick={() => handleSelect(place)}
                 style={{
-                  padding: '9px 12px', cursor: 'pointer',
+                  padding: '8px 12px',
+                  cursor: 'pointer',
                   borderBottom: i < results.length - 1 ? '1px solid var(--line2)' : 'none',
-                  fontSize: 13, color: 'var(--text)', transition: 'background 0.15s',
-                  textAlign: 'left', display: 'flex', alignItems: 'flex-start', gap: 10
+                  fontSize: 13,
+                  color: 'var(--text)',
+                  transition: 'background 0.2s',
+                  textAlign: 'left'
                 }}
                 onMouseOver={e => e.currentTarget.style.background = 'var(--inset)'}
                 onMouseOut={e => e.currentTarget.style.background = 'transparent'}
               >
-                <Icon name="pin" size={14} style={{ color: 'var(--accent)', flexShrink: 0, marginTop: 2 }} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{mainName}</div>
-                  {context && <div style={{ fontSize: 11, color: 'var(--muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{context}</div>}
+                <div style={{ fontWeight: 700 }}>
+                  {label}
                 </div>
+
+                {sub && (
+                  <div style={{
+                    fontSize: 11,
+                    color: 'var(--muted)',
+                    marginTop: 2,
+                    lineHeight: '15px'
+                  }}>
+                    {sub}
+                  </div>
+                )}
               </div>
             );
           })}

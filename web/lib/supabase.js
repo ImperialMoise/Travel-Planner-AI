@@ -150,7 +150,28 @@ export async function deleteTrip(tripId) {
   if (error) throw error;
 }
 
+// ─── Jours (modifier titre / note) ────────────────────────
+export async function updateDay(dayId, patch) {
+  const row = {};
+  if (patch.title !== undefined) row.title = patch.title;
+  if (patch.note !== undefined)  row.note = patch.note;
+  const { data, error } = await sb.from('trip_days').update(row).eq('id', dayId).select().single();
+  if (error) throw error;
+  return data;
+}
+
+// ─── Réordonnement des étapes (drag & drop / tri horaire) ──
+export async function reorderSteps(steps) {
+  const promises = steps.map(s =>
+    sb.from('trip_steps').update({ step_index: s.stepIndex }).eq('id', s.id)
+  );
+  const results = await Promise.all(promises);
+  const err = results.find(r => r.error);
+  if (err && err.error) throw err.error;
+}
+
 // ─── Étapes (créer / modifier / supprimer) ─────────────────
+
 // Enregistre une étape. Si "step.id" existe → modification, sinon → création.
 export async function saveStep(tripId, dayId, step) {
   const row = {

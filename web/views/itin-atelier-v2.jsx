@@ -693,6 +693,50 @@ function AtelierV2() {
   
   const reload = () => { if (realTrip) window.SB.loadTrip(realTrip.id).then(t => Store.set({ trip: t })).catch(() => {}); };
 
+  // ── Drag & drop : réordonne les étapes puis sauvegarde ──
+  async function handleDrop(fromIndex, toIndex) {
+    if (fromIndex === toIndex || !day || !day.steps) return;
+    const otherSteps = day.steps.filter(s => s.type !== 'restaurant');
+    const movedStep = otherSteps[fromIndex];
+    if (!movedStep) return;
+    const reordered = [...otherSteps];
+    reordered.splice(fromIndex, 1);
+    reordered.splice(toIndex, 0, movedStep);
+    const updates = reordered.map((s, i) => ({ id: s.id, stepIndex: i }));
+    setReorderAlert(true);
+    try {
+      await window.SB.reorderSteps(updates);
+      reload();
+    } catch (e) { console.error('Erreur réordonnancement :', e); }
+  }
+
+  // ── Tri automatique par horaire après sauvegarde ──
+  function autoSortStepsByTime() {
+    if (!day || !day.steps) return;
+    const otherSteps = day.steps.filter(s => s.type !== 'restaurant');
+    const sorted = [...otherSteps].sort((a, b) => {
+      const ta = a.time || '', tb = b.time || '';
+      if (!ta && !tb) return 0;
+      if (!ta) return 1;
+      if (!tb) return -1;
+      return ta.localeCompare(tb);
+    });
+    const changed = sorted.some((s, i) => s.id !== otherSteps[i]?.id);
+    if (!changed) return;
+    const updates = sorted.map((s, i) => ({ id: s.id, stepIndex: i }));
+    window.SB.reorderSteps(updates).then(reload).catch(() => {});
+  }
+
+  // ── Sauvegarde du titre / note du jour ──
+  async function saveDayTitle() {
+    if (!day || !day.id) return;
+    try {
+      await window.SB.updateDay(day.id, { title: dayEditor.title, note: dayEditor.note });
+      setDayEditor({ open: false, title: '', note: '' });
+      reload();
+    } catch (e) { alert('Erreur : ' + e.message); }
+  }
+
   React.useEffect(() => { localStorage.setItem('it_pins', JSON.stringify(pinned)); }, [pinned]);
 
   const C = palette(mode);
@@ -700,6 +744,14 @@ function AtelierV2() {
   const stt = statusOf(sel, T.todayIndex);
   const pct = Math.round((T.todayIndex + 1) / T.duration * 100);
   const [editor, setEditor] = React.useState({ open: false, dayId: null, step: null });
+
+  // ── Drag & drop des étapes ──
+  const [dragIdx, setDragIdx] = React.useState(null);
+  const [dragOverIdx, setDragOverIdx] = React.useState(null);
+  const [reorderAlert, setReorderAlert] = React.useState(false);
+
+  // ── Éditeur de titre du jour ──
+  const [dayEditor, setDayEditor] = React.useState({ open: false, title: '', note: '' });
 
     const [weather, setWeather] = React.useState(null);
   const [weatherState, setWeatherState] = React.useState('idle');
@@ -1699,7 +1751,24 @@ function AtelierV2() {
           React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 } },
             React.createElement('span', { style: { display: 'inline-block', padding: '5px 14px', background: 'rgba(254,249,239,0.2)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', borderRadius: 999, border: '1px solid rgba(255,255,255,0.3)', fontSize: 11, fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase', color: '#fff' } }, 'Jour ' + day.n),
             React.createElement('span', { style: { fontFamily: 'var(--font-mono)', fontSize: 11, color: 'rgba(255,255,255,0.9)' } }, (day.weekday || '') + ' ' + fmtDate(day.dateISO))),
-          React.createElement('h2', { style: { fontFamily: 'var(--font-serif)', fontSize: 40, lineHeight: '48px', color: '#fff', margin: '0 0 16px' } }, day.title),
+          React.createElement('h2', { style: { fontFamily: 'var(--font-serif)', fontSize: 40, lineHeight: '48px', color: '#fff', margin: '0 0 16px', display: 'flex', alignItems: 'center', gap: 14 } },
+            day.title,
+            React.createElement('button', {
+              onClick: function(e) {
+                e.stopPropagation();
+                setDayEditor({ open: true, title: day.title || '', note: day.note || '' });
+              },
+              title: 'Modifier le titre du jour',
+              style: {
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                width: 34, height: 34, borderRadius: 999,
+                border: '1px solid rgba(255,255,255,0.35)',
+                background: 'rgba(255,255,255,0.15)',
+                backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+                color: '#fff', cursor: 'pointer', flexShrink: 0, transition: 'all .2s'
+              }
+            }, React.createElement(Icon, { name: 'sparkle', size: 16 }))
+          ),
           day.note && React.createElement('p', { style: { fontSize: 13.5, lineHeight: '20px', color: 'rgba(255,255,255,0.8)', maxWidth: 640, borderLeft: '2px solid var(--tan)', paddingLeft: 16, marginBottom: 24 } }, day.note),
           !day.note && React.createElement('div', { style: { marginBottom: 24 } }))),
         heroImg && heroImg.credit && React.createElement('a', { href: heroImg.link, target: '_blank', rel: 'noopener', style: { position: 'absolute', bottom: 8, right: 12, fontSize: 10, color: 'rgba(255,255,255,0.5)', textDecoration: 'none', zIndex: 5 } }, '\u00a9 ' + heroImg.credit),
@@ -1735,8 +1804,69 @@ function AtelierV2() {
               paddingRight: 6
             }
           },
+            // ── Alerte horaires après drag & drop ──
+            reorderAlert && React.createElement('div', {
+              style: {
+                padding: '12px 16px',
+                background: 'rgba(180,132,62,.12)',
+                border: '1px solid rgba(180,132,62,.3)',
+                borderRadius: 12,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                fontSize: 13,
+                color: C.text,
+                lineHeight: '18px',
+                flexShrink: 0
+              }
+            },
+              React.createElement('span', { style: { fontSize: 18, flexShrink: 0 } }, '\u26a0\ufe0f'),
+              React.createElement('div', { style: { flex: 1 } },
+                React.createElement('div', { style: { fontWeight: 700, marginBottom: 2 } }, '\u00c9tapes r\u00e9organis\u00e9es'),
+                React.createElement('div', { style: { color: C.muted, fontSize: 12 } }, 'Les horaires peuvent ne plus \u00eatre coh\u00e9rents. V\u00e9rifiez et ajustez si besoin.')
+              ),
+              React.createElement('button', {
+                onClick: function() { setReorderAlert(false); },
+                style: {
+                  border: '1px solid ' + C.line, background: C.card, color: C.text,
+                  borderRadius: 8, padding: '6px 12px', cursor: 'pointer',
+                  fontFamily: 'inherit', fontSize: 12, fontWeight: 700, flexShrink: 0
+                }
+              }, 'Compris')
+            ),
             otherSteps.map(function(step, k) {
-              return React.createElement(StepCard, { key: step.id || k, s: step });
+              return React.createElement('div', {
+                key: step.id || k,
+                draggable: true,
+                onDragStart: function(e) {
+                  setDragIdx(k);
+                  e.dataTransfer.effectAllowed = 'move';
+                  e.currentTarget.style.opacity = '0.5';
+                },
+                onDragEnd: function(e) {
+                  e.currentTarget.style.opacity = '1';
+                  if (dragOverIdx !== null && dragIdx !== null && dragIdx !== dragOverIdx) {
+                    handleDrop(dragIdx, dragOverIdx);
+                  }
+                  setDragIdx(null);
+                  setDragOverIdx(null);
+                },
+                onDragOver: function(e) {
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = 'move';
+                  setDragOverIdx(k);
+                },
+                onDragLeave: function() { setDragOverIdx(null); },
+                style: {
+                  position: 'relative',
+                  transition: 'transform .15s',
+                  transform: dragOverIdx === k ? 'translateY(4px)' : 'none',
+                  borderTop: dragOverIdx === k && dragIdx !== null && dragIdx !== k ? '3px solid ' + C.accent : '3px solid transparent',
+                  cursor: 'grab'
+                }
+              },
+                React.createElement(StepCard, { s: step })
+              );
             })
           ),
           React.createElement('button', {
@@ -1774,8 +1904,81 @@ function AtelierV2() {
       step: editor.step,
       stepCount: day.steps.length,
       onClose: function() { setEditor({ open: false, dayId: null, step: null }); },
-      onSaved: reload
-    })
+      onSaved: function() {
+        reload();
+        setTimeout(autoSortStepsByTime, 600);
+      }
+    }),
+
+    // ── Modale d'édition du titre / note du jour ──
+    dayEditor.open && ReactDOM.createPortal(
+      React.createElement('div', {
+        onClick: function() { setDayEditor({ open: false, title: '', note: '' }); },
+        style: {
+          position: 'fixed', inset: 0, zIndex: 300,
+          background: mode === 'light' ? 'rgba(31,46,40,.34)' : 'rgba(0,0,0,.55)',
+          backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
+          display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+          padding: '100px 24px 24px'
+        }
+      },
+        React.createElement('div', {
+          onClick: function(e) { e.stopPropagation(); },
+          style: {
+            width: '100%', maxWidth: 440,
+            background: C.card, border: '1px solid ' + C.line,
+            borderRadius: 20, overflow: 'hidden',
+            boxShadow: '0 40px 90px rgba(0,0,0,.4)'
+          }
+        },
+          React.createElement('div', {
+            style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 20px', borderBottom: '1px solid ' + C.line }
+          },
+            React.createElement('div', null,
+              React.createElement('div', { style: { fontSize: 11, fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase', color: C.accent } }, 'Jour ' + day.n),
+              React.createElement('div', { style: { fontFamily: serif, fontStyle: 'italic', fontSize: 22, color: C.text, marginTop: 2 } }, 'Modifier la journ\u00e9e')
+            ),
+            React.createElement('button', {
+              onClick: function() { setDayEditor({ open: false, title: '', note: '' }); },
+              style: { border: 'none', background: 'transparent', color: C.muted, cursor: 'pointer', padding: 6, borderRadius: 8 }
+            }, React.createElement(Icon, { name: 'x', size: 20 }))
+          ),
+          React.createElement('div', { style: { padding: 20 } },
+            React.createElement('div', { style: { marginBottom: 12 } },
+              React.createElement('label', { style: { display: 'block', fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: C.muted, marginBottom: 6 } }, 'Titre du jour'),
+              React.createElement('input', {
+                value: dayEditor.title,
+                onChange: function(e) { setDayEditor(function(prev) { return { ...prev, title: e.target.value }; }); },
+                placeholder: 'Ex : Journ\u00e9e libre, S\u00e9oul historique\u2026',
+                style: { width: '100%', padding: '10px 12px', border: '1px solid ' + C.line, borderRadius: 11, background: C.inset, color: C.text, fontFamily: 'inherit', fontSize: 14, outline: 'none' }
+              })
+            ),
+            React.createElement('div', { style: { marginBottom: 12 } },
+              React.createElement('label', { style: { display: 'block', fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: C.muted, marginBottom: 6 } }, 'Note (optionnel)'),
+              React.createElement('textarea', {
+                value: dayEditor.note,
+                onChange: function(e) { setDayEditor(function(prev) { return { ...prev, note: e.target.value }; }); },
+                placeholder: 'Notes pour cette journ\u00e9e\u2026',
+                style: { width: '100%', padding: '10px 12px', border: '1px solid ' + C.line, borderRadius: 11, background: C.inset, color: C.text, fontFamily: 'inherit', fontSize: 14, outline: 'none', resize: 'vertical', minHeight: 70 }
+              })
+            )
+          ),
+          React.createElement('div', {
+            style: { display: 'flex', justifyContent: 'flex-end', gap: 10, padding: '14px 20px', borderTop: '1px solid ' + C.line }
+          },
+            React.createElement('button', {
+              onClick: function() { setDayEditor({ open: false, title: '', note: '' }); },
+              style: { border: '1px solid ' + C.line, background: C.inset, color: C.text, borderRadius: 11, padding: '9px 16px', fontSize: 13.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }
+            }, 'Annuler'),
+            React.createElement('button', {
+              onClick: saveDayTitle,
+              style: { border: 'none', background: C.accent, color: C.accentInk, borderRadius: 11, padding: '9px 18px', fontSize: 13.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }
+            }, 'Enregistrer')
+          )
+        )
+      ),
+      document.body
+    )
   );
 }
 window.AtelierV2 = AtelierV2;

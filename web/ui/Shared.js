@@ -142,27 +142,27 @@ function Btn({ variant = 'ghost', icon, children, onClick, style, ...rest }) {
   );
 }
 
-// ─── Composant Auto-complétion de lieu (Premium) ────────────
+// ─── Composant Auto-complétion de lieu (MapTiler — résultats en français) ────
 function LocationInput({ value, onChange, onSelect, placeholder, style }) {
   const [query, setQuery] = React.useState(value || '');
   const [results, setResults] = React.useState([]);
   const [open, setOpen] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
 
-  // Synchronise si la valeur externe change
   React.useEffect(() => { setQuery(value || ''); }, [value]);
 
-  // Cherche les lieux quand on tape (avec un délai pour ne pas spammer l'API)
   React.useEffect(() => {
-    if (!query || query.length < 3 || !open) {
+    if (!query || query.length < 2 || !open) {
       setResults([]);
       return;
     }
     const delay = setTimeout(async () => {
       setLoading(true);
       try {
-        // API gratuite Photon (basée sur OpenStreetMap)
-        const res = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=5`);
+        const url = 'https://api.maptiler.com/geocoding/'
+          + encodeURIComponent(query)
+          + '.json?key=08IwMKKAkP3BQJss5poF&language=fr&limit=6';
+        const res = await fetch(url);
         const data = await res.json();
         setResults(data.features || []);
       } catch (e) {
@@ -170,8 +170,7 @@ function LocationInput({ value, onChange, onSelect, placeholder, style }) {
       } finally {
         setLoading(false);
       }
-    }, 400); // 400ms de délai (debounce)
-    
+    }, 350);
     return () => clearTimeout(delay);
   }, [query, open]);
 
@@ -181,7 +180,7 @@ function LocationInput({ value, onChange, onSelect, placeholder, style }) {
         value={query}
         onChange={e => { setQuery(e.target.value); onChange(e.target.value); setOpen(true); }}
         onFocus={() => setOpen(true)}
-        onBlur={() => setTimeout(() => setOpen(false), 200)} // Petit délai pour laisser le temps de cliquer
+        onBlur={() => setTimeout(() => setOpen(false), 250)}
         placeholder={placeholder}
         style={style}
         autoComplete="off"
@@ -190,32 +189,38 @@ function LocationInput({ value, onChange, onSelect, placeholder, style }) {
         <div style={{
           position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0,
           background: 'var(--card)', border: '1px solid var(--line)',
-          borderRadius: 10, boxShadow: 'var(--shadow-lg)', zIndex: 9999, overflow: 'hidden'
+          borderRadius: 10, boxShadow: 'var(--shadow-lg)', zIndex: 9999,
+          overflow: 'hidden', maxHeight: 240, overflowY: 'auto'
         }}>
-          {loading && results.length === 0 && <div style={{ padding: '8px 12px', fontSize: 13, color: 'var(--muted)' }}>Recherche...</div>}
-          
+          {loading && results.length === 0 && <div style={{ padding: '8px 12px', fontSize: 13, color: 'var(--muted)' }}>Recherche…</div>}
           {results.map((f, i) => {
-            const p = f.properties;
-            // On construit une belle étiquette (Ex: Tour Eiffel, Paris, France)
-            const label = [p.name, p.city || p.state, p.country].filter(Boolean).join(', ');
-            
+            const shortName = f.text || '';
+            const fullName = f.place_name || shortName;
+            const context = fullName.replace(shortName, '').replace(/^[\s,]+/, '');
             return (
               <div key={i}
+                onMouseDown={e => e.preventDefault()}
                 onClick={() => {
+                  const label = shortName + (context ? ', ' + context.split(',').slice(0, 2).join(',') : '');
                   setQuery(label);
                   onChange(label);
                   setOpen(false);
-                  if (onSelect) onSelect({ label, lat: f.geometry.coordinates[1], lng: f.geometry.coordinates[0] });
+                  if (onSelect) onSelect({ label, lat: f.center[1], lng: f.center[0] });
                 }}
                 style={{
-                  padding: '8px 12px', cursor: 'pointer', borderBottom: i < results.length - 1 ? '1px solid var(--line2)' : 'none',
-                  fontSize: 13, color: 'var(--text)', transition: 'background 0.2s', textAlign: 'left'
+                  padding: '9px 12px', cursor: 'pointer',
+                  borderBottom: i < results.length - 1 ? '1px solid var(--line2)' : 'none',
+                  fontSize: 13, color: 'var(--text)', transition: 'background 0.15s',
+                  textAlign: 'left', display: 'flex', alignItems: 'flex-start', gap: 10
                 }}
                 onMouseOver={e => e.currentTarget.style.background = 'var(--inset)'}
                 onMouseOut={e => e.currentTarget.style.background = 'transparent'}
               >
-                <div style={{ fontWeight: 700 }}>{p.name}</div>
-                <div style={{ fontSize: 11, color: 'var(--muted)' }}>{[p.city, p.state, p.country].filter(Boolean).join(', ')}</div>
+                <Icon name="pin" size={14} style={{ color: 'var(--accent)', flexShrink: 0, marginTop: 2 }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{shortName}</div>
+                  {context && <div style={{ fontSize: 11, color: 'var(--muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{context}</div>}
+                </div>
               </div>
             );
           })}

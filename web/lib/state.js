@@ -17,6 +17,7 @@
     settingsOpen: false,
     toast: null,            // {msg, ts} ou null
     selectedDayIndex: 0,    // jour sélectionné dans l'itinéraire
+    selectedStepId: null,
     todayIndex: 0,          // index du jour "aujourd'hui" calculé
   };
 

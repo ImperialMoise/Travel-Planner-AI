@@ -885,6 +885,8 @@ function AtelierV2() {
 
   /* ——— step card (Stitch) ——— */
    function StepCard({ s: step }) {
+  const { selectedStepId } = Store.useStore();
+  const isSelectedStep = selectedStepId && step.id === selectedStepId;
   var v = stepView(step);
   var toneMap = {
     transport: { accent: '#597b72', soft: 'rgba(89,123,114,.12)', label: 'Transport' },
@@ -945,13 +947,16 @@ function AtelierV2() {
   }
 
   return React.createElement('article', {
-    onClick: function() { setEditor({ open: true, dayId: day.id, step: step }); },
+    onClick: function() {
+      Store.set({ selectedStepId: step.id || null });
+      setEditor({ open: true, dayId: day.id, step: step });
+    },
     style: {
       background: 'var(--card)',
       borderRadius: 12,
       padding: '18px 20px',
-      boxShadow: 'var(--shadow)',
-      border: '1px solid var(--outline-variant)',
+      boxShadow: isSelectedStep ? '0 0 0 3px rgba(217,182,126,0.16), var(--shadow)' : 'var(--shadow)',
+      border: isSelectedStep ? '1px solid var(--tan)' : '1px solid var(--outline-variant)',
       display: 'flex',
       gap: 16,
       position: 'relative',
@@ -1164,7 +1169,6 @@ function AtelierV2() {
           onClick: openStepOnMap,
           title: hasCoords ? 'Voir sur la carte' : 'Localiser cette étape',
           style: {
-            marginLeft: 'auto',
             border: `1px solid ${C.line}`,
             background: C.inset,
             color: C.text,
@@ -1521,7 +1525,37 @@ function AtelierV2() {
           return React.createElement('button', {
             key: step.id || k,
             type: 'button',
-            onClick: function() { setEditor({ open: true, dayId: day.id, step: step }); },
+            React.createElement('button', {
+          type: 'button',
+          onClick: function(e) {
+            e.stopPropagation();
+            Store.set({ selectedStepId: step.id || null });
+            Store.showToast('Étape sélectionnée pour “Autour de ce lieu”');
+          },
+          title: 'Explorer autour de cette étape',
+          style: {
+            marginLeft: 'auto',
+            border: `1px solid ${C.line}`,
+            background: C.accentSoft,
+            color: C.accent,
+            borderRadius: 999,
+            padding: '6px 10px',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            cursor: 'pointer',
+            fontFamily: 'inherit',
+            fontSize: 11,
+            fontWeight: 800
+          }
+        },
+          React.createElement(Icon, { name: 'sparkle', size: 13 }),
+          'Autour'
+        ),
+            onClick: function() {
+              Store.set({ selectedStepId: step.id || null });
+              setEditor({ open: true, dayId: day.id, step: step });
+            },
             style: {
               width: '100%',
               textAlign: 'left',
@@ -1574,9 +1608,36 @@ function AtelierV2() {
               style: {
                 fontSize: 12.5,
                 lineHeight: '18px',
-                color: C.muted
+                color: C.muted,
+                marginBottom: 10
               }
-            }, v.sub || step.lieu || step.place || 'Aucun lieu renseigné')
+            }, v.sub || step.lieu || step.place || 'Aucun lieu renseigné'),
+
+            React.createElement('button', {
+              type: 'button',
+              onClick: function(e) {
+                e.stopPropagation();
+                Store.set({ selectedStepId: step.id || null });
+                Store.showToast('Étape envoyée dans la toolbox');
+              },
+              style: {
+                border: `1px solid ${C.line}`,
+                background: C.accentSoft,
+                color: C.accent,
+                borderRadius: 999,
+                padding: '6px 10px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+                fontSize: 11,
+                fontWeight: 800
+              }
+            },
+              React.createElement(Icon, { name: 'sparkle', size: 13 }),
+              'Autour'
+            )
           );
         }) : React.createElement('div', {
           style: {

@@ -522,6 +522,34 @@ export async function deleteDocument(documentId) {
   }
 }
 
+// ─── Recherche de lieux sécurisée via Edge Function ─────────
+export async function searchPlaces(params = {}) {
+  const payload = {
+    query: params.query || '',
+    language: params.language || 'fr',
+    country: params.country || '',
+    lat: params.lat ?? null,
+    lng: params.lng ?? null,
+    type: params.type || 'place',
+    limit: params.limit || 5
+  };
+
+  const { data, error } = await sb.functions.invoke('places-search', {
+    body: payload
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  return data || {
+    provider: 'geoapify',
+    mode: 'error',
+    results: [],
+    usage: null
+  };
+}
+
 // ─── Realtime ──────────────────────────────────────────────
 let _channel = null;
 export function subscribeTrip(tripId, onChange) {
@@ -583,3 +611,49 @@ function dbBudgetToLocal(b) {
     forParticipants: b.for_participants ?? ['__all__']
   };
 }
+
+window.SB = {
+  sb,
+
+  getUser,
+  getSession,
+  onAuthChange,
+  signUp,
+  signIn,
+  signOut,
+
+  listMyTrips,
+  createTrip,
+  loadTrip,
+  updateTrip,
+  updateDay,
+  deleteTrip,
+
+  reorderSteps,
+  saveStep,
+  deleteStep,
+
+  saveBudgetItem,
+  deleteBudgetItem,
+
+  addParticipant,
+  addMemberAsParticipant,
+  isMemberAlreadyParticipant,
+  removeParticipant,
+
+  listTripMembers,
+  createTripInvite,
+  getInvite,
+  acceptInvite,
+  removeTripMember,
+
+  listDocuments,
+  uploadDocument,
+  getDocumentUrl,
+  deleteDocument,
+
+  searchPlaces,
+
+  subscribeTrip,
+  unsubscribeTrip
+};

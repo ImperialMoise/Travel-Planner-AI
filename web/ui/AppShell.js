@@ -1351,6 +1351,7 @@ function Toolbox({ width = 320 }) {
   const [done, setDone] = React.useState({});
   const [todoDraft, setTodoDraft] = React.useState('');
   const [savingTodo, setSavingTodo] = React.useState(false);
+  const todoInputRef = React.useRef(null);
 
 async function saveTodoItems(nextItems) {
   if (!day || !day.id || !window.SB || !window.SB.updateDay) return;

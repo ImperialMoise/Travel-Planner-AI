@@ -506,13 +506,37 @@ function Toolbox({ width = 320 }) {
   }
 
   function calcUseMyPos(which) {
-    if (!navigator.geolocation) return;
-    navigator.geolocation.getCurrentPosition(function(pos) {
-      var c = [pos.coords.longitude, pos.coords.latitude];
-      if (which === 'from') { setCalcFrom('Ma position'); setCalcFromCoords(c); }
-      else { setCalcTo('Ma position'); setCalcToCoords(c); }
-    }, function() { alert('Impossible de vous localiser.'); }, { enableHighAccuracy: true, timeout: 8000 });
+  if (!navigator.geolocation) {
+    alert('La géolocalisation n’est pas disponible sur cet appareil.');
+    return;
   }
+
+  navigator.geolocation.getCurrentPosition(function(pos) {
+    var c = [pos.coords.longitude, pos.coords.latitude];
+
+    if (which === 'from') {
+      setCalcFrom('Ma position');
+      setCalcFromCoords(c);
+    } else if (which === 'to') {
+      setCalcTo('Ma position');
+      setCalcToCoords(c);
+    } else if (which && String(which).startsWith('stop-')) {
+      var idx = parseInt(String(which).split('-')[1], 10);
+      setCalcStops(function(stops) {
+        return stops.map(function(stop, i) {
+          return i === idx ? { text: 'Ma position', coords: c } : stop;
+        });
+      });
+    }
+
+    setCalcResult(null);
+  }, function() {
+    alert('Impossible de vous localiser.');
+  }, {
+    enableHighAccuracy: true,
+    timeout: 8000
+  });
+}
 
   async function calcGeocode(text) {
     var r = await fetch('https://api.maptiler.com/geocoding/' + encodeURIComponent(text) + '.json?key=08IwMKKAkP3BQJss5poF&language=fr&limit=1');
@@ -539,10 +563,38 @@ function Toolbox({ width = 320 }) {
       }
       var allPts = [from].concat(resolvedStops).concat([to]);
       var coordStr = allPts.map(function(c) { return c[0] + ',' + c[1]; }).join(';');
-      var osrmServer = { driving: 'routed-car', walking: 'routed-foot', cycling: 'routed-bike' }[calcMode] || 'routed-car';
-      var r = await fetch('https://routing.openstreetmap.de/' + osrmServer + '/route/v1/driving/' + coordStr + '?overview=full&geometries=geojson');
-      var data = await r.json();
-      if (!data.routes || !data.routes[0]) { alert('Aucun itin\u00e9raire trouv\u00e9.'); setCalcBusy(false); return; }
+      vvar osrmServer = {
+  driving: 'routed-car',
+  walking: 'routed-foot',
+  cycling: 'routed-bike'
+}[calcMode] || 'routed-car';
+
+var osrmProfile = {
+  driving: 'driving',
+  walking: 'foot',
+  cycling: 'bike'
+}[calcMode] || 'driving';
+
+var r = await fetch(
+  'https://routing.openstreetmap.de/' +
+  osrmServer +
+  '/route/v1/' +
+  osrmProfile +
+  '/' +
+  coordStr +
+  '?overview=full&geometries=geojson'
+);
+      if (!r.ok) {
+  throw new Error('Le service de calcul d’itinéraire ne répond pas correctement.');
+}
+
+var data = await r.json();
+
+if (!data.routes || !data.routes[0]) {
+  alert('Aucun itinéraire trouvé pour ce trajet. Essaie un autre mode ou vérifie les lieux.');
+  setCalcBusy(false);
+  return;
+}
       var route = data.routes[0];
       setCalcResult({ duration: route.duration, distance: route.distance, geometry: route.geometry, from: from, to: to, stops: resolvedStops, mode: calcMode });
     } catch (e) { alert('Erreur : ' + e.message); }

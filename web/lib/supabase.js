@@ -122,6 +122,7 @@ export async function loadTrip(tripId) {
       note: d.note || '',
       dateLabel: d.date_label || '',
       dateISO: d.date_iso,
+      todo: Array.isArray(d.todo) ? d.todo : [],
       steps: (steps ?? []).filter(s => s.day_id === d.id).map(dbStepToLocal)
     })),
     budget: (budget ?? []).map(dbBudgetToLocal),
@@ -162,6 +163,7 @@ export async function updateDay(dayId, patch) {
   if (patch.note !== undefined) row.note = patch.note || '';
   if (patch.dateLabel !== undefined) row.date_label = patch.dateLabel || '';
   if (patch.dateISO !== undefined) row.date_iso = patch.dateISO || null;
+  if (patch.todo !== undefined) row.todo = Array.isArray(patch.todo) ? patch.todo : [];
 
   const { data, error } = await sb
     .from('trip_days')

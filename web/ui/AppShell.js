@@ -1349,6 +1349,43 @@ function Toolbox({ width = 320 }) {
   const [pinned, setPinned] = React.useState(() => loadPins(view));
   const [editMode, setEditMode] = React.useState(false);
   const [done, setDone] = React.useState({});
+  const [todoDraft, setTodoDraft] = React.useState('');
+const [savingTodo, setSavingTodo] = React.useState(false);
+
+async function saveTodoItems(nextItems) {
+  if (!day || !day.id || !window.SB || !window.SB.updateDay) return;
+
+  setSavingTodo(true);
+
+  try {
+    await window.SB.updateDay(day.id, { todo: nextItems });
+    const refreshed = await window.SB.loadTrip(trip.id);
+    Store.set({ trip: refreshed });
+  } catch (e) {
+    console.error('Erreur checklist :', e);
+    Store.showToast('Impossible de sauvegarder la checklist.');
+  } finally {
+    setSavingTodo(false);
+  }
+}
+
+async function addTodoItem() {
+  const text = todoDraft.trim();
+  if (!text) return;
+
+  const current = Array.isArray(day.todo) ? day.todo : [];
+  const next = [...current, text];
+
+  setTodoDraft('');
+  await saveTodoItems(next);
+}
+
+async function deleteTodoItem(index) {
+  const current = Array.isArray(day.todo) ? day.todo : [];
+  const next = current.filter((_, i) => i !== index);
+
+  await saveTodoItems(next);
+}
   
   /* ── Calculateur d'itinéraire ── */
   const [calcFrom, setCalcFrom] = React.useState('');
@@ -1602,6 +1639,78 @@ if (!data.routes || !data.routes[0]) {
   const transportStep = steps.find(x => x.type === 'transport');
   const participants = trip.participants || [{ name: 'Moi', initials: 'ME', hue: 140 }];
 
+  function getUsefulAroundIdeas(step, day, trip) {
+  const text = [
+    step && step.label,
+    step && step.lieu,
+    step && step.place,
+    step && step.arrivee,
+    step && step.depart,
+    day && day.title,
+    trip && trip.name
+  ].filter(Boolean).join(' ').toLowerCase();
+
+  const ideas = [];
+
+  if (!step) return ideas;
+
+  if (text.includes('séoul') || text.includes('seoul')) {
+    ideas.push('Regarder s’il y a un marché, une rue commerçante ou un palais accessible à pied.');
+    ideas.push('Vérifier la station de métro la plus proche avant de partir.');
+    ideas.push('Prévoir un café ou une pause intérieure si la journée est longue.');
+  }
+
+  if (text.includes('busan')) {
+    ideas.push('Regarder si une plage, un marché ou un point de vue est proche.');
+    ideas.push('Vérifier les temps de trajet : Busan est étendue.');
+    ideas.push('Prévoir une marge si tu relies Haeundae, Gamcheon ou Jagalchi.');
+  }
+
+  if (text.includes('palais') || text.includes('temple') || text.includes('museum') || text.includes('musée')) {
+    ideas.push('Vérifier les horaires et jours de fermeture.');
+    ideas.push('Regarder s’il faut réserver un créneau ou acheter un billet à l’avance.');
+    ideas.push('Chercher un café ou une balade courte juste après la visite.');
+  }
+
+  if (text.includes('gare') || text.includes('station') || text.includes('aéroport') || text.includes('airport')) {
+    ideas.push('Repérer la sortie exacte, pas seulement la station.');
+    ideas.push('Prévoir une marge pour les correspondances et les bagages.');
+    ideas.push('Vérifier s’il y a une consigne ou un point de retrait proche.');
+  }
+
+  if (text.includes('marché') || text.includes('market') || text.includes('restaurant') || step.type === 'restaurant') {
+    ideas.push('Regarder les horaires réels : certains marchés ferment tôt ou changent selon les jours.');
+    ideas.push('Prévoir une alternative proche si c’est complet ou fermé.');
+    ideas.push('Repérer une rue animée autour plutôt qu’une seule adresse.');
+  }
+
+  if (ideas.length === 0) {
+    ideas.push('Chercher les points d’intérêt dans un rayon de 10 à 20 minutes à pied.');
+    ideas.push('Vérifier les horaires, avis récents et accès avant d’ajouter une étape.');
+    ideas.push('Prévoir une option courte à proximité : café, point de vue, parc ou rue commerçante.');
+  }
+
+  return ideas.slice(0, 3);
+}
+
+function getUsefulAroundTip(step) {
+  if (!step) return '';
+
+  const t = [
+    step.label,
+    step.lieu,
+    step.place,
+    step.type
+  ].filter(Boolean).join(' ').toLowerCase();
+
+  if (t.includes('aéroport') || t.includes('airport')) return 'Astuce : pour un aéroport, vérifie surtout le terminal, le temps de transfert et la marge de sécurité.';
+  if (t.includes('gare') || t.includes('station')) return 'Astuce : une station peut avoir plusieurs sorties ; la bonne sortie peut économiser 10 à 15 minutes.';
+  if (t.includes('restaurant')) return 'Astuce : garde une option B proche, surtout le soir ou le week-end.';
+  if (t.includes('palais') || t.includes('temple') || t.includes('musée')) return 'Astuce : vérifie les horaires et la dernière entrée, pas seulement l’heure de fermeture.';
+
+  return 'Astuce : ajoute seulement ce qui aide vraiment ta journée, pas tout ce qui semble “bien noté”.';
+}
+
   function WidgetShell({ id, title, icon, iconColor, children, noPad }) {
     return (
       <div style={{ background: 'var(--card)', borderRadius: 12, boxShadow: '0 2px 8px rgba(82,98,91,0.05)', border: '1px solid var(--outline-variant)', overflow: 'hidden' }}>
@@ -1618,57 +1727,122 @@ if (!data.routes || !data.routes[0]) {
   }
 
   const BLOCKS = {
-    checklist: { label: '\u00c0 ne pas oublier', icon: 'check', render() {
-      const items = day.todo || [];
-      return (
-        <WidgetShell key="checklist" id="checklist" title={'\u00c0 ne pas oublier'} icon="check" iconColor="var(--accent)">
-          {items.length > 0 ? items.map((t, i) => {
-            const k = selIdx + '_' + i; const ok = done[k];
-            return (
-              <label key={i} onClick={() => setDone(d => ({ ...d, [k]: !d[k] }))} style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', padding: '7px 0', borderBottom: i < items.length - 1 ? '1px solid var(--line2)' : 'none' }}>
-                <div style={{ width: 20, height: 20, borderRadius: 4, flexShrink: 0, border: ok ? 'none' : '1.5px solid var(--outline)', background: ok ? 'var(--accent)' : 'var(--card)', display: 'grid', placeItems: 'center' }}>
-                  {ok && <Icon name="check" size={14} sw={2.4} style={{ color: '#fff' }} />}
-                </div>
-                <span style={{ fontSize: 13.5, color: ok ? 'var(--faint)' : 'var(--text)', textDecoration: ok ? 'line-through' : 'none', opacity: ok ? 0.7 : 1 }}>{t}</span>
-              </label>
-            );
-          }) : <div style={{ fontSize: 13, color: 'var(--faint)', fontStyle: 'italic' }}>Rien de pr{'\u00e9'}vu pour ce jour.</div>}
-        </WidgetShell>
-      );
-    }},
+    checklist: { label: 'À ne pas oublier', icon: 'check', render() {
+  const items = Array.isArray(day.todo) ? day.todo : [];
 
-        aroundStep: { label: 'Autour de ce lieu', icon: 'pin', render() {
-      return (
-        <AroundStepWidget
-          key="aroundStep"
-          step={selectedStep}
-          editMode={editMode}
-          onRemove={() => togglePin('aroundStep')}
-        />
-      );
-    }},
+  return (
+    <WidgetShell key="checklist" id="checklist" title="À ne pas oublier" icon="check" iconColor="var(--accent)">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {items.length > 0 ? items.map((t, i) => {
+          const k = day.id + '_' + i;
+          const ok = done[k];
 
-        dayScore: { label: 'Score & trajets', icon: 'route', render() {
-      return (
-        <DayScoreWidget
-          key="dayScore"
-          day={day}
-          editMode={editMode}
-          onRemove={() => togglePin('dayScore')}
-        />
-      );
-    }},
+          return (
+            <div key={i} style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              padding: '7px 0',
+              borderBottom: i < items.length - 1 ? '1px solid var(--line2)' : 'none'
+            }}>
+              <button
+                type="button"
+                onClick={() => setDone(d => ({ ...d, [k]: !d[k] }))}
+                style={{
+                  width: 20,
+                  height: 20,
+                  borderRadius: 4,
+                  flexShrink: 0,
+                  border: ok ? 'none' : '1.5px solid var(--outline)',
+                  background: ok ? 'var(--accent)' : 'var(--card)',
+                  display: 'grid',
+                  placeItems: 'center',
+                  cursor: 'pointer'
+                }}
+              >
+                {ok && <Icon name="check" size={14} sw={2.4} style={{ color: '#fff' }} />}
+              </button>
 
-        globalNote: { label: 'Note globale', icon: 'file', render() {
-      return (
-        <GlobalNoteWidget
-          key="globalNote"
-          trip={trip}
-          editMode={editMode}
-          onRemove={() => togglePin('globalNote')}
-        />
-      );
-    }},
+              <span style={{
+                flex: 1,
+                minWidth: 0,
+                fontSize: 13.5,
+                color: ok ? 'var(--faint)' : 'var(--text)',
+                textDecoration: ok ? 'line-through' : 'none',
+                opacity: ok ? 0.7 : 1,
+                lineHeight: '19px'
+              }}>
+                {t}
+              </span>
+
+              <button
+                type="button"
+                onClick={() => deleteTodoItem(i)}
+                title="Supprimer"
+                style={{
+                  border: 'none',
+                  background: 'transparent',
+                  color: 'var(--faint)',
+                  cursor: 'pointer',
+                  padding: 4
+                }}
+              >
+                <Icon name="x" size={13} />
+              </button>
+            </div>
+          );
+        }) : (
+          <div style={{ fontSize: 13, color: 'var(--faint)', fontStyle: 'italic' }}>
+            Ajoute tes rappels pour cette journée.
+          </div>
+        )}
+
+        <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+          <input
+            value={todoDraft}
+            onChange={e => setTodoDraft(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter') addTodoItem();
+            }}
+            placeholder="Passeport, billets, adaptateur…"
+            style={{
+              flex: 1,
+              minWidth: 0,
+              border: '1px solid var(--line)',
+              background: 'var(--inset)',
+              color: 'var(--text)',
+              borderRadius: 10,
+              padding: '8px 10px',
+              fontFamily: 'inherit',
+              fontSize: 13,
+              outline: 'none'
+            }}
+          />
+
+          <button
+            type="button"
+            onClick={addTodoItem}
+            disabled={savingTodo}
+            style={{
+              border: 'none',
+              background: 'var(--accent)',
+              color: 'var(--accent-ink)',
+              borderRadius: 10,
+              padding: '0 11px',
+              fontFamily: 'inherit',
+              fontSize: 13,
+              fontWeight: 800,
+              cursor: savingTodo ? 'wait' : 'pointer',
+              opacity: savingTodo ? 0.65 : 1
+            }}
+          >
+            +
+          </button>
+        </div>
+      </div>
+    </WidgetShell>
+  );
+}},
 
     note: { label: 'Journal du jour', icon: 'sparkle', render() {
       const [noteDraft, setNoteDraft] = React.useState(day.note || '');

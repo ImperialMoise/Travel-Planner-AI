@@ -136,14 +136,20 @@ export async function updateTrip(tripId, patch) {
   if (patch.startDate !== undefined) row.start_date = patch.startDate || null;
   if (patch.globalNote !== undefined) row.global_note = patch.globalNote || '';
 
-  const { data, error } = await sb
+  const { error } = await sb
     .from('trips')
     .update(row)
-    .eq('id', tripId)
-    .select()
-    .single();
+    .eq('id', tripId);
 
   if (error) throw error;
+
+  const { data, error: readError } = await sb
+    .from('trips')
+    .select('*')
+    .eq('id', tripId)
+    .maybeSingle();
+
+  if (readError) throw readError;
   return data;
 }
 

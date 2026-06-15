@@ -615,11 +615,22 @@ function computeDayScore(day) {
 }
 
 function DayScoreWidget({ day, editMode, onRemove }) {
+  const [expanded, setExpanded] = React.useState(false);
+
+  React.useEffect(() => {
+    setExpanded(false);
+  }, [day?.id]);
+
   var result = computeDayScore(day);
 
   var scoreColor = 'var(--accent)';
   if (result.score < 50) scoreColor = 'var(--danger)';
   else if (result.score < 70) scoreColor = 'var(--tan)';
+
+  var summary =
+    result.issues[0] ||
+    result.tips[0] ||
+    'Aucun gros problème détecté avec les informations disponibles.';
 
   return (
     <div
@@ -652,7 +663,7 @@ function DayScoreWidget({ day, editMode, onRemove }) {
             gap: 8
           }}
         >
-          <Icon name="route" size={16} style={{ color: scoreColor }} />
+          <Icon name="route" size={16} style={{ color: 'var(--tan)' }} />
           Score & trajets
         </span>
 
@@ -677,14 +688,14 @@ function DayScoreWidget({ day, editMode, onRemove }) {
         )}
       </div>
 
-      <div style={{ padding: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 14 }}>
+      <div style={{ padding: 16, background: 'var(--card)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <div
             style={{
               width: 58,
               height: 58,
               borderRadius: '50%',
-              background: 'var(--inset)',
+              background: 'var(--bg)',
               border: '2px solid ' + scoreColor,
               display: 'grid',
               placeItems: 'center',
@@ -692,7 +703,14 @@ function DayScoreWidget({ day, editMode, onRemove }) {
             }}
           >
             <div style={{ textAlign: 'center' }}>
-              <div style={{ fontFamily: 'var(--font-serif)', fontSize: 22, lineHeight: 1, color: scoreColor }}>
+              <div
+                style={{
+                  fontFamily: 'var(--font-serif)',
+                  fontSize: 22,
+                  lineHeight: 1,
+                  color: scoreColor
+                }}
+              >
                 {result.score}
               </div>
               <div style={{ fontSize: 9, fontWeight: 800, color: 'var(--faint)' }}>
@@ -701,49 +719,118 @@ function DayScoreWidget({ day, editMode, onRemove }) {
             </div>
           </div>
 
-          <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text)', marginBottom: 3 }}>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div
+              style={{
+                fontSize: 15,
+                fontWeight: 800,
+                color: 'var(--text)',
+                marginBottom: 4
+              }}
+            >
               {result.label}
             </div>
-            <div style={{ fontSize: 12.5, lineHeight: '18px', color: 'var(--muted)' }}>
-              Diagnostic indicatif basé sur les étapes, horaires et coordonnées disponibles.
+
+            <div
+              style={{
+                fontSize: 12.5,
+                lineHeight: '18px',
+                color: 'var(--muted)'
+              }}
+            >
+              {summary}
             </div>
           </div>
         </div>
 
-        <div style={{ marginBottom: 12 }}>
-          <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--faint)', marginBottom: 7 }}>
-            Points à vérifier
-          </div>
+        <button
+          onClick={() => setExpanded(v => !v)}
+          style={{
+            marginTop: 12,
+            width: '100%',
+            padding: '9px 12px',
+            borderRadius: 10,
+            border: '1px solid var(--outline-variant)',
+            background: 'var(--inset)',
+            color: 'var(--text)',
+            cursor: 'pointer',
+            fontFamily: 'inherit',
+            fontSize: 12,
+            fontWeight: 700,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8
+          }}
+        >
+          <Icon name={expanded ? 'chevdown' : 'chevright'} size={13} />
+          {expanded ? 'Masquer les conseils' : 'Voir les conseils'}
+        </button>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {result.issues.map(function(issue, i) {
-              return (
-                <div key={i} style={{ display: 'flex', gap: 8, fontSize: 12.5, lineHeight: '18px', color: 'var(--text)' }}>
-                  <span style={{ color: scoreColor, fontWeight: 900 }}>•</span>
-                  <span>{issue}</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        {expanded && (
+          <div
+            style={{
+              marginTop: 12,
+              paddingTop: 12,
+              borderTop: '1px solid var(--outline-variant)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 14
+            }}
+          >
+            <div>
+              <div
+                style={{
+                  fontSize: 10.5,
+                  fontWeight: 800,
+                  letterSpacing: '.1em',
+                  textTransform: 'uppercase',
+                  color: 'var(--faint)',
+                  marginBottom: 7
+                }}
+              >
+                Points à vérifier
+              </div>
 
-        <div>
-          <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--faint)', marginBottom: 7 }}>
-            Pistes pratiques
-          </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {result.issues.map(function(issue, i) {
+                  return (
+                    <div key={i} style={{ display: 'flex', gap: 8, fontSize: 12.5, lineHeight: '18px', color: 'var(--text)' }}>
+                      <span style={{ color: scoreColor, fontWeight: 900 }}>•</span>
+                      <span>{issue}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {result.tips.map(function(tip, i) {
-              return (
-                <div key={i} style={{ display: 'flex', gap: 8, fontSize: 12.5, lineHeight: '18px', color: 'var(--muted)' }}>
-                  <Icon name="sparkle" size={12} style={{ color: 'var(--tan)', flexShrink: 0, marginTop: 2 }} />
-                  <span>{tip}</span>
-                </div>
-              );
-            })}
+            <div>
+              <div
+                style={{
+                  fontSize: 10.5,
+                  fontWeight: 800,
+                  letterSpacing: '.1em',
+                  textTransform: 'uppercase',
+                  color: 'var(--faint)',
+                  marginBottom: 7
+                }}
+              >
+                Pistes pratiques
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {result.tips.map(function(tip, i) {
+                  return (
+                    <div key={i} style={{ display: 'flex', gap: 8, fontSize: 12.5, lineHeight: '18px', color: 'var(--muted)' }}>
+                      <Icon name="sparkle" size={12} style={{ color: 'var(--tan)', flexShrink: 0, marginTop: 2 }} />
+                      <span>{tip}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
@@ -787,30 +874,17 @@ function GlobalNoteWidget({ trip, editMode, onRemove }) {
         borderRadius: 12,
         boxShadow: '0 2px 8px rgba(82,98,91,0.05)',
         border: '1px solid var(--outline-variant)',
-        padding: 16,
-        position: 'relative',
         overflow: 'hidden'
       }}
     >
       <div
         style={{
-          position: 'absolute',
-          top: 0,
-          right: 0,
-          width: 32,
-          height: 32,
-          background: 'var(--accent-soft)',
-          borderRadius: '0 0 0 12px'
-        }}
-      />
-
-      <div
-        style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          marginBottom: 12,
-          gap: 8
+          padding: '12px 16px',
+          borderBottom: '1px solid var(--outline-variant)',
+          background: 'var(--soft)'
         }}
       >
         <span
@@ -823,7 +897,7 @@ function GlobalNoteWidget({ trip, editMode, onRemove }) {
             gap: 8
           }}
         >
-          <Icon name="file" size={16} style={{ color: 'var(--accent)' }} />
+          <Icon name="file" size={16} style={{ color: 'var(--tan)' }} />
           Note globale
         </span>
 
@@ -868,37 +942,39 @@ function GlobalNoteWidget({ trip, editMode, onRemove }) {
         </div>
       </div>
 
-      <textarea
-        value={draft}
-        onChange={e => setDraft(e.target.value)}
-        placeholder="Note valable pour tout le voyage : idées, rappels, choses à vérifier..."
-        rows={6}
-        style={{
-          width: '100%',
-          minHeight: 110,
-          resize: 'vertical',
-          border: '1px solid var(--outline-variant)',
-          borderRadius: 11,
-          background: 'var(--inset)',
-          color: 'var(--text)',
-          padding: '10px 12px',
-          fontFamily: 'inherit',
-          fontSize: 13.5,
-          lineHeight: '20px',
-          outline: 'none',
-          boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)'
-        }}
-      />
+      <div style={{ padding: 16, background: 'var(--card)' }}>
+        <textarea
+          value={draft}
+          onChange={e => setDraft(e.target.value)}
+          placeholder="Note valable pour tout le voyage : idées, rappels, choses à vérifier..."
+          rows={6}
+          style={{
+            width: '100%',
+            minHeight: 110,
+            resize: 'vertical',
+            border: '1px solid var(--outline-variant)',
+            borderRadius: 11,
+            background: 'var(--bg)',
+            color: 'var(--text)',
+            padding: '10px 12px',
+            fontFamily: 'inherit',
+            fontSize: 13.5,
+            lineHeight: '20px',
+            outline: 'none',
+            boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)'
+          }}
+        />
 
-      <div
-        style={{
-          marginTop: 8,
-          fontSize: 11.5,
-          color: dirty ? 'var(--accent)' : 'var(--faint)',
-          fontWeight: 700
-        }}
-      >
-        {dirty ? 'Modifications non sauvegardées' : 'Visible dans toute l’app'}
+        <div
+          style={{
+            marginTop: 8,
+            fontSize: 11.5,
+            color: dirty ? 'var(--accent)' : 'var(--faint)',
+            fontWeight: 700
+          }}
+        >
+          {dirty ? 'Modifications non sauvegardées' : 'Visible dans toute l’app'}
+        </div>
       </div>
     </div>
   );

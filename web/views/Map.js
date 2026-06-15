@@ -373,7 +373,7 @@ React.useEffect(() => {
   }
 
   // ── Cards ──
-  function renderWelcome(){if(!cardRef.current)return;cardRef.current.innerHTML='<div class="mv-card"><div class="mv-welcome-pad"><div style="font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--accent)">Le voyage</div><div style="font-family:var(--font-serif);font-style:italic;font-size:24px;margin-top:3px;color:var(--text)">'+T.name+'</div><div class="mv-welcome-line">Un fil d\'or relie chaque étape. Cliquez un jour pour plonger du globe jusqu\'au niveau des rues.</div><div class="mv-legend"><div class="mv-lg-row"><span class="mv-lg-dot" style="background:var(--accent)"></span>Séoul & environs</div><div class="mv-lg-row"><span class="mv-lg-dot" style="background:#c98a3c"></span>Busan, l\'échappée du Sud</div><div class="mv-lg-row"><span class="mv-lg-dot" style="background:var(--card);border-color:var(--faint)"></span>Vols Paris ⇄ Séoul</div></div></div></div>';}
+  function renderWelcome(){if(!cardRef.current)return;var nbDays=T.days?T.days.length:0;var nbSteps=0;T.days.forEach(function(d){nbSteps+=(d.steps||[]).length;});cardRef.current.innerHTML='<div class="mv-card"><div class="mv-welcome-pad"><div style="font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--accent)">Le voyage</div><div style="font-family:var(--font-serif);font-style:italic;font-size:24px;margin-top:3px;color:var(--text)">'+T.name+'</div><div class="mv-welcome-line">'+nbDays+' jours · '+nbSteps+' étapes sur la carte.<br>Cliquez un jour à gauche pour zoomer.</div></div></div>';}
   function renderDayCard(i) {
   if (!cardRef.current) return;
 

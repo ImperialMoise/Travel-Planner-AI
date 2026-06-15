@@ -142,7 +142,7 @@ function Btn({ variant = 'ghost', icon, children, onClick, style, ...rest }) {
   );
 }
 
-// ─── Composant Auto-complétion de lieu (MapTiler — résultats en français) ────
+// ─── Composant Auto-complétion de lieu (Nominatim — résultats en français) ────
 function LocationInput({ value, onChange, onSelect, placeholder, style }) {
   const [query, setQuery] = React.useState(value || '');
   const [results, setResults] = React.useState([]);
@@ -159,18 +159,24 @@ function LocationInput({ value, onChange, onSelect, placeholder, style }) {
     const delay = setTimeout(async () => {
       setLoading(true);
       try {
-        const url = 'https://api.maptiler.com/geocoding/'
-          + encodeURIComponent(query)
-          + '.json?key=08IwMKKAkP3BQJss5poF&language=fr&limit=6';
-        const res = await fetch(url);
+        // Nominatim (OpenStreetMap) — résultats en français, trouve les POIs
+        const url = 'https://nominatim.openstreetmap.org/search'
+          + '?q=' + encodeURIComponent(query)
+          + '&format=jsonv2'
+          + '&accept-language=fr'
+          + '&addressdetails=1'
+          + '&limit=6';
+        const res = await fetch(url, {
+          headers: { 'User-Agent': 'LAtelier-TravelApp/1.0' }
+        });
         const data = await res.json();
-        setResults(data.features || []);
+        setResults(Array.isArray(data) ? data : []);
       } catch (e) {
         console.error("Erreur de recherche:", e);
       } finally {
         setLoading(false);
       }
-    }, 350);
+    }, 400);
     return () => clearTimeout(delay);
   }, [query, open]);
 
@@ -190,22 +196,27 @@ function LocationInput({ value, onChange, onSelect, placeholder, style }) {
           position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0,
           background: 'var(--card)', border: '1px solid var(--line)',
           borderRadius: 10, boxShadow: 'var(--shadow-lg)', zIndex: 9999,
-          overflow: 'hidden', maxHeight: 240, overflowY: 'auto'
+          overflow: 'hidden', maxHeight: 260, overflowY: 'auto'
         }}>
           {loading && results.length === 0 && <div style={{ padding: '8px 12px', fontSize: 13, color: 'var(--muted)' }}>Recherche…</div>}
-          {results.map((f, i) => {
-            const shortName = f.text || '';
-            const fullName = f.place_name || shortName;
-            const context = fullName.replace(shortName, '').replace(/^[\s,]+/, '');
+          {results.map((r, i) => {
+            // Nominatim renvoie display_name = "Tour Eiffel, 7e, Paris, Île-de-France, France"
+            const parts = (r.display_name || '').split(', ');
+            const mainName = r.name || parts[0] || '';
+            const context = parts.slice(1, 4).join(', ');
             return (
               <div key={i}
                 onMouseDown={e => e.preventDefault()}
                 onClick={() => {
-                  const label = shortName + (context ? ', ' + context.split(',').slice(0, 2).join(',') : '');
+                  const label = mainName + (context ? ', ' + context : '');
                   setQuery(label);
                   onChange(label);
                   setOpen(false);
-                  if (onSelect) onSelect({ label, lat: f.center[1], lng: f.center[0] });
+                  if (onSelect) onSelect({
+                    label,
+                    lat: parseFloat(r.lat),
+                    lng: parseFloat(r.lon)
+                  });
                 }}
                 style={{
                   padding: '9px 12px', cursor: 'pointer',
@@ -218,7 +229,7 @@ function LocationInput({ value, onChange, onSelect, placeholder, style }) {
               >
                 <Icon name="pin" size={14} style={{ color: 'var(--accent)', flexShrink: 0, marginTop: 2 }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{shortName}</div>
+                  <div style={{ fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{mainName}</div>
                   {context && <div style={{ fontSize: 11, color: 'var(--muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{context}</div>}
                 </div>
               </div>

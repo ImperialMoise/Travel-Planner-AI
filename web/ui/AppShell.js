@@ -563,7 +563,7 @@ function Toolbox({ width = 320 }) {
       }
       var allPts = [from].concat(resolvedStops).concat([to]);
       var coordStr = allPts.map(function(c) { return c[0] + ',' + c[1]; }).join(';');
-      vvar osrmServer = {
+      var osrmServer = {
   driving: 'routed-car',
   walking: 'routed-foot',
   cycling: 'routed-bike'

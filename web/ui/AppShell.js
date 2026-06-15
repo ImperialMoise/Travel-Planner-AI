@@ -745,7 +745,34 @@ if (!data.routes || !data.routes[0]) {
       }
 
       return (
-        <WidgetShell key="calc" id="calc" title={'Itin\u00e9raire'} icon="route" iconColor="var(--tertiary)">
+        <div key="calc" style={{ background: 'var(--card)', borderRadius: 12, boxShadow: '0 2px 8px rgba(82,98,91,0.05)', border: '1px solid var(--outline-variant)', overflow: 'hidden' }}>
+  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderBottom: '1px solid var(--outline-variant)', background: 'var(--soft)' }}>
+    <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8 }}>
+      <Icon name="route" size={16} style={{ color: 'var(--tertiary)' }} />
+      Itinéraire
+    </span>
+    {editMode && (
+      <button
+        onClick={() => togglePin('calc')}
+        style={{
+          width: 22,
+          height: 22,
+          borderRadius: 7,
+          border: 'none',
+          cursor: 'pointer',
+          background: 'var(--accent-soft)',
+          color: 'var(--accent)',
+          display: 'grid',
+          placeItems: 'center',
+          fontSize: 15
+        }}
+      >
+        {'\u00d7'}
+      </button>
+    )}
+  </div>
+
+  <div style={{ padding: 16 }}>
           {/* Point A */}
           <div style={{ marginBottom: 10, position: 'relative' }}>
             <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--faint)', marginBottom: 4 }}>D{'\u00e9'}part</div>
@@ -849,7 +876,8 @@ if (!data.routes || !data.routes[0]) {
               </div>
             </div>
           )}
-        </WidgetShell>
+          </div>
+</div>
       );
     }},
     stats: { label: 'Rep\u00e8res du jour', icon: 'route', render() {

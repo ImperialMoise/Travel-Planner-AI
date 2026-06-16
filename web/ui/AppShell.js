@@ -233,6 +233,85 @@ function AppShell() {
 }
 
 // ─── Topbar ─────────────────────────────────────────────────
+function spineStepName(step) {
+  if (!step) return '';
+
+  return String(
+    step.label ||
+    step.lieu ||
+    step.place ||
+    step.arrivee ||
+    step.depart ||
+    ''
+  ).trim();
+}
+
+function spineStepType(step) {
+  return String(step && step.type || '').toLowerCase();
+}
+
+function spineIsRestaurant(step) {
+  return spineStepType(step) === 'restaurant';
+}
+
+function spineIsTransport(step) {
+  return spineStepType(step) === 'transport';
+}
+
+function spineIsLodging(step) {
+  return spineStepType(step) === 'logement';
+}
+
+function spineIsActivity(step) {
+  return spineStepType(step) === 'activite';
+}
+
+function spineMainStep(day) {
+  var steps = Array.isArray(day && day.steps) ? day.steps : [];
+  if (!steps.length) return null;
+
+  var important = steps.find(function(step) {
+    return step.important || step.favorite || step.favori || step.isImportant;
+  });
+  if (important) return important;
+
+  var activity = steps.find(spineIsActivity);
+  if (activity) return activity;
+
+  var transport = steps.find(spineIsTransport);
+  if (transport) return transport;
+
+  var lodging = steps.find(spineIsLodging);
+  if (lodging) return lodging;
+
+  var other = steps.find(function(step) {
+    return !spineIsRestaurant(step);
+  });
+  if (other) return other;
+
+  return steps[0];
+}
+
+function spineCountLabel(day) {
+  var steps = Array.isArray(day && day.steps) ? day.steps : [];
+
+  if (!steps.length) return '';
+
+  var restaurants = steps.filter(spineIsRestaurant).length;
+  var transports = steps.filter(spineIsTransport).length;
+  var lodgings = steps.filter(spineIsLodging).length;
+
+  var parts = [
+    steps.length + ' étape' + (steps.length > 1 ? 's' : '')
+  ];
+
+  if (restaurants) parts.push(restaurants + ' repas');
+  if (transports) parts.push(transports + ' transport' + (transports > 1 ? 's' : ''));
+  if (lodgings) parts.push(lodgings + ' logement' + (lodgings > 1 ? 's' : ''));
+
+  return parts.join(' · ');
+}
+
 function DaySpine({ width = 300, onPickDay }) {
   const { trip, selectedDayIndex } = Store.useStore();
   if (!trip || !trip.days) return null;
@@ -411,55 +490,98 @@ function DaySpine({ width = 300, onPickDay }) {
                           fontSize: on ? 17 : 14, fontWeight: on ? 400 : 600,
                           fontStyle: on ? 'italic' : 'normal',
                           lineHeight: '22px', color: 'var(--text)',
-                          marginBottom: on && stepTypes.length > 0 ? 10 : 0
+                          marginBottom: steps.length > 0 ? 8 : 0
                         }}>{dayTitle}</div>
 
-                        {/* Tags des étapes (jour actif seulement : détaillés) */}
-                        {on && steps.length > 0 && (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                            {steps.slice(0, 4).map((st, k) => {
-                              const v = stepView(st);
-                              const tag = TAG_COLORS[st.type] || TAG_COLORS.autre;
-                              return (
-                                <div key={k} style={{
-                                  display: 'flex', alignItems: 'center', gap: 8
-                                }}>
-                                  <span style={{
-                                    fontSize: 9, fontWeight: 800, letterSpacing: '.05em',
-                                    textTransform: 'uppercase', padding: '3px 7px',
-                                    borderRadius: 4, background: tag.bg,color: tag.color,border: '1px solid ' + (tag.border || 'transparent'),
-                                    flexShrink: 0
-                                  }}>{tag.label}</span>
-                                  <span style={{
-                                    fontSize: 12.5, color: 'var(--muted)',
-                                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
-                                  }}>{v.title || st.label || st.lieu || st.place || ''}</span>
-                                </div>
-                              );
-                            })}
-                            {steps.length > 4 && (
-                              <span style={{ fontSize: 11, color: 'var(--faint)', fontWeight: 600 }}>
-                                + {steps.length - 4} étape{steps.length - 4 > 1 ? 's' : ''}
-                              </span>
-                            )}
-                          </div>
-                        )}
+{/* Résumé lisible du jour actif */}
+{on && steps.length > 0 && (
+  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+    {steps.slice(0, 3).map((st, k) => {
+      const v = stepView(st);
+      const name = v.title || spineStepName(st);
+      const time = st.time || st.departureTime || st.arrivalTime || '';
 
-                        {/* Tags résumé (jours non-actifs) */}
-                        {!on && stepTypes.length > 0 && (
-                          <div style={{ display: 'flex', gap: 5, marginTop: 4, flexWrap: 'wrap' }}>
-                            {stepTypes.slice(0, 3).map(type => {
-                              const tag = TAG_COLORS[type] || TAG_COLORS.autre;
-                              return (
-                                <span key={type} style={{
-                                  fontSize: 9, fontWeight: 700, letterSpacing: '.04em',
-                                  textTransform: 'uppercase', padding: '2px 6px',
-                                  borderRadius: 3, background: tag.bg,color: tag.color,border: '1px solid ' + (tag.border || 'transparent'),
-                                }}>{tag.label}</span>
-                              );
-                            })}
-                          </div>
-                        )}
+      return (
+        <div key={k} style={{
+          display: 'grid',
+          gridTemplateColumns: '34px 1fr',
+          gap: 7,
+          alignItems: 'baseline'
+        }}>
+          <span style={{
+            fontSize: 10.5,
+            color: 'var(--faint)',
+            fontWeight: 800,
+            fontFamily: 'var(--font-mono, ui-monospace)'
+          }}>
+            {time || '—'}
+          </span>
+
+          <span style={{
+            fontSize: 12.5,
+            color: 'var(--muted)',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis'
+          }}>
+            {name}
+          </span>
+        </div>
+      );
+    })}
+
+    {steps.length > 3 && (
+      <span style={{
+        fontSize: 11,
+        color: 'var(--faint)',
+        fontWeight: 700,
+        marginTop: 2
+      }}>
+        + {steps.length - 3} étape{steps.length - 3 > 1 ? 's' : ''}
+      </span>
+    )}
+
+    <div style={{
+      fontSize: 11,
+      color: 'var(--faint)',
+      fontWeight: 800,
+      marginTop: 4
+    }}>
+      {spineCountLabel(d)}
+    </div>
+  </div>
+)}
+
+                        {/* Résumé compact des jours non-actifs */}
+{!on && steps.length > 0 && (
+  <div style={{
+    marginTop: 5,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 3
+  }}>
+    {spineMainStep(d) && (
+      <div style={{
+        fontSize: 12,
+        color: 'var(--muted)',
+        whiteSpace: 'nowrap',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        lineHeight: '16px'
+      }}>
+        {spineStepName(spineMainStep(d))}
+      </div>
+    )}
+
+    <div style={{
+      fontSize: 11,
+      color: 'var(--faint)',
+      fontWeight: 800
+    }}>
+      {spineCountLabel(d)}
+    </div>
+  </div>
+)}
                       </div>
                     );
                   })}

@@ -628,6 +628,90 @@ function StepEditor({ open, tripId, dayId, step, stepCount, onClose, onSaved }) 
 
 window.StepEditor = StepEditor;
 
+function dayTitleStepName(step) {
+  if (!step) return '';
+
+  var text = String(
+    step.label ||
+    step.lieu ||
+    step.place ||
+    step.arrivee ||
+    step.depart ||
+    ''
+  ).trim();
+
+  return text
+    .replace(/^visite\s+(de|du|des|d’|d')\s+/i, '')
+    .replace(/^découverte\s+(de|du|des|d’|d')\s+/i, '')
+    .replace(/^balade\s+(le long de|le long du|dans|à|au|aux|de|du|des|d’|d')\s+/i, '')
+    .replace(/^promenade\s+(dans|à|au|aux|de|du|des|d’|d')\s+/i, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function dayTitleStepType(step) {
+  return String(step && step.type || '').toLowerCase();
+}
+
+function dayTitleIsRestaurant(step) {
+  return dayTitleStepType(step) === 'restaurant';
+}
+
+function dayTitleIsActivity(step) {
+  return dayTitleStepType(step) === 'activite';
+}
+
+function dayTitleIsTransport(step) {
+  return dayTitleStepType(step) === 'transport';
+}
+
+function dayTitleIsLodging(step) {
+  return dayTitleStepType(step) === 'logement';
+}
+
+function dayTitleMainStep(day) {
+  var steps = Array.isArray(day && day.steps) ? day.steps : [];
+  if (!steps.length) return null;
+
+  var important = steps.find(function(step) {
+    return step.important || step.favorite || step.favori || step.isImportant;
+  });
+  if (important) return important;
+
+  var activity = steps.find(dayTitleIsActivity);
+  if (activity) return activity;
+
+  var transport = steps.find(dayTitleIsTransport);
+  if (transport) return transport;
+
+  var lodging = steps.find(dayTitleIsLodging);
+  if (lodging) return lodging;
+
+  var other = steps.find(function(step) {
+    return !dayTitleIsRestaurant(step);
+  });
+  if (other) return other;
+
+  return steps[0];
+}
+
+function getAutoDayTitle(day) {
+  var main = dayTitleMainStep(day);
+  var name = dayTitleStepName(main);
+
+  return name || 'Journée libre';
+}
+
+function getDisplayDayTitle(day) {
+  var manual = String(day && day.title || '').trim();
+
+  if (manual && manual.toLowerCase() !== 'journée libre') {
+    return manual;
+  }
+
+  return getAutoDayTitle(day);
+}
+
 function AtelierV2() {
   // --- 1. CONNEXION À TA BASE DE DONNÉES SUPABASE ---
   const { trip: realTrip, selectedDayIndex } = Store.useStore();
@@ -647,7 +731,7 @@ function AtelierV2() {
         id: d.id,
         n: d.index + 1,
         dateISO: d.dateISO,
-        title: d.title || 'Journée libre',
+        title: getDisplayDayTitle(d),
         note: d.note,
         steps: d.steps.map(s => ({
           ...s, // garde l'id + tous les champs bruts (indispensable pour la modification)

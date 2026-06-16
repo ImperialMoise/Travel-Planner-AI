@@ -2125,24 +2125,6 @@ function Toolbox({ width = 320 }) {
 
   const [pinned, setPinned] = React.useState(() => loadPins(view));
   const [editMode, setEditMode] = React.useState(false);
-
-async function addTodoItem() {
-  const text = todoDraft.trim();
-  if (!text) return;
-
-  const current = Array.isArray(day.todo) ? day.todo : [];
-  const next = [...current, text];
-
-  setTodoDraft('');
-  await saveTodoItems(next);
-}
-
-async function deleteTodoItem(index) {
-  const current = Array.isArray(day.todo) ? day.todo : [];
-  const next = current.filter((_, i) => i !== index);
-
-  await saveTodoItems(next);
-}
   
   /* ── Calculateur d'itinéraire ── */
   const [calcFrom, setCalcFrom] = React.useState('');

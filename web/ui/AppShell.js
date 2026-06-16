@@ -1358,46 +1358,7 @@ function ChecklistWidget({ day, trip, editMode, onRemove }) {
     setTodoDraft('');
   }, [day?.id]);
 
-  async function saveTodoItems(nextItems) {
-    if (!day?.id || !trip?.id || !window.SB || !window.SB.updateDay) return;
-
-    setSavingTodo(true);
-
-    try {
-      await window.SB.updateDay(day.id, { todo: nextItems });
-
-      const refreshed = await window.SB.loadTrip(trip.id);
-      Store.set({ trip: refreshed });
-    } catch (e) {
-      console.error('Erreur checklist :', e);
-      Store.showToast('Impossible de sauvegarder la checklist.');
-    } finally {
-      setSavingTodo(false);
-    }
-  }
-
-  async function addTodoItem() {
-    const text = todoDraft.trim();
-    if (!text || savingTodo) return;
-
-    const next = [...items, text];
-
-    setTodoDraft('');
-    await saveTodoItems(next);
-
-    setTimeout(() => {
-      if (inputRef.current) inputRef.current.focus();
-    }, 0);
-  }
-
-  async function deleteTodoItem(index) {
-    if (savingTodo) return;
-
-    const next = items.filter((_, i) => i !== index);
-    await saveTodoItems(next);
-  }
-
-  return (
+   return (
     <div style={{
       background: 'var(--card)',
       borderRadius: 12,
@@ -2502,125 +2463,14 @@ function getUsefulAroundTip(step) {
 
   const BLOCKS = {
     checklist: { label: 'À ne pas oublier', icon: 'check', render() {
-  const items = Array.isArray(day.todo) ? day.todo : [];
-
   return (
-    <WidgetShell key="checklist" id="checklist" title="À ne pas oublier" icon="check" iconColor="var(--accent)">
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {items.length > 0 ? items.map((t, i) => {
-          const k = day.id + '_' + i;
-          const ok = done[k];
-
-          return (
-            <div key={i} style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-              padding: '7px 0',
-              borderBottom: i < items.length - 1 ? '1px solid var(--line2)' : 'none'
-            }}>
-              <button
-                type="button"
-                onClick={() => setDone(d => ({ ...d, [k]: !d[k] }))}
-                style={{
-                  width: 20,
-                  height: 20,
-                  borderRadius: 4,
-                  flexShrink: 0,
-                  border: ok ? 'none' : '1.5px solid var(--outline)',
-                  background: ok ? 'var(--accent)' : 'var(--card)',
-                  display: 'grid',
-                  placeItems: 'center',
-                  cursor: 'pointer'
-                }}
-              >
-                {ok && <Icon name="check" size={14} sw={2.4} style={{ color: '#fff' }} />}
-              </button>
-
-              <span style={{
-                flex: 1,
-                minWidth: 0,
-                fontSize: 13.5,
-                color: ok ? 'var(--faint)' : 'var(--text)',
-                textDecoration: ok ? 'line-through' : 'none',
-                opacity: ok ? 0.7 : 1,
-                lineHeight: '19px'
-              }}>
-                {t}
-              </span>
-
-              <button
-                type="button"
-                onClick={() => deleteTodoItem(i)}
-                title="Supprimer"
-                style={{
-                  border: 'none',
-                  background: 'transparent',
-                  color: 'var(--faint)',
-                  cursor: 'pointer',
-                  padding: 4
-                }}
-              >
-                <Icon name="x" size={13} />
-              </button>
-            </div>
-          );
-        }) : (
-          <div style={{ fontSize: 13, color: 'var(--faint)', fontStyle: 'italic' }}>
-            Ajoute tes rappels pour cette journée.
-          </div>
-        )}
-
-        <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-          <input
-  ref={todoInputRef}
-  value={todoDraft}
-  onChange={e => {
-    setTodoDraft(e.target.value);
-    setTimeout(() => {
-      if (todoInputRef.current) todoInputRef.current.focus();
-    }, 0);
-  }}
-  onKeyDown={e => {
-    if (e.key === 'Enter') addTodoItem();
-  }}
-  placeholder="Passeport, billets, adaptateur…"
-  style={{
-    flex: 1,
-    minWidth: 0,
-    border: '1px solid var(--line)',
-    background: 'var(--inset)',
-    color: 'var(--text)',
-    borderRadius: 10,
-    padding: '8px 10px',
-    fontFamily: 'inherit',
-    fontSize: 13,
-    outline: 'none'
-  }}
-/>
-
-          <button
-            type="button"
-            onClick={addTodoItem}
-            disabled={savingTodo}
-            style={{
-              border: 'none',
-              background: 'var(--accent)',
-              color: 'var(--accent-ink)',
-              borderRadius: 10,
-              padding: '0 11px',
-              fontFamily: 'inherit',
-              fontSize: 13,
-              fontWeight: 800,
-              cursor: savingTodo ? 'wait' : 'pointer',
-              opacity: savingTodo ? 0.65 : 1
-            }}
-          >
-            +
-          </button>
-        </div>
-      </div>
-    </WidgetShell>
+    <ChecklistWidget
+      key="checklist"
+      day={day}
+      trip={trip}
+      editMode={editMode}
+      onRemove={() => togglePin('checklist')}
+    />
   );
 }},
 

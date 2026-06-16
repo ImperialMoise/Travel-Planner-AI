@@ -1358,6 +1358,45 @@ function ChecklistWidget({ day, trip, editMode, onRemove }) {
     setTodoDraft('');
   }, [day?.id]);
 
+  async function saveTodoItems(nextItems) {
+  if (!day?.id || !trip?.id || !window.SB || !window.SB.updateDay) return;
+
+  setSavingTodo(true);
+
+  try {
+    await window.SB.updateDay(day.id, { todo: nextItems });
+
+    const refreshed = await window.SB.loadTrip(trip.id);
+    Store.set({ trip: refreshed });
+  } catch (e) {
+    console.error('Erreur checklist :', e);
+    Store.showToast('Impossible de sauvegarder la checklist.');
+  } finally {
+    setSavingTodo(false);
+  }
+}
+
+async function addTodoItem() {
+  const text = todoDraft.trim();
+  if (!text || savingTodo) return;
+
+  const next = [...items, text];
+
+  setTodoDraft('');
+  await saveTodoItems(next);
+
+  setTimeout(() => {
+    if (inputRef.current) inputRef.current.focus();
+  }, 0);
+}
+
+async function deleteTodoItem(index) {
+  if (savingTodo) return;
+
+  const next = items.filter((_, i) => i !== index);
+  await saveTodoItems(next);
+}
+
      return (
     <div style={{
       background: 'var(--card)',

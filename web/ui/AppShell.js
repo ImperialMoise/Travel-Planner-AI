@@ -273,12 +273,37 @@ function DaySpine({ width = 300, onPickDay }) {
 
   // ── Couleurs des tags de type d'étape ──
   const TAG_COLORS = {
-    transport: { bg: 'rgba(192,125,86,0.12)', color: '#c07d56', label: 'Transport' },
-    logement:  { bg: 'rgba(180,132,62,0.12)',  color: '#b4843e', label: 'Logement' },
-    activite:  { bg: 'rgba(89,123,114,0.12)',  color: '#597b72', label: 'Activité' },
-    restaurant:{ bg: 'rgba(123,158,137,0.12)', color: '#7b9e89', label: 'Table' },
-    autre:     { bg: 'rgba(130,117,103,0.12)', color: '#827567', label: 'Étape' }
-  };
+  transport: {
+    bg: 'rgba(192, 125, 86, 0.18)',
+    color: '#b96535',
+    border: 'rgba(192, 125, 86, 0.35)',
+    label: 'Transport'
+  },
+  logement: {
+    bg: 'rgba(46, 111, 124, 0.16)',
+    color: '#2e6f7c',
+    border: 'rgba(46, 111, 124, 0.32)',
+    label: 'Logement'
+  },
+  activite: {
+    bg: 'rgba(89, 123, 114, 0.17)',
+    color: '#426f63',
+    border: 'rgba(89, 123, 114, 0.34)',
+    label: 'Activité'
+  },
+  restaurant: {
+    bg: 'rgba(123, 158, 137, 0.20)',
+    color: '#4f8a63',
+    border: 'rgba(123, 158, 137, 0.38)',
+    label: 'Table'
+  },
+  autre: {
+    bg: 'rgba(130, 117, 103, 0.16)',
+    color: '#6f6258',
+    border: 'rgba(130, 117, 103, 0.32)',
+    label: 'Étape'
+  }
+};
 
   return (
     <aside style={{
@@ -402,7 +427,7 @@ function DaySpine({ width = 300, onPickDay }) {
                                   <span style={{
                                     fontSize: 9, fontWeight: 800, letterSpacing: '.05em',
                                     textTransform: 'uppercase', padding: '3px 7px',
-                                    borderRadius: 4, background: tag.bg, color: tag.color,
+                                    borderRadius: 4, background: tag.bg,color: tag.color,border: '1px solid ' + (tag.border || 'transparent'),
                                     flexShrink: 0
                                   }}>{tag.label}</span>
                                   <span style={{
@@ -429,7 +454,7 @@ function DaySpine({ width = 300, onPickDay }) {
                                 <span key={type} style={{
                                   fontSize: 9, fontWeight: 700, letterSpacing: '.04em',
                                   textTransform: 'uppercase', padding: '2px 6px',
-                                  borderRadius: 3, background: tag.bg, color: tag.color
+                                  borderRadius: 3, background: tag.bg,color: tag.color,border: '1px solid ' + (tag.border || 'transparent'),
                                 }}>{tag.label}</span>
                               );
                             })}
@@ -1321,6 +1346,226 @@ function GlobalNoteWidget({ trip, editMode, onRemove }) {
   );
 }
 
+function ChecklistWidget({ day, trip, editMode, onRemove }) {
+  const [todoDraft, setTodoDraft] = React.useState('');
+  const [savingTodo, setSavingTodo] = React.useState(false);
+  const [done, setDone] = React.useState({});
+  const inputRef = React.useRef(null);
+
+  const items = Array.isArray(day?.todo) ? day.todo : [];
+
+  React.useEffect(() => {
+    setTodoDraft('');
+  }, [day?.id]);
+
+  async function saveTodoItems(nextItems) {
+    if (!day?.id || !trip?.id || !window.SB || !window.SB.updateDay) return;
+
+    setSavingTodo(true);
+
+    try {
+      await window.SB.updateDay(day.id, { todo: nextItems });
+
+      const refreshed = await window.SB.loadTrip(trip.id);
+      Store.set({ trip: refreshed });
+    } catch (e) {
+      console.error('Erreur checklist :', e);
+      Store.showToast('Impossible de sauvegarder la checklist.');
+    } finally {
+      setSavingTodo(false);
+    }
+  }
+
+  async function addTodoItem() {
+    const text = todoDraft.trim();
+    if (!text || savingTodo) return;
+
+    const next = [...items, text];
+
+    setTodoDraft('');
+    await saveTodoItems(next);
+
+    setTimeout(() => {
+      if (inputRef.current) inputRef.current.focus();
+    }, 0);
+  }
+
+  async function deleteTodoItem(index) {
+    if (savingTodo) return;
+
+    const next = items.filter((_, i) => i !== index);
+    await saveTodoItems(next);
+  }
+
+  return (
+    <div style={{
+      background: 'var(--card)',
+      borderRadius: 12,
+      boxShadow: '0 2px 8px rgba(82,98,91,0.05)',
+      border: '1px solid var(--outline-variant)',
+      overflow: 'hidden'
+    }}>
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '12px 16px',
+        borderBottom: '1px solid var(--outline-variant)',
+        background: 'var(--soft)'
+      }}>
+        <span style={{
+          fontSize: 13,
+          fontWeight: 600,
+          color: 'var(--text)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8
+        }}>
+          <Icon name="check" size={16} style={{ color: 'var(--accent)' }} />
+          À ne pas oublier
+        </span>
+
+        {editMode && (
+          <button
+            onClick={onRemove}
+            style={{
+              width: 22,
+              height: 22,
+              borderRadius: 7,
+              border: 'none',
+              cursor: 'pointer',
+              background: 'var(--accent-soft)',
+              color: 'var(--accent)',
+              display: 'grid',
+              placeItems: 'center',
+              fontSize: 15
+            }}
+          >
+            {'\u00d7'}
+          </button>
+        )}
+      </div>
+
+      <div style={{ padding: 16 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {items.length > 0 ? items.map((t, i) => {
+            const k = (day?.id || 'day') + '_' + i;
+            const ok = !!done[k];
+
+            return (
+              <div key={i} style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                padding: '7px 0',
+                borderBottom: i < items.length - 1 ? '1px solid var(--line2)' : 'none'
+              }}>
+                <button
+                  type="button"
+                  onClick={() => setDone(d => ({ ...d, [k]: !d[k] }))}
+                  style={{
+                    width: 20,
+                    height: 20,
+                    borderRadius: 4,
+                    flexShrink: 0,
+                    border: ok ? 'none' : '1.5px solid var(--outline)',
+                    background: ok ? 'var(--accent)' : 'var(--card)',
+                    display: 'grid',
+                    placeItems: 'center',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {ok && <Icon name="check" size={14} sw={2.4} style={{ color: '#fff' }} />}
+                </button>
+
+                <span style={{
+                  flex: 1,
+                  minWidth: 0,
+                  fontSize: 13.5,
+                  color: ok ? 'var(--faint)' : 'var(--text)',
+                  textDecoration: ok ? 'line-through' : 'none',
+                  opacity: ok ? 0.7 : 1,
+                  lineHeight: '19px'
+                }}>
+                  {t}
+                </span>
+
+                <button
+                  type="button"
+                  onClick={() => deleteTodoItem(i)}
+                  title="Supprimer"
+                  disabled={savingTodo}
+                  style={{
+                    border: 'none',
+                    background: 'transparent',
+                    color: 'var(--faint)',
+                    cursor: savingTodo ? 'wait' : 'pointer',
+                    padding: 4
+                  }}
+                >
+                  <Icon name="x" size={13} />
+                </button>
+              </div>
+            );
+          }) : (
+            <div style={{
+              fontSize: 13,
+              color: 'var(--faint)',
+              fontStyle: 'italic'
+            }}>
+              Ajoute tes rappels pour cette journée.
+            </div>
+          )}
+
+          <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+            <input
+              ref={inputRef}
+              value={todoDraft}
+              onChange={e => setTodoDraft(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter') addTodoItem();
+              }}
+              placeholder="Passeport, billets, adaptateur…"
+              style={{
+                flex: 1,
+                minWidth: 0,
+                border: '1px solid var(--line)',
+                background: 'var(--inset)',
+                color: 'var(--text)',
+                borderRadius: 10,
+                padding: '8px 10px',
+                fontFamily: 'inherit',
+                fontSize: 13,
+                outline: 'none'
+              }}
+            />
+
+            <button
+              type="button"
+              onClick={addTodoItem}
+              disabled={savingTodo || !todoDraft.trim()}
+              style={{
+                border: 'none',
+                background: 'var(--accent)',
+                color: 'var(--accent-ink)',
+                borderRadius: 10,
+                padding: '0 11px',
+                fontFamily: 'inherit',
+                fontSize: 13,
+                fontWeight: 800,
+                cursor: savingTodo ? 'wait' : 'pointer',
+                opacity: savingTodo || !todoDraft.trim() ? 0.65 : 1
+              }}
+            >
+              +
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function DayNoteWidget({ day, trip, editMode, onRemove }) {
   const [noteDraft, setNoteDraft] = React.useState(day?.note || '');
   const [savingNote, setSavingNote] = React.useState(false);
@@ -1880,10 +2125,6 @@ function Toolbox({ width = 320 }) {
 
   const [pinned, setPinned] = React.useState(() => loadPins(view));
   const [editMode, setEditMode] = React.useState(false);
-  const [done, setDone] = React.useState({});
-  const [todoDraft, setTodoDraft] = React.useState('');
-  const [savingTodo, setSavingTodo] = React.useState(false);
-  const todoInputRef = React.useRef(null);
 
 async function saveTodoItems(nextItems) {
   if (!day || !day.id || !window.SB || !window.SB.updateDay) return;

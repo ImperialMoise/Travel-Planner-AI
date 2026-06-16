@@ -68,11 +68,20 @@ const MV_CSS=`
 .mv-card .mv-hn{font-family:var(--font-serif);font-style:italic;font-size:17.5px;line-height:1.05;text-shadow:0 2px 10px rgba(0,0,0,.55)}
 .mv-card-body{
   padding:13px 15px 15px;
-  max-height:220px;
-  overflow-y:auto;
+  max-height:150px;
+  overflow:hidden;
   min-height:0;
 }
-.mv-card-body.expanded{max-height:calc(100dvh - 340px)}
+.mv-card-body.expanded{
+  max-height:calc(100dvh - 340px);
+  overflow-y:auto;
+}
+.mv-card-steps{
+  display:none;
+}
+.mv-card-body.expanded .mv-card-steps{
+  display:block;
+}
 .mv-card-body::-webkit-scrollbar{width:3px}
 .mv-card-body::-webkit-scrollbar-thumb{background:var(--outline-variant);border-radius:3px}
 .mv-card-note{font-size:12px;color:var(--muted);font-style:italic;line-height:1.5;margin-bottom:11px}
@@ -407,13 +416,15 @@ React.useEffect(() => {
         '</div>' +
       '</div>' +
       '<div class="mv-card-body">' +
-        (d.note ? '<div class="mv-card-note">' + d.note + '</div>' : '') +
-        rows +
-        '<div class="mv-card-foot">' +
-          '<button id="mv-fly-btn">' + mvSvg('route', 14) + 'Recadrer</button>' +
-          (d.steps.length > 2 ? '<button id="mv-expand-btn">' + mvSvg('chevdown', 12) + 'Tout voir (' + d.steps.length + ')</button>' : '') +
-        '</div>' +
-      '</div>' +
+  (d.note ? '<div class="mv-card-note">' + d.note + '</div>' : '<div class="mv-card-note">Aucune note pour cette journée.</div>') +
+  '<div class="mv-card-steps">' +
+    rows +
+  '</div>' +
+  '<div class="mv-card-foot">' +
+    '<button id="mv-fly-btn">' + mvSvg('route', 14) + 'Recadrer</button>' +
+    '<button id="mv-expand-btn">' + mvSvg('chevdown', 12) + 'Étapes (' + d.steps.length + ')</button>' +
+  '</div>' +
+'</div>' +
     '</div>';
 
   const map = mapRef.current;
@@ -446,18 +457,20 @@ React.useEffect(() => {
   if (fb) fb.addEventListener('click', () => flyDay(i));
 
   const eb = document.getElementById('mv-expand-btn');
-  const cbody = cardRef.current.querySelector('.mv-card-body');
+const cbody = cardRef.current.querySelector('.mv-card-body');
 
-  if (eb && cbody) {
-    eb.addEventListener('click', function() {
-      var ex = cbody.classList.toggle('expanded');
-      eb.innerHTML = ex
-        ? (mvSvg('chevdown', 12) + 'Replier')
-        : (mvSvg('chevdown', 12) + 'Tout voir (' + d.steps.length + ')');
+if (eb && cbody) {
+  eb.addEventListener('click', function() {
+    var ex = cbody.classList.toggle('expanded');
 
-      if (ex) eb.querySelector('svg').style.transform = 'rotate(180deg)';
-    });
-  }
+    eb.innerHTML = ex
+      ? (mvSvg('chevdown', 12) + 'Replier')
+      : (mvSvg('chevdown', 12) + 'Étapes (' + d.steps.length + ')');
+
+    var svg = eb.querySelector('svg');
+    if (svg) svg.style.transform = ex ? 'rotate(180deg)' : 'rotate(0deg)';
+  });
+}
 
   if (window.fetchAutoImage) {
     var imgKey = 'hero_img_mv_' + i;

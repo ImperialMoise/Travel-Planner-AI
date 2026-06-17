@@ -564,6 +564,7 @@ function DaySpine({ width = 300, onPickDay }) {
   const [openWeeks, setOpenWeeks] = React.useState({ [activeWeekIdx]: true });
   const [datesOpen, setDatesOpen] = React.useState(false);
   const [draggingDayIndex, setDraggingDayIndex] = React.useState(null);
+  const [dragOverDayIndex, setDragOverDayIndex] = React.useState(null);
 
   // Quand le jour sélectionné change, ouvrir sa semaine
   React.useEffect(() => {
@@ -720,12 +721,23 @@ function DaySpine({ width = 300, onPickDay }) {
                       draggable={true}
 onDragStart={(e) => {
   setDraggingDayIndex(globalIdx);
+  setDragOverDayIndex(null);
+
   e.dataTransfer.effectAllowed = 'move';
   e.dataTransfer.setData('text/plain', String(globalIdx));
 }}
 onDragOver={(e) => {
   e.preventDefault();
   e.dataTransfer.dropEffect = 'move';
+
+  if (dragOverDayIndex !== globalIdx) {
+    setDragOverDayIndex(globalIdx);
+  }
+}}
+onDragLeave={() => {
+  if (dragOverDayIndex === globalIdx) {
+    setDragOverDayIndex(null);
+  }
 }}
 onDrop={(e) => {
   e.preventDefault();
@@ -735,26 +747,53 @@ onDrop={(e) => {
   const to = globalIdx;
 
   setDraggingDayIndex(null);
+  setDragOverDayIndex(null);
 
   if (!Number.isFinite(from)) return;
   moveDayInSpine(from, to);
 }}
 onDragEnd={() => {
   setDraggingDayIndex(null);
+  setDragOverDayIndex(null);
 }}
                         onClick={() => {
                           Store.set({ selectedDayIndex: globalIdx });
                           if (onPickDay) onPickDay();
                         }}
                         style={{
-                          position: 'relative', cursor: 'pointer',
+                          position: 'relative', cursor: draggingDayIndex === globalIdx ? 'grabbing' : 'grab',
                           padding: on ? '14px 14px 14px 16px' : '10px 14px 10px 16px',
                           borderLeft: on ? '3px solid var(--accent)' : '3px solid transparent',
                           marginBottom: 2, borderRadius: '0 8px 8px 0',
                           background: on ? 'var(--accent-soft)' : 'transparent',
-                          opacity: draggingDayIndex === globalIdx ? 0.45 : (globalIdx < sel && !on ? 0.5 : 1),
-                          transition: 'all .15s'
+                          opacity: draggingDayIndex === globalIdx
+  ? 0.42
+  : draggingDayIndex !== null
+    ? 0.62
+    : (globalIdx < sel && !on ? 0.5 : 1),
+                          transition: 'all .15s',
+transform: dragOverDayIndex === globalIdx && draggingDayIndex !== null && draggingDayIndex !== globalIdx
+  ? 'translateY(3px)'
+  : 'none',
+outline: dragOverDayIndex === globalIdx && draggingDayIndex !== null && draggingDayIndex !== globalIdx
+  ? '1px dashed var(--tan)'
+  : 'none',
+outlineOffset: -2
                         }}>
+
+{dragOverDayIndex === globalIdx && draggingDayIndex !== null && draggingDayIndex !== globalIdx && (
+  <div style={{
+    position: 'absolute',
+    left: 10,
+    right: 10,
+    top: -2,
+    height: 3,
+    borderRadius: 999,
+    background: 'var(--tan)',
+    boxShadow: '0 0 0 3px rgba(217,182,126,.18)',
+    pointerEvents: 'none'
+  }} />
+)}
 
                         {/* Numéro du jour + label */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: on ? 6 : 2 }}>

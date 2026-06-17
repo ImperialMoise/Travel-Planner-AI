@@ -814,45 +814,64 @@ function AtelierV2() {
   
   const reload = () => { if (realTrip) window.SB.loadTrip(realTrip.id).then(t => Store.set({ trip: t })).catch(() => {}); };
 
-  async function shiftTripDatesFromDay(anchorDay, nextDateISO) {
+  async function moveDayToDateInsideTrip(anchorDay, nextDateISO) {
   if (!realTrip || !realTrip.id || !anchorDay || !nextDateISO) return;
-  if (!Array.isArray(realTrip.days) || !realTrip.days.length) return;
 
-  var anchorIndex = realTrip.days.findIndex(function(d) {
+  function parseLocalDate(iso) {
+    if (!iso) return null;
+    return new Date(String(iso) + 'T12:00:00');
+  }
+
+  function diffDays(startISO, endISO) {
+    const start = parseLocalDate(startISO);
+    const end = parseLocalDate(endISO);
+
+    if (!start || !end) return 0;
+
+    return Math.round((end - start) / 86400000);
+  }
+
+  const startISO = realTrip.startDate;
+  const endISO = realTrip.endDate || (
+    realTrip.days && realTrip.days.length
+      ? realTrip.days[realTrip.days.length - 1].dateISO
+      : ''
+  );
+
+  if (!startISO || !endISO) {
+    Store.showToast('Dates globales du voyage manquantes.');
+    return;
+  }
+
+  const targetIndex = diffDays(startISO, nextDateISO);
+
+  if (targetIndex < 0 || targetIndex >= realTrip.days.length) {
+    Store.showToast('Choisis une date entre ' + fmtDate(startISO) + ' et ' + fmtDate(endISO) + '.');
+    return;
+  }
+
+  const fromIndex = realTrip.days.findIndex(function(d) {
     return String(d.id) === String(anchorDay.id);
   });
 
-  if (anchorIndex < 0) return;
-
-  var updates = realTrip.days.map(function(d, index) {
-    var nextISO = itAddDaysISO(nextDateISO, index - anchorIndex);
-
-    return {
-      id: d.id,
-      dateISO: nextISO,
-      dateLabel: itDayDateLabel(nextISO)
-    };
-  });
+  if (fromIndex < 0) return;
+  if (fromIndex === targetIndex) return;
 
   try {
-    await Promise.all(updates.map(function(item) {
-      return window.SB.updateDay(item.id, {
-        dateISO: item.dateISO,
-        dateLabel: item.dateLabel
-      });
-    }));
+    await window.SB.moveTripDayInsideFixedRange(realTrip.id, fromIndex, targetIndex);
 
-    if (window.SB.updateTrip && updates[0]) {
-      await window.SB.updateTrip(realTrip.id, {
-        startDate: updates[0].dateISO
-      });
-    }
+    const refreshed = await window.SB.loadTrip(realTrip.id);
 
-    reload();
-    Store.showToast('Dates du voyage mises à jour');
-  } catch (e) {
-    alert('Erreur dates : ' + (e.message || e));
+    Store.set({
+      trip: refreshed,
+      selectedDayIndex: targetIndex
+    });
+
+    Store.showToast('Journée déplacée');
+  } catch (error) {
+    Store.showToast('Erreur déplacement : ' + (error.message || error));
   }
+}
 }
 
   // ── Drag & drop : réordonne les étapes puis sauvegarde ──
@@ -1973,8 +1992,10 @@ function AtelierV2() {
   React.createElement('input', {
     type: 'date',
     value: day.dateISO || '',
+    min: realTrip.startDate || undefined,
+    max: realTrip.endDate || undefined,
     onChange: function(e) {
-      shiftTripDatesFromDay(day, e.target.value);
+      moveDayToDateInsideTrip(day, e.target.value);
     },
     style: {
   position: 'absolute',

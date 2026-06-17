@@ -563,6 +563,7 @@ function DaySpine({ width = 300, onPickDay }) {
   const activeWeekIdx = Math.floor(sel / 7);
   const [openWeeks, setOpenWeeks] = React.useState({ [activeWeekIdx]: true });
   const [datesOpen, setDatesOpen] = React.useState(false);
+  const [draggingDayIndex, setDraggingDayIndex] = React.useState(null);
 
   // Quand le jour sélectionné change, ouvrir sa semaine
   React.useEffect(() => {
@@ -573,6 +574,26 @@ function DaySpine({ width = 300, onPickDay }) {
   function toggleWeek(wi) {
     setOpenWeeks(prev => ({ ...prev, [wi]: !prev[wi] }));
   }
+
+  async function moveDayInSpine(fromIndex, toIndex) {
+  if (!trip || !trip.id) return;
+  if (fromIndex === toIndex) return;
+
+  try {
+    await window.SB.moveTripDayInsideFixedRange(trip.id, fromIndex, toIndex);
+
+    const refreshed = await window.SB.loadTrip(trip.id);
+
+    Store.set({
+      trip: refreshed,
+      selectedDayIndex: toIndex
+    });
+
+    Store.showToast('Journée déplacée');
+  } catch (error) {
+    Store.showToast('Erreur déplacement : ' + (error.message || error));
+  }
+}
 
   // ── Couleurs des tags de type d'étape ──
   const TAG_COLORS = {
@@ -671,6 +692,8 @@ function DaySpine({ width = 300, onPickDay }) {
                 justifyContent: 'space-between',
                 padding: '10px 14px', borderRadius: 10, border: 'none',
                 cursor: 'pointer', fontFamily: 'inherit', transition: 'all .15s',
+outline: draggingDayIndex !== null && draggingDayIndex !== globalIdx ? '1px dashed var(--outline-variant)' : 'none',
+outlineOffset: -3,
                 background: containsSelected ? 'var(--accent)' : 'var(--inset)',
                 color: containsSelected ? 'var(--accent-ink)' : 'var(--muted)'
               }}>
@@ -696,6 +719,31 @@ function DaySpine({ width = 300, onPickDay }) {
 
                     return (
                       <div key={d.id || globalIdx}
+                      draggable={true}
+onDragStart={(e) => {
+  setDraggingDayIndex(globalIdx);
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', String(globalIdx));
+}}
+onDragOver={(e) => {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+}}
+onDrop={(e) => {
+  e.preventDefault();
+
+  const raw = e.dataTransfer.getData('text/plain');
+  const from = draggingDayIndex !== null ? draggingDayIndex : Number(raw);
+  const to = globalIdx;
+
+  setDraggingDayIndex(null);
+
+  if (!Number.isFinite(from)) return;
+  moveDayInSpine(from, to);
+}}
+onDragEnd={() => {
+  setDraggingDayIndex(null);
+}}
                         onClick={() => {
                           Store.set({ selectedDayIndex: globalIdx });
                           if (onPickDay) onPickDay();
@@ -706,7 +754,7 @@ function DaySpine({ width = 300, onPickDay }) {
                           borderLeft: on ? '3px solid var(--accent)' : '3px solid transparent',
                           marginBottom: 2, borderRadius: '0 8px 8px 0',
                           background: on ? 'var(--accent-soft)' : 'transparent',
-                          opacity: globalIdx < sel && !on ? 0.5 : 1,
+                          opacity: draggingDayIndex === globalIdx ? 0.45 : (globalIdx < sel && !on ? 0.5 : 1),
                           transition: 'all .15s'
                         }}>
 

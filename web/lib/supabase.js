@@ -195,6 +195,106 @@ export async function updateTrip(tripId, patch) {
   return data;
 }
 
+export async function moveTripDayInsideFixedRange(tripId, fromIndex, toIndex) {
+  if (!tripId) throw new Error('Voyage introuvable');
+
+  fromIndex = Number(fromIndex);
+  toIndex = Number(toIndex);
+
+  if (!Number.isFinite(fromIndex) || !Number.isFinite(toIndex)) {
+    throw new Error('Déplacement invalide');
+  }
+
+  if (fromIndex === toIndex) return true;
+
+  function parseLocalDate(iso) {
+    if (!iso) return null;
+    return new Date(String(iso) + 'T12:00:00');
+  }
+
+  function toISO(date) {
+    if (!date) return null;
+    return date.toISOString().slice(0, 10);
+  }
+
+  function addDaysISO(baseISO, diff) {
+    const d = parseLocalDate(baseISO);
+    if (!d) return null;
+
+    d.setDate(d.getDate() + diff);
+    return toISO(d);
+  }
+
+  function dateLabel(iso) {
+    const d = parseLocalDate(iso);
+    if (!d) return '';
+
+    return d.toLocaleDateString('fr-FR', {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short'
+    });
+  }
+
+  const { data: trip, error: tripError } = await sb
+    .from('trips')
+    .select('id, start_date, end_date')
+    .eq('id', tripId)
+    .single();
+
+  if (tripError) throw tripError;
+
+  const { data: days, error: daysError } = await sb
+    .from('trip_days')
+    .select('id, day_index, date_iso')
+    .eq('trip_id', tripId)
+    .order('day_index');
+
+  if (daysError) throw daysError;
+
+  const currentDays = days || [];
+
+  if (!currentDays.length) return true;
+  if (fromIndex < 0 || fromIndex >= currentDays.length) throw new Error('Jour source introuvable');
+  if (toIndex < 0 || toIndex >= currentDays.length) throw new Error('Date hors voyage');
+
+  const baseISO = trip.start_date || currentDays[0].date_iso;
+
+  if (!baseISO) {
+    throw new Error('Date de départ du voyage manquante');
+  }
+
+  const nextDays = currentDays.slice();
+  const moved = nextDays.splice(fromIndex, 1)[0];
+  nextDays.splice(toIndex, 0, moved);
+
+  // Phase 1 : index temporaires pour éviter les collisions éventuelles
+  await Promise.all(nextDays.map(function(day, index) {
+    return sb
+      .from('trip_days')
+      .update({
+        day_index: 10000 + index
+      })
+      .eq('id', day.id);
+  }));
+
+  // Phase 2 : index définitifs + dates recalculées dans le cadre fixe
+  await Promise.all(nextDays.map(function(day, index) {
+    const iso = addDaysISO(baseISO, index);
+
+    return sb
+      .from('trip_days')
+      .update({
+        day_index: index,
+        date_iso: iso,
+        date_label: iso ? dateLabel(iso) : ''
+      })
+      .eq('id', day.id);
+  }));
+
+  return true;
+}
+
 export async function updateTripDateRange(tripId, { startDate, endDate }) {
   if (!tripId) throw new Error('Voyage introuvable');
 

@@ -54,33 +54,71 @@ export async function signOut() {
 export async function listMyTrips() {
   const { data, error } = await sb
     .from('trips')
-    .select('id, name, start_date, owner_id, updated_at')
+    .select('id, name, start_date, end_date, owner_id, updated_at')
     .order('updated_at', { ascending: false });
   if (error) throw error;
   return data ?? [];
 }
 
-export async function createTrip({ name, startDate, days }) {
+export async function createTrip({ name, startDate, endDate, days }) {
   const user = await getUser();
   if (!user) throw new Error('Connexion requise');
 
-  // 1. Créer le voyage
+  function parseLocalDate(iso) {
+    if (!iso) return null;
+    return new Date(String(iso) + 'T12:00:00');
+  }
+
+  function toISO(date) {
+    if (!date) return null;
+    return date.toISOString().slice(0, 10);
+  }
+
+  function diffDaysInclusive(startISO, endISO) {
+    const start = parseLocalDate(startISO);
+    const end = parseLocalDate(endISO);
+
+    if (!start || !end) return 0;
+
+    const diff = Math.round((end - start) / 86400000);
+    return diff + 1;
+  }
+
+  let totalDays = Math.max(1, Number(days) || 1);
+  let finalEndDate = endDate || null;
+
+  if (startDate && endDate) {
+    totalDays = Math.max(1, diffDaysInclusive(startDate, endDate));
+  } else if (startDate && totalDays) {
+    const end = parseLocalDate(startDate);
+    end.setDate(end.getDate() + totalDays - 1);
+    finalEndDate = toISO(end);
+  }
+
   const { data: trip, error } = await sb.from('trips').insert({
     name,
     start_date: startDate || null,
+    end_date: finalEndDate || null,
     owner_id: user.id
   }).select().single();
+
   if (error) throw error;
 
-  // 2. Créer les jours
-  const dayRows = Array.from({ length: days }, (_, i) => {
-    let dateISO = null, dateLabel = '';
+  const dayRows = Array.from({ length: totalDays }, (_, i) => {
+    let dateISO = null;
+    let dateLabel = '';
+
     if (startDate) {
-      const d = new Date(startDate);
+      const d = parseLocalDate(startDate);
       d.setDate(d.getDate() + i);
-      dateISO = d.toISOString().slice(0, 10);
-      dateLabel = d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
+      dateISO = toISO(d);
+      dateLabel = d.toLocaleDateString('fr-FR', {
+        weekday: 'short',
+        day: 'numeric',
+        month: 'short'
+      });
     }
+
     return {
       trip_id: trip.id,
       day_index: i,
@@ -88,6 +126,7 @@ export async function createTrip({ name, startDate, days }) {
       date_label: dateLabel
     };
   });
+
   await sb.from('trip_days').insert(dayRows);
 
   return trip;
@@ -113,6 +152,7 @@ export async function loadTrip(tripId) {
     id: trip.id,
     name: trip.name,
     startDate: trip.start_date,
+    endDate: trip.end_date,
     ownerId: trip.owner_id,
     globalNote: trip.global_note || '',
     days: (days ?? []).map(d => ({
@@ -135,6 +175,7 @@ export async function updateTrip(tripId, patch) {
 
   if (patch.name !== undefined) row.name = patch.name;
   if (patch.startDate !== undefined) row.start_date = patch.startDate || null;
+  if (patch.endDate !== undefined) row.end_date = patch.endDate || null;
   if (patch.globalNote !== undefined) row.global_note = patch.globalNote || '';
 
   const { error } = await sb

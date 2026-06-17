@@ -1977,11 +1977,17 @@ function AtelierV2() {
       shiftTripDatesFromDay(day, e.target.value);
     },
     style: {
-      position: 'absolute',
-      inset: 0,
-      opacity: 0,
-      cursor: 'pointer'
-    }
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  width: '100%',
+  height: '100%',
+  opacity: 0,
+  cursor: 'pointer',
+  display: 'block',
+  appearance: 'none',
+  WebkitAppearance: 'none'
+}
   })
 )),
           React.createElement('h2', { style: { fontFamily: 'var(--font-serif)', fontSize: 40, lineHeight: '48px', color: '#fff', margin: '0 0 16px', display: 'flex', alignItems: 'center', gap: 14 } },

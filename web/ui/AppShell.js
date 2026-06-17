@@ -717,9 +717,13 @@ function DaySpine({ width = 300, onPickDay }) {
                     const stepTypes = [...new Set(steps.map(s => s.type))];
 
                     return (
-                      <div key={d.id || globalIdx}
-                      draggable={true}
-onDragStart={(e) => {
+                      <div
+  key={d.id || globalIdx}
+  draggable={true}
+  data-draggable-day="true"
+  onDragStart={(e) => {
+  document.body.classList.add('is-dragging-day');
+
   setDraggingDayIndex(globalIdx);
   setDragOverDayIndex(null);
 
@@ -742,6 +746,8 @@ onDragLeave={() => {
 onDrop={(e) => {
   e.preventDefault();
 
+  document.body.classList.remove('is-dragging-day');
+
   const raw = e.dataTransfer.getData('text/plain');
   const from = draggingDayIndex !== null ? draggingDayIndex : Number(raw);
   const to = globalIdx;
@@ -753,6 +759,8 @@ onDrop={(e) => {
   moveDayInSpine(from, to);
 }}
 onDragEnd={() => {
+  document.body.classList.remove('is-dragging-day');
+
   setDraggingDayIndex(null);
   setDragOverDayIndex(null);
 }}
@@ -761,7 +769,7 @@ onDragEnd={() => {
                           if (onPickDay) onPickDay();
                         }}
                         style={{
-                          position: 'relative', cursor: draggingDayIndex === globalIdx ? 'grabbing' : 'grab',
+                          position: 'relative',
                           padding: on ? '14px 14px 14px 16px' : '10px 14px 10px 16px',
                           borderLeft: on ? '3px solid var(--accent)' : '3px solid transparent',
                           marginBottom: 2, borderRadius: '0 8px 8px 0',
@@ -794,7 +802,6 @@ outlineOffset: -2
     pointerEvents: 'none'
   }} />
 )}
-
                         {/* Numéro du jour + label */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: on ? 6 : 2 }}>
                           {on && (

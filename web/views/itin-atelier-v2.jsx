@@ -712,6 +712,43 @@ function getDisplayDayTitle(day) {
   return getAutoDayTitle(day);
 }
 
+function itDateFromISO(iso) {
+  if (!iso) return null;
+  return new Date(String(iso) + 'T12:00:00');
+}
+
+function itISOFromDate(date) {
+  if (!date) return '';
+  return date.toISOString().slice(0, 10);
+}
+
+function itAddDaysISO(baseISO, diff) {
+  var d = itDateFromISO(baseISO);
+  if (!d) return '';
+
+  d.setDate(d.getDate() + diff);
+  return itISOFromDate(d);
+}
+
+function itDayDateLabel(iso) {
+  var d = itDateFromISO(iso);
+  if (!d) return '';
+
+  return d.toLocaleDateString('fr-FR', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short'
+  });
+}
+
+function itHeaderDateLabel(iso, fallbackWeekday) {
+  var d = itDateFromISO(iso);
+  if (!d) return fallbackWeekday || '';
+
+  var weekday = d.toLocaleDateString('fr-FR', { weekday: 'short' });
+  return weekday + ' ' + fmtDate(iso);
+}
+
 function AtelierV2() {
   // --- 1. CONNEXION À TA BASE DE DONNÉES SUPABASE ---
   const { trip: realTrip, selectedDayIndex } = Store.useStore();
@@ -776,6 +813,47 @@ function AtelierV2() {
   const [done, setDone] = React.useState({});  // checklist coché
   
   const reload = () => { if (realTrip) window.SB.loadTrip(realTrip.id).then(t => Store.set({ trip: t })).catch(() => {}); };
+
+  async function shiftTripDatesFromDay(anchorDay, nextDateISO) {
+  if (!realTrip || !realTrip.id || !anchorDay || !nextDateISO) return;
+  if (!Array.isArray(realTrip.days) || !realTrip.days.length) return;
+
+  var anchorIndex = realTrip.days.findIndex(function(d) {
+    return String(d.id) === String(anchorDay.id);
+  });
+
+  if (anchorIndex < 0) return;
+
+  var updates = realTrip.days.map(function(d, index) {
+    var nextISO = itAddDaysISO(nextDateISO, index - anchorIndex);
+
+    return {
+      id: d.id,
+      dateISO: nextISO,
+      dateLabel: itDayDateLabel(nextISO)
+    };
+  });
+
+  try {
+    await Promise.all(updates.map(function(item) {
+      return window.SB.updateDay(item.id, {
+        dateISO: item.dateISO,
+        dateLabel: item.dateLabel
+      });
+    }));
+
+    if (window.SB.updateTrip && updates[0]) {
+      await window.SB.updateTrip(realTrip.id, {
+        startDate: updates[0].dateISO
+      });
+    }
+
+    reload();
+    Store.showToast('Dates du voyage mises à jour');
+  } catch (e) {
+    alert('Erreur dates : ' + (e.message || e));
+  }
+}
 
   // ── Drag & drop : réordonne les étapes puis sauvegarde ──
   async function handleDrop(fromIndex, toIndex) {
@@ -1868,7 +1946,44 @@ function AtelierV2() {
         React.createElement('div', { style: { position: 'absolute', bottom: 0, left: 0, width: '100%', padding: '0 24px', color: '#fff', zIndex: 5 } },
           React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 } },
             React.createElement('span', { style: { display: 'inline-block', padding: '5px 14px', background: 'rgba(254,249,239,0.2)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', borderRadius: 999, border: '1px solid rgba(255,255,255,0.3)', fontSize: 11, fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase', color: '#fff' } }, 'Jour ' + day.n),
-            React.createElement('span', { style: { fontFamily: 'var(--font-mono)', fontSize: 11, color: 'rgba(255,255,255,0.9)' } }, (day.weekday || '') + ' ' + fmtDate(day.dateISO))),
+            React.createElement('label', {
+  title: 'Modifier la date de cette journée',
+  style: {
+    position: 'relative',
+    fontFamily: 'var(--font-mono)',
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.9)',
+    cursor: 'pointer',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 6,
+    padding: '4px 8px',
+    borderRadius: 999,
+    background: 'rgba(255,255,255,0.08)',
+    border: '1px solid rgba(255,255,255,0.16)'
+  }
+},
+  itHeaderDateLabel(day.dateISO, day.weekday),
+  React.createElement('span', {
+    style: {
+      opacity: 0.75,
+      fontSize: 10
+    }
+  }, '✎'),
+  React.createElement('input', {
+    type: 'date',
+    value: day.dateISO || '',
+    onChange: function(e) {
+      shiftTripDatesFromDay(day, e.target.value);
+    },
+    style: {
+      position: 'absolute',
+      inset: 0,
+      opacity: 0,
+      cursor: 'pointer'
+    }
+  })
+)),
           React.createElement('h2', { style: { fontFamily: 'var(--font-serif)', fontSize: 40, lineHeight: '48px', color: '#fff', margin: '0 0 16px', display: 'flex', alignItems: 'center', gap: 14 } },
             day.title,
             React.createElement('button', {

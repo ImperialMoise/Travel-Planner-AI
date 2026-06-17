@@ -748,8 +748,9 @@ input[type="date"],
 input[type="time"],
 input[type="color"],
 [role="button"],
-[data-clickable="true"] {
-  cursor: var(--cursor-pointer), pointer;
+[data-clickable="true"],
+[onclick] {
+  cursor: var(--cursor-pointer), pointer !important;
 }
 
 input[type="text"],
@@ -772,9 +773,8 @@ textarea:disabled,
   cursor: not-allowed;
 }
 
-[title],
 [data-help="true"] {
-  cursor: var(--cursor-help), help;
+  cursor: var(--cursor-help), help !important;
 }
 
 [data-resize-x="true"] {
@@ -783,7 +783,7 @@ textarea:disabled,
 
 [draggable="true"],
 [data-draggable-day="true"] {
-  cursor: var(--cursor-grab), grab;
+  cursor: var(--cursor-grab), grab !important;
 }
 
 [draggable="true"]:active,

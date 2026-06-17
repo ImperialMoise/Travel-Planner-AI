@@ -3473,16 +3473,25 @@ function LoadingTrip() {
 }
 
 // ─── Modale Auth ────────────────────────────────────────────
+function AuthModal({ onClose }) {
+  const [mode, setMode] = React.useState('login');
+  const [email, setEmail] = React.useState('');
+  const [password, setPassword] = React.useState('');
+  const [pseudo, setPseudo] = React.useState('');
+  const [error, setError] = React.useState('');
   const [busy, setBusy] = React.useState(false);
 
   async function onSubmit() {
-    setError(''); setBusy(true);
+    setError('');
+    setBusy(true);
+
     try {
       if (mode === 'login') {
         await SB.signIn(email.trim(), password);
       } else {
         await SB.signUp(email.trim(), password, pseudo.trim() || null);
       }
+
       onClose();
     } catch (e) {
       setError(e.message || 'Erreur');
@@ -3491,29 +3500,73 @@ function LoadingTrip() {
     }
   }
 
-  return <ModalShell title={mode === 'login' ? 'Connexion' : 'Créer un compte'} onClose={onClose}>
-    <div style={{ display: 'flex', gap: 6, background: 'var(--inset)', borderRadius: 999, padding: 4, marginBottom: 14 }}>
-      <ModeTab on={mode === 'login'} onClick={() => setMode('login')}>Se connecter</ModeTab>
-      <ModeTab on={mode === 'signup'} onClick={() => setMode('signup')}>Créer un compte</ModeTab>
-    </div>
-    {mode === 'signup' && (
-      <Field label="Pseudo">
-        <input value={pseudo} onChange={e => setPseudo(e.target.value)} placeholder="Ton prénom ou pseudo" autoComplete="nickname" />
+  return (
+    <ModalShell title={mode === 'login' ? 'Connexion' : 'Créer un compte'} onClose={onClose}>
+      <div style={{
+        display: 'flex',
+        gap: 6,
+        background: 'var(--inset)',
+        borderRadius: 999,
+        padding: 4,
+        marginBottom: 14
+      }}>
+        <ModeTab on={mode === 'login'} onClick={() => setMode('login')}>
+          Se connecter
+        </ModeTab>
+
+        <ModeTab on={mode === 'signup'} onClick={() => setMode('signup')}>
+          Créer un compte
+        </ModeTab>
+      </div>
+
+      {mode === 'signup' && (
+        <Field label="Pseudo">
+          <input
+            value={pseudo}
+            onChange={e => setPseudo(e.target.value)}
+            placeholder="Ton prénom ou pseudo"
+            autoComplete="nickname"
+          />
+        </Field>
+      )}
+
+      <Field label="Email">
+        <input
+          type="email"
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+          placeholder="votre@email.com"
+          autoComplete="email"
+        />
       </Field>
-    )}
-    <Field label="Email">
-      <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="votre@email.com" autoComplete="email" />
-    </Field>
-    <Field label="Mot de passe">
-      <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" autoComplete={mode === 'login' ? 'current-password' : 'new-password'} />
-    </Field>
-    {error && <div style={{ color: 'var(--danger)', fontSize: 13, marginTop: 4 }}>{error}</div>}
-    <div style={{ marginTop: 16 }}>
-      <Btn variant="primary" onClick={onSubmit} style={{ width: '100%', justifyContent: 'center', padding: '11px' }}>
-        {busy ? '...' : (mode === 'login' ? 'Se connecter' : 'Créer mon compte')}
-      </Btn>
-    </div>
-  </ModalShell>;
+
+      <Field label="Mot de passe">
+        <input
+          type="password"
+          value={password}
+          onChange={e => setPassword(e.target.value)}
+          placeholder="••••••••"
+          autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+        />
+      </Field>
+
+      {error && (
+        <div style={{ color: 'var(--danger)', fontSize: 13, marginTop: 4 }}>
+          {error}
+        </div>
+      )}
+
+      <div style={{ marginTop: 16 }}>
+        <Btn
+          variant="primary"
+          onClick={onSubmit}
+          style={{ width: '100%', justifyContent: 'center', padding: '11px' }}
+        >
+          {busy ? '...' : (mode === 'login' ? 'Se connecter' : 'Créer mon compte')}
+        </Btn>
+      </div>
+    </ModalShell>
+  );
 }
 
 // ─── Modale Nouveau voyage ──────────────────────────────────

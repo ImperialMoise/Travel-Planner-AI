@@ -3454,12 +3454,8 @@ function diffDaysInclusive(startISO, endISO) {
 React.useEffect(() => {
   if (!startDate) return;
 
-  if (dateMode === 'days') {
-    setEndDate(addDaysISO(startDate, Math.max(1, Number(days) || 1) - 1));
-  } else if (endDate) {
-    setDays(diffDaysInclusive(startDate, endDate));
-  }
-}, [startDate, days, endDate, dateMode]);
+  setEndDate(addDaysISO(startDate, Math.max(1, Number(days) || 1) - 1));
+}, [startDate]);
   const [busy, setBusy] = React.useState(false);
 
   async function onSubmit() {
@@ -3549,79 +3545,40 @@ function NewTripModal({ onClose }) {
   />
 </Field>
 
-<div style={{
-  display: 'flex',
-  gap: 6,
-  background: 'var(--inset)',
-  borderRadius: 999,
-  padding: 4,
-  marginTop: 4,
-  marginBottom: 4
-}}>
-  <button
-    type="button"
-    onClick={() => setDateMode('days')}
-    style={{
-      flex: 1,
-      border: 'none',
-      borderRadius: 999,
-      padding: '8px 10px',
-      cursor: 'pointer',
-      fontFamily: 'inherit',
-      fontSize: 12,
-      fontWeight: 800,
-      background: dateMode === 'days' ? 'var(--accent)' : 'transparent',
-      color: dateMode === 'days' ? 'var(--accent-ink)' : 'var(--muted)'
-    }}
-  >
-    Nombre de jours
-  </button>
-
-  <button
-    type="button"
-    onClick={() => setDateMode('end')}
-    style={{
-      flex: 1,
-      border: 'none',
-      borderRadius: 999,
-      padding: '8px 10px',
-      cursor: 'pointer',
-      fontFamily: 'inherit',
-      fontSize: 12,
-      fontWeight: 800,
-      background: dateMode === 'end' ? 'var(--accent)' : 'transparent',
-      color: dateMode === 'end' ? 'var(--accent-ink)' : 'var(--muted)'
-    }}
-  >
-    Date de fin
-  </button>
-</div>
-
-{dateMode === 'days' ? (
+<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
   <Field label="Nombre de jours">
     <input
       type="number"
       min="1"
       max="90"
       value={days}
-      onChange={e => setDays(e.target.value)}
+      onChange={e => {
+        const nextDays = Math.max(1, Number(e.target.value) || 1);
+        setDays(nextDays);
+
+        if (startDate) {
+          setEndDate(addDaysISO(startDate, nextDays - 1));
+        }
+      }}
     />
   </Field>
-) : (
+
   <Field label="Date de fin">
     <input
       type="date"
       value={endDate}
       min={startDate || undefined}
       onChange={e => {
-        setEndDate(e.target.value);
-        if (startDate && e.target.value) {
-          setDays(diffDaysInclusive(startDate, e.target.value));
+        const nextEndDate = e.target.value;
+        setEndDate(nextEndDate);
+
+        if (startDate && nextEndDate) {
+          setDays(diffDaysInclusive(startDate, nextEndDate));
         }
       }}
     />
   </Field>
-)}
+</div>
 
 {startDate && endDate && (
   <div style={{

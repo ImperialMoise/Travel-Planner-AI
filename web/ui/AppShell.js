@@ -596,6 +596,46 @@ function DaySpine({ width = 300, onPickDay }) {
   }
 }
 
+async function deleteDayInSpine(dayIndex) {
+  if (!trip || !trip.id) return;
+
+  if (!Array.isArray(trip.days) || trip.days.length <= 1) {
+    Store.showToast('Impossible de supprimer la dernière journée');
+    return;
+  }
+
+  const day = trip.days[dayIndex];
+  const countSteps = day && Array.isArray(day.steps) ? day.steps.length : 0;
+
+  const ok = window.confirm(
+    'Supprimer le Jour ' +
+    (dayIndex + 1) +
+    ' ?\n\n' +
+    (countSteps
+      ? countSteps + ' étape(s) seront aussi supprimées.\n\n'
+      : '') +
+    'Les journées suivantes seront avancées et la date de fin du voyage sera recalculée.'
+  );
+
+  if (!ok) return;
+
+  try {
+    await window.SB.deleteTripDayInsideFixedRange(trip.id, dayIndex);
+
+    const refreshed = await window.SB.loadTrip(trip.id);
+    const nextIndex = Math.min(dayIndex, refreshed.days.length - 1);
+
+    Store.set({
+      trip: refreshed,
+      selectedDayIndex: nextIndex
+    });
+
+    Store.showToast('Journée supprimée');
+  } catch (error) {
+    Store.showToast('Erreur suppression : ' + (error.message || error));
+  }
+}
+
   // ── Couleurs des tags de type d'étape ──
   const TAG_COLORS = {
   transport: {
@@ -802,6 +842,35 @@ outlineOffset: -2
     pointerEvents: 'none'
   }} />
 )}
+
+<button
+  type="button"
+  title="Supprimer cette journée"
+  onClick={(e) => {
+    e.stopPropagation();
+    deleteDayInSpine(globalIdx);
+  }}
+  style={{
+    position: 'absolute',
+    top: on ? 10 : 8,
+    right: 8,
+    width: 24,
+    height: 24,
+    borderRadius: 999,
+    border: '1px solid rgba(192,86,63,.28)',
+    background: 'rgba(192,86,63,.08)',
+    color: '#c0563f',
+    display: 'grid',
+    placeItems: 'center',
+    cursor: 'pointer',
+    fontSize: 12,
+    lineHeight: 1,
+    opacity: on ? 1 : 0.72,
+    zIndex: 3
+  }}
+>
+  🗑
+</button>
                         {/* Numéro du jour + label */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: on ? 6 : 2 }}>
                           {on && (
@@ -825,7 +894,7 @@ outlineOffset: -2
                           fontSize: on ? 17 : 14, fontWeight: on ? 400 : 600,
                           fontStyle: on ? 'italic' : 'normal',
                           lineHeight: '22px', color: 'var(--text)',
-                          marginBottom: steps.length > 0 ? 8 : 0
+                          marginBottom: steps.length > 0 ? 8 : 0,paddingRight: 28
                         }}>{dayTitle}</div>
 
 {/* Résumé lisible du jour actif */}

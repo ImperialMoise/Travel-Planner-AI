@@ -295,6 +295,131 @@ export async function moveTripDayInsideFixedRange(tripId, fromIndex, toIndex) {
   return true;
 }
 
+export async function deleteTripDayInsideFixedRange(tripId, dayIndex) {
+  if (!tripId) throw new Error('Voyage introuvable');
+
+  dayIndex = Number(dayIndex);
+
+  if (!Number.isFinite(dayIndex)) {
+    throw new Error('Journée invalide');
+  }
+
+  function parseLocalDate(iso) {
+    if (!iso) return null;
+    return new Date(String(iso) + 'T12:00:00');
+  }
+
+  function toISO(date) {
+    if (!date) return null;
+    return date.toISOString().slice(0, 10);
+  }
+
+  function addDaysISO(baseISO, diff) {
+    const d = parseLocalDate(baseISO);
+    if (!d) return null;
+
+    d.setDate(d.getDate() + diff);
+    return toISO(d);
+  }
+
+  function dateLabel(iso) {
+    const d = parseLocalDate(iso);
+    if (!d) return '';
+
+    return d.toLocaleDateString('fr-FR', {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short'
+    });
+  }
+
+  const { data: trip, error: tripError } = await sb
+    .from('trips')
+    .select('id, start_date, end_date')
+    .eq('id', tripId)
+    .single();
+
+  if (tripError) throw tripError;
+
+  const { data: days, error: daysError } = await sb
+    .from('trip_days')
+    .select('id, day_index, date_iso')
+    .eq('trip_id', tripId)
+    .order('day_index');
+
+  if (daysError) throw daysError;
+
+  const currentDays = days || [];
+
+  if (currentDays.length <= 1) {
+    throw new Error('Impossible de supprimer la dernière journée du voyage');
+  }
+
+  if (dayIndex < 0 || dayIndex >= currentDays.length) {
+    throw new Error('Journée introuvable');
+  }
+
+  const dayToDelete = currentDays[dayIndex];
+  const baseISO = trip.start_date || currentDays[0].date_iso;
+
+  if (!baseISO) {
+    throw new Error('Date de départ du voyage manquante');
+  }
+
+  await sb
+    .from('trip_steps')
+    .delete()
+    .eq('day_id', dayToDelete.id);
+
+  const { error: deleteDayError } = await sb
+    .from('trip_days')
+    .delete()
+    .eq('id', dayToDelete.id);
+
+  if (deleteDayError) throw deleteDayError;
+
+  const nextDays = currentDays.filter(function(day) {
+    return String(day.id) !== String(dayToDelete.id);
+  });
+
+  // Phase 1 : index temporaires pour éviter les collisions
+  await Promise.all(nextDays.map(function(day, index) {
+    return sb
+      .from('trip_days')
+      .update({
+        day_index: 10000 + index
+      })
+      .eq('id', day.id);
+  }));
+
+  // Phase 2 : index définitifs + dates recalculées
+  await Promise.all(nextDays.map(function(day, index) {
+    const iso = addDaysISO(baseISO, index);
+
+    return sb
+      .from('trip_days')
+      .update({
+        day_index: index,
+        date_iso: iso,
+        date_label: iso ? dateLabel(iso) : ''
+      })
+      .eq('id', day.id);
+  }));
+
+  const nextEndDate = addDaysISO(baseISO, nextDays.length - 1);
+
+  const { error: tripUpdateError } = await sb
+    .from('trips')
+    .update({
+      end_date: nextEndDate
+    })
+    .eq('id', tripId);
+
+  if (tripUpdateError) throw tripUpdateError;
+
+  return true;
+}
+
 export async function updateTripDateRange(tripId, { startDate, endDate }) {
   if (!tripId) throw new Error('Voyage introuvable');
 

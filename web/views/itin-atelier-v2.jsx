@@ -814,6 +814,47 @@ function AtelierV2() {
   
   const reload = () => { if (realTrip) window.SB.loadTrip(realTrip.id).then(t => Store.set({ trip: t })).catch(() => {}); };
 
+  async function deleteCurrentDayFromHero() {
+  if (!realTrip || !realTrip.id || !day) return;
+
+  if (!Array.isArray(realTrip.days) || realTrip.days.length <= 1) {
+    Store.showToast('Impossible de supprimer la dernière journée');
+    return;
+  }
+
+  const dayIndex = sel;
+  const realDay = realTrip.days[dayIndex];
+  const countSteps = realDay && Array.isArray(realDay.steps) ? realDay.steps.length : 0;
+
+  const ok = window.confirm(
+    'Supprimer le Jour ' +
+    (dayIndex + 1) +
+    ' ?\n\n' +
+    (countSteps
+      ? countSteps + ' étape(s) seront aussi supprimées.\n\n'
+      : '') +
+    'Les journées suivantes seront avancées et la date de fin du voyage sera recalculée.'
+  );
+
+  if (!ok) return;
+
+  try {
+    await window.SB.deleteTripDayInsideFixedRange(realTrip.id, dayIndex);
+
+    const refreshed = await window.SB.loadTrip(realTrip.id);
+    const nextIndex = Math.min(dayIndex, refreshed.days.length - 1);
+
+    Store.set({
+      trip: refreshed,
+      selectedDayIndex: nextIndex
+    });
+
+    Store.showToast('Journée supprimée');
+  } catch (error) {
+    Store.showToast('Erreur suppression : ' + (error.message || error));
+  }
+}
+
   async function moveDayToDateInsideTrip(anchorDay, nextDateISO) {
   if (!realTrip || !realTrip.id || !anchorDay || !nextDateISO) return;
 
@@ -1961,6 +2002,32 @@ function AtelierV2() {
         heroImg && React.createElement('div', { style: { position: 'absolute', inset: 0, backgroundImage: 'url(' + heroImg.url + ')', backgroundSize: 'cover', backgroundPosition: 'center', zIndex: 0, transition: 'opacity .6s', opacity: 1 } }),
         React.createElement('image-slot', { id: 'koreahero-day-' + day.n, shape: 'rect', placeholder: !heroImg ? 'Photo du jour' : '', style: { position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block', zIndex: 1 } }),
         React.createElement('div', { style: { position: 'absolute', inset: 0, pointerEvents: 'none', background: 'linear-gradient(to top, rgba(21,48,42,0.9) 0%, rgba(21,48,42,0.4) 40%, transparent 100%)' } }),
+
+React.createElement('button', {
+  type: 'button',
+  title: 'Supprimer cette journée',
+  onClick: deleteCurrentDayFromHero,
+  style: {
+    position: 'absolute',
+    top: 18,
+    right: 18,
+    zIndex: 8,
+    width: 36,
+    height: 36,
+    borderRadius: 999,
+    border: '1px solid rgba(255,255,255,.28)',
+    background: 'rgba(192,86,63,.22)',
+    color: '#fff',
+    display: 'grid',
+    placeItems: 'center',
+    cursor: 'pointer',
+    fontSize: 15,
+    lineHeight: 1,
+    boxShadow: '0 8px 22px rgba(0,0,0,.22)',
+    backdropFilter: 'blur(10px)',
+    WebkitBackdropFilter: 'blur(10px)'
+  }
+}, '🗑'),
         React.createElement('div', { style: { position: 'absolute', bottom: 0, left: 0, width: '100%', padding: '0 24px', color: '#fff', zIndex: 5 } },
           React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 } },
             React.createElement('span', { style: { display: 'inline-block', padding: '5px 14px', background: 'rgba(254,249,239,0.2)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', borderRadius: 999, border: '1px solid rgba(255,255,255,0.3)', fontSize: 11, fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase', color: '#fff' } }, 'Jour ' + day.n),

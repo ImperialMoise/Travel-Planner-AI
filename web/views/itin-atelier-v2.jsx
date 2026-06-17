@@ -872,7 +872,6 @@ function AtelierV2() {
     Store.showToast('Erreur déplacement : ' + (error.message || error));
   }
 }
-}
 
   // ── Drag & drop : réordonne les étapes puis sauvegarde ──
   async function handleDrop(fromIndex, toIndex) {

@@ -692,8 +692,6 @@ function DaySpine({ width = 300, onPickDay }) {
                 justifyContent: 'space-between',
                 padding: '10px 14px', borderRadius: 10, border: 'none',
                 cursor: 'pointer', fontFamily: 'inherit', transition: 'all .15s',
-outline: draggingDayIndex !== null && draggingDayIndex !== globalIdx ? '1px dashed var(--outline-variant)' : 'none',
-outlineOffset: -3,
                 background: containsSelected ? 'var(--accent)' : 'var(--inset)',
                 color: containsSelected ? 'var(--accent-ink)' : 'var(--muted)'
               }}>
@@ -3475,35 +3473,6 @@ function LoadingTrip() {
 }
 
 // ─── Modale Auth ────────────────────────────────────────────
-function AuthModal({ onClose }) {
-  const [mode, setMode] = React.useState('login'); // 'login' | 'signup'
-  const [email, setEmail] = React.useState('');
-  const [password, setPassword] = React.useState('');
-  const [pseudo, setPseudo] = React.useState('');
-  const [error, setError] = React.useState('');
-  function addDaysISO(baseISO, count) {
-  if (!baseISO) return '';
-
-  const d = new Date(String(baseISO) + 'T12:00:00');
-  d.setDate(d.getDate() + count);
-
-  return d.toISOString().slice(0, 10);
-}
-
-function diffDaysInclusive(startISO, endISO) {
-  if (!startISO || !endISO) return 1;
-
-  const start = new Date(String(startISO) + 'T12:00:00');
-  const end = new Date(String(endISO) + 'T12:00:00');
-
-  return Math.max(1, Math.round((end - start) / 86400000) + 1);
-}
-
-React.useEffect(() => {
-  if (!startDate) return;
-
-  setEndDate(addDaysISO(startDate, Math.max(1, Number(days) || 1) - 1));
-}, [startDate]);
   const [busy, setBusy] = React.useState(false);
 
   async function onSubmit() {
@@ -3552,10 +3521,33 @@ function NewTripModal({ onClose }) {
   const [name, setName] = React.useState('');
   const [startDate, setStartDate] = React.useState('');
   const [endDate, setEndDate] = React.useState('');
-  const [dateMode, setDateMode] = React.useState('days');
   const [days, setDays] = React.useState(7);
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState('');
+
+  function addDaysISO(baseISO, count) {
+  if (!baseISO) return '';
+
+  const d = new Date(String(baseISO) + 'T12:00:00');
+  d.setDate(d.getDate() + count);
+
+  return d.toISOString().slice(0, 10);
+}
+
+function diffDaysInclusive(startISO, endISO) {
+  if (!startISO || !endISO) return 1;
+
+  const start = new Date(String(startISO) + 'T12:00:00');
+  const end = new Date(String(endISO) + 'T12:00:00');
+
+  return Math.max(1, Math.round((end - start) / 86400000) + 1);
+}
+
+React.useEffect(() => {
+  if (!startDate) return;
+
+  setEndDate(addDaysISO(startDate, Math.max(1, Number(days) || 1) - 1));
+}, [startDate]);
   
   async function onSubmit() {
     if (!name.trim()) return;

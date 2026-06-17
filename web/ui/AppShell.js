@@ -396,6 +396,145 @@ function getDisplayDayTitle(day) {
   return getAutoDayTitle(day);
 }
 
+function TripDatesModal({ trip, onClose }) {
+  const [startDate, setStartDate] = React.useState(trip?.startDate || '');
+  const [endDate, setEndDate] = React.useState(trip?.endDate || '');
+  const [busy, setBusy] = React.useState(false);
+
+  function addDaysISO(baseISO, count) {
+    if (!baseISO) return '';
+
+    const d = new Date(String(baseISO) + 'T12:00:00');
+    d.setDate(d.getDate() + count);
+
+    return d.toISOString().slice(0, 10);
+  }
+
+  function diffDaysInclusive(startISO, endISO) {
+    if (!startISO || !endISO) return 1;
+
+    const start = new Date(String(startISO) + 'T12:00:00');
+    const end = new Date(String(endISO) + 'T12:00:00');
+
+    return Math.max(1, Math.round((end - start) / 86400000) + 1);
+  }
+
+  const currentCount = Array.isArray(trip?.days) ? trip.days.length : 0;
+  const nextCount = startDate && endDate ? diffDaysInclusive(startDate, endDate) : currentCount;
+  const willRemoveDays = nextCount < currentCount;
+  const removedDays = willRemoveDays ? trip.days.slice(nextCount) : [];
+  const removedWithSteps = removedDays.filter(d => Array.isArray(d.steps) && d.steps.length > 0).length;
+
+  async function saveDates() {
+    if (!trip?.id || !startDate || !endDate || busy) return;
+
+    if (willRemoveDays) {
+      const ok = window.confirm(
+        'Tu réduis le voyage de ' +
+        currentCount +
+        ' à ' +
+        nextCount +
+        ' jours.\n\n' +
+        (removedWithSteps
+          ? removedWithSteps + ' journée(s) supprimée(s) contiennent des étapes.\n\n'
+          : '') +
+        'Continuer ?'
+      );
+
+      if (!ok) return;
+    }
+
+    setBusy(true);
+
+    try {
+      await window.SB.updateTripDateRange(trip.id, {
+        startDate,
+        endDate
+      });
+
+      const refreshed = await window.SB.loadTrip(trip.id);
+
+      Store.set({
+        trip: refreshed,
+        selectedDayIndex: Math.min(Store.get().selectedDayIndex || 0, refreshed.days.length - 1)
+      });
+
+      Store.showToast('Dates du voyage mises à jour');
+      onClose();
+    } catch (error) {
+      Store.showToast('Erreur dates : ' + (error.message || error));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <ModalShell title="Dates du voyage" onClose={onClose}>
+      <Field label="Date de départ">
+        <input
+          type="date"
+          value={startDate}
+          onChange={e => {
+            const nextStart = e.target.value;
+            setStartDate(nextStart);
+
+            if (nextStart && !endDate && currentCount) {
+              setEndDate(addDaysISO(nextStart, currentCount - 1));
+            }
+          }}
+        />
+      </Field>
+
+      <Field label="Date de fin">
+        <input
+          type="date"
+          value={endDate}
+          min={startDate || undefined}
+          onChange={e => setEndDate(e.target.value)}
+        />
+      </Field>
+
+      {startDate && endDate && (
+        <div style={{
+          fontSize: 13,
+          color: 'var(--muted)',
+          background: 'var(--inset)',
+          borderRadius: 10,
+          padding: '10px 12px',
+          marginTop: 8,
+          lineHeight: '19px'
+        }}>
+          Nouveau voyage : <b style={{ color: 'var(--text)' }}>{nextCount} jour{nextCount > 1 ? 's' : ''}</b>
+          <br />
+          {fmtDate(startDate)} → {fmtDate(endDate)}
+        </div>
+      )}
+
+      {willRemoveDays && (
+        <div style={{
+          fontSize: 12,
+          color: 'var(--danger)',
+          marginTop: 10,
+          lineHeight: '18px'
+        }}>
+          Attention : cela supprimera {currentCount - nextCount} journée{currentCount - nextCount > 1 ? 's' : ''}.
+          {removedWithSteps ? ' Certaines contiennent des étapes.' : ''}
+        </div>
+      )}
+
+      <div style={{ marginTop: 16 }}>
+        <Btn
+          variant="primary"
+          onClick={saveDates}
+          style={{ width: '100%', justifyContent: 'center', padding: '11px' }}
+        >
+          {busy ? 'Mise à jour…' : 'Mettre à jour les dates'}
+        </Btn>
+      </div>
+    </ModalShell>
+  );
+}
+
 function DaySpine({ width = 300, onPickDay }) {
   const { trip, selectedDayIndex } = Store.useStore();
   if (!trip || !trip.days) return null;
@@ -423,6 +562,7 @@ function DaySpine({ width = 300, onPickDay }) {
   // La semaine qui contient le jour sélectionné est ouverte par défaut
   const activeWeekIdx = Math.floor(sel / 7);
   const [openWeeks, setOpenWeeks] = React.useState({ [activeWeekIdx]: true });
+  const [datesOpen, setDatesOpen] = React.useState(false);
 
   // Quand le jour sélectionné change, ouvrir sa semaine
   React.useEffect(() => {
@@ -486,14 +626,33 @@ function DaySpine({ width = 300, onPickDay }) {
           fontFamily: 'var(--font-serif)', fontStyle: 'italic',
           fontSize: 24, lineHeight: '30px', color: 'var(--text)'
         }}>{trip.name || 'Mon voyage'}</div>
-        <div style={{
-          fontSize: 13, color: 'var(--muted)', marginTop: 6,
-          display: 'flex', alignItems: 'center', gap: 8
-        }}>
-          <Icon name="cal" size={15} style={{ color: 'var(--muted)' }} />
-          {days.length} jour{days.length > 1 ? 's' : ''}
-          {trip.startDate ? ' · ' + fmtDate(trip.startDate) : ''}
-        </div>
+        <button
+  type="button"
+  onClick={() => setDatesOpen(true)}
+  title="Modifier les dates du voyage"
+  style={{
+    marginTop: 6,
+    padding: 0,
+    border: 'none',
+    background: 'transparent',
+    color: 'var(--muted)',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    fontFamily: 'inherit',
+    fontSize: 13,
+    textAlign: 'left'
+  }}
+>
+  <Icon name="cal" size={15} style={{ color: 'var(--muted)' }} />
+  <span>
+    {days.length} jour{days.length > 1 ? 's' : ''}
+    {trip.startDate ? ' · ' + fmtDate(trip.startDate) : ''}
+    {trip.endDate ? ' → ' + fmtDate(trip.endDate) : ''}
+  </span>
+  <span style={{ color: 'var(--faint)', fontSize: 12 }}>✎</span>
+</button>
       </div>
 
       {/* ── Semaines pliables ── */}
@@ -677,6 +836,12 @@ function DaySpine({ width = 300, onPickDay }) {
       </div>
 
       {/* Bouton "Nouvelle étape" retiré : l'ajout se fait depuis la journée active. */}
+      {datesOpen && (
+  <TripDatesModal
+    trip={trip}
+    onClose={() => setDatesOpen(false)}
+  />
+)}
     </aside>
   );
 }
@@ -3268,6 +3433,33 @@ function AuthModal({ onClose }) {
   const [password, setPassword] = React.useState('');
   const [pseudo, setPseudo] = React.useState('');
   const [error, setError] = React.useState('');
+  function addDaysISO(baseISO, count) {
+  if (!baseISO) return '';
+
+  const d = new Date(String(baseISO) + 'T12:00:00');
+  d.setDate(d.getDate() + count);
+
+  return d.toISOString().slice(0, 10);
+}
+
+function diffDaysInclusive(startISO, endISO) {
+  if (!startISO || !endISO) return 1;
+
+  const start = new Date(String(startISO) + 'T12:00:00');
+  const end = new Date(String(endISO) + 'T12:00:00');
+
+  return Math.max(1, Math.round((end - start) / 86400000) + 1);
+}
+
+React.useEffect(() => {
+  if (!startDate) return;
+
+  if (dateMode === 'days') {
+    setEndDate(addDaysISO(startDate, Math.max(1, Number(days) || 1) - 1));
+  } else if (endDate) {
+    setDays(diffDaysInclusive(startDate, endDate));
+  }
+}, [startDate, days, endDate, dateMode]);
   const [busy, setBusy] = React.useState(false);
 
   async function onSubmit() {
@@ -3315,15 +3507,22 @@ function AuthModal({ onClose }) {
 function NewTripModal({ onClose }) {
   const [name, setName] = React.useState('');
   const [startDate, setStartDate] = React.useState('');
+  const [endDate, setEndDate] = React.useState('');
+  const [dateMode, setDateMode] = React.useState('days');
   const [days, setDays] = React.useState(7);
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState('');
-
+  
   async function onSubmit() {
     if (!name.trim()) return;
     setError(''); setBusy(true);
     try {
-      const trip = await SB.createTrip({ name: name.trim(), startDate: startDate || null, days: Math.max(1, +days || 1) });
+      const trip = await SB.createTrip({
+  name: name.trim(),
+  startDate: startDate || null,
+  endDate: endDate || null,
+  days: Math.max(1, +days || 1)
+});
       // Rafraîchir la liste + activer le nouveau
       const trips = await SB.listMyTrips();
       Store.set({ trips, activeTripId: trip.id });
@@ -3342,14 +3541,97 @@ function NewTripModal({ onClose }) {
     <Field label="Nom du voyage">
       <input value={name} onChange={e => setName(e.target.value)} placeholder="Corée du Sud, Lisbonne…" autoFocus />
     </Field>
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-      <Field label="Date de départ">
-        <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
-      </Field>
-      <Field label="Nombre de jours">
-        <input type="number" min="1" max="60" value={days} onChange={e => setDays(e.target.value)} />
-      </Field>
-    </div>
+    <Field label="Date de départ">
+  <input
+    type="date"
+    value={startDate}
+    onChange={e => setStartDate(e.target.value)}
+  />
+</Field>
+
+<div style={{
+  display: 'flex',
+  gap: 6,
+  background: 'var(--inset)',
+  borderRadius: 999,
+  padding: 4,
+  marginTop: 4,
+  marginBottom: 4
+}}>
+  <button
+    type="button"
+    onClick={() => setDateMode('days')}
+    style={{
+      flex: 1,
+      border: 'none',
+      borderRadius: 999,
+      padding: '8px 10px',
+      cursor: 'pointer',
+      fontFamily: 'inherit',
+      fontSize: 12,
+      fontWeight: 800,
+      background: dateMode === 'days' ? 'var(--accent)' : 'transparent',
+      color: dateMode === 'days' ? 'var(--accent-ink)' : 'var(--muted)'
+    }}
+  >
+    Nombre de jours
+  </button>
+
+  <button
+    type="button"
+    onClick={() => setDateMode('end')}
+    style={{
+      flex: 1,
+      border: 'none',
+      borderRadius: 999,
+      padding: '8px 10px',
+      cursor: 'pointer',
+      fontFamily: 'inherit',
+      fontSize: 12,
+      fontWeight: 800,
+      background: dateMode === 'end' ? 'var(--accent)' : 'transparent',
+      color: dateMode === 'end' ? 'var(--accent-ink)' : 'var(--muted)'
+    }}
+  >
+    Date de fin
+  </button>
+</div>
+
+{dateMode === 'days' ? (
+  <Field label="Nombre de jours">
+    <input
+      type="number"
+      min="1"
+      max="90"
+      value={days}
+      onChange={e => setDays(e.target.value)}
+    />
+  </Field>
+) : (
+  <Field label="Date de fin">
+    <input
+      type="date"
+      value={endDate}
+      min={startDate || undefined}
+      onChange={e => {
+        setEndDate(e.target.value);
+        if (startDate && e.target.value) {
+          setDays(diffDaysInclusive(startDate, e.target.value));
+        }
+      }}
+    />
+  </Field>
+)}
+
+{startDate && endDate && (
+  <div style={{
+    fontSize: 12,
+    color: 'var(--muted)',
+    marginTop: 4
+  }}>
+    Voyage de {days} jour{Number(days) > 1 ? 's' : ''} · {fmtDate(startDate)} → {fmtDate(endDate)}
+  </div>
+)}
     {error && <div style={{ color: 'var(--danger)', fontSize: 13, marginTop: 4 }}>{error}</div>}
     <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
       <Btn variant="ghost" onClick={onClose} style={{ flex: 1, justifyContent: 'center' }}>Annuler</Btn>

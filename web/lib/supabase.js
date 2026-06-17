@@ -195,6 +195,128 @@ export async function updateTrip(tripId, patch) {
   return data;
 }
 
+export async function updateTripDateRange(tripId, { startDate, endDate }) {
+  if (!tripId) throw new Error('Voyage introuvable');
+
+  function parseLocalDate(iso) {
+    if (!iso) return null;
+    return new Date(String(iso) + 'T12:00:00');
+  }
+
+  function toISO(date) {
+    if (!date) return null;
+    return date.toISOString().slice(0, 10);
+  }
+
+  function addDaysISO(baseISO, diff) {
+    const d = parseLocalDate(baseISO);
+    if (!d) return null;
+
+    d.setDate(d.getDate() + diff);
+    return toISO(d);
+  }
+
+  function diffDaysInclusive(startISO, endISO) {
+    const start = parseLocalDate(startISO);
+    const end = parseLocalDate(endISO);
+
+    if (!start || !end) return 1;
+
+    const diff = Math.round((end - start) / 86400000);
+    return Math.max(1, diff + 1);
+  }
+
+  function dateLabel(iso) {
+    const d = parseLocalDate(iso);
+    if (!d) return '';
+
+    return d.toLocaleDateString('fr-FR', {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short'
+    });
+  }
+
+  const totalDays = diffDaysInclusive(startDate, endDate);
+
+  const { data: currentDays, error: daysError } = await sb
+    .from('trip_days')
+    .select('*')
+    .eq('trip_id', tripId)
+    .order('day_index');
+
+  if (daysError) throw daysError;
+
+  const days = currentDays || [];
+
+  const { error: tripError } = await sb
+    .from('trips')
+    .update({
+      start_date: startDate || null,
+      end_date: endDate || null
+    })
+    .eq('id', tripId);
+
+  if (tripError) throw tripError;
+
+  const keptDays = days.slice(0, totalDays);
+  const removedDays = days.slice(totalDays);
+
+  if (removedDays.length) {
+    const removedIds = removedDays.map(d => d.id);
+
+    await sb
+      .from('trip_steps')
+      .delete()
+      .in('day_id', removedIds);
+
+    const { error: deleteDaysError } = await sb
+      .from('trip_days')
+      .delete()
+      .in('id', removedIds);
+
+    if (deleteDaysError) throw deleteDaysError;
+  }
+
+  await Promise.all(keptDays.map(function(day, index) {
+    const iso = startDate ? addDaysISO(startDate, index) : null;
+
+    return sb
+      .from('trip_days')
+      .update({
+        day_index: index,
+        date_iso: iso,
+        date_label: iso ? dateLabel(iso) : ''
+      })
+      .eq('id', day.id);
+  }));
+
+  if (days.length < totalDays) {
+    const rows = [];
+
+    for (let i = days.length; i < totalDays; i += 1) {
+      const iso = startDate ? addDaysISO(startDate, i) : null;
+
+      rows.push({
+        trip_id: tripId,
+        day_index: i,
+        date_iso: iso,
+        date_label: iso ? dateLabel(iso) : ''
+      });
+    }
+
+    if (rows.length) {
+      const { error: insertError } = await sb
+        .from('trip_days')
+        .insert(rows);
+
+      if (insertError) throw insertError;
+    }
+  }
+
+  return true;
+}
+
 export async function updateDay(dayId, patch) {
   if (!dayId) throw new Error('Jour introuvable');
 

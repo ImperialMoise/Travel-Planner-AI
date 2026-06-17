@@ -1942,33 +1942,113 @@ function DayScoreWidget({ day, editMode, onRemove }) {
 }
 
 function GlobalNoteWidget({ trip, editMode, onRemove }) {
+  const editorRef = React.useRef(null);
   const [draft, setDraft] = React.useState(trip?.globalNote || '');
   const [saving, setSaving] = React.useState(false);
+  const [focused, setFocused] = React.useState(false);
 
   React.useEffect(() => {
-    setDraft(trip?.globalNote || '');
+    const next = trip?.globalNote || '';
+    setDraft(next);
+
+    if (editorRef.current && editorRef.current.innerHTML !== next) {
+      editorRef.current.innerHTML = next;
+    }
   }, [trip?.id, trip?.globalNote]);
 
   if (!trip) return null;
 
+  function sanitizeNoteHtml(html) {
+    const tpl = document.createElement('template');
+    tpl.innerHTML = String(html || '');
+
+    tpl.content.querySelectorAll('script, style, iframe, object, embed').forEach(el => el.remove());
+
+    tpl.content.querySelectorAll('*').forEach(el => {
+      Array.from(el.attributes).forEach(attr => {
+        const name = attr.name.toLowerCase();
+        const value = String(attr.value || '').toLowerCase();
+
+        if (name.startsWith('on')) el.removeAttribute(attr.name);
+        if ((name === 'href' || name === 'src') && value.startsWith('javascript:')) {
+          el.removeAttribute(attr.name);
+        }
+      });
+    });
+
+    return tpl.innerHTML;
+  }
+
+  function syncDraft() {
+    const html = sanitizeNoteHtml(editorRef.current?.innerHTML || '');
+    setDraft(html);
+  }
+
+  function plainText() {
+    return String(editorRef.current?.innerText || '').trim();
+  }
+
+  function runCommand(command, value) {
+    if (!editorRef.current) return;
+
+    editorRef.current.focus();
+    document.execCommand(command, false, value || null);
+    syncDraft();
+  }
+
   const dirty = draft !== (trip.globalNote || '');
+  const empty = !plainText() && !draft.replace(/<[^>]*>/g, '').trim();
 
   async function saveGlobalNote() {
     if (!trip.id || saving) return;
 
+    const html = sanitizeNoteHtml(editorRef.current?.innerHTML || '');
+
     setSaving(true);
+
     try {
-      await window.SB.updateTrip(trip.id, { globalNote: draft });
+      await window.SB.updateTrip(trip.id, { globalNote: html });
 
       const updatedTrip = await window.SB.loadTrip(trip.id);
       Store.set({ trip: updatedTrip });
 
-      Store.showToast(dirty ? 'Note globale sauvegardée' : 'Note globale à jour');
+      setDraft(html);
+      Store.showToast(html ? 'Carnet du voyage sauvegardé' : 'Carnet du voyage vidé');
     } catch (error) {
-      Store.showToast('Erreur note globale : ' + (error.message || error));
+      Store.showToast('Erreur carnet : ' + (error.message || error));
     } finally {
       setSaving(false);
     }
+  }
+
+  function ToolButton({ children, title, onClick, danger }) {
+    return (
+      <button
+        type="button"
+        title={title}
+        onMouseDown={e => e.preventDefault()}
+        onClick={onClick}
+        style={{
+          minWidth: 30,
+          height: 30,
+          padding: '0 9px',
+          borderRadius: 9,
+          border: '1px solid var(--outline-variant)',
+          background: danger ? 'rgba(192,86,63,.08)' : 'var(--inset)',
+          color: danger ? '#c0563f' : 'var(--text)',
+          cursor: 'pointer',
+          fontFamily: 'inherit',
+          fontSize: 12,
+          fontWeight: 800,
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 4
+        }}
+      >
+        {children}
+      </button>
+    );
   }
 
   return (
@@ -2003,11 +2083,12 @@ function GlobalNoteWidget({ trip, editMode, onRemove }) {
           }}
         >
           <Icon name="file" size={16} style={{ color: 'var(--tan)' }} />
-          Note globale
+          Carnet du voyage
         </span>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <button
+            type="button"
             onClick={saveGlobalNote}
             disabled={saving || !dirty}
             style={{
@@ -2027,6 +2108,7 @@ function GlobalNoteWidget({ trip, editMode, onRemove }) {
 
           {editMode && (
             <button
+              type="button"
               onClick={onRemove}
               style={{
                 width: 22,
@@ -2047,38 +2129,116 @@ function GlobalNoteWidget({ trip, editMode, onRemove }) {
         </div>
       </div>
 
-      <div style={{ padding: 16, background: 'var(--card)' }}>
-        <textarea
-          value={draft}
-          onChange={e => setDraft(e.target.value)}
-          placeholder="Note valable pour tout le voyage : idées, rappels, choses à vérifier..."
-          rows={6}
+      <div style={{ padding: 14, background: 'var(--card)' }}>
+        <div
           style={{
-            width: '100%',
-            minHeight: 110,
-            resize: 'vertical',
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: 6,
+            padding: 8,
+            borderRadius: 12,
+            background: 'var(--inset)',
             border: '1px solid var(--outline-variant)',
-            borderRadius: 11,
-            background: 'var(--bg)',
-            color: 'var(--text)',
-            padding: '10px 12px',
-            fontFamily: 'inherit',
-            fontSize: 13.5,
-            lineHeight: '20px',
-            outline: 'none',
-            boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)'
+            marginBottom: 10
           }}
-        />
+        >
+          <ToolButton title="Gras" onClick={() => runCommand('bold')}>
+            <b>B</b>
+          </ToolButton>
+
+          <ToolButton title="Italique" onClick={() => runCommand('italic')}>
+            <i>I</i>
+          </ToolButton>
+
+          <ToolButton title="Souligné" onClick={() => runCommand('underline')}>
+            <u>U</u>
+          </ToolButton>
+
+          <ToolButton title="Petit texte" onClick={() => runCommand('fontSize', '2')}>
+            A-
+          </ToolButton>
+
+          <ToolButton title="Texte normal" onClick={() => runCommand('fontSize', '3')}>
+            A
+          </ToolButton>
+
+          <ToolButton title="Grand texte" onClick={() => runCommand('fontSize', '5')}>
+            A+
+          </ToolButton>
+
+          <ToolButton title="Liste à puces" onClick={() => runCommand('insertUnorderedList')}>
+            • liste
+          </ToolButton>
+
+          <ToolButton title="Liste numérotée" onClick={() => runCommand('insertOrderedList')}>
+            1. liste
+          </ToolButton>
+
+          <ToolButton title="Effacer le style" onClick={() => runCommand('removeFormat')} danger>
+            Effacer
+          </ToolButton>
+        </div>
+
+        <div style={{ position: 'relative' }}>
+          {empty && !focused && (
+            <div
+              style={{
+                position: 'absolute',
+                top: 13,
+                left: 14,
+                right: 14,
+                color: 'var(--faint)',
+                fontSize: 13.5,
+                lineHeight: '20px',
+                pointerEvents: 'none',
+                fontStyle: 'italic'
+              }}
+            >
+              Notes globales du voyage : idées, rappels, adresses, choses à vérifier…
+            </div>
+          )}
+
+          <div
+            ref={editorRef}
+            contentEditable
+            suppressContentEditableWarning
+            onInput={syncDraft}
+            onFocus={() => setFocused(true)}
+            onBlur={() => {
+              setFocused(false);
+              syncDraft();
+            }}
+            style={{
+              width: '100%',
+              minHeight: 150,
+              maxHeight: 320,
+              overflowY: 'auto',
+              border: '1px solid var(--outline-variant)',
+              borderRadius: 12,
+              background: 'var(--bg)',
+              color: 'var(--text)',
+              padding: '12px 14px',
+              fontFamily: 'inherit',
+              fontSize: 13.5,
+              lineHeight: '21px',
+              outline: 'none',
+              boxShadow: focused ? '0 0 0 3px rgba(217,182,126,.18)' : 'inset 0 1px 2px rgba(0,0,0,0.03)'
+            }}
+          />
+        </div>
 
         <div
           style={{
             marginTop: 8,
             fontSize: 11.5,
             color: dirty ? 'var(--accent)' : 'var(--faint)',
-            fontWeight: 700
+            fontWeight: 700,
+            lineHeight: '16px'
           }}
         >
-          {dirty ? 'Modifications non sauvegardées' : 'Visible dans toute l’app'}
+          {dirty
+            ? 'Modifications non sauvegardées'
+            : 'Sauvegardé sur tout le voyage'}
         </div>
       </div>
     </div>
@@ -3235,6 +3395,17 @@ function getUsefulAroundTip(step) {
       key="currency"
       editMode={editMode}
       onRemove={() => togglePin('currency')}
+    />
+  );
+}},
+
+    globalNote: { label: 'Carnet du voyage', icon: 'file', render() {
+  return (
+    <GlobalNoteWidget
+      key="globalNote"
+      trip={trip}
+      editMode={editMode}
+      onRemove={() => togglePin('globalNote')}
     />
   );
 }},

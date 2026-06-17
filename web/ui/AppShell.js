@@ -535,6 +535,197 @@ function TripDatesModal({ trip, onClose }) {
   );
 }
 
+function DayDeleteConfirmModal({ day, dayIndex, busy, onCancel, onConfirm }) {
+  const countSteps = day && Array.isArray(day.steps) ? day.steps.length : 0;
+  const title = getDisplayDayTitle(day);
+
+  return ReactDOM.createPortal(
+    <div
+      onClick={busy ? undefined : onCancel}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 5200,
+        background: 'rgba(21,48,42,.38)',
+        backdropFilter: 'blur(8px)',
+        WebkitBackdropFilter: 'blur(8px)',
+        display: 'grid',
+        placeItems: 'center',
+        padding: 18
+      }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          width: '100%',
+          maxWidth: 430,
+          background: 'var(--card)',
+          border: '1px solid var(--outline-variant)',
+          borderRadius: 20,
+          boxShadow: '0 34px 90px rgba(0,0,0,.28)',
+          overflow: 'hidden'
+        }}
+      >
+        <div
+          style={{
+            padding: '18px 20px',
+            borderBottom: '1px solid var(--outline-variant)',
+            background: 'var(--soft)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 13
+          }}
+        >
+          <div
+            style={{
+              width: 42,
+              height: 42,
+              borderRadius: 14,
+              background: 'rgba(192,86,63,.12)',
+              color: '#c0563f',
+              display: 'grid',
+              placeItems: 'center',
+              fontSize: 19,
+              flexShrink: 0
+            }}
+          >
+            🗑
+          </div>
+
+          <div style={{ minWidth: 0 }}>
+            <div
+              style={{
+                fontSize: 11,
+                fontWeight: 800,
+                letterSpacing: '.16em',
+                textTransform: 'uppercase',
+                color: '#c0563f',
+                marginBottom: 3
+              }}
+            >
+              Suppression
+            </div>
+
+            <div
+              style={{
+                fontFamily: 'var(--font-serif)',
+                fontStyle: 'italic',
+                fontSize: 24,
+                lineHeight: '29px',
+                color: 'var(--text)'
+              }}
+            >
+              Supprimer cette journée ?
+            </div>
+          </div>
+        </div>
+
+        <div style={{ padding: 20 }}>
+          <div
+            style={{
+              border: '1px solid var(--outline-variant)',
+              background: 'var(--inset)',
+              borderRadius: 14,
+              padding: '12px 14px',
+              marginBottom: 14
+            }}
+          >
+            <div
+              style={{
+                fontSize: 11,
+                fontWeight: 800,
+                letterSpacing: '.12em',
+                textTransform: 'uppercase',
+                color: 'var(--faint)',
+                marginBottom: 5
+              }}
+            >
+              Jour {dayIndex + 1}
+            </div>
+
+            <div
+              style={{
+                fontFamily: 'var(--font-serif)',
+                fontSize: 20,
+                lineHeight: '25px',
+                color: 'var(--text)'
+              }}
+            >
+              {title || 'Journée libre'}
+            </div>
+
+            <div
+              style={{
+                fontSize: 12.5,
+                color: 'var(--muted)',
+                marginTop: 5
+              }}
+            >
+              {countSteps
+                ? countSteps + ' étape' + (countSteps > 1 ? 's' : '') + ' seront supprimées avec cette journée.'
+                : 'Cette journée ne contient aucune étape.'}
+            </div>
+          </div>
+
+          <p
+            style={{
+              margin: 0,
+              color: 'var(--muted)',
+              fontSize: 13.5,
+              lineHeight: '20px'
+            }}
+          >
+            Les journées suivantes seront avancées automatiquement et la date de fin du voyage sera recalculée.
+          </p>
+
+          <div
+            style={{
+              display: 'flex',
+              gap: 10,
+              marginTop: 18
+            }}
+          >
+            <Btn
+              variant="ghost"
+              onClick={onCancel}
+              disabled={busy}
+              style={{
+                flex: 1,
+                justifyContent: 'center',
+                padding: '11px'
+              }}
+            >
+              Annuler
+            </Btn>
+
+            <button
+              type="button"
+              onClick={onConfirm}
+              disabled={busy}
+              style={{
+                flex: 1,
+                border: 'none',
+                borderRadius: 999,
+                padding: '11px',
+                background: '#c0563f',
+                color: '#fff',
+                cursor: busy ? 'wait' : 'pointer',
+                fontFamily: 'inherit',
+                fontSize: 13,
+                fontWeight: 800,
+                boxShadow: '0 8px 18px rgba(192,86,63,.22)'
+              }}
+            >
+              {busy ? 'Suppression…' : 'Supprimer'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
 function DaySpine({ width = 300, onPickDay }) {
   const { trip, selectedDayIndex } = Store.useStore();
   if (!trip || !trip.days) return null;
@@ -565,6 +756,8 @@ function DaySpine({ width = 300, onPickDay }) {
   const [datesOpen, setDatesOpen] = React.useState(false);
   const [draggingDayIndex, setDraggingDayIndex] = React.useState(null);
   const [dragOverDayIndex, setDragOverDayIndex] = React.useState(null);
+  const [dayDeleteAsk, setDayDeleteAsk] = React.useState(null);
+  const [deletingDay, setDeletingDay] = React.useState(false);
 
   // Quand le jour sélectionné change, ouvrir sa semaine
   React.useEffect(() => {
@@ -596,7 +789,7 @@ function DaySpine({ width = 300, onPickDay }) {
   }
 }
 
-async function deleteDayInSpine(dayIndex) {
+function deleteDayInSpine(dayIndex) {
   if (!trip || !trip.id) return;
 
   if (!Array.isArray(trip.days) || trip.days.length <= 1) {
@@ -605,19 +798,18 @@ async function deleteDayInSpine(dayIndex) {
   }
 
   const day = trip.days[dayIndex];
-  const countSteps = day && Array.isArray(day.steps) ? day.steps.length : 0;
+  setDayDeleteAsk({
+    dayIndex,
+    day
+  });
+}
 
-  const ok = window.confirm(
-    'Supprimer le Jour ' +
-    (dayIndex + 1) +
-    ' ?\n\n' +
-    (countSteps
-      ? countSteps + ' étape(s) seront aussi supprimées.\n\n'
-      : '') +
-    'Les journées suivantes seront avancées et la date de fin du voyage sera recalculée.'
-  );
+async function confirmDeleteDayInSpine() {
+  if (!trip || !trip.id || !dayDeleteAsk || deletingDay) return;
 
-  if (!ok) return;
+  const dayIndex = dayDeleteAsk.dayIndex;
+
+  setDeletingDay(true);
 
   try {
     await window.SB.deleteTripDayInsideFixedRange(trip.id, dayIndex);
@@ -631,8 +823,11 @@ async function deleteDayInSpine(dayIndex) {
     });
 
     Store.showToast('Journée supprimée');
+    setDayDeleteAsk(null);
   } catch (error) {
     Store.showToast('Erreur suppression : ' + (error.message || error));
+  } finally {
+    setDeletingDay(false);
   }
 }
 
@@ -894,7 +1089,8 @@ outlineOffset: -2
                           fontSize: on ? 17 : 14, fontWeight: on ? 400 : 600,
                           fontStyle: on ? 'italic' : 'normal',
                           lineHeight: '22px', color: 'var(--text)',
-                          marginBottom: steps.length > 0 ? 8 : 0,paddingRight: 28
+                          marginBottom: steps.length > 0 ? 8 : 0,
+paddingRight: 28
                         }}>{dayTitle}</div>
 
 {/* Résumé lisible du jour actif */}
@@ -997,6 +1193,17 @@ outlineOffset: -2
       </div>
 
       {/* Bouton "Nouvelle étape" retiré : l'ajout se fait depuis la journée active. */}
+      {dayDeleteAsk && (
+  <DayDeleteConfirmModal
+    day={dayDeleteAsk.day}
+    dayIndex={dayDeleteAsk.dayIndex}
+    busy={deletingDay}
+    onCancel={() => {
+      if (!deletingDay) setDayDeleteAsk(null);
+    }}
+    onConfirm={confirmDeleteDayInSpine}
+  />
+)}
       {datesOpen && (
   <TripDatesModal
     trip={trip}

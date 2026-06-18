@@ -4450,9 +4450,10 @@ if (!data.routes || !data.routes[0]) {
 
         {!collapsed && (
           <button
-            type="button"
-            title="Glisser pour régler la hauteur"
-            onMouseDown={(e) => startToolResize(e, id)}
+             type="button"
+              title="Glisser pour régler la hauteur"
+              data-resize-handle="true"
+              onMouseDown={(e) => startToolResize(e, id)}
             style={{
               position: 'absolute',
               right: 9,
@@ -4890,18 +4891,22 @@ function getUsefulAroundTip(step) {
           +
         </button>
       </div>
-      <div style={{
-  flex: '1 1 0',
-  minHeight: 0,
-  overflowY: 'scroll',
-  overflowX: 'hidden',
-  padding: '8px 10px 22px 16px',
-  display: 'flex',
-  flexDirection: 'column',
-  gap: 16,
-  scrollbarWidth: 'thin',
-  scrollbarColor: 'var(--outline-variant) transparent'
-}}>
+      <div
+  data-toolbox-scroll="true"
+  style={{
+    flex: '1 1 auto',
+    height: 0,
+    minHeight: 0,
+    overflowY: 'scroll',
+    overflowX: 'hidden',
+    padding: '8px 10px 28px 16px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 16,
+    scrollbarWidth: 'thin',
+    scrollbarColor: 'var(--outline-variant) transparent'
+  }}
+>
         {pinned.map(id => {
           const block = BLOCKS[id];
           if (!block) return null;

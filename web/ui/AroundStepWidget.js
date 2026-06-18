@@ -393,23 +393,28 @@ async function searchAroundStep(categoryId) {
 }
 
     function openNearbyOnMap(item) {
-    const lat = nearbyLat(item);
-    const lng = nearbyLng(item);
-    const label = nearbyLabel(item);
-    const sub = nearbySub(item);
+  const lat = nearbyLat(item);
+  const lng = nearbyLng(item);
+  const label = nearbyLabel(item);
+  const sub = nearbySub(item);
 
-    let url = '';
-
-    if (lat !== null && lng !== null) {
-      url = 'https://www.google.com/maps/search/?api=1&query=' +
-        encodeURIComponent(lat + ',' + lng);
-    } else {
-      url = 'https://www.google.com/maps/search/?api=1&query=' +
-        encodeURIComponent([label, sub].filter(Boolean).join(' '));
-    }
-
-    window.open(url, '_blank', 'noopener,noreferrer');
+  if (lat === null || lng === null) {
+    Store.showToast('Coordonnées manquantes pour ce lieu');
+    return;
   }
+
+  Store.set({
+    view: 'map',
+    mapPreviewPlace: {
+      id: item.id || label,
+      label: label,
+      place: sub || label,
+      lat: lat,
+      lng: lng,
+      type: nearbyStepType()
+    }
+  });
+}
 
     function isNearbyAlreadyInDay(item) {
     if (!activeDay || !Array.isArray(activeDay.steps)) return false;

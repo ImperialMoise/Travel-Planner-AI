@@ -225,6 +225,70 @@ function StepEditor({ open, tripId, dayId, step, stepCount, onClose, onSaved }) 
   const [busy, setBusy] = React.useState(false);
   const [deleteAsk, setDeleteAsk] = React.useState(false);
   const set = (k, v) => setF(prev => ({ ...prev, [k]: v }));
+    function lodgingAddDaysISO(baseISO, count) {
+    if (!baseISO) return '';
+
+    const d = new Date(String(baseISO) + 'T12:00:00');
+    d.setDate(d.getDate() + count);
+
+    return d.toISOString().slice(0, 10);
+  }
+
+  function lodgingDiffNights(startISO, endISO) {
+    if (!startISO || !endISO) return 1;
+
+    const start = new Date(String(startISO) + 'T12:00:00');
+    const end = new Date(String(endISO) + 'T12:00:00');
+    const diff = Math.round((end - start) / 86400000);
+
+    return Math.max(1, diff);
+  }
+
+  function updateLodgingStartDate(value) {
+    setF(prev => {
+      const currentEnd = prev.dateEnd || '';
+      const nextEnd = currentEnd || (value ? lodgingAddDaysISO(value, 1) : '');
+      const nights = lodgingDiffNights(value, nextEnd);
+
+      return {
+        ...prev,
+        dateStart: value,
+        dateEnd: nextEnd,
+        nuits: nights,
+        nights: nights
+      };
+    });
+  }
+
+  function updateLodgingEndDate(value) {
+    setF(prev => {
+      const nights = lodgingDiffNights(prev.dateStart, value);
+
+      return {
+        ...prev,
+        dateEnd: value,
+        nuits: nights,
+        nights: nights
+      };
+    });
+  }
+
+  function updateLodgingNights(value) {
+    const nights = Math.max(1, Number(value) || 1);
+
+    setF(prev => {
+      const nextEnd = prev.dateStart
+        ? lodgingAddDaysISO(prev.dateStart, nights)
+        : prev.dateEnd;
+
+      return {
+        ...prev,
+        nuits: nights,
+        nights: nights,
+        dateEnd: nextEnd
+      };
+    });
+  }
   const addEscale = () => setF(prev => ({
     ...prev,
     escales: [...(prev.escales || []), { place: '', arrivalTime: '', departureTime: '' }]
@@ -288,7 +352,15 @@ function StepEditor({ open, tripId, dayId, step, stepCount, onClose, onSaved }) 
             }))
         });
       } else if (f.type === 'logement') {
-        Object.assign(p, { lieu: f.lieu, dateStart: f.dateStart || null, dateEnd: f.dateEnd || null, timeCheckIn: f.timeCheckIn, timeCheckOut: f.timeCheckOut, nuits });
+        Object.assign(p, {
+          lieu: f.lieu,
+          dateStart: f.dateStart || null,
+          dateEnd: f.dateEnd || null,
+          timeCheckIn: f.timeCheckIn,
+          timeCheckOut: f.timeCheckOut,
+          nuits,
+          nights: nuits
+        });
       } else if (f.type === 'activite') {
         Object.assign(p, { lieu: f.lieu, dureeEstimee: f.dureeEstimee });
       } else {
@@ -543,14 +615,47 @@ function StepEditor({ open, tripId, dayId, step, stepCount, onClose, onSaved }) 
              placeholder="Adresse, ville…"
             />)}
             {twoCol(
-              field('Arrivée (date)', <input type="date" style={inp} value={f.dateStart} onChange={e => set('dateStart', e.target.value)} />),
-              field('Départ (date)', <input type="date" style={inp} value={f.dateEnd} onChange={e => set('dateEnd', e.target.value)} />)
+              field('Arrivée (date)', <input
+                type="date"
+                style={inp}
+                value={f.dateStart || ''}
+                onChange={e => updateLodgingStartDate(e.target.value)}
+              />),
+              field('Départ (date)', <input
+                type="date"
+                style={inp}
+                value={f.dateEnd || ''}
+                min={f.dateStart || undefined}
+                onChange={e => updateLodgingEndDate(e.target.value)}
+              />)
             )}
             {twoCol(
               field('Heure check-in', <input type="time" style={inp} value={f.timeCheckIn} onChange={e => set('timeCheckIn', e.target.value)} />),
               field('Heure check-out', <input type="time" style={inp} value={f.timeCheckOut} onChange={e => set('timeCheckOut', e.target.value)} />)
             )}
-            {nuits > 0 && <div style={{ marginBottom: 12 }}><span style={badge}><Icon name="moon" size={12} />{nuits} {nuits > 1 ? 'nuits' : 'nuit'}</span></div>}
+            {twoCol(
+              field('Nuits', <input
+                type="number"
+                min="1"
+                style={inp}
+                value={nuits || f.nuits || f.nights || 1}
+                onChange={e => updateLodgingNights(e.target.value)}
+              />),
+              nuits > 0 ? React.createElement('div', {
+                style: {
+                  display: 'flex',
+                  alignItems: 'flex-end',
+                  marginBottom: 12
+                }
+              },
+                React.createElement('span', {
+                  style: badge
+                },
+                  React.createElement(Icon, { name: 'moon', size: 12 }),
+                  nuits + ' ' + (nuits > 1 ? 'nuits' : 'nuit')
+                )
+              ) : React.createElement('div', null)
+            )}
           </>}
 
           {f.type === 'restaurant' && <>
@@ -1660,13 +1765,36 @@ function AtelierV2() {
       for (let j = 0; j < lodgings.length; j += 1) {
         const step = lodgings[j];
         const nights = lodgingNightCount(step);
-        const startIndex = i;
-        const endIndex = i + nights;
+
+        const startISO = step.dateStart || sourceDay.dateISO || '';
+        const endISO = step.dateEnd || (startISO ? addDaysISOForLodging(startISO, nights) : '');
+
+        let startIndex = i;
+        let endIndex = i + nights;
+
+        if (startISO && Array.isArray(T.days)) {
+          const foundStart = T.days.findIndex(function(d) {
+            return d.dateISO === startISO;
+          });
+
+          if (foundStart >= 0) {
+            startIndex = foundStart;
+          }
+        }
+
+        if (endISO && Array.isArray(T.days)) {
+          const foundEnd = T.days.findIndex(function(d) {
+            return d.dateISO === endISO;
+          });
+
+          if (foundEnd >= 0) {
+            endIndex = foundEnd;
+          } else {
+            endIndex = startIndex + nights;
+          }
+        }
 
         if (sel >= startIndex && sel <= endIndex) {
-          const startISO = sourceDay.dateISO || '';
-          const endISO = startISO ? addDaysISOForLodging(startISO, nights) : '';
-
           let status = 'stay';
           if (sel === startIndex) status = 'checkin';
           else if (sel === endIndex) status = 'checkout';
@@ -1680,7 +1808,7 @@ function AtelierV2() {
             startISO,
             endISO,
             status,
-            nightNumber: Math.max(1, sel - startIndex + 1)
+            nightNumber: Math.max(1, sel - startIndex)
           };
         }
       }

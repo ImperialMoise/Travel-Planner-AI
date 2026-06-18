@@ -2099,7 +2099,7 @@ function AtelierV2() {
             background: C.inset
           }
         }, 'Aucun restaurant prévu pour ce jour.')
-            ),
+         ),
 
       React.createElement(LodgingRailSection, null),
 

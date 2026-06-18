@@ -4057,6 +4057,8 @@ if (!data.routes || !data.routes[0]) {
         data-tool-frame="true"
         style={{
           position: 'relative',
+          flexShrink: 0,
+          width: '100%',
           height: collapsed ? 58 : 'auto',
           minHeight: collapsed ? 58 : 0,
           maxHeight: collapsed ? 58 : 'none',

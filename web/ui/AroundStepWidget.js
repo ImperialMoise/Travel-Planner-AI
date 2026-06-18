@@ -96,6 +96,51 @@ function getStepPracticalChecks(step) {
   return checks;
 }
 
+const AROUND_CATEGORIES = [
+  {
+    id: 'restaurant',
+    label: 'Restaurants',
+    type: 'restaurant',
+    query: 'restaurant'
+  },
+  {
+    id: 'cafe',
+    label: 'Cafés',
+    type: 'restaurant',
+    query: 'cafe coffee'
+  },
+  {
+    id: 'activity',
+    label: 'Activités',
+    type: 'activite',
+    query: 'tourism attraction point of interest'
+  },
+  {
+    id: 'museum',
+    label: 'Musées',
+    type: 'activite',
+    query: 'museum gallery cultural attraction'
+  },
+  {
+    id: 'shop',
+    label: 'Commerces',
+    type: 'activite',
+    query: 'shop store market'
+  },
+  {
+    id: 'transport',
+    label: 'Transports',
+    type: 'transport',
+    query: 'metro subway bus train station'
+  }
+];
+
+function aroundCategoryById(id) {
+  return AROUND_CATEGORIES.find(function(category) {
+    return category.id === id;
+  }) || AROUND_CATEGORIES[0];
+}
+
 function AroundStepWidgetV2({ step, editMode, onRemove }) {
   const [expanded, setExpanded] = React.useState(false);
   const [nearbyType, setNearbyType] = React.useState('restaurant');
@@ -160,39 +205,68 @@ function AroundStepWidgetV2({ step, editMode, onRemove }) {
     );
   }
 
-    async function searchAroundStep(type) {
-    if (!step || !step.lat || !step.lng) {
-      setNearbyState('missing');
-      setNearbyItems([]);
-      return;
-    }
-
-    setNearbyType(type);
-    setNearbyState('loading');
+async function searchAroundStep(categoryId) {
+  if (!step || !step.lat || !step.lng) {
     setNearbyItems([]);
-
-    try {
-      const results = await window.SB.searchPlaces({
-        query: '',
-        type: type,
-        lat: Number(step.lat),
-        lng: Number(step.lng),
-        limit: 8,
-        language: 'fr'
-      });
-
-      const items = Array.isArray(results)
-        ? results
-        : (results && Array.isArray(results.items) ? results.items : []);
-
-      setNearbyItems(items);
-      setNearbyState(items.length ? 'ready' : 'empty');
-    } catch (error) {
-      console.error('Recherche autour impossible', error);
-      setNearbyItems([]);
-      setNearbyState('error');
-    }
+    setNearbyState('missing');
+    return;
   }
+
+  const category = aroundCategoryById(categoryId);
+
+  setNearbyType(category.id);
+  setNearbyState('loading');
+  setNearbyItems([]);
+
+  try {
+    const results = await window.SB.searchPlaces({
+      query: category.query,
+      type: category.type,
+      lat: Number(step.lat),
+      lng: Number(step.lng),
+      limit: 12,
+      language: 'fr'
+    });
+
+    const rawItems = Array.isArray(results)
+      ? results
+      : Array.isArray(results && results.items)
+        ? results.items
+        : Array.isArray(results && results.results)
+          ? results.results
+          : Array.isArray(results && results.features)
+            ? results.features
+            : [];
+
+    const items = rawItems.map(function(raw, index) {
+      const props = raw && raw.properties ? raw.properties : (raw || {});
+      const coords = raw && raw.geometry && Array.isArray(raw.geometry.coordinates)
+        ? raw.geometry.coordinates
+        : [];
+
+      return {
+        id: raw.id || props.place_id || props.osm_id || props.datasource && props.datasource.raw && props.datasource.raw.osm_id || ('nearby_' + index),
+        label: props.name || props.label || props.formatted || raw.label || raw.name || category.label,
+        place: props.formatted || props.address_line2 || props.address_line1 || raw.place || raw.address || '',
+        lat: Number(props.lat || props.latitude || coords[1] || raw.lat),
+        lng: Number(props.lon || props.lng || props.longitude || coords[0] || raw.lng),
+        website: props.website || raw.website || raw.url || '',
+        url: props.website || raw.url || '',
+        distance: props.distance || raw.distance || '',
+        category: category.id,
+        raw: raw
+      };
+    }).filter(function(item) {
+      return item.label && item.label !== category.label;
+    });
+
+    setNearbyItems(items);
+    setNearbyState(items.length ? 'ready' : 'empty');
+  } catch (error) {
+    setNearbyItems([]);
+    setNearbyState('error');
+  }
+}
 
   function nearbyLabel(item) {
     return String(
@@ -253,9 +327,13 @@ function AroundStepWidgetV2({ step, editMode, onRemove }) {
   }
 
   function nearbyStepType() {
-    if (nearbyType === 'restaurant' || nearbyType === 'cafe') return 'restaurant';
-    return 'activite';
-  }
+  const category = aroundCategoryById(nearbyType);
+
+  if (category.type === 'restaurant') return 'restaurant';
+  if (category.type === 'transport') return 'transport';
+
+  return 'activite';
+}
 
     function distanceMetersFromStep(item) {
     if (!step || !step.lat || !step.lng) return null;
@@ -537,33 +615,30 @@ function AroundStepWidgetV2({ step, editMode, onRemove }) {
             gap: 6,
             marginBottom: 10
           }}>
-            {[
-              ['restaurant', 'Restaurants'],
-              ['cafe', 'Cafés'],
-              ['activity', 'Activités'],
-              ['museum', 'Musées'],
-              ['shop', 'Commerces'],
-              ['transport', 'Transports']
-            ].map(([type, label]) => (
-              <button
-                key={type}
-                type="button"
-                onClick={() => searchAroundStep(type)}
-                style={{
-                  border: '1px solid ' + (nearbyType === type ? 'var(--accent)' : 'var(--outline-variant)'),
-                  background: nearbyType === type ? 'var(--accent)' : 'var(--inset)',
-                  color: nearbyType === type ? 'var(--accent-ink)' : 'var(--muted)',
-                  borderRadius: 999,
-                  padding: '6px 10px',
-                  cursor: 'pointer',
-                  fontFamily: 'inherit',
-                  fontSize: 11,
-                  fontWeight: 800
-                }}
-              >
-                {nearbyState === 'loading' && nearbyType === type ? '…' : label}
-              </button>
-            ))}
+            {AROUND_CATEGORIES.map(function(category) {
+  const on = nearbyType === category.id;
+
+  return (
+    <button
+      key={category.id}
+      type="button"
+      onClick={() => searchAroundStep(category.id)}
+      style={{
+        border: '1px solid ' + (on ? 'var(--accent)' : 'var(--outline-variant)'),
+        background: on ? 'var(--accent)' : 'var(--inset)',
+        color: on ? 'var(--accent-ink)' : 'var(--muted)',
+        borderRadius: 999,
+        padding: '6px 10px',
+        cursor: 'pointer',
+        fontFamily: 'inherit',
+        fontSize: 11,
+        fontWeight: 800
+      }}
+    >
+      {nearbyState === 'loading' && nearbyType === category.id ? '…' : category.label}
+    </button>
+  );
+})}
           </div>
 
           {nearbyState === 'missing' && (

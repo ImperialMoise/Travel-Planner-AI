@@ -2997,6 +2997,960 @@ function CurrencyWidget({ editMode, onRemove }) {
   );
 }
 
+function CalendarWidget({ trip, editMode, onRemove }) {
+  const { selectedDayIndex } = Store.useStore();
+
+  function parseLocalDate(iso) {
+    if (!iso) return null;
+    return new Date(String(iso) + 'T12:00:00');
+  }
+
+  function toISO(date) {
+    if (!date) return '';
+    return date.toISOString().slice(0, 10);
+  }
+
+  function addDaysISO(baseISO, diff) {
+    const d = parseLocalDate(baseISO);
+    if (!d) return '';
+
+    d.setDate(d.getDate() + diff);
+    return toISO(d);
+  }
+
+  function monthKeyFromISO(iso) {
+    const d = parseLocalDate(iso) || new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+  }
+
+  function monthLabel(monthKey) {
+    const d = parseLocalDate(monthKey + '-01') || new Date();
+
+    return d.toLocaleDateString('fr-FR', {
+      month: 'long',
+      year: 'numeric'
+    });
+  }
+
+  function safeId() {
+    if (window.crypto && window.crypto.randomUUID) return window.crypto.randomUUID();
+    return 'cal_' + Date.now() + '_' + Math.random().toString(16).slice(2);
+  }
+
+  const tripStart = trip?.startDate || '';
+  const tripEnd = trip?.endDate || '';
+  const selectedDay = Array.isArray(trip?.days) ? trip.days[selectedDayIndex || 0] : null;
+  const selectedISO = selectedDay?.dateISO || '';
+
+  const storageKey = 'atelier_calendar_marks_' + (trip?.id || 'global');
+
+  const [linkedMode, setLinkedMode] = React.useState(true);
+  const [monthKey, setMonthKey] = React.useState(monthKeyFromISO(selectedISO || tripStart || toISO(new Date())));
+  const legendStorageKey = 'atelier_calendar_legend_' + (trip?.id || 'global');
+  const [marks, setMarks] = React.useState(() => {
+    try {
+      const raw = localStorage.getItem(storageKey);
+      const parsed = raw ? JSON.parse(raw) : null;
+
+      return parsed || {
+        points: [],
+        ranges: []
+      };
+    } catch (e) {
+      return {
+        points: [],
+        ranges: []
+      };
+    }
+  });
+
+  const [legend, setLegend] = React.useState(() => {
+  try {
+    const raw = localStorage.getItem(legendStorageKey);
+    const parsed = raw ? JSON.parse(raw) : null;
+
+    return parsed || {
+      tan: 'Voyage',
+      green: 'Réservé',
+      blue: 'À vérifier',
+      red: 'Important'
+    };
+  } catch (e) {
+    return {
+      tan: 'Voyage',
+      green: 'Réservé',
+      blue: 'À vérifier',
+      red: 'Important'
+    };
+  }
+});
+
+  const [kind, setKind] = React.useState('point');
+  const [label, setLabel] = React.useState('');
+  const [date, setDate] = React.useState(selectedISO || tripStart || toISO(new Date()));
+  const [start, setStart] = React.useState(selectedISO || tripStart || toISO(new Date()));
+  const [end, setEnd] = React.useState(selectedISO || tripStart || toISO(new Date()));
+  const [color, setColor] = React.useState('tan');
+
+  React.useEffect(() => {
+    try {
+      const raw = localStorage.getItem(storageKey);
+      const parsed = raw ? JSON.parse(raw) : null;
+
+      setMarks(parsed || {
+        points: [],
+        ranges: []
+      });
+    } catch (e) {
+      setMarks({
+        points: [],
+        ranges: []
+      });
+    }
+  }, [storageKey]);
+
+  React.useEffect(() => {
+  try {
+    const raw = localStorage.getItem(legendStorageKey);
+    const parsed = raw ? JSON.parse(raw) : null;
+
+    setLegend(parsed || {
+      tan: 'Voyage',
+      green: 'Réservé',
+      blue: 'À vérifier',
+      red: 'Important'
+    });
+  } catch (e) {
+    setLegend({
+      tan: 'Voyage',
+      green: 'Réservé',
+      blue: 'À vérifier',
+      red: 'Important'
+    });
+  }
+}, [legendStorageKey]);
+
+  React.useEffect(() => {
+    localStorage.setItem(storageKey, JSON.stringify(marks));
+  }, [storageKey, marks]);
+  React.useEffect(() => {
+  localStorage.setItem(legendStorageKey, JSON.stringify(legend));
+}, [legendStorageKey, legend]);
+
+  React.useEffect(() => {
+    if (selectedISO) {
+      setMonthKey(monthKeyFromISO(selectedISO));
+    }
+  }, [selectedISO]);
+
+  const COLORS = {
+    tan: {
+      label: 'Doré',
+      value: 'var(--tan)',
+      soft: 'rgba(217,182,126,.22)'
+    },
+    green: {
+      label: 'Vert',
+      value: '#6f9d7b',
+      soft: 'rgba(111,157,123,.18)'
+    },
+    blue: {
+      label: 'Bleu',
+      value: '#5e87a5',
+      soft: 'rgba(94,135,165,.18)'
+    },
+    red: {
+      label: 'Rouge',
+      value: '#c0563f',
+      soft: 'rgba(192,86,63,.16)'
+    }
+  };
+
+  function savePoint() {
+    if (!date) return;
+
+    const next = {
+      ...marks,
+      points: [
+        ...(marks.points || []),
+        {
+          id: safeId(),
+          date,
+          color,
+          label: label.trim()
+        }
+      ]
+    };
+
+    setMarks(next);
+    setLabel('');
+  }
+
+  function saveRange() {
+    if (!start || !end) return;
+
+    const a = start <= end ? start : end;
+    const b = start <= end ? end : start;
+
+    const next = {
+      ...marks,
+      ranges: [
+        ...(marks.ranges || []),
+        {
+          id: safeId(),
+          start: a,
+          end: b,
+          color,
+          label: label.trim()
+        }
+      ]
+    };
+
+    setMarks(next);
+    setLabel('');
+  }
+
+  function deleteMark(type, id) {
+    if (type === 'point') {
+      setMarks({
+        ...marks,
+        points: (marks.points || []).filter(item => item.id !== id)
+      });
+    } else {
+      setMarks({
+        ...marks,
+        ranges: (marks.ranges || []).filter(item => item.id !== id)
+      });
+    }
+  }
+
+  function previousMonth() {
+    const d = parseLocalDate(monthKey + '-01');
+    d.setMonth(d.getMonth() - 1);
+    setMonthKey(monthKeyFromISO(toISO(d)));
+  }
+
+  function nextMonth() {
+    const d = parseLocalDate(monthKey + '-01');
+    d.setMonth(d.getMonth() + 1);
+    setMonthKey(monthKeyFromISO(toISO(d)));
+  }
+
+  function goToTrip() {
+    if (tripStart) {
+      setMonthKey(monthKeyFromISO(tripStart));
+    }
+  }
+
+  const monthStart = parseLocalDate(monthKey + '-01');
+  const firstDay = new Date(monthStart);
+  const mondayOffset = (firstDay.getDay() + 6) % 7;
+  firstDay.setDate(firstDay.getDate() - mondayOffset);
+
+  const cells = [];
+
+  for (let i = 0; i < 42; i += 1) {
+    cells.push(addDaysISO(toISO(firstDay), i));
+  }
+
+  const weekLabels = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
+
+  function isInCurrentMonth(iso) {
+    return iso && iso.slice(0, 7) === monthKey;
+  }
+
+  function isTripDate(iso) {
+    if (!linkedMode || !tripStart || !tripEnd || !iso) return false;
+    return iso >= tripStart && iso <= tripEnd;
+  }
+
+  function isToday(iso) {
+    return iso === toISO(new Date());
+  }
+
+  function pointsForDay(iso) {
+    return (marks.points || []).filter(p => p.date === iso);
+  }
+
+  function rangesForDay(iso) {
+    return (marks.ranges || []).filter(r => {
+      if (!r.start || !r.end || !iso) return false;
+      return iso >= r.start && iso <= r.end;
+    });
+  }
+
+  function dayNumber(iso) {
+    const d = parseLocalDate(iso);
+    return d ? d.getDate() : '';
+  }
+
+  const allMarks = [
+    ...(marks.points || []).map(item => ({ ...item, type: 'point' })),
+    ...(marks.ranges || []).map(item => ({ ...item, type: 'range' }))
+  ].sort((a, b) => {
+    const da = a.date || a.start || '';
+    const db = b.date || b.start || '';
+    return da.localeCompare(db);
+  });
+
+  return (
+    <div
+      key="calendar"
+      style={{
+        background: 'var(--card)',
+        borderRadius: 12,
+        boxShadow: '0 2px 8px rgba(82,98,91,0.05)',
+        border: '1px solid var(--outline-variant)',
+        overflow: 'hidden'
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '12px 16px',
+          borderBottom: '1px solid var(--outline-variant)',
+          background: 'var(--soft)'
+        }}
+      >
+        <span
+          style={{
+            fontSize: 13,
+            fontWeight: 600,
+            color: 'var(--text)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8
+          }}
+        >
+          <Icon name="cal" size={16} style={{ color: 'var(--tan)' }} />
+          Calendrier
+        </span>
+
+        {editMode && (
+          <button
+            type="button"
+            onClick={onRemove}
+            style={{
+              width: 22,
+              height: 22,
+              borderRadius: 7,
+              border: 'none',
+              cursor: 'pointer',
+              background: 'var(--accent-soft)',
+              color: 'var(--accent)',
+              display: 'grid',
+              placeItems: 'center',
+              fontSize: 15
+            }}
+          >
+            {'\u00d7'}
+          </button>
+        )}
+      </div>
+
+      <div style={{ padding: 14 }}>
+        <div
+          style={{
+            display: 'flex',
+            gap: 6,
+            background: 'var(--inset)',
+            borderRadius: 999,
+            padding: 4,
+            marginBottom: 12
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => setLinkedMode(true)}
+            style={{
+              flex: 1,
+              border: 'none',
+              borderRadius: 999,
+              padding: '7px 8px',
+              background: linkedMode ? 'var(--accent)' : 'transparent',
+              color: linkedMode ? 'var(--accent-ink)' : 'var(--muted)',
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              fontSize: 11.5,
+              fontWeight: 800
+            }}
+          >
+            Voyage
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setLinkedMode(false)}
+            style={{
+              flex: 1,
+              border: 'none',
+              borderRadius: 999,
+              padding: '7px 8px',
+              background: !linkedMode ? 'var(--accent)' : 'transparent',
+              color: !linkedMode ? 'var(--accent-ink)' : 'var(--muted)',
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              fontSize: 11.5,
+              fontWeight: 800
+            }}
+          >
+            Libre
+          </button>
+        </div>
+
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: 10
+          }}
+        >
+          <button
+            type="button"
+            onClick={previousMonth}
+            style={{
+              width: 28,
+              height: 28,
+              borderRadius: 9,
+              border: '1px solid var(--outline-variant)',
+              background: 'var(--inset)',
+              color: 'var(--text)',
+              cursor: 'pointer'
+            }}
+          >
+            ‹
+          </button>
+
+          <button
+            type="button"
+            onClick={goToTrip}
+            title="Revenir au voyage"
+            style={{
+              border: 'none',
+              background: 'transparent',
+              color: 'var(--text)',
+              cursor: tripStart ? 'pointer' : 'default',
+              fontFamily: 'var(--font-serif)',
+              fontSize: 18,
+              fontStyle: 'italic',
+              textTransform: 'capitalize'
+            }}
+          >
+            {monthLabel(monthKey)}
+          </button>
+
+          <button
+            type="button"
+            onClick={nextMonth}
+            style={{
+              width: 28,
+              height: 28,
+              borderRadius: 9,
+              border: '1px solid var(--outline-variant)',
+              background: 'var(--inset)',
+              color: 'var(--text)',
+              cursor: 'pointer'
+            }}
+          >
+            ›
+          </button>
+        </div>
+
+        {linkedMode && tripStart && tripEnd && (
+          <div
+            style={{
+              fontSize: 11.5,
+              color: 'var(--muted)',
+              marginBottom: 10,
+              lineHeight: '16px'
+            }}
+          >
+            Voyage affiché : {fmtDate(tripStart)} → {fmtDate(tripEnd)}
+          </div>
+        )}
+
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(7, 1fr)',
+            gap: 4,
+            marginBottom: 4
+          }}
+        >
+          {weekLabels.map((label, i) => (
+            <div
+              key={i}
+              style={{
+                textAlign: 'center',
+                fontSize: 10,
+                fontWeight: 900,
+                color: 'var(--faint)',
+                paddingBottom: 3
+              }}
+            >
+              {label}
+            </div>
+          ))}
+        </div>
+
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(7, 1fr)',
+            gap: 4
+          }}
+        >
+          {cells.map((iso) => {
+            const inMonth = isInCurrentMonth(iso);
+            const tripDay = isTripDate(iso);
+            const today = isToday(iso);
+            const selected = selectedISO && iso === selectedISO;
+            const dayPoints = pointsForDay(iso);
+            const dayRanges = rangesForDay(iso);
+
+            return (
+              <div
+                key={iso}
+                title={iso}
+                style={{
+                  position: 'relative',
+                  minHeight: 34,
+                  borderRadius: 10,
+                  border: selected
+                    ? '1.5px solid var(--accent)'
+                    : today
+                      ? '1px solid var(--tan)'
+                      : '1px solid transparent',
+                  background: tripDay
+                    ? 'var(--accent-soft)'
+                    : inMonth
+                      ? 'var(--bg)'
+                      : 'transparent',
+                  color: inMonth ? 'var(--text)' : 'var(--faint)',
+                  opacity: inMonth ? 1 : 0.45,
+                  padding: 4,
+                  overflow: 'hidden'
+                }}
+              >
+                {dayRanges.slice(0, 2).map((r, idx) => {
+                  const c = COLORS[r.color] || COLORS.tan;
+
+                  return (
+                    <div
+                      key={r.id + '_' + idx}
+                      style={{
+                        position: 'absolute',
+                        left: 3,
+                        right: 3,
+                        bottom: 4 + idx * 5,
+                        height: 4,
+                        borderRadius: 999,
+                        background: c.value,
+                        opacity: 0.78
+                      }}
+                    />
+                  );
+                })}
+
+                <div
+                  style={{
+                    position: 'relative',
+                    zIndex: 1,
+                    fontSize: 11,
+                    fontWeight: selected ? 900 : 700,
+                    textAlign: 'center'
+                  }}
+                >
+                  {dayNumber(iso)}
+                </div>
+
+                {dayPoints.length > 0 && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      left: 0,
+                      right: 0,
+                      bottom: 3,
+                      display: 'flex',
+                      justifyContent: 'center',
+                      gap: 3,
+                      zIndex: 2
+                    }}
+                  >
+                    {dayPoints.slice(0, 3).map(p => {
+                      const c = COLORS[p.color] || COLORS.tan;
+
+                      return (
+                        <span
+                          key={p.id}
+                          style={{
+                            width: 5,
+                            height: 5,
+                            borderRadius: '50%',
+                            background: c.value,
+                            boxShadow: '0 0 0 1px var(--card)'
+                          }}
+                        />
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        <div
+          style={{
+            marginTop: 12,
+            border: '1px solid var(--outline-variant)',
+            background: 'var(--inset)',
+            borderRadius: 12,
+            padding: '9px 10px'
+          }}
+        >
+          <div
+            style={{
+              fontSize: 10.5,
+              fontWeight: 900,
+              letterSpacing: '.12em',
+              textTransform: 'uppercase',
+              color: 'var(--faint)',
+              marginBottom: 8
+            }}
+          >
+            Légende
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {Object.keys(COLORS).map(key => {
+              const c = COLORS[key];
+
+              return (
+                <div
+                  key={key}
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '12px 1fr',
+                    gap: 8,
+                    alignItems: 'center'
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 9,
+                      height: 9,
+                      borderRadius: '50%',
+                      background: c.value,
+                      boxShadow: '0 0 0 2px var(--card)'
+                    }}
+                  />
+
+                  <input
+                    value={legend[key] || ''}
+                    onChange={e => {
+                      const value = e.target.value;
+                      setLegend(prev => ({
+                        ...prev,
+                        [key]: value
+                      }));
+                    }}
+                    placeholder={c.label}
+                    style={{
+                      width: '100%',
+                      border: 'none',
+                      background: 'transparent',
+                      color: 'var(--muted)',
+                      fontFamily: 'inherit',
+                      fontSize: 11.5,
+                      fontWeight: 700,
+                      outline: 'none',
+                      padding: '2px 0'
+                    }}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div
+          style={{
+            height: 1,
+            background: 'var(--outline-variant)',
+            margin: '14px 0'
+          }}
+        />
+
+        <div
+          style={{
+            display: 'flex',
+            gap: 6,
+            marginBottom: 10
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => setKind('point')}
+            style={{
+              flex: 1,
+              border: '1px solid var(--outline-variant)',
+              borderRadius: 9,
+              padding: '7px 8px',
+              background: kind === 'point' ? 'var(--accent-soft)' : 'var(--inset)',
+              color: kind === 'point' ? 'var(--accent)' : 'var(--muted)',
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              fontSize: 11.5,
+              fontWeight: 800
+            }}
+          >
+            Point
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setKind('range')}
+            style={{
+              flex: 1,
+              border: '1px solid var(--outline-variant)',
+              borderRadius: 9,
+              padding: '7px 8px',
+              background: kind === 'range' ? 'var(--accent-soft)' : 'var(--inset)',
+              color: kind === 'range' ? 'var(--accent)' : 'var(--muted)',
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              fontSize: 11.5,
+              fontWeight: 800
+            }}
+          >
+            Période
+          </button>
+        </div>
+
+        {kind === 'point' ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <input
+              type="date"
+              value={date}
+              onChange={e => setDate(e.target.value)}
+              style={{
+                width: '100%',
+                border: '1px solid var(--outline-variant)',
+                background: 'var(--inset)',
+                color: 'var(--text)',
+                borderRadius: 10,
+                padding: '8px 10px',
+                fontFamily: 'inherit',
+                fontSize: 12.5,
+                outline: 'none'
+              }}
+            />
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            <input
+              type="date"
+              value={start}
+              onChange={e => setStart(e.target.value)}
+              style={{
+                width: '100%',
+                border: '1px solid var(--outline-variant)',
+                background: 'var(--inset)',
+                color: 'var(--text)',
+                borderRadius: 10,
+                padding: '8px 10px',
+                fontFamily: 'inherit',
+                fontSize: 12.5,
+                outline: 'none'
+              }}
+            />
+
+            <input
+              type="date"
+              value={end}
+              onChange={e => setEnd(e.target.value)}
+              style={{
+                width: '100%',
+                border: '1px solid var(--outline-variant)',
+                background: 'var(--inset)',
+                color: 'var(--text)',
+                borderRadius: 10,
+                padding: '8px 10px',
+                fontFamily: 'inherit',
+                fontSize: 12.5,
+                outline: 'none'
+              }}
+            />
+          </div>
+        )}
+
+        <input
+          value={label}
+          onChange={e => setLabel(e.target.value)}
+          placeholder={kind === 'point' ? 'Repère : avion, visa, appel…' : 'Période : Tokyo, road trip…'}
+          style={{
+            width: '100%',
+            marginTop: 8,
+            border: '1px solid var(--outline-variant)',
+            background: 'var(--inset)',
+            color: 'var(--text)',
+            borderRadius: 10,
+            padding: '8px 10px',
+            fontFamily: 'inherit',
+            fontSize: 12.5,
+            outline: 'none'
+          }}
+        />
+
+        <div
+          style={{
+            display: 'flex',
+            gap: 6,
+            marginTop: 8,
+            alignItems: 'center'
+          }}
+        >
+          {Object.keys(COLORS).map(key => {
+            const c = COLORS[key];
+
+            return (
+              <button
+                key={key}
+                type="button"
+                title={legend[key] || c.label}
+                onClick={() => setColor(key)}
+                style={{
+                  width: 24,
+                  height: 24,
+                  borderRadius: '50%',
+                  border: color === key ? '2px solid var(--text)' : '1px solid var(--outline-variant)',
+                  background: c.value,
+                  cursor: 'pointer'
+                }}
+              />
+            );
+          })}
+
+          <button
+            type="button"
+            onClick={kind === 'point' ? savePoint : saveRange}
+            style={{
+              marginLeft: 'auto',
+              border: 'none',
+              borderRadius: 999,
+              background: 'var(--accent)',
+              color: 'var(--accent-ink)',
+              cursor: 'pointer',
+              padding: '8px 12px',
+              fontFamily: 'inherit',
+              fontSize: 12,
+              fontWeight: 800
+            }}
+          >
+            Ajouter
+          </button>
+        </div>
+
+        {allMarks.length > 0 && (
+          <div style={{ marginTop: 14 }}>
+            <div
+              style={{
+                fontSize: 10.5,
+                fontWeight: 900,
+                letterSpacing: '.12em',
+                textTransform: 'uppercase',
+                color: 'var(--faint)',
+                marginBottom: 7
+              }}
+            >
+              Repères
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {allMarks.slice(0, 8).map(item => {
+                const c = COLORS[item.color] || COLORS.tan;
+                const isPoint = item.type === 'point';
+
+                return (
+                  <div
+                    key={item.type + '_' + item.id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      border: '1px solid var(--outline-variant)',
+                      background: 'var(--inset)',
+                      borderRadius: 10,
+                      padding: '7px 8px'
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: isPoint ? 8 : 18,
+                        height: 8,
+                        borderRadius: 999,
+                        background: c.value,
+                        flexShrink: 0
+                      }}
+                    />
+
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div
+                        style={{
+                          fontSize: 12,
+                          fontWeight: 800,
+                          color: 'var(--text)',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis'
+                        }}
+                      >
+                        {item.label || legend[item.color] || (isPoint ? 'Repère' : 'Période')}
+                      </div>
+
+                      <div
+                        style={{
+                          fontSize: 10.5,
+                          color: 'var(--faint)',
+                          marginTop: 1
+                        }}
+                      >
+                        {isPoint
+                          ? fmtDate(item.date)
+                          : fmtDate(item.start) + ' → ' + fmtDate(item.end)}
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => deleteMark(item.type, item.id)}
+                      title="Supprimer"
+                      style={{
+                        border: 'none',
+                        background: 'transparent',
+                        color: '#c0563f',
+                        cursor: 'pointer',
+                        padding: 4,
+                        fontSize: 13
+                      }}
+                    >
+                      ×
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Boîte à outils (colonne droite, tous onglets) ──────────
 function Toolbox({ width = 320 }) {
   const st = Store.useStore();
@@ -3011,10 +3965,10 @@ function Toolbox({ width = 320 }) {
   const mode = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
 
   const DEFAULTS = {
-    itinerary: ['dayScore', 'aroundStep', 'checklist', 'currency', 'note', 'globalNote', 'stats'],
-    map: ['calc', 'currency', 'dayScore', 'globalNote', 'checklist'],
-    budget: ['currency', 'stats', 'globalNote', 'note'],
-    docs: ['globalNote', 'checklist', 'currency', 'note']
+    itinerary: ['calendar', 'dayScore', 'aroundStep', 'checklist', 'currency', 'note', 'globalNote', 'stats'],
+    map: ['calendar', 'calc', 'currency', 'dayScore', 'globalNote', 'checklist'],
+    budget: ['calendar', 'currency', 'stats', 'globalNote', 'note'],
+    docs: ['calendar', 'globalNote', 'checklist', 'currency', 'note']
   };
 
   function loadPins(v) {
@@ -3365,6 +4319,16 @@ function getUsefulAroundTip(step) {
   }
 
   const BLOCKS = {
+        calendar: { label: 'Calendrier', icon: 'cal', render() {
+  return (
+    <CalendarWidget
+      key="calendar"
+      trip={trip}
+      editMode={editMode}
+      onRemove={() => togglePin('calendar')}
+    />
+  );
+}},
     checklist: { label: 'À ne pas oublier', icon: 'check', render() {
   return (
     <ChecklistWidget
@@ -3620,7 +4584,7 @@ function getUsefulAroundTip(step) {
     }}
   };
 
-  const ORDER = ['calc', 'currency', 'dayScore', 'aroundStep', 'checklist', 'globalNote', 'note', 'stats', 'people'];
+  const ORDER = ['calendar', 'calc', 'currency', 'dayScore', 'aroundStep', 'checklist', 'globalNote', 'note', 'stats', 'people'];
   const unpinned = ORDER.filter(id => pinned.indexOf(id) === -1);
 
   return (

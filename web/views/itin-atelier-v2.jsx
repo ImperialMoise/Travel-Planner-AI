@@ -219,7 +219,8 @@ function StepEditor({ open, tripId, dayId, step, stepCount, onClose, onSaved }) 
     transportType: 'train', depart: '', arrivee: '', nextDay: false, ref: '',
     escales: [],
     dateStart: '', dateEnd: '', timeCheckIn: '15:00', timeCheckOut: '11:00',
-    dureeEstimee: '', link: '', note: ''
+    dureeEstimee: '', link: '', note: '',
+    lockedType: null
   };
   const [f, setF] = React.useState(blank);
   const [busy, setBusy] = React.useState(false);
@@ -404,6 +405,16 @@ function StepEditor({ open, tripId, dayId, step, stepCount, onClose, onSaved }) 
   const ghost = { border: `1px solid ${C.line}`, background: C.inset, color: C.text, borderRadius: 11, padding: '9px 16px', fontSize: 13.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' };
   const primary = { border: 'none', background: C.accent, color: C.accentInk, borderRadius: 11, padding: '9px 18px', fontSize: 13.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' };
   const badge = { display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 700, color: C.accent, background: C.accentSoft, borderRadius: 999, padding: '5px 11px' };
+  const lockedType = f.lockedType || null;
+  const isLodgingOnly = lockedType === 'logement';
+
+  const modalKicker = isLodgingOnly
+    ? (step && step.id ? 'Hébergement' : 'Nouvel hébergement')
+    : (step ? 'Modifier' : 'Nouvelle étape');
+
+  const modalTitle = isLodgingOnly
+    ? (step && step.id ? "Modifier l'hébergement" : 'Ajouter un hébergement')
+    : (step ? "Modifier l'étape" : 'Ajouter au programme');
 
   const field = (label, child) => <div style={{ marginBottom: 12 }}><label style={lbl}>{label}</label>{child}</div>;
   const twoCol = (a, b) => <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>{a}{b}</div>;
@@ -414,19 +425,54 @@ function StepEditor({ open, tripId, dayId, step, stepCount, onClose, onSaved }) 
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 20px', borderBottom: `1px solid ${C.line}` }}>
           <div>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase', color: C.accent }}>{step ? 'Modifier' : 'Nouvelle étape'}</div>
-            <div style={{ fontFamily: serif, fontStyle: 'italic', fontSize: 22, color: C.text, marginTop: 2 }}>{step ? "Modifier l'étape" : "Ajouter au programme"}</div>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase', color: C.accent }}>{modalKicker}</div>
+            <div style={{ fontFamily: serif, fontStyle: 'italic', fontSize: 22, color: C.text, marginTop: 2 }}>{modalTitle}</div>
           </div>
           <button onClick={onClose} style={{ border: 'none', background: 'transparent', color: C.muted, cursor: 'pointer', padding: 6, borderRadius: 8 }}><Icon name="x" size={20} /></button>
         </div>
 
         <div style={{ padding: 20, overflowY: 'auto' }}>
-          <div style={{ display: 'flex', gap: 6, marginBottom: 18 }}>
-            {TYPES.map(t => {
-              const on = f.type === t.id;
-              return <button key={t.id} onClick={() => set('type', t.id)} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, padding: '10px 4px', borderRadius: 12, cursor: 'pointer', transition: 'all .15s', border: `1px solid ${on ? C.accent : C.line}`, background: on ? C.accent : C.inset, color: on ? C.accentInk : C.muted, fontSize: 11, fontWeight: 700 }}><Icon name={t.icon} size={18} />{t.label}</button>;
-            })}
-          </div>
+                    {!isLodgingOnly && (
+            <div style={{ display: 'flex', gap: 6, marginBottom: 18 }}>
+              {TYPES.map(t => {
+                const on = f.type === t.id;
+                return <button key={t.id} onClick={() => set('type', t.id)} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, padding: '10px 4px', borderRadius: 12, cursor: 'pointer', transition: 'all .15s', border: `1px solid ${on ? C.accent : C.line}`, background: on ? C.accent : C.inset, color: on ? C.accentInk : C.muted, fontSize: 11, fontWeight: 700 }}><Icon name={t.icon} size={18} />{t.label}</button>;
+              })}
+            </div>
+          )}
+
+          {isLodgingOnly && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              marginBottom: 18,
+              border: `1px solid ${C.line}`,
+              background: C.inset,
+              color: C.muted,
+              borderRadius: 14,
+              padding: '11px 13px',
+              fontSize: 13,
+              lineHeight: '18px'
+            }}>
+              <span style={{
+                width: 34,
+                height: 34,
+                borderRadius: 12,
+                background: C.accent,
+                color: C.accentInk,
+                display: 'grid',
+                placeItems: 'center',
+                flexShrink: 0
+              }}>
+                <Icon name="bed" size={17} />
+              </span>
+
+              <span>
+                Ce formulaire est dédié à l’hébergement : arrivée, départ, horaires et nombre de nuits.
+              </span>
+            </div>
+          )}
 
                     {f.type === 'transport' && <>
             {field('Mode de transport', (
@@ -1853,7 +1899,10 @@ function AtelierV2() {
           setEditor({
             open: true,
             dayId: stay.startDay.id,
-            step: stay.step
+            step: {
+              ...stay.step,
+              lockedType: 'logement'
+            }
           });
         },
         style: {
@@ -2025,6 +2074,7 @@ function AtelierV2() {
         dayId: day.id,
         step: {
           type: 'logement',
+          lockedType: 'logement',
           dateStart: startISO,
           dateEnd: endISO,
           timeCheckIn: '15:00',

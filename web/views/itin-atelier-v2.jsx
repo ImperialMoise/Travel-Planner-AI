@@ -204,7 +204,7 @@ function StepEditor({ open, tripId, dayId, step, stepCount, onClose, onSaved }) 
   const TYPES = [
     { id: 'transport', label: 'Transport', icon: 'route' },
     { id: 'logement', label: 'Logement', icon: 'bed' },
-    { id: 'restaurant', label: 'Table', icon: 'fork' },
+    { id: 'restaurant', label: 'Restaurant', icon: 'fork' },
     { id: 'activite', label: 'Activité', icon: 'camera' },
     { id: 'autre', label: 'Autre', icon: 'pin' }
   ];
@@ -1877,7 +1877,54 @@ function AtelierV2() {
           lineHeight: '19px',
           background: C.inset
         }
-      }, 'Aucun hébergement renseigné pour cette nuit.')
+      },
+  React.createElement('div', {
+    style: {
+      fontSize: 13,
+      lineHeight: '19px',
+      marginBottom: 12
+    }
+  }, 'Aucun hébergement renseigné pour cette nuit.'),
+
+  React.createElement('button', {
+    type: 'button',
+    onClick: function() {
+      const startISO = day && day.dateISO ? day.dateISO : '';
+      const endISO = startISO ? addDaysISOForLodging(startISO, 1) : '';
+
+      setEditor({
+        open: true,
+        dayId: day.id,
+        step: {
+          type: 'logement',
+          dateStart: startISO,
+          dateEnd: endISO,
+          timeCheckIn: '15:00',
+          timeCheckOut: '11:00'
+        }
+      });
+    },
+    style: {
+      width: '100%',
+      height: 38,
+      borderRadius: 999,
+      border: `1px solid ${C.line}`,
+      background: C.accent,
+      color: C.accentInk,
+      cursor: 'pointer',
+      fontFamily: 'inherit',
+      fontSize: 12,
+      fontWeight: 800,
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 7
+    }
+  },
+    React.createElement(Icon, { name: 'plus', size: 14 }),
+    'Ajouter un hébergement'
+  )
+)
     );
   }
         async function findRestaurantsAroundDay() {
@@ -1968,7 +2015,14 @@ function AtelierV2() {
           React.createElement('button', {
             type: 'button',
             onClick: function() {
-              setEditor({ open: true, dayId: day.id, step: { type: 'restaurant' } });
+              setEditor({
+  open: true,
+  dayId: day.id,
+  step: {
+    type: 'restaurant',
+    time: ''
+  }
+});
             },
             style: {
               width: 38,

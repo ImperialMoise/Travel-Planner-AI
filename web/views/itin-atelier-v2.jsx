@@ -2265,42 +2265,14 @@ function AtelierV2() {
         }
       }, open ? '⌄' : '›');
     }
-      function LodgingRailSection() {
-    const stay = activeLodgingStay;
+function LodgingRailSection() {
+  const stay = activeLodgingStay;
 
-    return React.createElement('section', {
-      style: {
-        flexShrink: 0,
-        borderTop: `1px solid ${C.line}`,
-        paddingTop: 16
-      }
-    },
-        React.createElement('div', {
-          style: {
-            marginBottom: 12,
-            display: 'flex',
-            alignItems: 'flex-start',
-            justifyContent: 'space-between',
-            gap: 12
-          }
-        },
-          React.createElement('div', null,
-            React.createElement('div', { style: s.kicker }, 'Hébergement'),
-            React.createElement('div', {
-              style: {
-                fontFamily: serif,
-                fontSize: 22,
-                lineHeight: '28px',
-                color: C.text,
-                marginTop: 4
-              }
-            }, stay ? lodgingName(stay.step) : 'Où dormir ?')
-          ),
+  let body = null;
 
-          React.createElement(RailToggleButton, { section: 'lodging' })
-        ),
-
-      railOpen.lodging && (stay ? React.createElement('button', {
+  if (railOpen.lodging) {
+    if (stay) {
+      body = React.createElement('button', {
         type: 'button',
         onClick: function() {
           setEditor({
@@ -2440,6 +2412,7 @@ function AtelierV2() {
             }, stay.step.checkout || stay.step.timeCheckOut || 'À préciser')
           )
         ),
+
         stay.step.link && React.createElement('button', {
           type: 'button',
           onClick: function(e) {
@@ -2478,7 +2451,9 @@ function AtelierV2() {
         },
           'Nuit ' + Math.min(stay.nightNumber, stay.nights) + ' sur ' + stay.nights
         )
-      ) : React.createElement('div', {
+      );
+    } else {
+      body = React.createElement('div', {
         style: {
           border: `1px dashed ${C.line}`,
           borderRadius: 14,
@@ -2489,56 +2464,92 @@ function AtelierV2() {
           background: C.inset
         }
       },
-  React.createElement('div', {
-    style: {
-      fontSize: 13,
-      lineHeight: '19px',
-      marginBottom: 12
+        React.createElement('div', {
+          style: {
+            fontSize: 13,
+            lineHeight: '19px',
+            marginBottom: 12
+          }
+        }, 'Aucun hébergement renseigné pour cette nuit.'),
+
+        React.createElement('button', {
+          type: 'button',
+          onClick: function() {
+            const startISO = day && day.dateISO ? day.dateISO : '';
+            const endISO = startISO ? addDaysISOForLodging(startISO, 1) : '';
+
+            setEditor({
+              open: true,
+              dayId: day.id,
+              step: {
+                type: 'logement',
+                lockedType: 'logement',
+                dateStart: startISO,
+                dateEnd: endISO,
+                timeCheckIn: '15:00',
+                timeCheckOut: '11:00'
+              }
+            });
+          },
+          style: {
+            width: '100%',
+            height: 38,
+            borderRadius: 999,
+            border: `1px solid ${C.line}`,
+            background: C.accent,
+            color: C.accentInk,
+            cursor: 'pointer',
+            fontFamily: 'inherit',
+            fontSize: 12,
+            fontWeight: 800,
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 7
+          }
+        },
+          React.createElement(Icon, { name: 'plus', size: 14 }),
+          'Ajouter un hébergement'
+        )
+      );
     }
-  }, 'Aucun hébergement renseigné pour cette nuit.'),
+  }
 
-  React.createElement('button', {
-    type: 'button',
-    onClick: function() {
-      const startISO = day && day.dateISO ? day.dateISO : '';
-      const endISO = startISO ? addDaysISOForLodging(startISO, 1) : '';
-
-      setEditor({
-        open: true,
-        dayId: day.id,
-        step: {
-          type: 'logement',
-          lockedType: 'logement',
-          dateStart: startISO,
-          dateEnd: endISO,
-          timeCheckIn: '15:00',
-          timeCheckOut: '11:00'
-        }
-      });
-    },
+  return React.createElement('section', {
     style: {
-      width: '100%',
-      height: 38,
-      borderRadius: 999,
-      border: `1px solid ${C.line}`,
-      background: C.accent,
-      color: C.accentInk,
-      cursor: 'pointer',
-      fontFamily: 'inherit',
-      fontSize: 12,
-      fontWeight: 800,
-      display: 'inline-flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: 7
+      flexShrink: 0,
+      borderTop: `1px solid ${C.line}`,
+      paddingTop: 16
     }
   },
-    React.createElement(Icon, { name: 'plus', size: 14 }),
-    'Ajouter un hébergement'
-  )
-)
-    );
-  }
+    React.createElement('div', {
+      style: {
+        marginBottom: railOpen.lodging ? 12 : 0,
+        display: 'flex',
+        alignItems: 'flex-start',
+        justifyContent: 'space-between',
+        gap: 12
+      }
+    },
+      React.createElement('div', null,
+        React.createElement('div', { style: s.kicker }, 'Hébergement'),
+        React.createElement('div', {
+          style: {
+            fontFamily: serif,
+            fontSize: 22,
+            lineHeight: '28px',
+            color: C.text,
+            marginTop: 4
+          }
+        }, stay ? lodgingName(stay.step) : 'Où dormir ?')
+      ),
+
+      React.createElement(RailToggleButton, { section: 'lodging' })
+    ),
+
+    body
+  );
+}
       async function toggleImportantMeal(e, step) {
       e.stopPropagation();
 

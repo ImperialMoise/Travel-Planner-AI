@@ -3751,13 +3751,15 @@ function CalendarWidget({ trip, editMode, onRemove }) {
             />
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: 8 }}>
             <input
               type="date"
               value={start}
               onChange={e => setStart(e.target.value)}
               style={{
                 width: '100%',
+                minWidth: 0,
+                boxSizing: 'border-box',
                 border: '1px solid var(--outline-variant)',
                 background: 'var(--inset)',
                 color: 'var(--text)',
@@ -3774,7 +3776,9 @@ function CalendarWidget({ trip, editMode, onRemove }) {
               value={end}
               onChange={e => setEnd(e.target.value)}
               style={{
-                width: '100%',
+              width: '100%',
+                minWidth: 0,
+                boxSizing: 'border-box',
                 border: '1px solid var(--outline-variant)',
                 background: 'var(--inset)',
                 color: 'var(--text)',
@@ -3794,6 +3798,8 @@ function CalendarWidget({ trip, editMode, onRemove }) {
           placeholder={kind === 'point' ? 'Repère : avion, visa, appel…' : 'Période : Tokyo, road trip…'}
           style={{
             width: '100%',
+            minWidth: 0,
+            boxSizing: 'border-box',
             marginTop: 8,
             border: '1px solid var(--outline-variant)',
             background: 'var(--inset)',
@@ -3809,9 +3815,11 @@ function CalendarWidget({ trip, editMode, onRemove }) {
         <div
           style={{
             display: 'flex',
-            gap: 6,
-            marginTop: 8,
-            alignItems: 'center'
+           gap: 6,
+           marginTop: 8,
+           alignItems: 'center',
+           minWidth: 0,
+           flexWrap: 'wrap'
           }}
         >
           {Object.keys(COLORS).map(key => {
@@ -3840,6 +3848,7 @@ function CalendarWidget({ trip, editMode, onRemove }) {
             onClick={kind === 'point' ? savePoint : saveRange}
             style={{
               marginLeft: 'auto',
+              flexShrink: 0,
               border: 'none',
               borderRadius: 999,
               background: 'var(--accent)',

@@ -1621,10 +1621,265 @@ function AtelierV2() {
   });
 
   const otherSteps = (day.steps || []).filter(function(step) {
-    return step.type !== 'restaurant' && step.type !== 'table';
+    return step.type !== 'restaurant' && step.type !== 'table' && step.type !== 'logement';
   });
 
+    function lodgingNightCount(step) {
+    return Math.max(1, Number(step.nights || step.nuits || 1) || 1);
+  }
+
+  function lodgingName(step) {
+    return String(
+      step.label ||
+      step.lieu ||
+      step.place ||
+      step.hotel ||
+      step.name ||
+      'Hébergement'
+    ).trim();
+  }
+
+  function addDaysISOForLodging(baseISO, count) {
+    if (!baseISO) return '';
+
+    const d = new Date(String(baseISO) + 'T12:00:00');
+    d.setDate(d.getDate() + count);
+
+    return d.toISOString().slice(0, 10);
+  }
+
+  function getActiveLodgingStay() {
+    if (!T || !Array.isArray(T.days) || !day) return null;
+
+    for (let i = 0; i < T.days.length; i += 1) {
+      const sourceDay = T.days[i];
+      const lodgings = (sourceDay.steps || []).filter(function(step) {
+        return step.type === 'logement';
+      });
+
+      for (let j = 0; j < lodgings.length; j += 1) {
+        const step = lodgings[j];
+        const nights = lodgingNightCount(step);
+        const startIndex = i;
+        const endIndex = i + nights;
+
+        if (sel >= startIndex && sel <= endIndex) {
+          const startISO = sourceDay.dateISO || '';
+          const endISO = startISO ? addDaysISOForLodging(startISO, nights) : '';
+
+          let status = 'stay';
+          if (sel === startIndex) status = 'checkin';
+          else if (sel === endIndex) status = 'checkout';
+
+          return {
+            step,
+            startDay: sourceDay,
+            startIndex,
+            endIndex,
+            nights,
+            startISO,
+            endISO,
+            status,
+            nightNumber: Math.max(1, sel - startIndex + 1)
+          };
+        }
+      }
+    }
+
+    return null;
+  }
+
+  const activeLodgingStay = getActiveLodgingStay();
+
   function MealRail() {
+      function LodgingRailSection() {
+    const stay = activeLodgingStay;
+
+    return React.createElement('section', {
+      style: {
+        flexShrink: 0,
+        borderTop: `1px solid ${C.line}`,
+        paddingTop: 16
+      }
+    },
+      React.createElement('div', {
+        style: {
+          marginBottom: 12
+        }
+      },
+        React.createElement('div', { style: s.kicker }, 'Hébergement'),
+        React.createElement('div', {
+          style: {
+            fontFamily: serif,
+            fontSize: 22,
+            lineHeight: '28px',
+            color: C.text,
+            marginTop: 4
+          }
+        }, stay ? lodgingName(stay.step) : 'Où dormir ?')
+      ),
+
+      stay ? React.createElement('button', {
+        type: 'button',
+        onClick: function() {
+          setEditor({
+            open: true,
+            dayId: stay.startDay.id,
+            step: stay.step
+          });
+        },
+        style: {
+          width: '100%',
+          textAlign: 'left',
+          border: `1px solid ${C.line}`,
+          background: C.card,
+          color: C.text,
+          borderRadius: 14,
+          padding: 16,
+          cursor: 'pointer',
+          boxShadow: C.shadow,
+          fontFamily: 'inherit'
+        }
+      },
+        React.createElement('div', {
+          style: {
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 10,
+            marginBottom: 10
+          }
+        },
+          React.createElement('span', {
+            style: {
+              fontSize: 11,
+              fontWeight: 800,
+              letterSpacing: '.14em',
+              textTransform: 'uppercase',
+              color: C.accent
+            }
+          },
+            stay.status === 'checkin'
+              ? 'Check-in'
+              : stay.status === 'checkout'
+                ? 'Check-out'
+                : 'Nuit sur place'
+          ),
+
+          React.createElement('span', {
+            style: {
+              borderRadius: 999,
+              padding: '4px 8px',
+              background: C.inset,
+              color: C.muted,
+              fontSize: 11,
+              fontWeight: 800
+            }
+          },
+            stay.nights + ' nuit' + (stay.nights > 1 ? 's' : '')
+          )
+        ),
+
+        React.createElement('div', {
+          style: {
+            fontFamily: serif,
+            fontSize: 19,
+            lineHeight: '24px',
+            color: C.text,
+            marginBottom: 6
+          }
+        }, lodgingName(stay.step)),
+
+        React.createElement('div', {
+          style: {
+            fontSize: 12.5,
+            lineHeight: '18px',
+            color: C.muted,
+            marginBottom: 10
+          }
+        },
+          stay.startISO && stay.endISO
+            ? 'Séjour : ' + fmtDate(stay.startISO) + ' → ' + fmtDate(stay.endISO)
+            : 'Séjour renseigné sur plusieurs nuits.'
+        ),
+
+        React.createElement('div', {
+          style: {
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: 8
+          }
+        },
+          React.createElement('div', {
+            style: {
+              background: C.inset,
+              borderRadius: 10,
+              padding: '9px 10px'
+            }
+          },
+            React.createElement('div', {
+              style: {
+                fontSize: 10,
+                color: C.faint,
+                marginBottom: 3
+              }
+            }, 'Arrivée'),
+            React.createElement('div', {
+              style: {
+                fontSize: 12.5,
+                fontWeight: 800,
+                color: C.text
+              }
+            }, stay.step.checkin || stay.step.timeCheckIn || 'À préciser')
+          ),
+
+          React.createElement('div', {
+            style: {
+              background: C.inset,
+              borderRadius: 10,
+              padding: '9px 10px'
+            }
+          },
+            React.createElement('div', {
+              style: {
+                fontSize: 10,
+                color: C.faint,
+                marginBottom: 3
+              }
+            }, 'Départ'),
+            React.createElement('div', {
+              style: {
+                fontSize: 12.5,
+                fontWeight: 800,
+                color: C.text
+              }
+            }, stay.step.checkout || stay.step.timeCheckOut || 'À préciser')
+          )
+        ),
+
+        stay.status === 'stay' && stay.nights > 1 && React.createElement('div', {
+          style: {
+            marginTop: 10,
+            fontSize: 12,
+            color: C.muted,
+            fontWeight: 800
+          }
+        },
+          'Nuit ' + Math.min(stay.nightNumber, stay.nights) + ' sur ' + stay.nights
+        )
+      ) : React.createElement('div', {
+        style: {
+          border: `1px dashed ${C.line}`,
+          borderRadius: 14,
+          padding: 16,
+          color: C.muted,
+          fontSize: 13,
+          lineHeight: '19px',
+          background: C.inset
+        }
+      }, 'Aucun hébergement renseigné pour cette nuit.')
+    );
+  }
         async function findRestaurantsAroundDay() {
       const coords = getDayCoords(day);
 
@@ -1670,7 +1925,7 @@ function AtelierV2() {
         }
       },
         React.createElement('div', null,
-          React.createElement('div', { style: s.kicker }, 'Tables & pauses'),
+          React.createElement('div', { style: s.kicker }, 'Restaurants'),
           React.createElement('div', {
             style: {
               fontFamily: serif,
@@ -1780,7 +2035,7 @@ function AtelierV2() {
                   textTransform: 'uppercase',
                   color: C.accent
                 }
-              }, v.kind || 'Table'),
+              }, v.kind || 'Restaurant'),
               React.createElement('span', {
                 style: {
                   fontFamily: 'var(--font-mono)',
@@ -1843,8 +2098,10 @@ function AtelierV2() {
             lineHeight: '19px',
             background: C.inset
           }
-        }, 'Aucune table prévue pour ce jour.')
-      ),
+        }, 'Aucun restaurant prévu pour ce jour.')
+            ),
+
+      React.createElement(LodgingRailSection, null),
 
       React.createElement('section', {
         style: {

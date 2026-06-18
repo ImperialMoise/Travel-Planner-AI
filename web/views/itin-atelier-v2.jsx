@@ -2222,6 +2222,49 @@ function AtelierV2() {
   }
 
   function MealRail() {
+        const [railOpen, setRailOpen] = React.useState({
+      restaurants: true,
+      lodging: true,
+      weather: true
+    });
+
+    function toggleRailOpen(key) {
+      setRailOpen(function(prev) {
+        return {
+          ...prev,
+          [key]: !prev[key]
+        };
+      });
+    }
+
+    function RailToggleButton({ section }) {
+      const open = !!railOpen[section];
+
+      return React.createElement('button', {
+        type: 'button',
+        onClick: function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          toggleRailOpen(section);
+        },
+        title: open ? 'Réduire' : 'Développer',
+        style: {
+          width: 28,
+          height: 28,
+          borderRadius: 999,
+          border: `1px solid ${C.line}`,
+          background: C.inset,
+          color: C.text,
+          display: 'grid',
+          placeItems: 'center',
+          cursor: 'pointer',
+          fontFamily: 'inherit',
+          fontSize: 13,
+          fontWeight: 900,
+          flexShrink: 0
+        }
+      }, open ? '⌄' : '›');
+    }
       function LodgingRailSection() {
     const stay = activeLodgingStay;
 
@@ -2232,24 +2275,32 @@ function AtelierV2() {
         paddingTop: 16
       }
     },
-      React.createElement('div', {
-        style: {
-          marginBottom: 12
-        }
-      },
-        React.createElement('div', { style: s.kicker }, 'Hébergement'),
         React.createElement('div', {
           style: {
-            fontFamily: serif,
-            fontSize: 22,
-            lineHeight: '28px',
-            color: C.text,
-            marginTop: 4
+            marginBottom: 12,
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: 'space-between',
+            gap: 12
           }
-        }, stay ? lodgingName(stay.step) : 'Où dormir ?')
-      ),
+        },
+          React.createElement('div', null,
+            React.createElement('div', { style: s.kicker }, 'Hébergement'),
+            React.createElement('div', {
+              style: {
+                fontFamily: serif,
+                fontSize: 22,
+                lineHeight: '28px',
+                color: C.text,
+                marginTop: 4
+              }
+            }, stay ? lodgingName(stay.step) : 'Où dormir ?')
+          ),
 
-      stay ? React.createElement('button', {
+          React.createElement(RailToggleButton, { section: 'lodging' })
+        ),
+
+      railOpen.lodging && (stay ? React.createElement('button', {
         type: 'button',
         onClick: function() {
           setEditor({
@@ -2541,7 +2592,11 @@ function AtelierV2() {
         border: `1px solid ${C.line}`,
         borderRadius: 16,
         padding: 16,
-        overflow: 'hidden'
+        overflowY: 'auto',
+        overflowX: 'hidden',
+        scrollbarGutter: 'stable',
+        scrollbarWidth: 'thin',
+        scrollbarColor: 'var(--outline-variant) transparent'
       }
     },
       React.createElement('div', {
@@ -2617,19 +2672,21 @@ function AtelierV2() {
               placeItems: 'center',
               cursor: 'pointer'
             }
-          }, React.createElement(Icon, { name: 'plus', size: 16 }))
+          }, React.createElement(Icon, { name: 'plus', size: 16 })),
+
+          React.createElement(RailToggleButton, { section: 'restaurants' })
         )
       ),
 
-       React.createElement('div', {
+             railOpen.restaurants && React.createElement('div', {
         style: {
-          flex: '1 1 0',
+          flexShrink: 0,
           minHeight: 0,
-          overflowY: 'auto',
+          overflow: 'visible',
           display: 'flex',
           flexDirection: 'column',
           gap: 10,
-          paddingRight: 4
+          paddingRight: 0
         }
       },
         mealSteps.length ? mealSteps.map(function(step, k) {
@@ -2812,37 +2869,45 @@ function AtelierV2() {
       React.createElement(LodgingRailSection, null),
 
       React.createElement('section', {
-        style: {
-          flex: '1 1 0',
+         style: {
+          flexShrink: 0,
           minHeight: 0,
           display: 'flex',
           flexDirection: 'column',
           borderTop: `1px solid ${C.line}`,
           paddingTop: 16,
-          overflow: 'hidden'
+          overflow: 'visible'
         }
       },
         React.createElement('div', {
           style: {
             flexShrink: 0,
-            marginBottom: 12
+            marginBottom: 12,
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: 'space-between',
+            gap: 12
           }
         },
-          React.createElement('div', { style: s.kicker }, 'Météo'),
-          React.createElement('div', {
-            style: {
-              fontFamily: serif,
-              fontSize: 22,
-              lineHeight: '28px',
-              color: C.text,
-              marginTop: 4
-            }
-          }, weatherState === 'climate' ? 'Tendance saisonnière' : 'Prévoir la journée')
+          React.createElement('div', null,
+            React.createElement('div', { style: s.kicker }, 'Météo'),
+            React.createElement('div', {
+              style: {
+                fontFamily: serif,
+                fontSize: 22,
+                lineHeight: '28px',
+                color: C.text,
+                marginTop: 4
+              }
+            }, weatherState === 'climate' ? 'Tendance saisonnière' : 'Prévoir la journée')
+          ),
+
+          React.createElement(RailToggleButton, { section: 'weather' })
         ),
 
-                React.createElement('div', {
+        railOpen.weather && React.createElement('div', {
           style: {
-            flex: 1,
+            flexShrink: 0,
             minHeight: 0,
             border: `1px solid ${C.line}`,
             background: C.card,

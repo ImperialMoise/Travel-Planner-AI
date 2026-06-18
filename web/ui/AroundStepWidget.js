@@ -392,7 +392,7 @@ async function searchAroundStep(categoryId) {
   return meters <= 8000;
 }
 
-    function openNearbyOnMap(item) {
+function openNearbyOnMap(item) {
   const lat = nearbyLat(item);
   const lng = nearbyLng(item);
   const label = nearbyLabel(item);

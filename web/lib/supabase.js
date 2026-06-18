@@ -610,7 +610,8 @@ export async function saveStep(tripId, dayId, step) {
     lat: step.lat || null,
     lng: step.lng || null,
     amount: step.amount || 0,
-    paid_by: step.paidBy || ''
+    paid_by: step.paidBy || '',
+    important: !!step.important
   };
   if (step.id) row.id = step.id; // édition d'une étape existante
 
@@ -986,7 +987,8 @@ function dbStepToLocal(s) {
     amount: s.amount,
     paidBy: s.paid_by,
     lat: s.lat,
-    lng: s.lng
+    lng: s.lng,
+    important: !!s.important
   };
 }
 

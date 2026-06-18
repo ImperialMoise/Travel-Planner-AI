@@ -220,6 +220,7 @@ function StepEditor({ open, tripId, dayId, step, stepCount, onClose, onSaved }) 
     escales: [],
     dateStart: '', dateEnd: '', timeCheckIn: '15:00', timeCheckOut: '11:00',
     dureeEstimee: '', link: '', note: '',
+    important: false,
     lockedType: null
   };
   const [f, setF] = React.useState(blank);
@@ -331,7 +332,8 @@ function StepEditor({ open, tripId, dayId, step, stepCount, onClose, onSaved }) 
       const p = {
         id: step ? step.id : undefined,
         stepIndex: step ? step.stepIndex : (stepCount || 0),
-        type: f.type, label: f.label, note: f.note, link: f.link, time: f.time
+        type: f.type, label: f.label, note: f.note, link: f.link, time: f.time,
+        important: !!f.important
       };
       if (f.type === 'transport') {
         Object.assign(p, {
@@ -1318,6 +1320,28 @@ function AtelierV2() {
     });
   }
 
+    async function toggleImportantStep(e) {
+    e.stopPropagation();
+
+    if (!realTrip || !realTrip.id || !day || !day.id || !step || !step.id) return;
+
+    const nextImportant = !step.important;
+
+    try {
+      await window.SB.saveStep(realTrip.id, day.id, {
+        ...step,
+        important: nextImportant,
+        stepIndex: step.stepIndex || 0
+      });
+
+      reload();
+
+      Store.showToast(nextImportant ? 'Étape marquée comme clé' : 'Étape retirée des favoris');
+    } catch (error) {
+      Store.showToast('Erreur favori : ' + (error.message || error));
+    }
+  }
+
   return React.createElement('article', {
     onClick: function() {
       Store.set({ selectedStepId: step.id || null });
@@ -1349,6 +1373,30 @@ function AtelierV2() {
         background: ac
       }
     }),
+
+        React.createElement('button', {
+      type: 'button',
+      title: step.important ? 'Retirer des étapes clés' : 'Marquer comme étape clé',
+      onClick: toggleImportantStep,
+      style: {
+        position: 'absolute',
+        top: 12,
+        right: 12,
+        zIndex: 4,
+        width: 30,
+        height: 30,
+        borderRadius: 999,
+        border: step.important ? '1px solid rgba(180,132,62,.45)' : `1px solid ${C.line}`,
+        background: step.important ? C.accent : C.inset,
+        color: step.important ? C.accentInk : C.faint,
+        display: 'grid',
+        placeItems: 'center',
+        cursor: 'pointer',
+        fontSize: 15,
+        lineHeight: 1,
+        boxShadow: step.important ? '0 6px 14px rgba(180,132,62,.22)' : 'none'
+      }
+    }, step.important ? '★' : '☆'),
 
     React.createElement('div', {
       style: {
@@ -1394,7 +1442,7 @@ function AtelierV2() {
       )
     ),
 
-    React.createElement('div', { style: { flex: 1, minWidth: 0 } },
+    React.createElement('div', { style: { flex: 1, minWidth: 0, paddingRight: 34 } },
       React.createElement('div', {
         style: {
           display: 'inline-flex',
@@ -1684,14 +1732,16 @@ function AtelierV2() {
       return React.createElement(BlockShell, { id: 'stats', title: 'Rep\u00e8res du jour', icon: 'route', iconColor: 'var(--accent)' },
         React.createElement('div', { style: { display: 'flex', gap: 10 } },
           React.createElement('div', { style: { flex: 1, background: 'var(--inset)', borderRadius: 10, padding: '10px 12px' } },
-            React.createElement('div', { style: { fontFamily: 'var(--font-serif)', fontSize: 24, lineHeight: 1 } }, day.steps.length),
-            React.createElement('div', { style: { fontSize: 10.5, color: 'var(--muted)', marginTop: 3 } }, day.steps.length > 1 ? '\u00e9tapes' : '\u00e9tape')),
+            React.createElement('div', { style: { fontFamily: 'var(--font-serif)', fontSize: 24, lineHeight: 1 } }, visibleStepCount),
+            React.createElement('div', { style: { fontSize: 10.5, color: 'var(--muted)', marginTop: 3 } }, visibleStepCount > 1 ? '\u00e9tapes' : '\u00e9tape')),
+
           React.createElement('div', { style: { flex: 1, background: 'var(--inset)', borderRadius: 10, padding: '10px 12px' } },
-            React.createElement('div', { style: { fontFamily: 'var(--font-serif)', fontSize: 24, lineHeight: 1 } }, transport ? '1' : '0'),
-            React.createElement('div', { style: { fontSize: 10.5, color: 'var(--muted)', marginTop: 3 } }, 'transport')),
+            React.createElement('div', { style: { fontFamily: 'var(--font-serif)', fontSize: 24, lineHeight: 1 } }, dayTransportCount),
+            React.createElement('div', { style: { fontSize: 10.5, color: 'var(--muted)', marginTop: 3 } }, dayTransportCount > 1 ? 'transports' : 'transport')),
+
           React.createElement('div', { style: { flex: 1, background: 'var(--inset)', borderRadius: 10, padding: '10px 12px' } },
-            React.createElement('div', { style: { fontFamily: 'var(--font-serif)', fontSize: 24, lineHeight: 1 } }, lodging ? lodging.nights : '\u2014'),
-            React.createElement('div', { style: { fontSize: 10.5, color: 'var(--muted)', marginTop: 3 } }, 'nuits'))));
+            React.createElement('div', { style: { fontFamily: 'var(--font-serif)', fontSize: 24, lineHeight: 1 } }, activeNightCount || '\u2014'),
+            React.createElement('div', { style: { fontSize: 10.5, color: 'var(--muted)', marginTop: 3 } }, activeNightCount > 1 ? 'nuits' : 'nuit'))));
     } }
   };
   var ORDER = ['map', 'checklist', 'note', 'stats', 'people'];
@@ -1863,7 +1913,210 @@ function AtelierV2() {
     return null;
   }
 
-  const activeLodgingStay = getActiveLodgingStay();
+    const visibleStepCount = (day.steps || []).filter(function(step) {
+    return step.type !== 'logement';
+  }).length;
+
+  const dayTransportCount = (day.steps || []).filter(function(step) {
+    return step.type === 'transport';
+  }).length;
+
+  const activeNightCount = activeLodgingStay ? activeLodgingStay.nights : 0;
+
+    function getLodgingTimelineReminders() {
+    if (!T || !Array.isArray(T.days) || !day) return [];
+
+    const reminders = [];
+
+    for (let i = 0; i < T.days.length; i += 1) {
+      const sourceDay = T.days[i];
+      const lodgings = (sourceDay.steps || []).filter(function(step) {
+        return step.type === 'logement';
+      });
+
+      for (let j = 0; j < lodgings.length; j += 1) {
+        const step = lodgings[j];
+        const nights = lodgingNightCount(step);
+
+        const startISO = step.dateStart || sourceDay.dateISO || '';
+        const endISO = step.dateEnd || (startISO ? addDaysISOForLodging(startISO, nights) : '');
+
+        let startIndex = i;
+        let endIndex = i + nights;
+
+        if (startISO && Array.isArray(T.days)) {
+          const foundStart = T.days.findIndex(function(d) {
+            return d.dateISO === startISO;
+          });
+
+          if (foundStart >= 0) startIndex = foundStart;
+        }
+
+        if (endISO && Array.isArray(T.days)) {
+          const foundEnd = T.days.findIndex(function(d) {
+            return d.dateISO === endISO;
+          });
+
+          if (foundEnd >= 0) endIndex = foundEnd;
+        }
+
+        if (sel === startIndex) {
+          reminders.push({
+            key: 'checkin_' + (step.id || j),
+            kind: 'checkin',
+            label: 'Check-in',
+            time: step.timeCheckIn || step.checkin || '15:00',
+            step,
+            sourceDay,
+            startISO,
+            endISO,
+            nights
+          });
+        }
+
+        if (sel === endIndex) {
+          reminders.push({
+            key: 'checkout_' + (step.id || j),
+            kind: 'checkout',
+            label: 'Check-out',
+            time: step.timeCheckOut || step.checkout || '11:00',
+            step,
+            sourceDay,
+            startISO,
+            endISO,
+            nights
+          });
+        }
+      }
+    }
+
+    return reminders.sort(function(a, b) {
+      return String(a.time || '').localeCompare(String(b.time || ''));
+    });
+  }
+
+  const lodgingTimelineReminders = getLodgingTimelineReminders();
+
+  function LodgingReminderCard({ reminder }) {
+    const isCheckout = reminder.kind === 'checkout';
+    const ac = '#9a6508';
+
+    return React.createElement('button', {
+      type: 'button',
+      onClick: function() {
+        setEditor({
+          open: true,
+          dayId: reminder.sourceDay.id,
+          step: {
+            ...reminder.step,
+            lockedType: 'logement'
+          }
+        });
+      },
+      style: {
+        width: '100%',
+        textAlign: 'left',
+        border: `1px solid ${C.line}`,
+        background: C.card,
+        color: C.text,
+        borderRadius: 12,
+        padding: '14px 16px',
+        boxShadow: C.shadow,
+        cursor: 'pointer',
+        fontFamily: 'inherit',
+        display: 'flex',
+        alignItems: 'stretch',
+        gap: 14,
+        position: 'relative',
+        overflow: 'hidden',
+        flexShrink: 0
+      }
+    },
+      React.createElement('div', {
+        style: {
+          position: 'absolute',
+          left: 0,
+          top: 0,
+          bottom: 0,
+          width: 3,
+          background: ac
+        }
+      }),
+
+      React.createElement('div', {
+        style: {
+          minWidth: 58,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          color: ac,
+          fontFamily: 'var(--font-mono)',
+          fontSize: 11,
+          fontWeight: 900,
+          lineHeight: '14px',
+          paddingTop: 2
+        }
+      },
+        React.createElement('div', null, reminder.time || '—'),
+        React.createElement('div', {
+          style: {
+            width: 1,
+            flex: 1,
+            background: C.line,
+            margin: '8px 0',
+            minHeight: 12
+          }
+        }),
+        React.createElement(Icon, { name: 'bed', size: 19 })
+      ),
+
+      React.createElement('div', {
+        style: {
+          flex: 1,
+          minWidth: 0
+        }
+      },
+        React.createElement('div', {
+          style: {
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            fontSize: 10,
+            fontWeight: 900,
+            letterSpacing: '.16em',
+            textTransform: 'uppercase',
+            color: ac,
+            background: 'rgba(154,101,8,.12)',
+            borderRadius: 999,
+            padding: '5px 9px',
+            marginBottom: 7
+          }
+        }, isCheckout ? 'Départ hébergement' : 'Arrivée hébergement'),
+
+        React.createElement('div', {
+          style: {
+            fontFamily: 'var(--font-serif)',
+            fontSize: 19,
+            lineHeight: '25px',
+            color: C.text,
+            marginBottom: 5
+          }
+        }, reminder.label + ' · ' + lodgingName(reminder.step)),
+
+        React.createElement('div', {
+          style: {
+            fontSize: 12.5,
+            lineHeight: '18px',
+            color: C.muted
+          }
+        },
+          reminder.startISO && reminder.endISO
+            ? 'Séjour : ' + fmtDate(reminder.startISO) + ' → ' + fmtDate(reminder.endISO)
+            : reminder.nights + ' nuit' + (reminder.nights > 1 ? 's' : '')
+        )
+      )
+    );
+  }
 
   function MealRail() {
       function LodgingRailSection() {
@@ -2649,6 +2902,12 @@ React.createElement('button', {
                 }
               }, 'Compris')
             ),
+                        lodgingTimelineReminders.map(function(reminder) {
+              return React.createElement(LodgingReminderCard, {
+                key: reminder.key,
+                reminder: reminder
+              });
+            }),
             otherSteps.map(function(step, k) {
               return React.createElement('div', {
                 key: step.id || k,

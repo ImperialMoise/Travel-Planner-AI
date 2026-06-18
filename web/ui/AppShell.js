@@ -726,6 +726,525 @@ function DayDeleteConfirmModal({ day, dayIndex, busy, onCancel, onConfirm }) {
   );
 }
 
+function DaySpine({ width = 300, onPickDay }) {
+  const { trip, selectedDayIndex } = Store.useStore();
+  if (!trip || !trip.days) return null;
+
+  const days = trip.days;
+  const sel = selectedDayIndex || 0;
+
+  const weeks = [];
+  for (let i = 0; i < days.length; i += 7) {
+    const chunk = days.slice(i, i + 7);
+
+    let city = '';
+    for (const d of chunk) {
+      const lodge = (d.steps || []).find(s => s.type === 'logement');
+      if (lodge && (lodge.place || lodge.label)) {
+        city = lodge.place || lodge.label;
+        break;
+      }
+    }
+
+    weeks.push({
+      label: `Semaine ${weeks.length + 1}${city ? ' : ' + city : ''}`,
+      startIndex: i,
+      days: chunk
+    });
+  }
+
+  const activeWeekIdx = Math.floor(sel / 7);
+  const [openWeeks, setOpenWeeks] = React.useState({ [activeWeekIdx]: true });
+  const [datesOpen, setDatesOpen] = React.useState(false);
+  const [draggingDayIndex, setDraggingDayIndex] = React.useState(null);
+  const [dragOverDayIndex, setDragOverDayIndex] = React.useState(null);
+  const [dayDeleteAsk, setDayDeleteAsk] = React.useState(null);
+  const [deletingDay, setDeletingDay] = React.useState(false);
+
+  React.useEffect(() => {
+    const wi = Math.floor(sel / 7);
+    setOpenWeeks(prev => ({ ...prev, [wi]: true }));
+  }, [sel]);
+
+  function toggleWeek(wi) {
+    setOpenWeeks(prev => ({ ...prev, [wi]: !prev[wi] }));
+  }
+
+  async function moveDayInSpine(fromIndex, toIndex) {
+    if (!trip || !trip.id) return;
+    if (fromIndex === toIndex) return;
+
+    try {
+      await window.SB.moveTripDayInsideFixedRange(trip.id, fromIndex, toIndex);
+
+      const refreshed = await window.SB.loadTrip(trip.id);
+
+      Store.set({
+        trip: refreshed,
+        selectedDayIndex: toIndex
+      });
+
+      Store.showToast('Journée déplacée');
+    } catch (error) {
+      Store.showToast('Erreur déplacement : ' + (error.message || error));
+    }
+  }
+
+  function deleteDayInSpine(dayIndex) {
+    if (!trip || !trip.id) return;
+
+    if (!Array.isArray(trip.days) || trip.days.length <= 1) {
+      Store.showToast('Impossible de supprimer la dernière journée');
+      return;
+    }
+
+    const day = trip.days[dayIndex];
+
+    setDayDeleteAsk({
+      dayIndex,
+      day
+    });
+  }
+
+  async function confirmDeleteDayInSpine() {
+    if (!trip || !trip.id || !dayDeleteAsk || deletingDay) return;
+
+    const dayIndex = dayDeleteAsk.dayIndex;
+
+    setDeletingDay(true);
+
+    try {
+      await window.SB.deleteTripDayInsideFixedRange(trip.id, dayIndex);
+
+      const refreshed = await window.SB.loadTrip(trip.id);
+      const nextIndex = Math.min(dayIndex, refreshed.days.length - 1);
+
+      Store.set({
+        trip: refreshed,
+        selectedDayIndex: nextIndex
+      });
+
+      Store.showToast('Journée supprimée');
+      setDayDeleteAsk(null);
+    } catch (error) {
+      Store.showToast('Erreur suppression : ' + (error.message || error));
+    } finally {
+      setDeletingDay(false);
+    }
+  }
+
+  return (
+    <aside style={{
+      width,
+      flexShrink: 0,
+      height: '100%',
+      minHeight: 0,
+      overflow: 'hidden',
+      borderRight: '1px solid var(--outline-variant)',
+      background: 'var(--bg)',
+      display: 'flex',
+      flexDirection: 'column',
+      boxShadow: '4px 0 24px rgba(45,73,63,0.05)'
+    }}>
+      <div style={{
+        padding: '24px 24px 20px',
+        borderBottom: '1px solid var(--outline-variant)'
+      }}>
+        <div style={{
+          fontSize: 11,
+          fontWeight: 700,
+          letterSpacing: '.2em',
+          textTransform: 'uppercase',
+          color: 'var(--accent)',
+          marginBottom: 4
+        }}>
+          Itinéraire
+        </div>
+
+        <div style={{
+          fontFamily: 'var(--font-serif)',
+          fontStyle: 'italic',
+          fontSize: 24,
+          lineHeight: '30px',
+          color: 'var(--text)'
+        }}>
+          {trip.name || 'Mon voyage'}
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setDatesOpen(true)}
+          title="Modifier les dates du voyage"
+          style={{
+            marginTop: 6,
+            padding: 0,
+            border: 'none',
+            background: 'transparent',
+            color: 'var(--muted)',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            fontFamily: 'inherit',
+            fontSize: 13,
+            textAlign: 'left'
+          }}
+        >
+          <Icon name="cal" size={15} style={{ color: 'var(--muted)' }} />
+          <span>
+            {days.length} jour{days.length > 1 ? 's' : ''}
+            {trip.startDate ? ' · ' + fmtDate(trip.startDate) : ''}
+            {trip.endDate ? ' → ' + fmtDate(trip.endDate) : ''}
+          </span>
+          <span style={{ color: 'var(--faint)', fontSize: 12 }}>✎</span>
+        </button>
+      </div>
+
+      <div style={{
+        flex: '1 1 0',
+        minHeight: 0,
+        overflowY: 'auto',
+        padding: '12px 12px 20px'
+      }}>
+        {weeks.map((week, wi) => {
+          const isOpen = !!openWeeks[wi];
+          const containsSelected = sel >= week.startIndex && sel < week.startIndex + week.days.length;
+
+          return (
+            <div key={wi} style={{ marginBottom: 10 }}>
+              <button
+                type="button"
+                onClick={() => toggleWeek(wi)}
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '10px 14px',
+                  borderRadius: 10,
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  transition: 'all .15s',
+                  background: containsSelected ? 'var(--accent)' : 'var(--inset)',
+                  color: containsSelected ? 'var(--accent-ink)' : 'var(--muted)'
+                }}
+              >
+                <span style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  letterSpacing: '.12em',
+                  textTransform: 'uppercase'
+                }}>
+                  {week.label}
+                </span>
+
+                <Icon
+                  name={isOpen ? 'chevdown' : 'chevright'}
+                  size={14}
+                  style={{ opacity: 0.7 }}
+                />
+              </button>
+
+              {isOpen && (
+                <div style={{ paddingLeft: 8, paddingTop: 6 }}>
+                  {week.days.map((d, di) => {
+                    const globalIdx = week.startIndex + di;
+                    const on = globalIdx === sel;
+                    const dayTitle = getDisplayDayTitle(d);
+                    const steps = d.steps || [];
+
+                    return (
+                      <div
+                        key={d.id || globalIdx}
+                        draggable={true}
+                        data-draggable-day="true"
+                        onDragStart={(e) => {
+                          document.body.classList.add('is-dragging-day');
+
+                          setDraggingDayIndex(globalIdx);
+                          setDragOverDayIndex(null);
+
+                          e.dataTransfer.effectAllowed = 'move';
+                          e.dataTransfer.setData('text/plain', String(globalIdx));
+                        }}
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          e.dataTransfer.dropEffect = 'move';
+
+                          if (dragOverDayIndex !== globalIdx) {
+                            setDragOverDayIndex(globalIdx);
+                          }
+                        }}
+                        onDragLeave={() => {
+                          if (dragOverDayIndex === globalIdx) {
+                            setDragOverDayIndex(null);
+                          }
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+
+                          document.body.classList.remove('is-dragging-day');
+
+                          const raw = e.dataTransfer.getData('text/plain');
+                          const from = draggingDayIndex !== null ? draggingDayIndex : Number(raw);
+                          const to = globalIdx;
+
+                          setDraggingDayIndex(null);
+                          setDragOverDayIndex(null);
+
+                          if (!Number.isFinite(from)) return;
+                          moveDayInSpine(from, to);
+                        }}
+                        onDragEnd={() => {
+                          document.body.classList.remove('is-dragging-day');
+
+                          setDraggingDayIndex(null);
+                          setDragOverDayIndex(null);
+                        }}
+                        onClick={() => {
+                          Store.set({ selectedDayIndex: globalIdx });
+                          if (onPickDay) onPickDay();
+                        }}
+                        style={{
+                          position: 'relative',
+                          padding: on ? '14px 14px 14px 16px' : '10px 14px 10px 16px',
+                          borderLeft: on ? '3px solid var(--accent)' : '3px solid transparent',
+                          marginBottom: 2,
+                          borderRadius: '0 8px 8px 0',
+                          background: on ? 'var(--accent-soft)' : 'transparent',
+                          opacity: draggingDayIndex === globalIdx
+                            ? 0.42
+                            : draggingDayIndex !== null
+                              ? 0.62
+                              : (globalIdx < sel && !on ? 0.5 : 1),
+                          transition: 'all .15s',
+                          transform: dragOverDayIndex === globalIdx && draggingDayIndex !== null && draggingDayIndex !== globalIdx
+                            ? 'translateY(3px)'
+                            : 'none',
+                          outline: dragOverDayIndex === globalIdx && draggingDayIndex !== null && draggingDayIndex !== globalIdx
+                            ? '1px dashed var(--tan)'
+                            : 'none',
+                          outlineOffset: -2
+                        }}
+                      >
+                        {dragOverDayIndex === globalIdx && draggingDayIndex !== null && draggingDayIndex !== globalIdx && (
+                          <div style={{
+                            position: 'absolute',
+                            left: 10,
+                            right: 10,
+                            top: -2,
+                            height: 3,
+                            borderRadius: 999,
+                            background: 'var(--tan)',
+                            boxShadow: '0 0 0 3px rgba(217,182,126,.18)',
+                            pointerEvents: 'none'
+                          }} />
+                        )}
+
+                        <button
+                          type="button"
+                          title="Supprimer cette journée"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteDayInSpine(globalIdx);
+                          }}
+                          style={{
+                            position: 'absolute',
+                            top: on ? 10 : 8,
+                            right: 8,
+                            width: 24,
+                            height: 24,
+                            borderRadius: 999,
+                            border: '1px solid rgba(192,86,63,.28)',
+                            background: 'rgba(192,86,63,.08)',
+                            color: '#c0563f',
+                            display: 'grid',
+                            placeItems: 'center',
+                            cursor: 'pointer',
+                            fontSize: 12,
+                            lineHeight: 1,
+                            opacity: on ? 1 : 0.72,
+                            zIndex: 3
+                          }}
+                        >
+                          🗑
+                        </button>
+
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 8,
+                          marginBottom: on ? 6 : 2
+                        }}>
+                          {on && (
+                            <span style={{
+                              width: 22,
+                              height: 22,
+                              borderRadius: '50%',
+                              background: 'var(--accent)',
+                              color: 'var(--accent-ink)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: 10,
+                              fontWeight: 800,
+                              flexShrink: 0
+                            }}>
+                              {String(globalIdx + 1).padStart(2, '0')}
+                            </span>
+                          )}
+
+                          <span style={{
+                            fontSize: 11,
+                            fontWeight: 700,
+                            letterSpacing: '.12em',
+                            textTransform: 'uppercase',
+                            color: on ? 'var(--accent)' : 'var(--faint)'
+                          }}>
+                            {on ? 'Aujourd\'hui' : 'Jour ' + (globalIdx + 1)}
+                          </span>
+                        </div>
+
+                        <div style={{
+                          fontFamily: on ? 'var(--font-serif)' : 'inherit',
+                          fontSize: on ? 17 : 14,
+                          fontWeight: on ? 400 : 600,
+                          fontStyle: on ? 'italic' : 'normal',
+                          lineHeight: '22px',
+                          color: 'var(--text)',
+                          marginBottom: steps.length > 0 ? 8 : 0,
+                          paddingRight: 28
+                        }}>
+                          {dayTitle}
+                        </div>
+
+                        {on && steps.length > 0 && (
+                          <div style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 6
+                          }}>
+                            {steps.slice(0, 3).map((st, k) => {
+                              const v = stepView(st);
+                              const name = v.title || spineStepName(st);
+                              const time = st.time || st.departureTime || st.arrivalTime || '';
+
+                              return (
+                                <div
+                                  key={k}
+                                  style={{
+                                    display: 'grid',
+                                    gridTemplateColumns: '34px 1fr',
+                                    gap: 7,
+                                    alignItems: 'baseline'
+                                  }}
+                                >
+                                  <span style={{
+                                    fontSize: 10.5,
+                                    color: 'var(--faint)',
+                                    fontWeight: 800,
+                                    fontFamily: 'var(--font-mono, ui-monospace)'
+                                  }}>
+                                    {time || '—'}
+                                  </span>
+
+                                  <span style={{
+                                    fontSize: 12.5,
+                                    color: 'var(--muted)',
+                                    whiteSpace: 'nowrap',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis'
+                                  }}>
+                                    {name}
+                                  </span>
+                                </div>
+                              );
+                            })}
+
+                            {steps.length > 3 && (
+                              <span style={{
+                                fontSize: 11,
+                                color: 'var(--faint)',
+                                fontWeight: 700,
+                                marginTop: 2
+                              }}>
+                                + {steps.length - 3} étape{steps.length - 3 > 1 ? 's' : ''}
+                              </span>
+                            )}
+
+                            <div style={{
+                              fontSize: 11,
+                              color: 'var(--faint)',
+                              fontWeight: 800,
+                              marginTop: 4
+                            }}>
+                              {spineCountLabel(d)}
+                            </div>
+                          </div>
+                        )}
+
+                        {!on && steps.length > 0 && (
+                          <div style={{
+                            marginTop: 5,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 3
+                          }}>
+                            {spineMainStep(d) && (
+                              <div style={{
+                                fontSize: 12,
+                                color: 'var(--muted)',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                lineHeight: '16px'
+                              }}>
+                                {spineStepName(spineMainStep(d))}
+                              </div>
+                            )}
+
+                            <div style={{
+                              fontSize: 11,
+                              color: 'var(--faint)',
+                              fontWeight: 800
+                            }}>
+                              {spineCountLabel(d)}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {dayDeleteAsk && (
+        <DayDeleteConfirmModal
+          day={dayDeleteAsk.day}
+          dayIndex={dayDeleteAsk.dayIndex}
+          busy={deletingDay}
+          onCancel={() => {
+            if (!deletingDay) setDayDeleteAsk(null);
+          }}
+          onConfirm={confirmDeleteDayInSpine}
+        />
+      )}
+
+      {datesOpen && (
+        <TripDatesModal
+          trip={trip}
+          onClose={() => setDatesOpen(false)}
+        />
+      )}
+    </aside>
+  );
+}
+
 function parseTimeToMinutes(value) {
   if (!value || typeof value !== 'string') return null;
 

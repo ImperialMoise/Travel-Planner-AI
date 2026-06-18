@@ -1301,9 +1301,19 @@ function getStepPracticalChecks(step) {
 
 function AroundStepWidget({ step, editMode, onRemove }) {
   const [expanded, setExpanded] = React.useState(false);
+  const [nearbyType, setNearbyType] = React.useState('restaurant');
+  const [nearbyItems, setNearbyItems] = React.useState([]);
+  const [nearbyState, setNearbyState] = React.useState('idle');
 
-  React.useEffect(() => {
+  const { trip, selectedDayIndex = 0 } = Store.useStore();
+  const activeDay = trip && Array.isArray(trip.days)
+    ? trip.days[selectedDayIndex]
+    : null;
+
+    React.useEffect(() => {
     setExpanded(false);
+    setNearbyItems([]);
+    setNearbyState('idle');
   }, [step?.id]);
 
   if (!step) {
@@ -1351,6 +1361,204 @@ function AroundStepWidget({ step, editMode, onRemove }) {
         </div>
       </div>
     );
+  }
+
+    async function searchAroundStep(type) {
+    if (!step || !step.lat || !step.lng) {
+      setNearbyState('missing');
+      setNearbyItems([]);
+      return;
+    }
+
+    setNearbyType(type);
+    setNearbyState('loading');
+    setNearbyItems([]);
+
+    try {
+      const results = await window.SB.searchPlaces({
+        query: '',
+        type: type,
+        lat: Number(step.lat),
+        lng: Number(step.lng),
+        limit: 8,
+        language: 'fr'
+      });
+
+      const items = Array.isArray(results)
+        ? results
+        : (results && Array.isArray(results.items) ? results.items : []);
+
+      setNearbyItems(items);
+      setNearbyState(items.length ? 'ready' : 'empty');
+    } catch (error) {
+      console.error('Recherche autour impossible', error);
+      setNearbyItems([]);
+      setNearbyState('error');
+    }
+  }
+
+  function nearbyLabel(item) {
+    return String(
+      item.label ||
+      item.name ||
+      item.title ||
+      item.place ||
+      item.formatted ||
+      item.address ||
+      'Lieu'
+    ).trim();
+  }
+
+  function nearbySub(item) {
+    return String(
+      item.place ||
+      item.formatted ||
+      item.address ||
+      item.context ||
+      item.city ||
+      ''
+    ).trim();
+  }
+  function nearbyLat(item) {
+    const direct = Number(item && item.lat);
+    if (Number.isFinite(direct)) return direct;
+
+    const locationLat = Number(item && item.location && item.location.lat);
+    if (Number.isFinite(locationLat)) return locationLat;
+
+    const geometryLat = Number(
+      item &&
+      item.geometry &&
+      item.geometry.coordinates &&
+      item.geometry.coordinates[1]
+    );
+    if (Number.isFinite(geometryLat)) return geometryLat;
+
+    return null;
+  }
+
+  function nearbyLng(item) {
+    const direct = Number(item && item.lng);
+    if (Number.isFinite(direct)) return direct;
+
+    const locationLng = Number(item && item.location && item.location.lng);
+    if (Number.isFinite(locationLng)) return locationLng;
+
+    const geometryLng = Number(
+      item &&
+      item.geometry &&
+      item.geometry.coordinates &&
+      item.geometry.coordinates[0]
+    );
+    if (Number.isFinite(geometryLng)) return geometryLng;
+
+    return null;
+  }
+
+  function nearbyStepType() {
+    if (nearbyType === 'restaurant' || nearbyType === 'cafe') return 'restaurant';
+    return 'activite';
+  }
+
+    function openNearbyOnMap(item) {
+    const lat = nearbyLat(item);
+    const lng = nearbyLng(item);
+    const label = nearbyLabel(item);
+    const sub = nearbySub(item);
+
+    let url = '';
+
+    if (lat !== null && lng !== null) {
+      url = 'https://www.google.com/maps/search/?api=1&query=' +
+        encodeURIComponent(lat + ',' + lng);
+    } else {
+      url = 'https://www.google.com/maps/search/?api=1&query=' +
+        encodeURIComponent([label, sub].filter(Boolean).join(' '));
+    }
+
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }
+
+    function isNearbyAlreadyInDay(item) {
+    if (!activeDay || !Array.isArray(activeDay.steps)) return false;
+
+    const label = nearbyLabel(item).toLowerCase();
+    const sub = nearbySub(item).toLowerCase();
+    const lat = nearbyLat(item);
+    const lng = nearbyLng(item);
+
+    return activeDay.steps.some(function(step) {
+      const stepName = String(step.label || step.lieu || step.place || '').trim().toLowerCase();
+      const stepPlace = String(step.lieu || step.place || '').trim().toLowerCase();
+
+      if (label && stepName && stepName === label) return true;
+      if (sub && stepPlace && stepPlace === sub) return true;
+
+      const stepLat = Number(step.lat);
+      const stepLng = Number(step.lng);
+
+      if (
+        Number.isFinite(stepLat) &&
+        Number.isFinite(stepLng) &&
+        lat !== null &&
+        lng !== null
+      ) {
+        const closeLat = Math.abs(stepLat - lat) < 0.00002;
+        const closeLng = Math.abs(stepLng - lng) < 0.00002;
+
+        if (closeLat && closeLng) return true;
+      }
+
+      return false;
+    });
+  }
+
+  async function addNearbyToDay(item) {
+    if (!trip || !trip.id || !activeDay || !activeDay.id) {
+      Store.showToast('Aucune journée active trouvée');
+      return;
+    }
+
+        if (isNearbyAlreadyInDay(item)) {
+      Store.showToast('Ce lieu est déjà dans la journée');
+      return;
+    }
+
+    const label = nearbyLabel(item);
+    const lieu = nearbySub(item) || label;
+    const lat = nearbyLat(item);
+    const lng = nearbyLng(item);
+    const type = nearbyStepType();
+
+    const payload = {
+      stepIndex: Array.isArray(activeDay.steps) ? activeDay.steps.length : 0,
+      type: type,
+      label: label,
+      lieu: lieu,
+      note: 'Ajouté depuis “Autour de ce lieu”'
+    };
+
+    if (lat !== null) payload.lat = lat;
+    if (lng !== null) payload.lng = lng;
+
+    if (item.website || item.url) {
+      payload.link = item.website || item.url;
+    }
+
+    try {
+      await window.SB.saveStep(trip.id, activeDay.id, payload);
+
+      const refreshed = await window.SB.loadTrip(trip.id);
+      Store.set({ trip: refreshed });
+
+      Store.showToast(
+        type === 'restaurant'
+          ? 'Restaurant ajouté à la journée'
+          : 'Lieu ajouté à la journée'
+      );
+    } catch (error) {
+      Store.showToast('Erreur ajout : ' + (error.message || error));
+    }
   }
 
   var title = stepDisplayName(step);
@@ -1430,6 +1638,190 @@ function AroundStepWidget({ step, editMode, onRemove }) {
           <Icon name={expanded ? 'chevdown' : 'chevright'} size={13} />
           {expanded ? 'Masquer les pistes' : 'Voir les pistes'}
         </button>
+
+        <div style={{ marginTop: 14 }}>
+          <div style={{
+            fontSize: 10.5,
+            fontWeight: 800,
+            letterSpacing: '.12em',
+            textTransform: 'uppercase',
+            color: 'var(--faint)',
+            marginBottom: 8
+          }}>
+            Rechercher autour
+          </div>
+
+          <div style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: 6,
+            marginBottom: 10
+          }}>
+            {[
+              ['restaurant', 'Restaurants'],
+              ['cafe', 'Cafés'],
+              ['activity', 'Activités'],
+              ['museum', 'Musées'],
+              ['shop', 'Commerces'],
+              ['transport', 'Transports']
+            ].map(([type, label]) => (
+              <button
+                key={type}
+                type="button"
+                onClick={() => searchAroundStep(type)}
+                style={{
+                  border: '1px solid ' + (nearbyType === type ? 'var(--accent)' : 'var(--outline-variant)'),
+                  background: nearbyType === type ? 'var(--accent)' : 'var(--inset)',
+                  color: nearbyType === type ? 'var(--accent-ink)' : 'var(--muted)',
+                  borderRadius: 999,
+                  padding: '6px 10px',
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  fontSize: 11,
+                  fontWeight: 800
+                }}
+              >
+                {nearbyState === 'loading' && nearbyType === type ? '…' : label}
+              </button>
+            ))}
+          </div>
+
+          {nearbyState === 'missing' && (
+            <div style={{
+              fontSize: 12.5,
+              lineHeight: '18px',
+              color: 'var(--muted)',
+              background: 'var(--inset)',
+              borderRadius: 10,
+              padding: '10px 12px'
+            }}>
+              Cette étape n’a pas encore de coordonnées. Localise-la sur la carte pour chercher autour.
+            </div>
+          )}
+
+          {nearbyState === 'loading' && (
+            <div style={{
+              fontSize: 12.5,
+              color: 'var(--muted)',
+              background: 'var(--inset)',
+              borderRadius: 10,
+              padding: '10px 12px'
+            }}>
+              Recherche des lieux proches…
+            </div>
+          )}
+
+          {nearbyState === 'empty' && (
+            <div style={{
+              fontSize: 12.5,
+              color: 'var(--muted)',
+              background: 'var(--inset)',
+              borderRadius: 10,
+              padding: '10px 12px'
+            }}>
+              Aucun lieu trouvé autour de cette étape.
+            </div>
+          )}
+
+          {nearbyState === 'error' && (
+            <div style={{
+              fontSize: 12.5,
+              color: '#c0563f',
+              background: 'rgba(192,86,63,.10)',
+              borderRadius: 10,
+              padding: '10px 12px'
+            }}>
+              Recherche indisponible pour le moment.
+            </div>
+          )}
+
+          {nearbyItems.length > 0 && (
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 8
+            }}>
+              {nearbyItems.map((item, index) => (
+                <div
+                  key={item.id || item.placeId || index}
+                  style={{
+                    border: '1px solid var(--outline-variant)',
+                    background: 'var(--inset)',
+                    borderRadius: 11,
+                    padding: '10px 11px'
+                  }}
+                >
+                  <div style={{
+                    fontSize: 13,
+                    fontWeight: 800,
+                    color: 'var(--text)',
+                    marginBottom: 3
+                  }}>
+                    {nearbyLabel(item)}
+                  </div>
+
+                                    <div style={{
+                    fontSize: 12,
+                    lineHeight: '17px',
+                    color: 'var(--muted)',
+                    marginBottom: 9
+                  }}>
+                    {nearbySub(item) || 'Lieu proche'}
+                  </div>
+
+                                     <div style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: 6
+                  }}>
+                    <button
+                      type="button"
+                      disabled={isNearbyAlreadyInDay(item)}
+                      onClick={() => addNearbyToDay(item)}
+                      style={{
+                        border: '1px solid var(--outline-variant)',
+                        background: isNearbyAlreadyInDay(item) ? 'var(--inset)' : 'var(--accent-soft)',
+                        color: isNearbyAlreadyInDay(item) ? 'var(--faint)' : 'var(--accent)',
+                        borderRadius: 999,
+                        padding: '6px 10px',
+                        cursor: isNearbyAlreadyInDay(item) ? 'not-allowed' : 'pointer',
+                        fontFamily: 'inherit',
+                        fontSize: 11,
+                        fontWeight: 800,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6
+                      }}
+                    >
+                      {isNearbyAlreadyInDay(item) ? 'Déjà ajouté' : '+ Ajouter à la journée'}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => openNearbyOnMap(item)}
+                      style={{
+                        border: '1px solid var(--outline-variant)',
+                        background: 'var(--inset)',
+                        color: 'var(--muted)',
+                        borderRadius: 999,
+                        padding: '6px 10px',
+                        cursor: 'pointer',
+                        fontFamily: 'inherit',
+                        fontSize: 11,
+                        fontWeight: 800,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6
+                      }}
+                    >
+                      Voir carte
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
         {expanded && (
           <div style={{

@@ -196,6 +196,23 @@ async function searchNearbyRestaurants(coords) {
   });
 }
 
+function normalizeStepLink(value) {
+  const raw = String(value || '').trim();
+
+  if (!raw) return '';
+
+  if (
+    raw.startsWith('http://') ||
+    raw.startsWith('https://') ||
+    raw.startsWith('mailto:') ||
+    raw.startsWith('tel:')
+  ) {
+    return raw;
+  }
+
+  return 'https://' + raw;
+}
+
 function StepEditor({ open, tripId, dayId, step, stepCount, onClose, onSaved }) {
   const { theme = localStorage.getItem('it_theme') || 'light' } = Store.useStore();
   const C = palette(theme);
@@ -332,7 +349,7 @@ function StepEditor({ open, tripId, dayId, step, stepCount, onClose, onSaved }) 
       const p = {
         id: step ? step.id : undefined,
         stepIndex: step ? step.stepIndex : (stepCount || 0),
-        type: f.type, label: f.label, note: f.note, link: f.link, time: f.time,
+        type: f.type, label: f.label, note: f.note, link: normalizeStepLink(f.link), time: f.time,
         important: !!f.important
       };
       if (f.type === 'transport') {
@@ -745,7 +762,12 @@ function StepEditor({ open, tripId, dayId, step, stepCount, onClose, onSaved }) 
             {field('Heure (option.)', <input type="time" style={inp} value={f.time} onChange={e => set('time', e.target.value)} />)}
           </>}
 
-          {field('Lien (option.)', <input style={inp} value={f.link} onChange={e => set('link', e.target.value)} placeholder="Réservation, billet…" />)}
+          {field('Document / réservation', <input
+            style={inp}
+            value={f.link}
+            onChange={e => set('link', e.target.value)}
+            placeholder="Billet, réservation, PDF, Google Drive…"
+          />)}
           {field('Note (option.)', <textarea style={{ ...inp, resize: 'vertical', minHeight: 60 }} value={f.note} onChange={e => set('note', e.target.value)} placeholder="Informations…" />)}
         </div>
 
@@ -1445,21 +1467,47 @@ function AtelierV2() {
     React.createElement('div', { style: { flex: 1, minWidth: 0, paddingRight: 34 } },
       React.createElement('div', {
         style: {
-          display: 'inline-flex',
-          width: 'fit-content',
+          display: 'flex',
           alignItems: 'center',
-          gap: 6,
-          fontSize: 10,
-          fontWeight: 900,
-          letterSpacing: '.16em',
-          textTransform: 'uppercase',
-          color: ac,
-          background: tone.soft,
-          borderRadius: 999,
-          padding: '5px 9px',
+          flexWrap: 'wrap',
+          gap: 7,
           marginBottom: 7
         }
-      }, tone.label),
+      },
+        React.createElement('span', {
+          style: {
+            display: 'inline-flex',
+            width: 'fit-content',
+            alignItems: 'center',
+            gap: 6,
+            fontSize: 10,
+            fontWeight: 900,
+            letterSpacing: '.16em',
+            textTransform: 'uppercase',
+            color: ac,
+            background: tone.soft,
+            borderRadius: 999,
+            padding: '5px 9px'
+          }
+        }, tone.label),
+
+        step.important && React.createElement('span', {
+          style: {
+            display: 'inline-flex',
+            width: 'fit-content',
+            alignItems: 'center',
+            gap: 5,
+            fontSize: 10,
+            fontWeight: 900,
+            letterSpacing: '.14em',
+            textTransform: 'uppercase',
+            color: C.accent,
+            background: C.accentSoft,
+            borderRadius: 999,
+            padding: '5px 9px'
+          }
+        }, '★ Étape clé')
+      ),
 
       step.type === 'transport' && !step.label
         ? React.createElement('div', {
@@ -1582,6 +1630,32 @@ function AtelierV2() {
         },
           React.createElement('span', { style: { fontSize: 12, lineHeight: 1 } }, '⌖'),
           'À localiser'
+        ),
+
+                step.link && React.createElement('button', {
+          type: 'button',
+          onClick: function(e) {
+            e.stopPropagation();
+            window.open(normalizeStepLink(step.link), '_blank', 'noopener,noreferrer');
+          },
+          title: 'Ouvrir le document lié',
+          style: {
+            border: `1px solid ${C.line}`,
+            background: C.accentSoft,
+            color: C.accent,
+            borderRadius: 999,
+            padding: '6px 10px',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            cursor: 'pointer',
+            fontFamily: 'inherit',
+            fontSize: 11,
+            fontWeight: 800
+          }
+        },
+          React.createElement(Icon, { name: 'paperclip', size: 13 }),
+          'Document'
         ),
 
         React.createElement('button', {
@@ -2286,6 +2360,33 @@ function AtelierV2() {
             }, stay.step.checkout || stay.step.timeCheckOut || 'À préciser')
           )
         ),
+        stay.step.link && React.createElement('button', {
+          type: 'button',
+          onClick: function(e) {
+            e.stopPropagation();
+            window.open(normalizeStepLink(stay.step.link), '_blank', 'noopener,noreferrer');
+          },
+          title: 'Ouvrir le document lié',
+          style: {
+            marginTop: 10,
+            border: `1px solid ${C.line}`,
+            background: C.accentSoft,
+            color: C.accent,
+            borderRadius: 999,
+            padding: '7px 11px',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            cursor: 'pointer',
+            fontFamily: 'inherit',
+            fontSize: 11,
+            fontWeight: 800,
+            width: 'fit-content'
+          }
+        },
+          React.createElement(Icon, { name: 'paperclip', size: 13 }),
+          'Document'
+        ),
 
         stay.status === 'stay' && stay.nights > 1 && React.createElement('div', {
           style: {
@@ -2587,6 +2688,23 @@ function AtelierV2() {
                 marginBottom: 6
               }
             }, v.title || step.label || 'Adresse à choisir'),
+                        step.important && React.createElement('div', {
+              style: {
+                display: 'inline-flex',
+                width: 'fit-content',
+                alignItems: 'center',
+                gap: 5,
+                fontSize: 10,
+                fontWeight: 900,
+                letterSpacing: '.14em',
+                textTransform: 'uppercase',
+                color: C.accent,
+                background: C.accentSoft,
+                borderRadius: 999,
+                padding: '5px 9px',
+                marginBottom: 8
+              }
+            }, '★ Étape clé'),
             React.createElement('div', {
               style: {
                 fontSize: 12.5,
@@ -2595,6 +2713,33 @@ function AtelierV2() {
                 marginBottom: 10
               }
             }, v.sub || step.lieu || step.place || 'Aucun lieu renseigné'),
+
+                        step.link && React.createElement('button', {
+              type: 'button',
+              onClick: function(e) {
+                e.stopPropagation();
+                window.open(step.link, '_blank', 'noopener,noreferrer');
+              },
+              title: 'Ouvrir le document lié',
+              style: {
+                border: `1px solid ${C.line}`,
+                background: C.accentSoft,
+                color: C.accent,
+                borderRadius: 999,
+                padding: '6px 10px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+                fontSize: 11,
+                fontWeight: 800,
+                marginRight: 6
+              }
+            },
+              React.createElement(Icon, { name: 'paperclip', size: 13 }),
+              'Document'
+            ),
 
             React.createElement('button', {
               type: 'button',

@@ -236,10 +236,11 @@ function MapView(){
   const spinRef=React.useRef(true),markersRef=React.useRef({day:[],step:[]});
   const tourRef=React.useRef({on:false,timer:null}),styleCache=React.useRef({});
   const searchTimer=React.useRef(null);
+  const previewMarkerRef=React.useRef(null);
   const T=tripToMapTrip(realTrip);
 
   const [sel,setSel]=React.useState(null);
-  const { selectedDayIndex, mapFocusStepId, mapLocateStep, mapPickResult } = Store.useStore();
+  const { selectedDayIndex, mapFocusStepId, mapLocateStep, mapPickResult, mapPreviewPlace } = Store.useStore();
   const locatingStepName = React.useMemo(function() {
   if (!mapLocateStep || !realTrip || !Array.isArray(realTrip.days)) return '';
 
@@ -276,6 +277,22 @@ React.useEffect(() => {
 
   return () => clearTimeout(timer);
 }, [mapFocusStepId, realTrip && realTrip.id]);
+
+React.useEffect(() => {
+  if (!mapPreviewPlace) return;
+
+  const timer = setTimeout(function() {
+    focusPreviewPlace(mapPreviewPlace);
+  }, 260);
+
+  return function() {
+    clearTimeout(timer);
+  };
+}, [
+  mapPreviewPlace && mapPreviewPlace.id,
+  mapPreviewPlace && mapPreviewPlace.lat,
+  mapPreviewPlace && mapPreviewPlace.lng
+]);
 
   const [curStyle,setCurStyle]=React.useState('minimal');
   const [layersOpen,setLayersOpen]=React.useState(false);
@@ -682,6 +699,72 @@ if (eb && cbody) {
   }, 350);
 }
 
+function focusPreviewPlace(place) {
+  const map = mapRef.current;
+  if (!map || !place) return false;
+
+  const lat = Number(place.lat);
+  const lng = Number(place.lng);
+
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    Store.set({ mapPreviewPlace: null });
+    return false;
+  }
+
+  spinRef.current = false;
+
+  if (previewMarkerRef.current) {
+    previewMarkerRef.current.remove();
+    previewMarkerRef.current = null;
+  }
+
+  const el = document.createElement('div');
+  el.style.cssText = [
+    'width:34px',
+    'height:34px',
+    'border-radius:999px',
+    'background:var(--accent)',
+    'color:var(--accent-ink)',
+    'display:grid',
+    'place-items:center',
+    'font-weight:900',
+    'font-size:16px',
+    'box-shadow:0 0 0 6px var(--accent-soft),0 10px 24px rgba(0,0,0,.28)',
+    'border:2px solid var(--card)'
+  ].join(';');
+  el.textContent = '•';
+
+  previewMarkerRef.current = new maplibregl.Marker({
+    element: el,
+    anchor: 'center'
+  })
+    .setLngLat([lng, lat])
+    .addTo(map);
+
+  setFoundPlace({
+    name: place.label || 'Lieu',
+    address: place.place || '',
+    lat: lat,
+    lng: lng
+  });
+
+  setPickingDay(false);
+  setEditorOpen(null);
+
+  map.flyTo({
+    center: [lng, lat],
+    zoom: 17,
+    pitch: 45,
+    bearing: 0,
+    duration: 1300,
+    essential: true
+  });
+
+  Store.set({ mapPreviewPlace: null });
+
+  return true;
+}
+
   function pickMapPoint(text, coords, address) {
   const map = mapRef.current;
   if (!map || !coords) return;
@@ -794,7 +877,18 @@ function initContent() {
     ['dragstart','mousedown','touchstart','wheel'].forEach(ev=>map.on(ev,()=>{spinRef.current=false;}));
     map.on('move',()=>{const c=map.getCenter(),z=map.getZoom();if(readoutRef.current){if(z<3.4)readoutRef.current.innerHTML='<b>GLOBE</b> · z'+z.toFixed(1);else{const ns=c.lat>=0?'N':'S',ew=c.lng>=0?'E':'O';readoutRef.current.innerHTML='<b>'+Math.abs(c.lat).toFixed(3)+'°'+ns+'</b> · '+Math.abs(c.lng).toFixed(3)+'°'+ew+' · z'+z.toFixed(1);}}if(needleRef.current)needleRef.current.style.transform='rotate('+(-map.getBearing())+'deg)';});
     renderWelcome();
-    return()=>{stopTour();map.remove();mapRef.current=null;markersRef.current={day:[],step:[]};};
+    return()=>{
+  stopTour();
+
+  if (previewMarkerRef.current) {
+    previewMarkerRef.current.remove();
+    previewMarkerRef.current = null;
+  }
+
+  map.remove();
+  mapRef.current=null;
+  markersRef.current={day:[],step:[]};
+};
   },[]);
   React.useEffect(()=>{const map=mapRef.current;if(!map)return;(async()=>{map.setStyle(curStyle==='sat'?await buildSat():await buildBase());})();},[theme,curStyle]);
 

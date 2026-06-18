@@ -590,27 +590,28 @@ function openNearbyOnMap(item) {
         </div>
 
         <button
-          onClick={() => setExpanded(v => !v)}
-          style={{
-            width: '100%',
-            padding: '9px 12px',
-            borderRadius: 10,
-            border: '1px solid var(--outline-variant)',
-            background: 'var(--inset)',
-            color: 'var(--text)',
-            cursor: 'pointer',
-            fontFamily: 'inherit',
-            fontSize: 12,
-            fontWeight: 700,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 8
-          }}
-        >
-          <Icon name={expanded ? 'chevdown' : 'chevright'} size={13} />
-          {expanded ? 'Masquer les pistes' : 'Voir les pistes'}
-        </button>
+  onClick={() => searchAroundStep(nearbyType)}
+  disabled={nearbyState === 'loading'}
+  style={{
+    width: '100%',
+    padding: '9px 12px',
+    borderRadius: 10,
+    border: '1px solid var(--outline-variant)',
+    background: 'var(--inset)',
+    color: 'var(--text)',
+    cursor: nearbyState === 'loading' ? 'wait' : 'pointer',
+    fontFamily: 'inherit',
+    fontSize: 12,
+    fontWeight: 700,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8
+  }}
+>
+  <Icon name="chevright" size={13} />
+  {nearbyState === 'loading' ? 'Recherche…' : 'Voir les lieux'}
+</button>
 
         <div style={{ marginTop: 14 }}>
           <div style={{
@@ -637,7 +638,11 @@ function openNearbyOnMap(item) {
     <button
       key={category.id}
       type="button"
-      onClick={() => searchAroundStep(category.id)}
+      onClick={() => {
+  setNearbyType(category.id);
+  setNearbyItems([]);
+  setNearbyState('idle');
+}}
       style={{
         border: '1px solid ' + (on ? 'var(--accent)' : 'var(--outline-variant)'),
         background: on ? 'var(--accent)' : 'var(--inset)',

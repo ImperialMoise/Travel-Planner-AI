@@ -792,3 +792,7 @@ body.is-dragging-day,
 body.is-dragging-day * {
   cursor: var(--cursor-grabbing), grabbing !important;
 }
+
+html.dark [data-tool-frame="true"] > div[style*="rgba(255,250,240"] {
+  background: rgba(21,48,42,.82) !important;
+}

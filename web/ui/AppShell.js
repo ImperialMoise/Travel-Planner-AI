@@ -4310,7 +4310,7 @@ if (!data.routes || !data.routes[0]) {
         r.dragged = true;
       }
 
-      const nextHeight = Math.max(72, Math.min(720, Math.round(r.startHeight + diff)));
+      const nextHeight = Math.max(72, Math.min(1200, Math.round(r.startHeight + diff)));
 
       setToolSizes(prev => {
         const next = {
@@ -4348,7 +4348,7 @@ if (!data.routes || !data.routes[0]) {
   function ToolFrame({ id, label, children }) {
     const size = toolSizes[id] || {};
     const collapsed = !!size.collapsed;
-    const height = collapsed ? 54 : size.height;
+    const height = collapsed ? 58 : size.height;
 
     return (
       <div
@@ -4356,76 +4356,117 @@ if (!data.routes || !data.routes[0]) {
         style={{
           position: 'relative',
           height: height || 'auto',
-          minHeight: collapsed ? 54 : 72,
+          minHeight: collapsed ? 58 : 72,
           maxHeight: height ? height : 'none',
-          overflow: 'hidden',
+          overflow: collapsed ? 'hidden' : (height ? 'auto' : 'visible'),
           borderRadius: 12,
           transition: resizeRef.current.id === id ? 'none' : 'height .18s ease, max-height .18s ease',
-          boxShadow: collapsed ? '0 2px 8px rgba(82,98,91,0.04)' : 'none'
+          boxShadow: collapsed ? '0 2px 8px rgba(82,98,91,0.04)' : 'none',
+          scrollbarWidth: 'thin',
+          scrollbarColor: 'var(--outline-variant) transparent'
         }}
       >
         {children}
 
-        <button
-          type="button"
-          title="Supprimer cet outil"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            removeTool(id);
-          }}
+        <div
           style={{
             position: 'absolute',
-            top: 10,
-            right: 10,
-            zIndex: 20,
-            width: 22,
-            height: 22,
+            top: 9,
+            right: 9,
+            zIndex: 30,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 5,
+            padding: 3,
             borderRadius: 999,
-            border: '1px solid rgba(192,86,63,.25)',
-            background: 'rgba(192,86,63,.08)',
-            color: '#c0563f',
-            cursor: 'pointer',
-            display: 'grid',
-            placeItems: 'center',
-            fontSize: 14,
-            lineHeight: 1
-          }}
-        >
-          ×
-        </button>
-
-        <button
-          type="button"
-          title={collapsed ? 'Développer' : 'Réduire ou redimensionner'}
-          onMouseDown={(e) => startToolResize(e, id)}
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-
-            if (resizeRef.current.dragged) return;
-            toggleToolCollapsed(id);
-          }}
-          style={{
-            position: 'absolute',
-            right: 8,
-            bottom: 8,
-            zIndex: 21,
-            width: 24,
-            height: 24,
-            borderRadius: 9,
+            background: 'rgba(255,250,240,.78)',
             border: '1px solid var(--outline-variant)',
-            background: 'var(--card)',
-            color: 'var(--faint)',
-            cursor: 'nwse-resize',
-            display: 'grid',
-            placeItems: 'center',
-            fontSize: 13,
-            boxShadow: '0 4px 12px rgba(0,0,0,.08)'
+            boxShadow: '0 4px 12px rgba(0,0,0,.07)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)'
           }}
         >
-          {collapsed ? '▣' : '◢'}
-        </button>
+          <button
+            type="button"
+            title="Supprimer cet outil"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              removeTool(id);
+            }}
+            style={{
+              width: 22,
+              height: 22,
+              borderRadius: 999,
+              border: 'none',
+              background: 'rgba(192,86,63,.10)',
+              color: '#c0563f',
+              cursor: 'pointer',
+              display: 'grid',
+              placeItems: 'center',
+              fontSize: 14,
+              lineHeight: 1,
+              fontWeight: 900
+            }}
+          >
+            ×
+          </button>
+
+          <button
+            type="button"
+            title={collapsed ? 'Développer' : 'Réduire'}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              toggleToolCollapsed(id);
+            }}
+            style={{
+              width: 22,
+              height: 22,
+              borderRadius: 999,
+              border: 'none',
+              background: 'var(--inset)',
+              color: 'var(--accent)',
+              cursor: 'pointer',
+              display: 'grid',
+              placeItems: 'center',
+              fontSize: 12,
+              lineHeight: 1,
+              fontWeight: 900
+            }}
+          >
+            {collapsed ? '▣' : '⌄'}
+          </button>
+        </div>
+
+        {!collapsed && (
+          <button
+            type="button"
+            title="Glisser pour régler la hauteur"
+            onMouseDown={(e) => startToolResize(e, id)}
+            style={{
+              position: 'absolute',
+              right: 9,
+              bottom: 9,
+              zIndex: 25,
+              width: 25,
+              height: 25,
+              borderRadius: 9,
+              border: '1px solid var(--outline-variant)',
+              background: 'rgba(255,250,240,.86)',
+              color: 'var(--accent)',
+              cursor: 'nwse-resize',
+              display: 'grid',
+              placeItems: 'center',
+              fontSize: 13,
+              boxShadow: '0 4px 12px rgba(0,0,0,.08)',
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)'
+            }}
+          >
+            ◢
+          </button>
+        )}
 
         {!collapsed && height && (
           <div
@@ -4843,11 +4884,14 @@ function getUsefulAroundTip(step) {
       <div style={{
   flex: '1 1 0',
   minHeight: 0,
-  overflowY: 'auto',
-  padding: '8px 16px 16px',
+  overflowY: 'scroll',
+  overflowX: 'hidden',
+  padding: '8px 10px 22px 16px',
   display: 'flex',
   flexDirection: 'column',
-  gap: 16
+  gap: 16,
+  scrollbarWidth: 'thin',
+  scrollbarColor: 'var(--outline-variant) transparent'
 }}>
         {pinned.map(id => {
           const block = BLOCKS[id];

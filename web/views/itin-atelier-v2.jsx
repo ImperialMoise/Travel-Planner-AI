@@ -1912,7 +1912,7 @@ function AtelierV2() {
 
     return null;
   }
-
+    const activeLodgingStay = getActiveLodgingStay();
     const visibleStepCount = (day.steps || []).filter(function(step) {
     return step.type !== 'logement';
   }).length;

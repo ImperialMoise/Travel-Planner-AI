@@ -2358,6 +2358,27 @@ function AtelierV2() {
 )
     );
   }
+      async function toggleImportantMeal(e, step) {
+      e.stopPropagation();
+
+      if (!realTrip || !realTrip.id || !day || !day.id || !step || !step.id) return;
+
+      const nextImportant = !step.important;
+
+      try {
+        await window.SB.saveStep(realTrip.id, day.id, {
+          ...step,
+          important: nextImportant,
+          stepIndex: step.stepIndex || 0
+        });
+
+        reload();
+
+        Store.showToast(nextImportant ? 'Restaurant marqué comme étape clé' : 'Restaurant retiré des étapes clés');
+      } catch (error) {
+        Store.showToast('Erreur favori : ' + (error.message || error));
+      }
+    }
         async function findRestaurantsAroundDay() {
       const coords = getDayCoords(day);
 
@@ -2500,9 +2521,36 @@ function AtelierV2() {
               padding: 14,
               cursor: 'pointer',
               boxShadow: C.shadow,
-              fontFamily: 'inherit'
+              fontFamily: 'inherit',
+              position: 'relative',
+              overflow: 'hidden'
             }
           },
+                      React.createElement('button', {
+              type: 'button',
+              title: step.important ? 'Retirer des étapes clés' : 'Marquer comme étape clé',
+              onClick: function(e) {
+                toggleImportantMeal(e, step);
+              },
+              style: {
+                position: 'absolute',
+                top: 10,
+                right: 10,
+                zIndex: 4,
+                width: 28,
+                height: 28,
+                borderRadius: 999,
+                border: step.important ? '1px solid rgba(180,132,62,.45)' : `1px solid ${C.line}`,
+                background: step.important ? C.accent : C.inset,
+                color: step.important ? C.accentInk : C.faint,
+                display: 'grid',
+                placeItems: 'center',
+                cursor: 'pointer',
+                fontSize: 14,
+                lineHeight: 1,
+                boxShadow: step.important ? '0 6px 14px rgba(180,132,62,.22)' : 'none'
+              }
+            }, step.important ? '★' : '☆'),
             React.createElement('div', {
               style: {
                 display: 'flex',
@@ -2518,7 +2566,8 @@ function AtelierV2() {
                   fontWeight: 800,
                   letterSpacing: '.14em',
                   textTransform: 'uppercase',
-                  color: C.accent
+                  color: C.accent,
+                  paddingRight: 34
                 }
               }, v.kind || 'Restaurant'),
               React.createElement('span', {

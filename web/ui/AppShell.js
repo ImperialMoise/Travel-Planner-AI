@@ -3752,21 +3752,9 @@ function Toolbox({ width = 320 }) {
 
   const [pinned, setPinned] = React.useState(() => loadPins(view));
   const [addOpen, setAddOpen] = React.useState(false);
-  const [toolSizes, setToolSizes] = React.useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('atelier_tool_sizes_' + view)) || {};
-    } catch (e) {
-      return {};
-    }
-  });
+  const [toolSizes, setToolSizes] = React.useState({});
 
   const editMode = false;
-  const resizeRef = React.useRef({
-    id: null,
-    startY: 0,
-    startHeight: 0,
-    dragged: false
-  });
   
   /* ── Calculateur d'itinéraire ── */
   const [calcFrom, setCalcFrom] = React.useState('');
@@ -3992,12 +3980,11 @@ if (!data.routes || !data.routes[0]) {
   React.useEffect(() => {
   setPinned(loadPins(view));
   setAddOpen(false);
+  setToolSizes({});
 
   try {
-    setToolSizes(JSON.parse(localStorage.getItem('atelier_tool_sizes_' + view)) || {});
-  } catch (e) {
-    setToolSizes({});
-  }
+    localStorage.removeItem('atelier_tool_sizes_' + view);
+  } catch (e) {}
 }, [view]);
   /* Recevoir le résultat du pick carte */
   const { mapPickResult } = Store.useStore();
@@ -4060,202 +4047,57 @@ if (!data.routes || !data.routes[0]) {
     saveToolSizes(next);
   }
 
-  function startToolResize(e, id) {
-    e.preventDefault();
-    e.stopPropagation();
-
-    const frame = e.currentTarget.closest('[data-tool-frame="true"]');
-    if (!frame) return;
-
-    resizeRef.current = {
-      id,
-      startY: e.clientY,
-      startHeight: frame.getBoundingClientRect().height,
-      dragged: false
-    };
-
-    function onMove(ev) {
-      const r = resizeRef.current;
-      if (!r.id) return;
-
-      const diff = ev.clientY - r.startY;
-
-      if (Math.abs(diff) > 4) {
-        r.dragged = true;
-      }
-
-      const nextHeight = Math.max(72, Math.min(1200, Math.round(r.startHeight + diff)));
-
-      setToolSizes(prev => {
-        const next = {
-          ...prev,
-          [id]: {
-            ...(prev[id] || {}),
-            collapsed: false,
-            height: nextHeight
-          }
-        };
-
-        localStorage.setItem('atelier_tool_sizes_' + view, JSON.stringify(next));
-        return next;
-      });
-    }
-
-    function onUp() {
-      document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup', onUp);
-
-      setTimeout(() => {
-        resizeRef.current = {
-          id: null,
-          startY: 0,
-          startHeight: 0,
-          dragged: false
-        };
-      }, 0);
-    }
-
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
-  }
-
   function ToolFrame({ id, label, children }) {
     const size = toolSizes[id] || {};
     const collapsed = !!size.collapsed;
-    const height = collapsed ? 58 : size.height;
+    const height = collapsed ? 58 : null;
 
     return (
       <div
         data-tool-frame="true"
         style={{
           position: 'relative',
-          height: height || 'auto',
-          minHeight: collapsed ? 58 : 72,
-          maxHeight: height ? height : 'none',
-          overflow: collapsed ? 'hidden' : (height ? 'auto' : 'visible'),
+          height: collapsed ? 58 : 'auto',
+          minHeight: collapsed ? 58 : 0,
+          maxHeight: collapsed ? 58 : 'none',
+          overflow: collapsed ? 'hidden' : 'visible',
           borderRadius: 12,
-          transition: resizeRef.current.id === id ? 'none' : 'height .18s ease, max-height .18s ease',
-          boxShadow: collapsed ? '0 2px 8px rgba(82,98,91,0.04)' : 'none',
-          scrollbarWidth: 'thin',
-          scrollbarColor: 'var(--outline-variant) transparent'
+          transition: 'height .18s ease, max-height .18s ease',
+          boxShadow: collapsed ? '0 2px 8px rgba(82,98,91,0.04)' : 'none'
         }}
       >
         {children}
 
-        <div
+                <button
+          type="button"
+          title={collapsed ? 'Développer' : 'Réduire'}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleToolCollapsed(id);
+          }}
           style={{
             position: 'absolute',
             top: 9,
             right: 9,
             zIndex: 30,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 5,
-            padding: 3,
+            width: 26,
+            height: 26,
             borderRadius: 999,
-            background: 'rgba(255,250,240,.78)',
             border: '1px solid var(--outline-variant)',
-            boxShadow: '0 4px 12px rgba(0,0,0,.07)',
-            backdropFilter: 'blur(8px)',
-            WebkitBackdropFilter: 'blur(8px)'
+            background: 'var(--card)',
+            color: 'var(--accent)',
+            cursor: 'pointer',
+            display: 'grid',
+            placeItems: 'center',
+            fontSize: 12,
+            lineHeight: 1,
+            fontWeight: 900,
+            boxShadow: '0 4px 12px rgba(0,0,0,.07)'
           }}
         >
-          <button
-            type="button"
-            title="Supprimer cet outil"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              removeTool(id);
-            }}
-            style={{
-              width: 22,
-              height: 22,
-              borderRadius: 999,
-              border: 'none',
-              background: 'rgba(192,86,63,.10)',
-              color: '#c0563f',
-              cursor: 'pointer',
-              display: 'grid',
-              placeItems: 'center',
-              fontSize: 14,
-              lineHeight: 1,
-              fontWeight: 900
-            }}
-          >
-            ×
-          </button>
-
-          <button
-            type="button"
-            title={collapsed ? 'Développer' : 'Réduire'}
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              toggleToolCollapsed(id);
-            }}
-            style={{
-              width: 22,
-              height: 22,
-              borderRadius: 999,
-              border: 'none',
-              background: 'var(--inset)',
-              color: 'var(--accent)',
-              cursor: 'pointer',
-              display: 'grid',
-              placeItems: 'center',
-              fontSize: 12,
-              lineHeight: 1,
-              fontWeight: 900
-            }}
-          >
-            {collapsed ? '▣' : '⌄'}
-          </button>
-        </div>
-
-        {!collapsed && (
-          <button
-             type="button"
-              title="Glisser pour régler la hauteur"
-              data-resize-handle="true"
-              onMouseDown={(e) => startToolResize(e, id)}
-            style={{
-              position: 'absolute',
-              right: 9,
-              bottom: 9,
-              zIndex: 25,
-              width: 25,
-              height: 25,
-              borderRadius: 9,
-              border: '1px solid var(--outline-variant)',
-              background: 'rgba(255,250,240,.86)',
-              color: 'var(--accent)',
-              cursor: 'nwse-resize',
-              display: 'grid',
-              placeItems: 'center',
-              fontSize: 13,
-              boxShadow: '0 4px 12px rgba(0,0,0,.08)',
-              backdropFilter: 'blur(8px)',
-              WebkitBackdropFilter: 'blur(8px)'
-            }}
-          >
-            ◢
-          </button>
-        )}
-
-        {!collapsed && height && (
-          <div
-            style={{
-              position: 'absolute',
-              left: 0,
-              right: 0,
-              bottom: 0,
-              height: 18,
-              pointerEvents: 'none',
-              background: 'linear-gradient(to top, var(--card), transparent)'
-            }}
-          />
-        )}
+          {collapsed ? '▣' : '⌄'}
+        </button>
       </div>
     );
   }
@@ -4669,10 +4511,10 @@ function getUsefulAroundTip(step) {
       <div
   data-toolbox-scroll="true"
   style={{
-    flex: '1 1 auto',
+    flex: '1 1 0',
     height: 0,
     minHeight: 0,
-    overflowY: 'scroll',
+    overflowY: 'auto',
     overflowX: 'hidden',
     padding: '8px 10px 28px 16px',
     display: 'flex',

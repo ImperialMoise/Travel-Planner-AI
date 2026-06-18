@@ -3977,7 +3977,22 @@ function Toolbox({ width = 320 }) {
   }
 
   const [pinned, setPinned] = React.useState(() => loadPins(view));
-  const [editMode, setEditMode] = React.useState(false);
+  const [addOpen, setAddOpen] = React.useState(false);
+  const [toolSizes, setToolSizes] = React.useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('atelier_tool_sizes_' + view)) || {};
+    } catch (e) {
+      return {};
+    }
+  });
+
+  const editMode = false;
+  const resizeRef = React.useRef({
+    id: null,
+    startY: 0,
+    startHeight: 0,
+    dragged: false
+  });
   
   /* ── Calculateur d'itinéraire ── */
   const [calcFrom, setCalcFrom] = React.useState('');
@@ -4200,7 +4215,16 @@ if (!data.routes || !data.routes[0]) {
   window.open(url, '_blank');
 }
 
-  React.useEffect(() => { setPinned(loadPins(view)); setEditMode(false); }, [view]);
+  React.useEffect(() => {
+  setPinned(loadPins(view));
+  setAddOpen(false);
+
+  try {
+    setToolSizes(JSON.parse(localStorage.getItem('atelier_tool_sizes_' + view)) || {});
+  } catch (e) {
+    setToolSizes({});
+  }
+}, [view]);
   /* Recevoir le résultat du pick carte */
   const { mapPickResult } = Store.useStore();
   React.useEffect(() => {
@@ -4218,13 +4242,206 @@ if (!data.routes || !data.routes[0]) {
   Store.set({ mapPickResult: null });
 }, [mapPickResult]);
 
-  function togglePin(id) {
+  function savePinned(next) {
+    localStorage.setItem('atelier_pins_' + view, JSON.stringify(next));
+    setPinned(next);
+  }
+
+  function addTool(id) {
     setPinned(prev => {
-      const has = prev.indexOf(id) > -1;
-      const next = has ? prev.filter(x => x !== id) : [...prev, id];
+      if (prev.indexOf(id) > -1) return prev;
+
+      const next = [...prev, id];
       localStorage.setItem('atelier_pins_' + view, JSON.stringify(next));
       return next;
     });
+
+    setAddOpen(false);
+  }
+
+  function removeTool(id) {
+    setPinned(prev => {
+      const next = prev.filter(x => x !== id);
+      localStorage.setItem('atelier_pins_' + view, JSON.stringify(next));
+      return next;
+    });
+  }
+
+  function saveToolSizes(next) {
+    localStorage.setItem('atelier_tool_sizes_' + view, JSON.stringify(next));
+    setToolSizes(next);
+  }
+
+  function toggleToolCollapsed(id) {
+    const current = toolSizes[id] || {};
+    const next = {
+      ...toolSizes,
+      [id]: {
+        ...current,
+        collapsed: !current.collapsed,
+        height: current.height || null
+      }
+    };
+
+    saveToolSizes(next);
+  }
+
+  function startToolResize(e, id) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const frame = e.currentTarget.closest('[data-tool-frame="true"]');
+    if (!frame) return;
+
+    resizeRef.current = {
+      id,
+      startY: e.clientY,
+      startHeight: frame.getBoundingClientRect().height,
+      dragged: false
+    };
+
+    function onMove(ev) {
+      const r = resizeRef.current;
+      if (!r.id) return;
+
+      const diff = ev.clientY - r.startY;
+
+      if (Math.abs(diff) > 4) {
+        r.dragged = true;
+      }
+
+      const nextHeight = Math.max(72, Math.min(720, Math.round(r.startHeight + diff)));
+
+      setToolSizes(prev => {
+        const next = {
+          ...prev,
+          [id]: {
+            ...(prev[id] || {}),
+            collapsed: false,
+            height: nextHeight
+          }
+        };
+
+        localStorage.setItem('atelier_tool_sizes_' + view, JSON.stringify(next));
+        return next;
+      });
+    }
+
+    function onUp() {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+
+      setTimeout(() => {
+        resizeRef.current = {
+          id: null,
+          startY: 0,
+          startHeight: 0,
+          dragged: false
+        };
+      }, 0);
+    }
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  }
+
+  function ToolFrame({ id, label, children }) {
+    const size = toolSizes[id] || {};
+    const collapsed = !!size.collapsed;
+    const height = collapsed ? 54 : size.height;
+
+    return (
+      <div
+        data-tool-frame="true"
+        style={{
+          position: 'relative',
+          height: height || 'auto',
+          minHeight: collapsed ? 54 : 72,
+          maxHeight: height ? height : 'none',
+          overflow: 'hidden',
+          borderRadius: 12,
+          transition: resizeRef.current.id === id ? 'none' : 'height .18s ease, max-height .18s ease',
+          boxShadow: collapsed ? '0 2px 8px rgba(82,98,91,0.04)' : 'none'
+        }}
+      >
+        {children}
+
+        <button
+          type="button"
+          title="Supprimer cet outil"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            removeTool(id);
+          }}
+          style={{
+            position: 'absolute',
+            top: 10,
+            right: 10,
+            zIndex: 20,
+            width: 22,
+            height: 22,
+            borderRadius: 999,
+            border: '1px solid rgba(192,86,63,.25)',
+            background: 'rgba(192,86,63,.08)',
+            color: '#c0563f',
+            cursor: 'pointer',
+            display: 'grid',
+            placeItems: 'center',
+            fontSize: 14,
+            lineHeight: 1
+          }}
+        >
+          ×
+        </button>
+
+        <button
+          type="button"
+          title={collapsed ? 'Développer' : 'Réduire ou redimensionner'}
+          onMouseDown={(e) => startToolResize(e, id)}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            if (resizeRef.current.dragged) return;
+            toggleToolCollapsed(id);
+          }}
+          style={{
+            position: 'absolute',
+            right: 8,
+            bottom: 8,
+            zIndex: 21,
+            width: 24,
+            height: 24,
+            borderRadius: 9,
+            border: '1px solid var(--outline-variant)',
+            background: 'var(--card)',
+            color: 'var(--faint)',
+            cursor: 'nwse-resize',
+            display: 'grid',
+            placeItems: 'center',
+            fontSize: 13,
+            boxShadow: '0 4px 12px rgba(0,0,0,.08)'
+          }}
+        >
+          {collapsed ? '▣' : '◢'}
+        </button>
+
+        {!collapsed && height && (
+          <div
+            style={{
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: 18,
+              pointerEvents: 'none',
+              background: 'linear-gradient(to top, var(--card), transparent)'
+            }}
+          />
+        )}
+      </div>
+    );
   }
 
   const lodging = steps.find(x => x.type === 'logement');
@@ -4324,7 +4541,7 @@ function getUsefulAroundTip(step) {
     <CalendarWidget
       key="calendar"
       trip={trip}
-      editMode={editMode}
+      editMode={false}
       onRemove={() => togglePin('calendar')}
     />
   );
@@ -4335,7 +4552,7 @@ function getUsefulAroundTip(step) {
       key="checklist"
       day={day}
       trip={trip}
-      editMode={editMode}
+      editMode={false}
       onRemove={() => togglePin('checklist')}
     />
   );
@@ -4347,7 +4564,7 @@ function getUsefulAroundTip(step) {
       key="note"
       day={day}
       trip={trip}
-      editMode={editMode}
+      editMode={false}
       onRemove={() => togglePin('note')}
     />
   );
@@ -4357,7 +4574,7 @@ function getUsefulAroundTip(step) {
   return (
     <CurrencyWidget
       key="currency"
-      editMode={editMode}
+      editMode={false}
       onRemove={() => togglePin('currency')}
     />
   );
@@ -4368,7 +4585,7 @@ function getUsefulAroundTip(step) {
     <GlobalNoteWidget
       key="globalNote"
       trip={trip}
-      editMode={editMode}
+      editMode={false}
       onRemove={() => togglePin('globalNote')}
     />
   );
@@ -4601,8 +4818,26 @@ function getUsefulAroundTip(step) {
 }}>
       <div style={{ padding: '16px 16px 8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase', color: 'var(--muted)' }}>Bo{'\u00ee'}te {'\u00e0'} outils</div>
-        <button onClick={() => setEditMode(e => !e)} title={editMode ? 'Termin\u00e9' : 'Personnaliser'} style={{ width: 28, height: 28, borderRadius: '50%', background: editMode ? 'var(--accent)' : 'transparent', border: 'none', cursor: 'pointer', color: editMode ? 'var(--accent-ink)' : 'var(--faint)', display: 'grid', placeItems: 'center' }}>
-          <Icon name="gear" size={16} />
+        <button
+          type="button"
+          onClick={() => setAddOpen(v => !v)}
+          title="Ajouter un outil"
+          style={{
+            width: 30,
+            height: 30,
+            borderRadius: '50%',
+            background: addOpen ? 'var(--accent)' : 'var(--inset)',
+            border: '1px solid var(--outline-variant)',
+            cursor: 'pointer',
+            color: addOpen ? 'var(--accent-ink)' : 'var(--accent)',
+            display: 'grid',
+            placeItems: 'center',
+            fontSize: 18,
+            fontWeight: 900,
+            lineHeight: 1
+          }}
+        >
+          +
         </button>
       </div>
       <div style={{
@@ -4614,15 +4849,28 @@ function getUsefulAroundTip(step) {
   flexDirection: 'column',
   gap: 16
 }}>
-        {pinned.map(id => BLOCKS[id] ? BLOCKS[id].render() : null)}
-        {editMode && unpinned.length > 0 && (
+        {pinned.map(id => {
+          const block = BLOCKS[id];
+          if (!block) return null;
+
+          return (
+            <ToolFrame
+              key={id}
+              id={id}
+              label={block.label}
+            >
+              {block.render()}
+            </ToolFrame>
+          );
+        })}
+        {addOpen && unpinned.length > 0 && (
           <div style={{ borderRadius: 12, border: '1px dashed var(--outline-variant)', padding: 12 }}>
-            <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--faint)', marginBottom: 9 }}>Ajouter un bloc</div>
+            <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--faint)', marginBottom: 9 }}>Ajouter un outil</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
               {unpinned.map(id => {
                 const b = BLOCKS[id]; if (!b) return null;
                 return (
-                  <button key={id} onClick={() => togglePin(id)} style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '8px 10px', borderRadius: 10, border: '1px solid var(--outline-variant)', background: 'var(--inset)', color: 'var(--text)', cursor: 'pointer', fontSize: 12.5, fontWeight: 600, textAlign: 'left', fontFamily: 'inherit' }}>
+                  <button key={id} onClick={() => addTool(id)} style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '8px 10px', borderRadius: 10, border: '1px solid var(--outline-variant)', background: 'var(--inset)', color: 'var(--text)', cursor: 'pointer', fontSize: 12.5, fontWeight: 600, textAlign: 'left', fontFamily: 'inherit' }}>
                     <div style={{ width: 26, height: 26, borderRadius: 8, background: 'var(--accent-soft)', color: 'var(--accent)', display: 'grid', placeItems: 'center', flexShrink: 0 }}><Icon name={b.icon} size={14} /></div>
                     <span style={{ flex: 1 }}>{b.label}</span>
                     <Icon name="plus" size={14} style={{ color: 'var(--faint)' }} />

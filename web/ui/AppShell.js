@@ -1460,6 +1460,53 @@ function AroundStepWidget({ step, editMode, onRemove }) {
     return 'activite';
   }
 
+    function distanceMetersFromStep(item) {
+    if (!step || !step.lat || !step.lng) return null;
+
+    const lat1 = Number(step.lat);
+    const lng1 = Number(step.lng);
+    const lat2 = nearbyLat(item);
+    const lng2 = nearbyLng(item);
+
+    if (
+      !Number.isFinite(lat1) ||
+      !Number.isFinite(lng1) ||
+      lat2 === null ||
+      lng2 === null
+    ) {
+      return null;
+    }
+
+    const R = 6371000;
+    const toRad = Math.PI / 180;
+
+    const p1 = lat1 * toRad;
+    const p2 = lat2 * toRad;
+    const dp = (lat2 - lat1) * toRad;
+    const dl = (lng2 - lng1) * toRad;
+
+    const a =
+      Math.sin(dp / 2) * Math.sin(dp / 2) +
+      Math.cos(p1) * Math.cos(p2) *
+      Math.sin(dl / 2) * Math.sin(dl / 2);
+
+    return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+  }
+
+  function distanceLabelFromStep(item) {
+    const meters = distanceMetersFromStep(item);
+
+    if (meters === null) return '';
+
+    if (meters < 1000) {
+      return meters + ' m';
+    }
+
+    return (meters / 1000).toLocaleString('fr-FR', {
+      maximumFractionDigits: 1
+    }) + ' km';
+  }
+
     function openNearbyOnMap(item) {
     const lat = nearbyLat(item);
     const lng = nearbyLng(item);
@@ -1546,10 +1593,46 @@ function AroundStepWidget({ step, editMode, onRemove }) {
     }
 
     try {
-      await window.SB.saveStep(trip.id, activeDay.id, payload);
+         const savedStep = await window.SB.saveStep(trip.id, activeDay.id, payload);
 
       const refreshed = await window.SB.loadTrip(trip.id);
-      Store.set({ trip: refreshed });
+
+      const refreshedDay = refreshed && Array.isArray(refreshed.days)
+        ? refreshed.days[selectedDayIndex]
+        : null;
+
+      const addedStep = refreshedDay && Array.isArray(refreshedDay.steps)
+        ? refreshedDay.steps.find(function(step) {
+            if (savedStep && savedStep.id && step.id === savedStep.id) return true;
+
+            const sameLabel = String(step.label || '').trim() === String(label || '').trim();
+            const sameLieu = String(step.lieu || '').trim() === String(lieu || '').trim();
+
+            if (sameLabel && sameLieu) return true;
+
+            if (lat !== null && lng !== null) {
+              const stepLat = Number(step.lat);
+              const stepLng = Number(step.lng);
+
+              if (
+                Number.isFinite(stepLat) &&
+                Number.isFinite(stepLng) &&
+                Math.abs(stepLat - lat) < 0.00002 &&
+                Math.abs(stepLng - lng) < 0.00002
+              ) {
+                return true;
+              }
+            }
+
+            return false;
+          })
+        : null;
+
+      Store.set({
+        trip: refreshed,
+        selectedDayIndex: selectedDayIndex,
+        pendingEditStepId: addedStep && addedStep.id ? addedStep.id : null
+      });
 
       Store.showToast(
         type === 'restaurant'
@@ -1751,13 +1834,36 @@ function AroundStepWidget({ step, editMode, onRemove }) {
                     padding: '10px 11px'
                   }}
                 >
-                  <div style={{
-                    fontSize: 13,
-                    fontWeight: 800,
-                    color: 'var(--text)',
+                                  <div style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    justifyContent: 'space-between',
+                    gap: 10,
                     marginBottom: 3
                   }}>
-                    {nearbyLabel(item)}
+                    <div style={{
+                      fontSize: 13,
+                      fontWeight: 800,
+                      color: 'var(--text)',
+                      minWidth: 0
+                    }}>
+                      {nearbyLabel(item)}
+                    </div>
+
+                    {distanceLabelFromStep(item) && (
+                      <span style={{
+                        flexShrink: 0,
+                        borderRadius: 999,
+                        padding: '3px 7px',
+                        background: 'var(--soft)',
+                        color: 'var(--muted)',
+                        fontSize: 10.5,
+                        fontWeight: 800,
+                        whiteSpace: 'nowrap'
+                      }}>
+                        {distanceLabelFromStep(item)}
+                      </span>
+                    )}
                   </div>
 
                                     <div style={{

@@ -926,7 +926,7 @@ function itHeaderDateLabel(iso, fallbackWeekday) {
 
 function AtelierV2() {
   // --- 1. CONNEXION À TA BASE DE DONNÉES SUPABASE ---
-  const { trip: realTrip, selectedDayIndex } = Store.useStore();
+  const { trip: realTrip, selectedDayIndex, pendingEditStepId } = Store.useStore();
 
   const T = realTrip ? {
     ...window.TRIP, // On garde les éléments graphiques (avatars, chapitres, carte) de la démo de Claude
@@ -1140,6 +1140,35 @@ function AtelierV2() {
   const stt = statusOf(sel, T.todayIndex);
   const pct = Math.round((T.todayIndex + 1) / T.duration * 100);
   const [editor, setEditor] = React.useState({ open: false, dayId: null, step: null });
+    React.useEffect(function() {
+    if (!pendingEditStepId || !realTrip || !Array.isArray(realTrip.days)) return;
+
+    for (let i = 0; i < realTrip.days.length; i += 1) {
+      const sourceDay = realTrip.days[i];
+      const foundStep = Array.isArray(sourceDay.steps)
+        ? sourceDay.steps.find(function(step) {
+            return String(step.id) === String(pendingEditStepId);
+          })
+        : null;
+
+      if (foundStep) {
+        Store.set({
+          selectedDayIndex: i,
+          pendingEditStepId: null
+        });
+
+        setEditor({
+          open: true,
+          dayId: sourceDay.id,
+          step: foundStep
+        });
+
+        return;
+      }
+    }
+
+    Store.set({ pendingEditStepId: null });
+  }, [pendingEditStepId, realTrip && realTrip.id]);
 
   // ── Drag & drop des étapes ──
   const [dragIdx, setDragIdx] = React.useState(null);

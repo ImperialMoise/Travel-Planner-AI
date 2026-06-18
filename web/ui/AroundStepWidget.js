@@ -257,7 +257,9 @@ async function searchAroundStep(categoryId) {
         raw: raw
       };
     }).filter(function(item) {
-      return item.label && item.label !== category.label;
+      return item.label &&
+        item.label !== category.label &&
+        isNearbyCloseEnough(item);
     });
 
     setNearbyItems(items);
@@ -381,6 +383,14 @@ async function searchAroundStep(categoryId) {
       maximumFractionDigits: 1
     }) + ' km';
   }
+
+  function isNearbyCloseEnough(item) {
+  const meters = distanceMetersFromStep(item);
+
+  if (meters === null) return true;
+
+  return meters <= 8000;
+}
 
     function openNearbyOnMap(item) {
     const lat = nearbyLat(item);

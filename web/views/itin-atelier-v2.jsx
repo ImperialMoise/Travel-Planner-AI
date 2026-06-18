@@ -1396,14 +1396,14 @@ function AtelierV2() {
   return React.createElement('article', {
     onClick: function() {
       Store.set({ selectedStepId: step.id || null });
-      setEditor({ open: true, dayId: day.id, step: step });
     },
+
     style: {
-      background: 'var(--card)',
       borderRadius: 12,
       padding: '18px 20px',
-      boxShadow: isSelectedStep ? '0 0 0 3px rgba(217,182,126,0.16), var(--shadow)' : 'var(--shadow)',
-      border: isSelectedStep ? '1px solid var(--tan)' : '1px solid var(--outline-variant)',
+      boxShadow: isSelectedStep ? '0 0 0 4px rgba(180,132,62,0.22), 0 10px 28px rgba(31,46,40,.14)' : 'var(--shadow)',
+      border: isSelectedStep ? '1px solid var(--accent)' : '1px solid var(--outline-variant)',
+      background: isSelectedStep ? 'var(--accent-soft)' : 'var(--card)',
       display: 'flex',
       gap: 16,
       position: 'relative',
@@ -1448,6 +1448,33 @@ function AtelierV2() {
         boxShadow: step.important ? '0 6px 14px rgba(180,132,62,.22)' : 'none'
       }
     }, step.important ? '★' : '☆'),
+
+        React.createElement('button', {
+      type: 'button',
+      title: 'Modifier cette étape',
+      onClick: function(e) {
+        e.stopPropagation();
+        Store.set({ selectedStepId: step.id || null });
+        setEditor({ open: true, dayId: day.id, step: step });
+      },
+      style: {
+        position: 'absolute',
+        top: 48,
+        right: 12,
+        zIndex: 4,
+        width: 30,
+        height: 30,
+        borderRadius: 999,
+        border: `1px solid ${C.line}`,
+        background: C.inset,
+        color: C.text,
+        display: 'grid',
+        placeItems: 'center',
+        cursor: 'pointer',
+        fontSize: 14,
+        lineHeight: 1
+      }
+    }, '✎'),
 
     React.createElement('div', {
       style: {

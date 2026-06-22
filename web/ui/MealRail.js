@@ -595,6 +595,7 @@
               <Icon name="bed" size={18} />
             </span>
           </div>
+        </div>
 
         <div style={{
           marginTop: 12,
@@ -901,35 +902,8 @@
         >
           <window.RailSection
             noBorder
-<<<<<<< HEAD
-            kicker="Hébergement"
-            title="Nuit du jour"
-            subtitle={stay
-              ? 'Hébergement actif sur cette journée.'
-              : 'Réserve cet espace pour choisir où dormir.'}
-            icon="bed"
-            open={openSections.lodging}
-            onToggle={() => toggleSection('lodging')}
-          >
-            {stay ? (
-              <LodgingCard
-                stay={stay}
-                day={day}
-                trip={trip}
-                onEditStep={onEditStep}
-              />
-            ) : (
-              <EmptyLodgingCard onAdd={addLodging} />
-            )}
-          </window.RailSection>
-
-          <window.RailSection
-            kicker="Où manger"
-            title="Où manger ?"
-=======
             kicker="Restaurants"
             title="Où manger ?"
->>>>>>> 0d868801add4cd13edfde47ce771f43d439709bf
             subtitle={restaurants.length
               ? restaurants.length + ' adresse' + (restaurants.length > 1 ? 's' : '') + ' prévue' + (restaurants.length > 1 ? 's' : '')
               : 'Ajoute les repas importants de la journée.'}

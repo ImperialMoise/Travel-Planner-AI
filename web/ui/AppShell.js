@@ -326,7 +326,7 @@
 
   .day-spine-head{
     flex-shrink:0;
-    padding:20px 18px 16px;
+    padding:24px 22px 18px;
     border-bottom:1px solid var(--outline-variant);
     background:var(--soft);
   }
@@ -340,42 +340,58 @@
   }
 
   .day-spine-title{
-    margin-top:3px;
+    margin-top:5px;
     font-family:var(--font-serif);
     font-style:italic;
-    font-size:25px;
-    line-height:31px;
+    font-size:26px;
+    line-height:32px;
     color:var(--text);
   }
 
   .day-spine-meta{
-    margin-top:5px;
-    font-size:12.5px;
+    margin-top:6px;
+    font-size:12px;
     color:var(--muted);
-    line-height:18px;
+    line-height:17px;
+    font-family:var(--font-mono,monospace);
   }
 
   .day-spine-scroll{
     flex:1 1 0;
     min-height:0;
     overflow-y:auto;
-    padding:12px;
+    padding:12px 10px 20px;
+    position:relative;
+  }
+
+  .day-spine-timeline{
+    position:absolute;
+    left:36px;
+    top:12px;
+    bottom:20px;
+    width:2px;
+    background:var(--surface-high,#ede8de);
+    z-index:0;
+    border-radius:1px;
   }
 
   .day-card{
+    position:relative;
+    z-index:1;
     width:100%;
     border:1px solid transparent;
     background:transparent;
     color:var(--text);
     border-radius:14px;
-    padding:12px;
+    padding:12px 12px 12px 12px;
     text-align:left;
     cursor:pointer;
     font-family:inherit;
     display:flex;
-    gap:10px;
+    align-items:flex-start;
+    gap:12px;
     transition:background .15s,border-color .15s;
-    margin-bottom:8px;
+    margin-bottom:4px;
   }
 
   .day-card:hover{
@@ -383,62 +399,141 @@
   }
 
   .day-card.active{
-    background:var(--accent-soft);
-    border-color:var(--accent);
+    background:rgba(124,84,16,.07);
+    border-color:rgba(124,84,16,.18);
+    border-radius:16px;
+    padding:14px 12px;
+    margin-top:4px;
+    margin-bottom:8px;
   }
 
   .day-card-num{
-    width:32px;
-    height:32px;
+    width:44px;
+    height:44px;
     border-radius:999px;
-    background:var(--inset);
+    background:var(--card);
+    border:2px solid var(--outline-variant);
     color:var(--muted);
     display:grid;
     place-items:center;
     flex-shrink:0;
-    font-size:11px;
-    font-weight:900;
-    font-family:var(--font-mono,ui-monospace);
+    font-size:14px;
+    font-family:var(--font-serif);
+    transition:all .2s;
+    box-shadow:0 2px 6px rgba(82,98,91,.06);
+  }
+
+  .day-card:hover .day-card-num{
+    border-color:var(--accent);
   }
 
   .day-card.active .day-card-num{
+    width:52px;
+    height:52px;
     background:var(--accent);
+    border-color:var(--accent);
     color:var(--accent-ink);
+    font-size:16px;
+    box-shadow:0 0 0 4px rgba(124,84,16,.15),0 4px 12px rgba(124,84,16,.20);
+  }
+
+  .day-card-body{
+    flex:1;
+    min-width:0;
+    padding-top:2px;
   }
 
   .day-card-title{
-    font-size:13.5px;
-    font-weight:900;
-    line-height:18px;
+    font-size:14px;
+    font-weight:700;
+    line-height:19px;
     color:var(--text);
-    white-space:nowrap;
+    display:-webkit-box;
+    -webkit-line-clamp:2;
+    -webkit-box-orient:vertical;
     overflow:hidden;
-    text-overflow:ellipsis;
   }
 
-  .day-card-meta{
+  .day-card.active .day-card-title{
+    font-size:15px;
+    font-weight:800;
+  }
+
+  .day-card-date{
     margin-top:3px;
-    font-size:11.5px;
+    font-size:12px;
     line-height:16px;
-    color:var(--muted);
+    color:var(--faint,#827567);
+    font-weight:500;
+  }
+
+  .day-card.active .day-card-date{
+    color:var(--accent);
+    font-weight:600;
   }
 
   .day-card-tags{
     display:flex;
     flex-wrap:wrap;
     gap:5px;
-    margin-top:7px;
+    margin-top:8px;
   }
 
   .day-card-tag{
-    font-size:9.5px;
-    font-weight:900;
-    letter-spacing:.05em;
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
+    font-size:10px;
+    font-weight:700;
+    letter-spacing:.04em;
     text-transform:uppercase;
-    padding:2px 6px;
+    padding:3px 8px;
     border-radius:999px;
-    background:var(--inset);
-    color:var(--muted);
+    background:var(--surface-high,#ede8de);
+    color:var(--faint,#827567);
+    border:1px solid var(--outline-variant);
+  }
+
+  .day-card.active .day-card-tag{
+    background:var(--accent);
+    color:var(--accent-ink);
+    border-color:var(--accent);
+  }
+
+  .day-card-note{
+    margin-top:6px;
+    font-size:11.5px;
+    line-height:16px;
+    color:var(--faint,#827567);
+    font-style:italic;
+    cursor:text;
+    border-radius:6px;
+    padding:2px 4px;
+    margin-left:-4px;
+    transition:background .15s;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    max-width:100%;
+    min-height:0;
+    outline:none;
+  }
+
+  .day-card-note:hover{
+    background:rgba(124,84,16,.06);
+  }
+
+  .day-card-note:focus{
+    background:var(--card);
+    border:1px solid var(--outline-variant);
+    white-space:normal;
+    box-shadow:0 2px 8px rgba(82,98,91,.08);
+  }
+
+  .day-card-note:empty::before{
+    content:'+ note…';
+    color:var(--outline-variant);
+    font-style:italic;
   }
 
   .empty-screen{
@@ -1387,6 +1482,30 @@
       if (onPickDay) onPickDay(index);
     }
 
+    function handleNoteBlur(day, event) {
+      const newNote = (event.target.textContent || '').trim();
+      const oldNote = (day.note || '').trim();
+
+      if (newNote === oldNote) return;
+
+      if (window.SB && window.SB.updateDay && trip.id) {
+        window.SB.updateDay(day.id, { note: newNote }).then(function () {
+          return window.SB.loadTrip(trip.id);
+        }).then(function (refreshed) {
+          if (refreshed) Store.set({ trip: refreshed });
+        }).catch(function (err) {
+          console.error('Note save failed:', err);
+        });
+      }
+    }
+
+    function handleNoteKeyDown(event) {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        event.target.blur();
+      }
+    }
+
     return (
       <aside
         className="day-spine"
@@ -1410,10 +1529,14 @@
         </div>
 
         <div className="day-spine-scroll">
+          <div className="day-spine-timeline" />
+
           {days.map(function renderDay(day, index) {
             const active = index === selected;
             const tags = countDayTags(day);
             const title = getDisplayDayTitle(day);
+            const dateStr = formatDayDate(day.dateISO) || '';
+            const stepCount = tags.steps || 0;
 
             return (
               <button
@@ -1426,36 +1549,48 @@
                   {String(index + 1).padStart(2, '0')}
                 </span>
 
-                <span style={{ minWidth: 0, flex: 1 }}>
+                <span className="day-card-body">
                   <span className="day-card-title">
                     {title}
                   </span>
 
-                  <span className="day-card-meta">
-                    {formatDayDate(day.dateISO) || 'Date non définie'}
-                    {' · '}
-                    {tags.steps} étape{tags.steps > 1 ? 's' : ''}
+                  <span className="day-card-date">
+                    {dateStr}
+                    {dateStr && stepCount ? ' · ' : ''}
+                    {stepCount ? stepCount + ' étape' + (stepCount > 1 ? 's' : '') : ''}
                   </span>
 
                   <span className="day-card-tags">
                     {tags.transports > 0 && (
                       <span className="day-card-tag">
-                        {tags.transports} transport{tags.transports > 1 ? 's' : ''}
+                        {tags.transports} Transport{tags.transports > 1 ? 's' : ''}
                       </span>
                     )}
 
                     {tags.restaurants > 0 && (
                       <span className="day-card-tag">
-                        {tags.restaurants} resto{tags.restaurants > 1 ? 's' : ''}
+                        {tags.restaurants} Resto{tags.restaurants > 1 ? 's' : ''}
                       </span>
                     )}
 
                     {tags.lodgings > 0 && (
                       <span className="day-card-tag">
-                        logement
+                        Logement
                       </span>
                     )}
                   </span>
+
+                  <span
+                    className="day-card-note"
+                    contentEditable
+                    suppressContentEditableWarning
+                    onClick={function (e) { e.stopPropagation(); }}
+                    onBlur={function (e) { handleNoteBlur(day, e); }}
+                    onKeyDown={handleNoteKeyDown}
+                    dangerouslySetInnerHTML={{
+                      __html: day.note || ''
+                    }}
+                  />
                 </span>
               </button>
             );

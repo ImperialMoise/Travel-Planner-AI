@@ -775,6 +775,272 @@
   }
 }
 
+.home-page{
+  flex:1;
+  width:100%;
+  height:100%;
+  min-height:0;
+  overflow-y:auto;
+  overflow-x:hidden;
+  background:var(--bg);
+  scroll-behavior:smooth;
+}
+
+.home-scroll-cue{
+  position:absolute;
+  left:50%;
+  bottom:24px;
+  z-index:2;
+  transform:translateX(-50%);
+  border:none;
+  background:rgba(255,248,244,.86);
+  color:var(--text);
+  border-radius:999px;
+  padding:10px 14px;
+  display:inline-flex;
+  align-items:center;
+  gap:10px;
+  cursor:pointer;
+  font-family:inherit;
+  font-size:12px;
+  font-weight:900;
+  box-shadow:0 14px 40px rgba(0,0,0,.22);
+  border:1px solid rgba(255,255,255,.42);
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+}
+
+.home-scroll-cue-arrow{
+  width:28px;
+  height:28px;
+  border-radius:999px;
+  display:grid;
+  place-items:center;
+  background:var(--accent);
+  color:var(--accent-ink);
+  animation:homeArrowBounce 1.35s ease-in-out infinite;
+}
+
+@keyframes homeArrowBounce{
+  0%,100%{
+    transform:translateY(0);
+  }
+  50%{
+    transform:translateY(5px);
+  }
+}
+
+.home-library{
+  padding:56px clamp(18px,4vw,56px) 72px;
+  background:var(--bg);
+  color:var(--text);
+}
+
+.home-library-inner{
+  width:min(1180px,100%);
+  margin:0 auto;
+}
+
+.home-library-head{
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:24px;
+  margin-bottom:24px;
+}
+
+.home-library-kicker{
+  color:var(--accent);
+  font-family:var(--font-mono,ui-monospace);
+  font-size:11px;
+  font-weight:900;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+  margin-bottom:8px;
+}
+
+.home-library-title{
+  margin:0;
+  color:var(--text);
+  font-family:var(--font-serif);
+  font-size:clamp(30px,4vw,46px);
+  font-weight:400;
+  line-height:1.05;
+  letter-spacing:-.035em;
+}
+
+.home-library-text{
+  margin:10px 0 0;
+  max-width:620px;
+  color:var(--muted);
+  font-size:15px;
+  line-height:1.65;
+  font-weight:700;
+}
+
+.home-library-count{
+  flex-shrink:0;
+  border:1px solid var(--outline-variant);
+  border-radius:999px;
+  background:var(--card);
+  color:var(--muted);
+  padding:8px 12px;
+  font-family:var(--font-mono,ui-monospace);
+  font-size:11px;
+  font-weight:900;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+
+.home-trip-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:18px;
+}
+
+.home-trip-card{
+  border:1px solid var(--outline-variant);
+  border-radius:18px;
+  background:var(--card);
+  overflow:hidden;
+  box-shadow:0 2px 8px rgba(82,98,91,.05);
+  transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+
+.home-trip-card:hover{
+  transform:translateY(-3px);
+  border-color:rgba(124,84,16,.38);
+  box-shadow:0 14px 36px rgba(82,98,91,.12);
+}
+
+.home-trip-cover{
+  position:relative;
+  height:170px;
+  background-size:cover;
+  background-position:center;
+}
+
+.home-trip-cover::after{
+  content:'';
+  position:absolute;
+  inset:0;
+  background:linear-gradient(180deg,rgba(31,27,22,.08),rgba(31,27,22,.48));
+}
+
+.home-trip-chip{
+  position:absolute;
+  left:12px;
+  top:12px;
+  z-index:1;
+  border:1px solid rgba(255,255,255,.44);
+  border-radius:999px;
+  background:rgba(255,248,244,.82);
+  color:var(--accent);
+  padding:5px 8px;
+  font-family:var(--font-mono,ui-monospace);
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+}
+
+.home-trip-card-body{
+  padding:16px;
+}
+
+.home-trip-card-title{
+  margin:0;
+  color:var(--text);
+  font-family:var(--font-serif);
+  font-size:25px;
+  font-weight:400;
+  line-height:1.08;
+  letter-spacing:-.025em;
+}
+
+.home-trip-card-meta{
+  margin-top:7px;
+  color:var(--muted);
+  font-size:12.5px;
+  font-weight:700;
+  line-height:1.45;
+}
+
+.home-trip-card-actions{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-top:16px;
+}
+
+.home-trip-resume{
+  flex:1;
+  border:none;
+  border-radius:999px;
+  background:var(--accent);
+  color:var(--accent-ink);
+  min-height:38px;
+  padding:0 14px;
+  cursor:pointer;
+  font-family:inherit;
+  font-size:12.5px;
+  font-weight:900;
+}
+
+.home-trip-map{
+  width:38px;
+  height:38px;
+  border-radius:999px;
+  border:1px solid var(--outline-variant);
+  background:var(--card);
+  color:var(--accent);
+  display:grid;
+  place-items:center;
+  cursor:pointer;
+}
+
+.home-trip-empty{
+  border:1px dashed var(--outline-variant);
+  border-radius:18px;
+  background:var(--surface-container-low,#f8f3e9);
+  padding:30px;
+  text-align:center;
+  color:var(--muted);
+}
+
+.home-trip-empty-title{
+  color:var(--text);
+  font-family:var(--font-serif);
+  font-size:30px;
+  line-height:1.1;
+  margin-bottom:8px;
+}
+
+@media(max-width:980px){
+  .home-library-head{
+    align-items:flex-start;
+    flex-direction:column;
+  }
+
+  .home-trip-grid{
+    grid-template-columns:1fr;
+  }
+}
+
+@media(max-width:720px){
+  .home-scroll-cue{
+    width:calc(100% - 32px);
+    justify-content:center;
+    bottom:16px;
+  }
+
+  .home-library{
+    padding:38px 16px 56px;
+  }
+}
+
   .modal-backdrop{
     position:fixed;
     inset:0;
@@ -1845,6 +2111,16 @@
     ];
   }, []);
 
+  const tripImages = React.useMemo(function buildTripImages() {
+    return [
+      'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=1200&q=86',
+      'https://images.unsplash.com/photo-1528164344705-47542687000d?auto=format&fit=crop&w=1200&q=86',
+      'https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=1200&q=86',
+      'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=1200&q=86',
+      'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=1200&q=86'
+    ];
+  }, []);
+
   const [imageIndex, setImageIndex] = React.useState(0);
   const [destination, setDestination] = React.useState('');
   const [startDate, setStartDate] = React.useState('');
@@ -1853,6 +2129,7 @@
   const [error, setError] = React.useState('');
 
   const loggedOut = mode === 'loggedOut';
+  const safeTrips = Array.isArray(trips) ? trips : [];
   const activeImage = heroImages[imageIndex] || heroImages[0];
 
   React.useEffect(function rotateHeroImage() {
@@ -1867,6 +2144,17 @@
     };
   }, [heroImages.length]);
 
+  function scrollToTrips() {
+    const target = document.getElementById('home-trips-section');
+
+    if (target) {
+      target.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      });
+    }
+  }
+
   function daysBetweenInclusive(start, end) {
     if (!start || !end) return 7;
 
@@ -1878,6 +2166,21 @@
     }
 
     return Math.max(1, Math.round((endTime - startTime) / 86400000) + 1);
+  }
+
+  function tripDateRange(trip) {
+    const start = trip && (trip.start_date || trip.startDate);
+    const end = trip && (trip.end_date || trip.endDate);
+
+    if (start && end) {
+      return formatDayDate(start) + ' → ' + formatDayDate(end);
+    }
+
+    if (start) {
+      return 'Départ ' + formatDayDate(start);
+    }
+
+    return 'Dates à préciser';
   }
 
   async function createTripFromHero() {
@@ -1924,123 +2227,250 @@
     }
   }
 
+  function openTrip(tripId) {
+    if (!tripId) return;
+    selectTrip(tripId);
+  }
+
   return (
-    <section className="home-hero">
-      <div
-        className="home-hero-bg"
-        role="img"
-        aria-label={activeImage.label}
-        style={{
-          backgroundImage: 'url("' + activeImage.url + '")'
-        }}
-      />
+    <div className="home-page">
+      <section className="home-hero">
+        <div
+          className="home-hero-bg"
+          role="img"
+          aria-label={activeImage.label}
+          style={{
+            backgroundImage: 'url("' + activeImage.url + '")'
+          }}
+        />
 
-      <div className="home-hero-inner">
-        <div className="home-hero-kicker">
-          <Icon name="map" size={14} />
-          Atelier du voyage
-        </div>
-
-        <h1 className="home-hero-title">
-          Imagine ton prochain voyage.
-        </h1>
-
-        <p className="home-hero-text">
-          Crée un itinéraire clair, beau et partagé. Pose une destination, ajoute tes dates,
-          puis construis ton voyage jour après jour.
-        </p>
-
-        <div className="home-trip-bar">
-          <label className="home-trip-field">
-            <span className="icon">
-              <Icon name="pin" size={16} />
-            </span>
-
-            <span style={{ minWidth: 0, flex: 1 }}>
-              <span className="home-trip-label">
-                Destination
-              </span>
-
-              <input
-                className="home-trip-input"
-                value={destination}
-                onChange={event => setDestination(event.target.value)}
-                placeholder="Corée du Sud, Lisbonne, Kyoto…"
-              />
-            </span>
-          </label>
-
-          <label className="home-trip-field">
-            <span className="icon">
-              <Icon name="cal" size={16} />
-            </span>
-
-            <span style={{ minWidth: 0, flex: 1 }}>
-              <span className="home-trip-label">
-                Départ
-              </span>
-
-              <input
-                className="home-trip-input"
-                type="date"
-                value={startDate}
-                onChange={event => {
-                  setStartDate(event.target.value);
-
-                  if (endDate && event.target.value && endDate < event.target.value) {
-                    setEndDate(event.target.value);
-                  }
-                }}
-              />
-            </span>
-          </label>
-
-          <label className="home-trip-field">
-            <span className="icon">
-              <Icon name="cal" size={16} />
-            </span>
-
-            <span style={{ minWidth: 0, flex: 1 }}>
-              <span className="home-trip-label">
-                Retour
-              </span>
-
-              <input
-                className="home-trip-input"
-                type="date"
-                value={endDate}
-                min={startDate || undefined}
-                onChange={event => setEndDate(event.target.value)}
-              />
-            </span>
-          </label>
-
-          <button
-            type="button"
-            className="home-trip-action"
-            onClick={createTripFromHero}
-            disabled={busy}
-            title={loggedOut ? 'Se connecter pour créer un itinéraire' : 'Créer l’itinéraire'}
-          >
-            {busy ? '…' : <Icon name={loggedOut ? 'user' : 'search'} size={20} />}
-          </button>
-        </div>
-
-        {error && (
-          <div className="home-hero-error">
-            {error}
+        <div className="home-hero-inner">
+          <div className="home-hero-kicker">
+            <Icon name="map" size={14} />
+            Atelier du voyage
           </div>
-        )}
 
-        <div className="home-hero-caption">
-          {loggedOut
-            ? 'Connecte-toi pour sauvegarder ton itinéraire'
-            : trips && trips.length
-              ? 'Tu peux aussi ouvrir un voyage existant depuis la barre du haut'
-              : 'Ton premier itinéraire commence ici'}
+          <h1 className="home-hero-title">
+            Imagine ton prochain voyage.
+          </h1>
+
+          <p className="home-hero-text">
+            Crée un itinéraire clair, beau et partagé. Pose une destination, ajoute tes dates,
+            puis construis ton voyage jour après jour.
+          </p>
+
+          <div className="home-trip-bar">
+            <label className="home-trip-field">
+              <span className="icon">
+                <Icon name="pin" size={16} />
+              </span>
+
+              <span style={{ minWidth: 0, flex: 1 }}>
+                <span className="home-trip-label">
+                  Destination
+                </span>
+
+                <input
+                  className="home-trip-input"
+                  value={destination}
+                  onChange={event => setDestination(event.target.value)}
+                  placeholder="Corée du Sud, Lisbonne, Kyoto…"
+                />
+              </span>
+            </label>
+
+            <label className="home-trip-field">
+              <span className="icon">
+                <Icon name="cal" size={16} />
+              </span>
+
+              <span style={{ minWidth: 0, flex: 1 }}>
+                <span className="home-trip-label">
+                  Départ
+                </span>
+
+                <input
+                  className="home-trip-input"
+                  type="date"
+                  value={startDate}
+                  onChange={event => {
+                    setStartDate(event.target.value);
+
+                    if (endDate && event.target.value && endDate < event.target.value) {
+                      setEndDate(event.target.value);
+                    }
+                  }}
+                />
+              </span>
+            </label>
+
+            <label className="home-trip-field">
+              <span className="icon">
+                <Icon name="cal" size={16} />
+              </span>
+
+              <span style={{ minWidth: 0, flex: 1 }}>
+                <span className="home-trip-label">
+                  Retour
+                </span>
+
+                <input
+                  className="home-trip-input"
+                  type="date"
+                  value={endDate}
+                  min={startDate || undefined}
+                  onChange={event => setEndDate(event.target.value)}
+                />
+              </span>
+            </label>
+
+            <button
+              type="button"
+              className="home-trip-action"
+              onClick={createTripFromHero}
+              disabled={busy}
+              title={loggedOut ? 'Se connecter pour créer un itinéraire' : 'Créer l’itinéraire'}
+            >
+              {busy ? '…' : <Icon name={loggedOut ? 'user' : 'search'} size={20} />}
+            </button>
+          </div>
+
+          {error && (
+            <div className="home-hero-error">
+              {error}
+            </div>
+          )}
+
+          <div className="home-hero-caption">
+            {loggedOut
+              ? 'Connecte-toi pour sauvegarder ton itinéraire'
+              : safeTrips.length
+                ? 'Tu peux aussi retrouver tes voyages déjà créés plus bas'
+                : 'Ton premier itinéraire commence ici'}
+          </div>
         </div>
-      </div>
-    </section>
+
+        <button
+          type="button"
+          className="home-scroll-cue"
+          onClick={scrollToTrips}
+        >
+          <span>
+            Voir mes voyages déjà créés
+          </span>
+
+          <span className="home-scroll-cue-arrow">
+            ↓
+          </span>
+        </button>
+      </section>
+
+      <section
+        id="home-trips-section"
+        className="home-library"
+      >
+        <div className="home-library-inner">
+          <div className="home-library-head">
+            <div>
+              <div className="home-library-kicker">
+                Reprendre la planification
+              </div>
+
+              <h2 className="home-library-title">
+                Tes voyages t’attendent.
+              </h2>
+
+              <p className="home-library-text">
+                Retrouve les itinéraires déjà créés, reprends une journée en cours,
+                ajoute des étapes ou complète les logements, restaurants et documents.
+              </p>
+            </div>
+
+            <div className="home-library-count">
+              {safeTrips.length
+                ? safeTrips.length + ' voyage' + (safeTrips.length > 1 ? 's' : '')
+                : 'Aucun voyage'}
+            </div>
+          </div>
+
+          {loggedOut ? (
+            <div className="home-trip-empty">
+              <div className="home-trip-empty-title">
+                Connecte-toi pour retrouver tes voyages.
+              </div>
+
+              <div>
+                Tes itinéraires sauvegardés apparaîtront ici une fois connecté.
+              </div>
+            </div>
+          ) : safeTrips.length ? (
+            <div className="home-trip-grid">
+              {safeTrips.map(function renderTripCard(trip, index) {
+                const image = tripImages[index % tripImages.length];
+
+                return (
+                  <article
+                    key={trip.id || index}
+                    className="home-trip-card"
+                  >
+                    <div
+                      className="home-trip-cover"
+                      style={{
+                        backgroundImage: 'url("' + image + '")'
+                      }}
+                    >
+                      <div className="home-trip-chip">
+                        {tripDateRange(trip)}
+                      </div>
+                    </div>
+
+                    <div className="home-trip-card-body">
+                      <h3 className="home-trip-card-title">
+                        {trip.name || 'Voyage sans titre'}
+                      </h3>
+
+                      <div className="home-trip-card-meta">
+                        Reprendre la planification, compléter les étapes et préparer les détails du voyage.
+                      </div>
+
+                      <div className="home-trip-card-actions">
+                        <button
+                          type="button"
+                          className="home-trip-resume"
+                          onClick={() => openTrip(trip.id)}
+                        >
+                          Reprendre
+                        </button>
+
+                        <button
+                          type="button"
+                          className="home-trip-map"
+                          title="Ouvrir le voyage"
+                          onClick={() => openTrip(trip.id)}
+                        >
+                          <Icon name="map" size={17} />
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="home-trip-empty">
+              <div className="home-trip-empty-title">
+                Aucun voyage pour le moment.
+              </div>
+
+              <div>
+                Crée ton premier itinéraire avec la barre au-dessus.
+                Il apparaîtra ici automatiquement.
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
+    </div>
   );
 }
 

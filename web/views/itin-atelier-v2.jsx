@@ -48,34 +48,166 @@
     flex:1;
     min-height:0;
     min-width:0;
-    display:grid;
-    grid-template-columns:minmax(0,1fr) 320px;
+    display:flex;
+    flex-direction:column;
+    overflow-y:auto;
+    overflow-x:hidden;
+    scrollbar-gutter:stable;
+  }
+
+  /* ── Hero ── */
+  .atelier-v2-hero{
+    position:relative;
+    min-height:260px;
+    border-radius:0 0 18px 18px;
     overflow:hidden;
+    margin-bottom:24px;
+    background:linear-gradient(135deg,var(--petrol,#15302a) 0%,#2d493f 60%,var(--accent) 100%);
+    box-shadow:0 8px 24px rgba(82,98,91,.10);
+  }
+
+  .atelier-v2-hero-img{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    opacity:.55;
+  }
+
+  .atelier-v2-hero-overlay{
+    position:absolute;
+    inset:0;
+    background:linear-gradient(to top,rgba(21,48,42,.88) 0%,rgba(21,48,42,.40) 50%,transparent 100%);
+  }
+
+  .atelier-v2-hero-inner{
+    position:relative;
+    z-index:1;
+    display:flex;
+    flex-direction:column;
+    justify-content:flex-end;
+    min-height:260px;
+    padding:24px 34px;
+  }
+
+  .atelier-v2-hero-badges{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:10px;
+  }
+
+  .atelier-v2-hero-badge{
+    display:inline-block;
+    padding:4px 12px;
+    background:rgba(254,249,239,.18);
+    backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    border-radius:999px;
+    font-size:11px;
+    font-weight:800;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:#fff;
+    border:1px solid rgba(255,255,255,.25);
+  }
+
+  .atelier-v2-hero-date{
+    font-family:var(--font-mono,monospace);
+    font-size:11px;
+    color:rgba(255,255,255,.85);
+  }
+
+  .atelier-v2-hero-title{
+    font-family:var(--font-serif);
+    font-size:40px;
+    line-height:48px;
+    color:#fff;
+    margin-bottom:8px;
+  }
+
+  .atelier-v2-hero-note{
+    max-width:680px;
+    font-size:14px;
+    line-height:21px;
+    color:rgba(255,255,255,.80);
+    border-left:2px solid var(--tan,#d9b67e);
+    padding-left:14px;
+  }
+
+  .atelier-v2-hero-actions{
+    position:absolute;
+    top:18px;
+    right:24px;
+    z-index:2;
+    display:flex;
+    gap:8px;
+  }
+
+  .atelier-v2-hero-btn{
+    border:1px solid rgba(255,255,255,.30);
+    background:rgba(254,249,239,.14);
+    backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);
+    color:#fff;
+    border-radius:999px;
+    min-height:36px;
+    padding:0 14px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    cursor:pointer;
+    font-family:inherit;
+    font-size:12px;
+    font-weight:800;
+  }
+
+  .atelier-v2-hero-btn:hover{
+    background:rgba(254,249,239,.26);
+  }
+
+  .atelier-v2-hero-btn.primary{
+    background:var(--accent);
+    border-color:var(--accent);
+    color:var(--accent-ink,#fff);
+  }
+
+  /* ── Body 2/3 + 1/3 ── */
+  .atelier-v2-body{
+    display:grid;
+    grid-template-columns:minmax(0,2fr) minmax(260px,1fr);
+    gap:0;
+    flex:1;
+    min-height:0;
+    padding:0 34px 34px;
   }
 
   .atelier-v2-content{
     min-width:0;
     min-height:0;
-    display:flex;
-    flex-direction:column;
-    overflow:hidden;
+    padding-right:24px;
   }
 
-  .atelier-v2-scroll{
-    flex:1;
+  .atelier-v2-sidebar{
+    min-width:0;
     min-height:0;
-    overflow-y:auto;
-    overflow-x:hidden;
-    scrollbar-gutter:stable;
-    padding:26px 34px 34px;
+    border-left:1px solid var(--outline-variant);
+    padding-left:22px;
   }
 
-  .atelier-v2-day-head{
-    display:grid;
-    grid-template-columns:minmax(0,1fr) auto;
-    gap:18px;
-    align-items:start;
-    margin-bottom:22px;
+  .atelier-v2-sidebar > aside{
+    width:100% !important;
+    border-left:none !important;
+    height:auto !important;
+    overflow:visible !important;
+    background:transparent !important;
+  }
+
+  .atelier-v2-sidebar > aside > div{
+    padding:0 !important;
+    overflow:visible !important;
   }
 
   .atelier-v2-kicker{
@@ -84,23 +216,6 @@
     letter-spacing:.17em;
     text-transform:uppercase;
     color:var(--accent);
-  }
-
-  .atelier-v2-title{
-    margin-top:5px;
-    font-family:var(--font-serif);
-    font-style:italic;
-    font-size:42px;
-    line-height:48px;
-    color:var(--text);
-  }
-
-  .atelier-v2-subtitle{
-    margin-top:8px;
-    color:var(--muted);
-    font-size:14px;
-    line-height:21px;
-    max-width:780px;
   }
 
   .atelier-v2-actions{
@@ -375,35 +490,38 @@
   }
 
   @media(max-width:1180px){
-    .atelier-v2-main{
+    .atelier-v2-body{
       grid-template-columns:minmax(0,1fr);
+      padding:0 24px 34px;
     }
 
-    .atelier-v2-main > aside{
-      display:none !important;
+    .atelier-v2-sidebar{
+      border-left:none;
+      padding-left:0;
+      border-top:1px solid var(--outline-variant);
+      padding-top:22px;
+      margin-top:14px;
     }
   }
 
   @media(max-width:760px){
-    .atelier-v2-scroll{
-      padding:22px 18px 90px;
+    .atelier-v2-body{
+      padding:0 18px 90px;
     }
 
-    .atelier-v2-day-head{
-      grid-template-columns:1fr;
+    .atelier-v2-hero-title{
+      font-size:30px;
+      line-height:36px;
     }
 
-    .atelier-v2-actions{
-      justify-content:flex-start;
+    .atelier-v2-hero-inner{
+      padding:20px 18px;
+      min-height:200px;
     }
 
-    .atelier-v2-title{
-      font-size:33px;
-      line-height:39px;
-    }
-
-    .atelier-v2-stats{
-      grid-template-columns:repeat(2,minmax(0,1fr));
+    .atelier-v2-hero-actions{
+      top:12px;
+      right:14px;
     }
   }
   `;
@@ -944,84 +1062,66 @@
     return (
       <div className="atelier-v2">
         <div className="atelier-v2-main">
-          <section className="atelier-v2-content">
-            <div className="atelier-v2-scroll">
-              <header className="atelier-v2-day-head">
-                <div>
-                  <div className="atelier-v2-kicker">
-                    Jour {safeDayIndex + 1}
-                    {dayDate ? ' · ' + dayDate : ''}
-                  </div>
 
-                  <h1 className="atelier-v2-title">
-                    {dayTitle}
-                  </h1>
+          {/* ── Hero ── */}
+          <div className="atelier-v2-hero">
+            <div className="atelier-v2-hero-overlay" />
 
-                  <div className="atelier-v2-subtitle">
-                    {trip.name || 'Mon voyage'}
-                    {trip.startDate && trip.endDate
-                      ? ' · ' + formatDayDate(trip.startDate) + ' → ' + formatDayDate(trip.endDate)
-                      : ''}
-                  </div>
-                </div>
+            <div className="atelier-v2-hero-actions">
+              <button
+                type="button"
+                className="atelier-v2-hero-btn"
+                onClick={() => setDayEditorOpen(true)}
+              >
+                ✎ Modifier
+              </button>
 
-                <div className="atelier-v2-actions">
-                  <button
-                    type="button"
-                    className="atelier-v2-btn"
-                    onClick={() => setDayEditorOpen(true)}
-                  >
-                    ✎ Modifier le jour
-                  </button>
+              <button
+                type="button"
+                className="atelier-v2-hero-btn"
+                onClick={selectMapForDay}
+              >
+                <Icon name="map" size={14} />
+                Carte
+              </button>
 
-                  <button
-                    type="button"
-                    className="atelier-v2-btn"
-                    onClick={selectMapForDay}
-                  >
-                    <Icon name="map" size={15} />
-                    Carte
-                  </button>
+              <button
+                type="button"
+                className="atelier-v2-hero-btn primary"
+                onClick={() => openAddStep('activite')}
+              >
+                <Icon name="plus" size={14} />
+                Ajouter
+              </button>
+            </div>
 
-                  <button
-                    type="button"
-                    className="atelier-v2-btn primary"
-                    onClick={() => openAddStep('activite')}
-                  >
-                    <Icon name="plus" size={15} />
-                    Ajouter
-                  </button>
-                </div>
-              </header>
-
-              <div className="atelier-v2-stats">
-                <StatCard
-                  value={counts.timeline}
-                  label={counts.timeline > 1 ? 'étapes visibles' : 'étape visible'}
-                />
-
-                <StatCard
-                  value={counts.restaurants || 0}
-                  label={counts.restaurants > 1 ? 'restaurants' : 'restaurant'}
-                />
-
-                <StatCard
-                  value={counts.transports || 0}
-                  label={counts.transports > 1 ? 'transports' : 'transport'}
-                />
-
-                <StatCard
-                  value={importantCount || '—'}
-                  label="étapes clés"
-                />
+            <div className="atelier-v2-hero-inner">
+              <div className="atelier-v2-hero-badges">
+                <span className="atelier-v2-hero-badge">
+                  Jour {safeDayIndex + 1}
+                </span>
+                {dayDate && (
+                  <span className="atelier-v2-hero-date">
+                    {dayDate}
+                  </span>
+                )}
               </div>
 
-              {day.note && (
-                <div className="atelier-v2-note">
-                  {day.note}
-                </div>
-              )}
+              <h1 className="atelier-v2-hero-title">
+                {dayTitle}
+              </h1>
 
+              {day.note && (
+                <p className="atelier-v2-hero-note">
+                  {day.note}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* ── Body : 2/3 timeline + 1/3 sidebar ── */}
+          <div className="atelier-v2-body">
+            <section className="atelier-v2-content">
               <div className="atelier-v2-timeline">
                 {reminders.map(function renderReminder(reminder) {
                   return (
@@ -1037,7 +1137,7 @@
                   <div className="atelier-v2-empty">
                     Aucune étape visible dans la timeline pour cette journée.
                     <br />
-                    Les restaurants et hébergements sont affichés dans la colonne droite.
+                    Les restaurants et hébergements sont affichés à droite.
                   </div>
                 )}
 
@@ -1108,17 +1208,19 @@
                   Ajouter une étape
                 </button>
               </div>
-            </div>
-          </section>
+            </section>
 
-          <window.MealRail
-            trip={trip}
-            day={day}
-            dayIndex={safeDayIndex}
-            onEditStep={openEditorForStep}
-            onAddStep={openAddStep}
-            onReload={reloadTrip}
-          />
+            <div className="atelier-v2-sidebar">
+              <window.MealRail
+                trip={trip}
+                day={day}
+                dayIndex={safeDayIndex}
+                onEditStep={openEditorForStep}
+                onAddStep={openAddStep}
+                onReload={reloadTrip}
+              />
+            </div>
+          </div>
         </div>
 
         <window.StepEditor

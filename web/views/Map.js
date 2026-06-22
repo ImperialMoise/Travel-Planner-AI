@@ -450,22 +450,13 @@ React.useEffect(() => {
     r.addEventListener('click', () => {
       const s = d.steps[+r.dataset.si];
 
-      if (s.c && map) {
-        map.flyTo({
-          center: s.c,
-          zoom: Math.max(map.getZoom(), 15.5),
-          duration: 1400
-        });
-        return;
-      }
-
       Store.set({
-        mapPickMode: 'locate-step',
-        mapLocateStep: {
-          tripId: realTrip && realTrip.id,
-          dayId: d.id,
-          stepId: s.id || null
-        }
+        view: 'itinerary',
+        selectedDayIndex: i,
+        selectedStepId: s && s.id ? s.id : null,
+        pendingEditStepId: null,
+        mapPickMode: null,
+        mapLocateStep: null
       });
     });
   });

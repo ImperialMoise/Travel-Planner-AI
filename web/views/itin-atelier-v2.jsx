@@ -911,10 +911,6 @@
             <span className="atelier-v2-reminder-title">
               Où dormir ?
             </span>
-
-            <span className="atelier-v2-reminder-sub">
-              + Ajouter un hébergement
-            </span>
           </span>
 
           <span style={{
@@ -927,10 +923,10 @@
             fontSize: 10.5,
             fontWeight: 900,
             lineHeight: '14px',
-            padding: '5px 9px',
+            padding: '5px 10px',
             whiteSpace: 'nowrap'
           }}>
-            Ajouter
+            Ajouter un hébergement
           </span>
         </button>
       );

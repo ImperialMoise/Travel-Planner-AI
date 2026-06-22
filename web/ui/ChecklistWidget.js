@@ -70,35 +70,37 @@
     };
   }
 
-  function ChecklistHeader({ editMode, onRemove }) {
-    return (
-      <div style={widgetHeaderStyle()}>
-        <span
-          style={{
-            fontSize: 13,
-            fontWeight: 700,
-            color: 'var(--text)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8
-          }}
-        >
-          <Icon name="check" size={16} style={{ color: 'var(--accent)' }} />
-          À ne pas oublier
-        </span>
+function ChecklistHeader({ editMode, onRemove, hideHeader }) {
+  if (hideHeader) return null;
 
-        {editMode && (
-          <button
-            type="button"
-            onClick={onRemove}
-            style={removeButtonStyle()}
-          >
-            {'\u00d7'}
-          </button>
-        )}
-      </div>
-    );
-  }
+  return (
+    <div style={widgetHeaderStyle()}>
+      <span
+        style={{
+          fontSize: 13,
+          fontWeight: 700,
+          color: 'var(--text)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8
+        }}
+      >
+        <Icon name="check" size={16} style={{ color: 'var(--accent)' }} />
+        À ne pas oublier
+      </span>
+
+      {editMode && (
+        <button
+          type="button"
+          onClick={onRemove}
+          style={removeButtonStyle()}
+        >
+          {'\u00d7'}
+        </button>
+      )}
+    </div>
+  );
+}
 
   function ChecklistEmpty() {
     return (
@@ -260,7 +262,7 @@
     );
   }
 
-  function ChecklistWidget({ day, trip, editMode, onRemove }) {
+  function ChecklistWidget({ day, trip, editMode, onRemove, hideHeader }) {
     const [draft, setDraft] = React.useState('');
     const [saving, setSaving] = React.useState(false);
     const [checkedMap, setCheckedMap] = React.useState({});
@@ -276,7 +278,7 @@
     if (!day || !trip) {
       return (
         <div style={widgetCardStyle()}>
-          <ChecklistHeader editMode={editMode} onRemove={onRemove} />
+          <ChecklistHeader  editMode={editMode}  onRemove={onRemove}  hideHeader={hideHeader}/>
           <div style={{ padding: 16 }}>
             <div
               style={{
@@ -369,7 +371,7 @@
 
     return (
       <div style={widgetCardStyle()}>
-        <ChecklistHeader editMode={editMode} onRemove={onRemove} />
+        <ChecklistHeader  editMode={editMode}  onRemove={onRemove}  hideHeader={hideHeader}/>
 
         <div style={{ padding: 16 }}>
           <div

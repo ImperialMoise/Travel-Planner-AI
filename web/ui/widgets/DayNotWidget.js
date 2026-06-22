@@ -69,7 +69,7 @@ function cardStyle() {
     };
   }
 
-  function DayNoteWidget({ day, trip, editMode, onRemove }) {
+  function DayNoteWidget({ day, trip, editMode, onRemove, hideHeader }) {
     const [draft, setDraft] = React.useState(day && day.note ? day.note : '');
     const [saving, setSaving] = React.useState(false);
     const textareaRef = React.useRef(null);
@@ -81,18 +81,20 @@ function cardStyle() {
     if (!day || !trip) {
       return (
         <div style={cardStyle()}>
-          <div style={{
-            fontSize: 13,
-            fontWeight: 700,
-            color: 'var(--text)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            marginBottom: 10
-          }}>
-            <Icon name="sparkle" size={16} style={{ color: 'var(--tan)' }} />
-            Journal du jour
-          </div>
+          {!hideHeader && (
+  <div style={{
+    fontSize: 13,
+    fontWeight: 700,
+    color: 'var(--text)',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 10
+  }}>
+    <Icon name="sparkle" size={16} style={{ color: 'var(--tan)' }} />
+    Journal du jour
+  </div>
+)}
 
           <div style={{
             color: 'var(--muted)',
@@ -139,51 +141,51 @@ function cardStyle() {
       }, 0);
     }
 
-<div style={{
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  gap: 10,
-  padding: '12px 16px',
-  borderBottom: '1px solid var(--outline-variant)',
-  background: 'var(--soft)'
-}}>
-  <span style={{
-    fontSize: 13,
-    fontWeight: 700,
-    color: 'var(--text)',
-    display: 'flex',
-    alignItems: 'center',
-    gap: 8
-  }}>
-    <Icon name="sparkle" size={16} style={{ color: 'var(--tan)' }} />
-    Note du jour
-  </span>
-
+{!hideHeader && (
   <div style={{
     display: 'flex',
     alignItems: 'center',
-    gap: 6,
-    flexShrink: 0
+    justifyContent: 'space-between',
+    gap: 10,
+    marginBottom: 12
   }}>
-    <button
-      type="button"
-      onClick={saveNote}
-      disabled={saving || !dirty}
-      style={saveButtonStyle(dirty, saving)}
-    >
-      {saving ? '...' : dirty ? 'Sauver' : 'À jour'}
-    </button>
+    <span style={{
+      fontSize: 13,
+      fontWeight: 700,
+      color: 'var(--text)',
+      display: 'flex',
+      alignItems: 'center',
+      gap: 8
+    }}>
+      <Icon name="sparkle" size={16} style={{ color: 'var(--tan)' }} />
+      Journal du jour
+    </span>
 
-    {editMode && (
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: 6,
+      flexShrink: 0
+    }}>
       <button
         type="button"
-        onClick={onRemove}
-        style={removeButtonStyle()}
+        onClick={saveNote}
+        disabled={saving || !dirty}
+        style={saveButtonStyle(dirty, saving)}
       >
-        {'\u00d7'}
+        {saving ? '...' : dirty ? 'Sauver' : 'À jour'}
       </button>
-    )}
+
+      {editMode && (
+        <button
+          type="button"
+          onClick={onRemove}
+          style={removeButtonStyle()}
+        >
+          {'\u00d7'}
+        </button>
+      )}
+    </div>
   </div>
 </div>
 

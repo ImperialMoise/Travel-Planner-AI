@@ -531,22 +531,20 @@ globalNote: {
     );
   }
 
-  function PlaceholderWidget({ title, children }) {
-    return (
-      <div
-        style={{
-          padding: 16,
-          color: 'var(--muted)',
-          fontSize: 13,
-          lineHeight: '19px'
-        }}
-      >
-        <strong style={{ color: 'var(--text)' }}>{title}</strong>
-        <br />
-        {children}
-      </div>
-    );
-  }
+function PlaceholderWidget({ children }) {
+  return (
+    <div
+      style={{
+        padding: 16,
+        color: 'var(--muted)',
+        fontSize: 13,
+        lineHeight: '19px'
+      }}
+    >
+      {children}
+    </div>
+  );
+}
 
   function Toolbox({ width = 320 }) {
     const {
@@ -636,9 +634,10 @@ globalNote: {
       if (id === 'checklist') {
         return window.ChecklistWidget ? (
           <window.ChecklistWidget
-            day={day}
-            trip={trip}
-            editMode={false}
+           day={day}
+           trip={trip}
+           editMode={false}
+           hideHeader
           />
         ) : (
           <PlaceholderWidget title="Checklist">
@@ -653,6 +652,7 @@ globalNote: {
             day={day}
             trip={trip}
             editMode={false}
+            hideHeader
           />
         ) : (
           <PlaceholderWidget title="Journal du jour">
@@ -664,9 +664,10 @@ globalNote: {
       if (id === 'globalNote') {
         return window.GlobalNoteWidget ? (
           <window.GlobalNoteWidget
-            trip={trip}
-            editMode={false}
-          />
+           trip={trip}
+           editMode={false}
+           hideHeader
+          >
         ) : (
           <PlaceholderWidget title="Carnet du voyage">
             Le widget Carnet n’est pas chargé.
@@ -715,6 +716,7 @@ globalNote: {
           <window.AroundStepWidgetV2
             step={selectedStep}
             editMode={false}
+            hideHeader
           />
         ) : (
           <PlaceholderWidget title="Autour de ce lieu">

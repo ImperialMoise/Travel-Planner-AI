@@ -363,7 +363,7 @@ function aroundHeaderStyle() {
   };
 }
 
-function AroundStepWidgetV2({ step, editMode, onRemove }) {
+function AroundStepWidgetV2({ step, editMode, onRemove, hideHeader }) {
   const { trip, selectedDayIndex = 0 } = Store.useStore();
 
   const [categoryId, setCategoryId] = React.useState('restaurant');
@@ -781,40 +781,42 @@ function AroundStepWidgetV2({ step, editMode, onRemove }) {
 
   return (
     <div style={aroundCardStyle()}>
-      <div style={aroundHeaderStyle()}>
-        <span style={{
-          fontSize: 13,
-          fontWeight: 700,
-          color: 'var(--text)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8
-        }}>
-          <Icon name="pin" size={16} style={{ color: 'var(--tan)' }} />
-          Autour de ce lieu
-        </span>
+      {!hideHeader && (
+  <div style={aroundHeaderStyle()}>
+    <span style={{
+      fontSize: 13,
+      fontWeight: 700,
+      color: 'var(--text)',
+      display: 'flex',
+      alignItems: 'center',
+      gap: 8
+    }}>
+      <Icon name="pin" size={16} style={{ color: 'var(--tan)' }} />
+      Autour de ce lieu
+    </span>
 
-        {editMode && (
-          <button
-            type="button"
-            onClick={onRemove}
-            style={{
-              width: 22,
-              height: 22,
-              borderRadius: 7,
-              border: 'none',
-              cursor: 'pointer',
-              background: 'var(--accent-soft)',
-              color: 'var(--accent)',
-              display: 'grid',
-              placeItems: 'center',
-              fontSize: 15
-            }}
-          >
-            {'\u00d7'}
-          </button>
-        )}
-      </div>
+    {editMode && (
+      <button
+        type="button"
+        onClick={onRemove}
+        style={{
+          width: 22,
+          height: 22,
+          borderRadius: 7,
+          border: 'none',
+          cursor: 'pointer',
+          background: 'var(--accent-soft)',
+          color: 'var(--accent)',
+          display: 'grid',
+          placeItems: 'center',
+          fontSize: 15
+        }}
+      >
+        {'\u00d7'}
+      </button>
+    )}
+  </div>
+)}
 
       {!step ? renderEmptyState() : (
         <div style={{ padding: 16 }}>

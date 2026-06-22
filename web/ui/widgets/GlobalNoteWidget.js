@@ -170,7 +170,7 @@ function headerStyle() {
     );
   }
 
-  function GlobalNoteWidget({ trip, editMode, onRemove }) {
+  function GlobalNoteWidget({ trip, editMode, onRemove, hideHeader }) {
     const editorRef = React.useRef(null);
 
     const [draft, setDraft] = React.useState(trip && trip.globalNote ? trip.globalNote : '');
@@ -190,29 +190,31 @@ function headerStyle() {
     if (!trip) {
       return (
         <div style={cardStyle()}>
-          <div style={headerStyle()}>
-            <span style={{
-              fontSize: 13,
-              fontWeight: 700,
-              color: 'var(--text)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8
-            }}>
-              <Icon name="file" size={16} style={{ color: 'var(--tan)' }} />
-              Notes rapides
-            </span>
+          {!hideHeader && (
+  <div style={headerStyle()}>
+    <span style={{
+      fontSize: 13,
+      fontWeight: 700,
+      color: 'var(--text)',
+      display: 'flex',
+      alignItems: 'center',
+      gap: 8
+    }}>
+      <Icon name="file" size={16} style={{ color: 'var(--tan)' }} />
+      Notes
+    </span>
 
-            {editMode && (
-              <button
-                type="button"
-                onClick={onRemove}
-                style={removeButtonStyle()}
-              >
-                {'\u00d7'}
-              </button>
-            )}
-          </div>
+    {editMode && (
+      <button
+        type="button"
+        onClick={onRemove}
+        style={removeButtonStyle()}
+      >
+        {'\u00d7'}
+      </button>
+    )}
+  </div>
+)}
 
           <div style={{ padding: 16, color: 'var(--muted)', fontSize: 13, lineHeight: '19px' }}>
             Aucun voyage sélectionné.
@@ -282,41 +284,43 @@ function headerStyle() {
 
     return (
       <div style={cardStyle()}>
-        <div style={headerStyle()}>
-          <span style={{
-            fontSize: 13,
-            fontWeight: 700,
-            color: 'var(--text)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8
-          }}>
-            <Icon name="file" size={16} style={{ color: 'var(--tan)' }} />
-            Notes
-          </span>
+        {!hideHeader && (
+  <div style={headerStyle()}>
+    <span style={{
+      fontSize: 13,
+      fontWeight: 700,
+      color: 'var(--text)',
+      display: 'flex',
+      alignItems: 'center',
+      gap: 8
+    }}>
+      <Icon name="file" size={16} style={{ color: 'var(--tan)' }} />
+      Notes
+    </span>
 
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6
-          }}>
-            <SaveButton
-              dirty={dirty}
-              saving={saving}
-              onClick={saveGlobalNote}
-            />
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: 6
+    }}>
+      <SaveButton
+        dirty={dirty}
+        saving={saving}
+        onClick={saveGlobalNote}
+      />
 
-            {editMode && (
-              <button
-                type="button"
-                onClick={onRemove}
-                style={removeButtonStyle()}
-              >
-                {'\u00d7'}
-              </button>
-            )}
-          </div>
-        </div>
+      {editMode && (
+        <button
+          type="button"
+          onClick={onRemove}
+          style={removeButtonStyle()}
+        >
+          {'\u00d7'}
+        </button>
+      )}
+    </div>
+  </div>
+)}
 
         <div style={{
           padding: 14,
@@ -464,6 +468,20 @@ function headerStyle() {
               }}
             />
           </div>
+
+{hideHeader && (
+  <div style={{
+    display: 'flex',
+    justifyContent: 'flex-end',
+    marginTop: 10
+  }}>
+    <SaveButton
+      dirty={dirty}
+      saving={saving}
+      onClick={saveGlobalNote}
+    />
+  </div>
+)}
 
           <div style={{
             marginTop: 8,

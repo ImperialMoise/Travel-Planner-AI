@@ -85,6 +85,80 @@ const MV_CSS=`
 .mv-card-body.expanded .mv-card-steps{
   display:block;
 }
+  .mv-steps-heading{
+  margin:0 0 8px;
+  color:var(--muted);
+  font-family:var(--font-mono);
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+}
+
+.mv-step-row{
+  width:100%;
+  border:1px solid rgba(212,196,179,.72);
+  border-radius:12px;
+  padding:9px 10px;
+  display:grid;
+  grid-template-columns:30px minmax(0, 1fr);
+  align-items:center;
+  gap:10px;
+  background:rgba(255,255,255,.7);
+  color:var(--text);
+  font-family:inherit;
+  text-align:left;
+  cursor:pointer;
+}
+
+.mv-step-row + .mv-step-row{
+  margin-top:7px;
+}
+
+.mv-step-row:hover{
+  border-color:var(--accent);
+  background:var(--accent-soft);
+}
+
+.mv-step-ico{
+  width:30px;
+  height:30px;
+  border-radius:9px;
+  display:grid;
+  place-items:center;
+  background:rgba(213,231,221,.82);
+  color:var(--secondary);
+}
+
+.mv-step-txt{
+  min-width:0;
+  display:grid;
+  gap:2px;
+}
+
+.mv-step-txt strong{
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:13px;
+  line-height:17px;
+  font-weight:900;
+}
+
+.mv-step-meta{
+  display:flex;
+  flex-wrap:wrap;
+  gap:5px;
+  color:var(--muted);
+  font-size:11px;
+  line-height:14px;
+}
+
+.mv-step-meta span + span::before{
+  content:'·';
+  margin-right:5px;
+  color:var(--faint);
+}
 .mv-card-body::-webkit-scrollbar{width:3px}
 .mv-card-body::-webkit-scrollbar-thumb{background:var(--outline-variant);border-radius:3px}
 .mv-card-note{font-size:12px;color:var(--muted);font-style:italic;line-height:1.5;margin-bottom:11px}
@@ -708,7 +782,7 @@ if(src)src.setData({type:'Feature',geometry:route.geometry});
 
   const rc = regionClass(d.region);
   const pc = regionPretty(d.region);
-  const date = fmtDate(d.dateISO);
+  const date = fmtDate(d.date) || 'Date à définir';
 
   const locatedSteps = d.steps.filter(function keepLocated(step) {
     return !!step.c;
@@ -785,7 +859,7 @@ if(src)src.setData({type:'Feature',geometry:route.geometry});
           '</div>' +
           '<div class="mv-card-title">' + d.title + '</div>' +
         '</div>' +
-        '<button id="mv-toggle-btn" class="mv-card-toggle" type="button" title="Déplier la journée">⌄</button>' +
+        '<button id="mv-toggle-btn" class="mv-card-toggle" type="button" title="Déplier la journée">⌃</button>' +
       '</div>' +
 
       '<div id="mv-card-body" class="mv-card-body">' +
@@ -815,11 +889,14 @@ if(src)src.setData({type:'Feature',geometry:route.geometry});
           (d.note ? d.note : 'Aucune note pour ce jour. Ajoute un repère ou une intention de voyage.') +
         '</div>' +
 
-        '<div class="mv-card-steps">' + rows + '</div>' +
+        '<div class="mv-card-steps">' +
+         '<p class="mv-steps-heading">Étapes de la journée</p>' +
+       rows +
+        '</div>' +
 
         '<div class="mv-card-foot">' +
-          '<button id="mv-fly-btn" type="button">' + mvSvg('route', 14) + 'Recadrer</button>' +
-          '<button id="mv-expand-btn" type="button">' + mvSvg('chevdown', 12) + 'Étapes (' + d.steps.length + ')</button>' +
+             '<button id="mv-itinerary-btn" type="button">' + mvSvg('route', 14) + 'Voir dans l’itinéraire</button>' +
+             '<button id="mv-expand-btn" type="button">' + mvSvg('chevdown', 12) + 'Étapes (' + d.steps.length + ')</button>' +
         '</div>' +
       '</div>' +
     '</div>';
@@ -839,13 +916,16 @@ if(src)src.setData({type:'Feature',geometry:route.geometry});
     });
   });
 
-  const flyBtn = document.getElementById('mv-fly-btn');
+const itineraryBtn = document.getElementById('mv-itinerary-btn');
 
-  if (flyBtn) {
-    flyBtn.addEventListener('click', function recenterDay() {
-      flyDay(i);
+if (itineraryBtn) {
+  itineraryBtn.addEventListener('click', function openItinerary() {
+    Store.set({
+      view: 'itinerary',
+      selectedDayIndex: i
     });
-  }
+  });
+}
 
   const cardBody = document.getElementById('mv-card-body');
   const toggleBtn = document.getElementById('mv-toggle-btn');
@@ -857,7 +937,7 @@ if(src)src.setData({type:'Feature',geometry:route.geometry});
     cardBody.classList.toggle('expanded', expanded);
 
     if (toggleBtn) {
-      toggleBtn.textContent = expanded ? '⌃' : '⌄';
+      toggleBtn.textContent = expanded ? '⌄' : '⌃';
       toggleBtn.title = expanded ? 'Replier la journée' : 'Déplier la journée';
     }
 

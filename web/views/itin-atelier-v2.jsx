@@ -232,7 +232,7 @@
 
   .atelier-v2-plan-card{
     min-height:372px;
-    background:var(--card);
+    background:var(--surface-container-lowest,#fff);
     border:1px solid var(--outline-variant);
     border-radius:18px;
     box-shadow:0 2px 12px rgba(82,98,91,.06);
@@ -393,8 +393,9 @@
   .atelier-v2-timeline{
     display:flex;
     flex-direction:column;
-    gap:14px;
-    padding-bottom:28px;
+    gap:8px;
+    padding:8px 8px 28px;
+    background:var(--surface-container-lowest,#fff);
   }
 
   .atelier-v2-drop{
@@ -885,16 +886,60 @@
     );
   }
 
-   function LodgingReminderCard({
+  function LodgingReminderCard({
     reminder,
     dayIndex,
-    onEdit
+    onEdit,
+    onAddLodging
   }) {
-    if (!reminder || !reminder.step) return null;
+    if (!reminder || !reminder.step) {
+      return (
+        <button
+          type="button"
+          className="atelier-v2-reminder"
+          onClick={onAddLodging}
+          style={{
+            borderStyle: 'dashed',
+            background: 'var(--surface-container-lowest,#fff)'
+          }}
+        >
+          <span className="atelier-v2-reminder-icon">
+            <Icon name="bed" size={18} />
+          </span>
+
+          <span style={{ minWidth: 0, flex: 1, textAlign: 'left' }}>
+            <span className="atelier-v2-reminder-title">
+              Où dormir ?
+            </span>
+
+            <span className="atelier-v2-reminder-sub">
+              + Ajouter un hébergement
+            </span>
+          </span>
+
+          <span style={{
+            border: '1px solid rgba(154,101,8,.20)',
+            borderRadius: 999,
+            background: 'var(--accent-soft)',
+            color: 'var(--accent)',
+            flexShrink: 0,
+            fontFamily: 'var(--font-mono, ui-monospace)',
+            fontSize: 10.5,
+            fontWeight: 900,
+            lineHeight: '14px',
+            padding: '5px 9px',
+            whiteSpace: 'nowrap'
+          }}>
+            Ajouter
+          </span>
+        </button>
+      );
+    }
 
     const nightNumber = reminder.kind === 'checkout'
       ? reminder.nights || 1
       : Math.max(1, (Number(dayIndex) || 0) - (Number(reminder.sourceDayIndex) || 0) + 1);
+
     const nightLabel = reminder.nights
       ? 'Nuit ' + Math.min(nightNumber, reminder.nights) + '/' + reminder.nights
       : '';
@@ -1254,13 +1299,14 @@
                 </div>
 
                 <div className="atelier-v2-timeline">
-                {reminders.map(function renderReminder(reminder) {
+                {(reminders.length ? reminders : [null]).map(function renderReminder(reminder, reminderIndex) {
                   return (
                     <LodgingReminderCard
-                      key={reminder.key}
+                      key={reminder ? reminder.key : 'empty-lodging-slot'}
                       reminder={reminder}
                       dayIndex={safeDayIndex}
                       onEdit={openEditorForStep}
+                      onAddLodging={() => openAddStep('logement')}
                     />
                   );
                 })}

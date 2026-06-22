@@ -183,27 +183,113 @@
       });
   }
 
-  function getWeatherSummary(day) {
-    const date = formatDate(day && day.dateISO);
-    const stepCount = Array.isArray(day && day.steps) ? day.steps.length : 0;
+  function getWeatherLocation(day) {
+    if (!day) return '';
 
-    if (!day) {
-      return {
-        title: 'Météo',
-        text: 'Sélectionne une journée pour préparer les conditions météo.',
-        details: []
-      };
-    }
+    return safeString(
+      day.city ||
+      day.region ||
+      day.location ||
+      day.place ||
+      ''
+    );
+  }
+
+  function monthClimateHint(day) {
+    const iso = safeString(day && day.dateISO);
+    const month = iso ? Number(iso.slice(5, 7)) : 0;
+    const city = getWeatherLocation(day) || 'la destination';
+
+    const hints = {
+      1: 'Janvier est souvent froid dans l’hémisphère nord et chaud dans l’hémisphère sud. Prévois une vérification locale avant le départ.',
+      2: 'Février peut être frais ou instable selon la région. Prévois une marge pour pluie, vent ou froid.',
+      3: 'Mars est une période de transition : météo variable, couches légères recommandées.',
+      4: 'Avril peut être changeant, avec alternance de pluie et d’éclaircies.',
+      5: 'Mai est souvent doux, mais les averses restent possibles selon la destination.',
+      6: 'Juin est généralement plus chaud, avec parfois des épisodes orageux.',
+      7: 'Juillet est souvent chaud. Prévois eau, protection solaire et pauses.',
+      8: 'Août est souvent chaud et parfois humide selon la destination.',
+      9: 'Septembre est souvent agréable, mais la météo peut changer vite en bord de mer ou montagne.',
+      10: 'Octobre peut être plus frais et parfois pluvieux. Prévois une veste légère et une option intérieure.',
+      11: 'Novembre est souvent plus froid ou humide. Prévois des vêtements chauds et imperméables.',
+      12: 'Décembre peut être froid dans l’hémisphère nord. Vérifie aussi les risques de neige ou fortes pluies.'
+    };
 
     return {
-      title: date || 'Journée sélectionnée',
-      text: 'Ajoute plus tard une météo connectée. Pour l’instant, ce bloc sert de rappel de préparation.',
+      title: city,
+      text: hints[month] || 'Prévision exacte indisponible pour cette date. Utilise cette tendance générale et vérifie la météo quelques jours avant.',
       details: [
-        stepCount + ' étape' + (stepCount > 1 ? 's' : '') + ' prévue' + (stepCount > 1 ? 's' : ''),
-        'Vérifier pluie, température et vent la veille',
-        'Prévoir une alternative intérieure si besoin'
-      ]
+        'Prévision exacte indisponible pour cette date',
+        'Tendance générale basée sur le mois du voyage',
+        'À confirmer quelques jours avant le départ'
+      ],
+      source: 'Tendance générale · à confirmer avec Open-Meteo'
     };
+  }
+
+  async function fetchWeatherSummary(day) {
+    const city = getWeatherLocation(day);
+    const dateISO = safeString(day && day.dateISO);
+
+    if (!day || !city || !dateISO) {
+      return monthClimateHint(day);
+    }
+
+    try {
+      const geoUrl =
+        'https://geocoding-api.open-meteo.com/v1/search?name=' +
+        encodeURIComponent(city) +
+        '&count=1&language=fr&format=json';
+
+      const geoRes = await fetch(geoUrl);
+      const geoJson = await geoRes.json();
+      const place = geoJson && geoJson.results && geoJson.results[0];
+
+      if (!place) {
+        return monthClimateHint(day);
+      }
+
+      const weatherUrl =
+        'https://api.open-meteo.com/v1/forecast' +
+        '?latitude=' + encodeURIComponent(place.latitude) +
+        '&longitude=' + encodeURIComponent(place.longitude) +
+        '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max' +
+        '&timezone=auto' +
+        '&start_date=' + encodeURIComponent(dateISO) +
+        '&end_date=' + encodeURIComponent(dateISO);
+
+      const weatherRes = await fetch(weatherUrl);
+      const weatherJson = await weatherRes.json();
+
+      if (!weatherJson || !weatherJson.daily || !weatherJson.daily.time || !weatherJson.daily.time.length) {
+        return monthClimateHint(day);
+      }
+
+      const daily = weatherJson.daily;
+      const max = daily.temperature_2m_max && daily.temperature_2m_max[0];
+      const min = daily.temperature_2m_min && daily.temperature_2m_min[0];
+      const rain = daily.precipitation_sum && daily.precipitation_sum[0];
+      const rainProb = daily.precipitation_probability_max && daily.precipitation_probability_max[0];
+
+      return {
+        title: place.name || city,
+        text: 'Prévision météo connectée pour cette journée.',
+        details: [
+          Number.isFinite(Number(min)) && Number.isFinite(Number(max))
+            ? 'Températures : ' + Math.round(min) + '°C à ' + Math.round(max) + '°C'
+            : 'Températures indisponibles',
+          Number.isFinite(Number(rainProb))
+            ? 'Risque de pluie : ' + Math.round(rainProb) + '%'
+            : 'Risque de pluie indisponible',
+          Number.isFinite(Number(rain))
+            ? 'Précipitations : ' + Number(rain).toFixed(1) + ' mm'
+            : 'Précipitations indisponibles'
+        ],
+        source: 'Source : Open-Meteo · modèle météo best_match'
+      };
+    } catch (error) {
+      return monthClimateHint(day);
+    }
   }
 
   function SmallPill({ children, accent, muted }) {
@@ -743,12 +829,34 @@
   }
 
   function WeatherBlock({ day }) {
-    const weather = getWeatherSummary(day);
+    const [weather, setWeather] = React.useState(function initialWeather() {
+      return monthClimateHint(day);
+    });
+
+    React.useEffect(function loadWeather() {
+      let cancelled = false;
+
+      setWeather(monthClimateHint(day));
+
+      fetchWeatherSummary(day).then(function updateWeather(nextWeather) {
+        if (!cancelled && nextWeather) {
+          setWeather(nextWeather);
+        }
+      });
+
+      return function cleanup() {
+        cancelled = true;
+      };
+    }, [
+      day && day.dateISO,
+      day && day.city,
+      day && day.region
+    ]);
 
     return (
       <div style={{
         border: '1px solid var(--outline-variant)',
-        background: 'var(--inset)',
+        background: 'var(--surface-container-lowest,#fff)',
         borderRadius: 14,
         padding: 14
       }}>
@@ -782,7 +890,7 @@
             width: 38,
             height: 38,
             borderRadius: 13,
-            background: 'var(--card)',
+            background: 'var(--accent-soft)',
             color: 'var(--accent)',
             display: 'grid',
             placeItems: 'center',
@@ -814,6 +922,18 @@
               </div>
             );
           })}
+        </div>
+
+        <div style={{
+          marginTop: 10,
+          paddingTop: 10,
+          borderTop: '1px solid var(--outline-variant)',
+          color: 'var(--faint)',
+          fontSize: 10.5,
+          lineHeight: '15px',
+          fontFamily: 'var(--font-mono, ui-monospace)'
+        }}>
+          {weather.source}
         </div>
       </div>
     );
@@ -975,7 +1095,7 @@
           <window.RailSection
             kicker="Météo"
             title="Préparer la journée"
-            subtitle="Bloc indicatif avant météo connectée."
+            subtitle="Prévision connectée ou tendance générale."
             icon="sparkle"
             open={openSections.weather}
             onToggle={() => toggleSection('weather')}

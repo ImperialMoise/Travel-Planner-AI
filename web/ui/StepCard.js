@@ -461,7 +461,7 @@
           border: selected
             ? '1px solid var(--accent)'
             : '1px solid var(--outline-variant)',
-          background: selected ? 'var(--accent-soft)' : 'var(--card)',
+          background: selected ? 'var(--accent-soft)' : 'var(--surface-container-lowest,#fff)',
           display: 'flex',
           gap: 16,
           position: 'relative',

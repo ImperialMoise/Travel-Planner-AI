@@ -491,21 +491,22 @@
   }
 
   .day-card-note{
-    margin-top:5px;
-    font-size:11px;
-    line-height:15px;
-    color:var(--faint,#827567);
-    font-style:italic;
-    cursor:text;
-    border-radius:5px;
-    padding:2px 4px;
+    display:block;
+    margin-top:3px;
     margin-left:-4px;
-    transition:background .15s;
-    white-space:nowrap;
+    max-width:100%;
+    border-radius:6px;
+    padding:2px 4px;
+    color:var(--faint,#827567);
+    cursor:text;
+    font-size:11px;
+    font-style:italic;
+    line-height:15px;
+    outline:none;
     overflow:hidden;
     text-overflow:ellipsis;
-    max-width:100%;
-    outline:none;
+    transition:background .15s;
+    white-space:nowrap;
   }
 
   .day-card-note:hover{

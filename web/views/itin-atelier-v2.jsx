@@ -55,15 +55,16 @@
     scrollbar-gutter:stable;
   }
 
-  /* ── Hero ── */
+  /* ── Hero : encadré 3/3 pleine largeur ── */
   .atelier-v2-hero{
     position:relative;
-    min-height:260px;
-    border-radius:0 0 18px 18px;
+    min-height:250px;
+    border-radius:18px;
     overflow:hidden;
-    margin-bottom:24px;
-    background:linear-gradient(135deg,var(--petrol,#15302a) 0%,#2d493f 60%,var(--accent) 100%);
-    box-shadow:0 8px 24px rgba(82,98,91,.10);
+    margin:24px 34px 14px;
+    background:var(--card);
+    border:1px solid var(--outline-variant);
+    box-shadow:0 2px 12px rgba(82,98,91,.08);
   }
 
   .atelier-v2-hero-img{
@@ -72,13 +73,19 @@
     width:100%;
     height:100%;
     object-fit:cover;
-    opacity:.55;
+    opacity:.74;
+    transform:scale(1.01);
+    transition:transform .7s ease;
+  }
+
+  .atelier-v2-hero:hover .atelier-v2-hero-img{
+    transform:scale(1.045);
   }
 
   .atelier-v2-hero-overlay{
     position:absolute;
     inset:0;
-    background:linear-gradient(to top,rgba(21,48,42,.88) 0%,rgba(21,48,42,.40) 50%,transparent 100%);
+    background:linear-gradient(90deg,var(--card) 0%,rgba(254,249,239,.94) 42%,rgba(254,249,239,.30) 100%);
   }
 
   .atelier-v2-hero-inner{
@@ -86,86 +93,98 @@
     z-index:1;
     display:flex;
     flex-direction:column;
-    justify-content:flex-end;
-    min-height:260px;
-    padding:24px 34px;
+    justify-content:center;
+    min-height:250px;
+    padding:28px 32px;
+    max-width:680px;
   }
 
   .atelier-v2-hero-badges{
     display:flex;
     align-items:center;
     gap:10px;
-    margin-bottom:10px;
+    margin-bottom:12px;
+    flex-wrap:wrap;
   }
 
   .atelier-v2-hero-badge{
-    display:inline-block;
-    padding:4px 12px;
-    background:rgba(254,249,239,.18);
-    backdrop-filter:blur(8px);
-    -webkit-backdrop-filter:blur(8px);
-    border-radius:999px;
+    display:inline-flex;
+    align-items:center;
+    min-height:28px;
+    padding:0 12px;
+    background:var(--accent-soft);
+    border-radius:7px;
+    font-family:var(--font-mono,monospace);
     font-size:11px;
-    font-weight:800;
-    letter-spacing:.14em;
+    font-weight:900;
+    letter-spacing:.12em;
     text-transform:uppercase;
-    color:#fff;
-    border:1px solid rgba(255,255,255,.25);
+    color:var(--accent);
+    border:1px solid rgba(124,84,16,.18);
   }
 
   .atelier-v2-hero-date{
+    display:inline-flex;
+    align-items:center;
+    min-height:28px;
+    padding:0 12px;
+    border-radius:7px;
+    background:var(--surface-container,#f2ede3);
     font-family:var(--font-mono,monospace);
     font-size:11px;
-    color:rgba(255,255,255,.85);
+    font-weight:700;
+    color:var(--muted);
   }
 
   .atelier-v2-hero-title{
-    font-family:var(--font-serif);
-    font-size:40px;
-    line-height:48px;
-    color:#fff;
+    font-family:var(--font-sans);
+    font-size:36px;
+    line-height:43px;
+    color:var(--text);
+    font-weight:900;
+    letter-spacing:-.035em;
     margin-bottom:8px;
   }
 
   .atelier-v2-hero-note{
-    max-width:680px;
-    font-size:14px;
-    line-height:21px;
-    color:rgba(255,255,255,.80);
-    border-left:2px solid var(--tan,#d9b67e);
-    padding-left:14px;
+    max-width:560px;
+    font-size:14.5px;
+    line-height:22px;
+    color:var(--muted);
+    margin:0;
   }
 
   .atelier-v2-hero-actions{
-    position:absolute;
-    top:18px;
-    right:24px;
+    position:relative;
     z-index:2;
     display:flex;
-    gap:8px;
+    gap:10px;
+    margin-top:22px;
+    flex-wrap:wrap;
   }
 
   .atelier-v2-hero-btn{
-    border:1px solid rgba(255,255,255,.30);
-    background:rgba(254,249,239,.14);
-    backdrop-filter:blur(6px);
-    -webkit-backdrop-filter:blur(6px);
-    color:#fff;
-    border-radius:999px;
-    min-height:36px;
+    border:1px solid var(--outline-variant);
+    background:var(--card);
+    color:var(--text);
+    border-radius:8px;
+    min-height:40px;
     padding:0 14px;
     display:inline-flex;
     align-items:center;
     justify-content:center;
-    gap:6px;
+    gap:8px;
     cursor:pointer;
     font-family:inherit;
-    font-size:12px;
-    font-weight:800;
+    font-size:12.5px;
+    font-weight:900;
+    box-shadow:0 2px 8px rgba(82,98,91,.06);
   }
 
   .atelier-v2-hero-btn:hover{
-    background:rgba(254,249,239,.26);
+    border-color:var(--accent);
+    color:var(--accent);
+    background:var(--accent-soft);
   }
 
   .atelier-v2-hero-btn.primary{
@@ -174,11 +193,15 @@
     color:var(--accent-ink,#fff);
   }
 
+  .atelier-v2-hero-btn.primary:hover{
+    filter:brightness(.96);
+  }
+
   /* ── Body 2/3 + 1/3 ── */
-  .atelier-v2-body{
+    .atelier-v2-body{
     display:grid;
-    grid-template-columns:minmax(0,2fr) minmax(260px,1fr);
-    gap:0;
+    grid-template-columns:minmax(0,2fr) minmax(280px,1fr);
+    gap:14px;
     flex:1;
     min-height:0;
     padding:0 34px 34px;
@@ -187,14 +210,11 @@
   .atelier-v2-content{
     min-width:0;
     min-height:0;
-    padding-right:24px;
   }
 
   .atelier-v2-sidebar{
     min-width:0;
     min-height:0;
-    border-left:1px solid var(--outline-variant);
-    padding-left:22px;
   }
 
   .atelier-v2-sidebar > aside{
@@ -208,6 +228,58 @@
   .atelier-v2-sidebar > aside > div{
     padding:0 !important;
     overflow:visible !important;
+  }
+
+  .atelier-v2-plan-card{
+    min-height:372px;
+    background:var(--card);
+    border:1px solid var(--outline-variant);
+    border-radius:18px;
+    box-shadow:0 2px 12px rgba(82,98,91,.06);
+    overflow:hidden;
+  }
+
+  .atelier-v2-plan-head{
+    min-height:54px;
+    padding:12px 14px;
+    border-bottom:1px solid var(--outline-variant);
+    background:rgba(248,243,233,.55);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+  }
+
+  .atelier-v2-plan-title{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:13px;
+    font-weight:900;
+    color:var(--text);
+  }
+
+  .atelier-v2-plan-actions{
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+
+  .atelier-v2-plan-icon-btn{
+    width:32px;
+    height:32px;
+    border:0;
+    border-radius:8px;
+    background:transparent;
+    color:var(--muted);
+    cursor:pointer;
+    display:grid;
+    place-items:center;
+  }
+
+  .atelier-v2-plan-icon-btn:hover{
+    background:var(--inset);
+    color:var(--accent);
   }
 
   .atelier-v2-kicker{
@@ -1065,41 +1137,19 @@
 
           {/* ── Hero ── */}
           <div className="atelier-v2-hero">
+            <img
+              className="atelier-v2-hero-img"
+              src="https://images.unsplash.com/photo-1538485399081-7c8f7d82f0c4?auto=format&fit=crop&w=1600&q=80"
+              alt=""
+            />
             <div className="atelier-v2-hero-overlay" />
-
-            <div className="atelier-v2-hero-actions">
-              <button
-                type="button"
-                className="atelier-v2-hero-btn"
-                onClick={() => setDayEditorOpen(true)}
-              >
-                ✎ Modifier
-              </button>
-
-              <button
-                type="button"
-                className="atelier-v2-hero-btn"
-                onClick={selectMapForDay}
-              >
-                <Icon name="map" size={14} />
-                Carte
-              </button>
-
-              <button
-                type="button"
-                className="atelier-v2-hero-btn primary"
-                onClick={() => openAddStep('activite')}
-              >
-                <Icon name="plus" size={14} />
-                Ajouter
-              </button>
-            </div>
 
             <div className="atelier-v2-hero-inner">
               <div className="atelier-v2-hero-badges">
                 <span className="atelier-v2-hero-badge">
                   Jour {safeDayIndex + 1}
                 </span>
+
                 {dayDate && (
                   <span className="atelier-v2-hero-date">
                     {dayDate}
@@ -1116,13 +1166,68 @@
                   {day.note}
                 </p>
               )}
+
+              <div className="atelier-v2-hero-actions">
+                <button
+                  type="button"
+                  className="atelier-v2-hero-btn primary"
+                  onClick={() => openAddStep('activite')}
+                >
+                  <Icon name="plus" size={14} />
+                  Ajouter
+                </button>
+
+                <button
+                  type="button"
+                  className="atelier-v2-hero-btn"
+                  onClick={selectMapForDay}
+                >
+                  <Icon name="map" size={14} />
+                  Carte
+                </button>
+
+                <button
+                  type="button"
+                  className="atelier-v2-hero-btn"
+                  onClick={() => setDayEditorOpen(true)}
+                >
+                  ✎ Modifier
+                </button>
+              </div>
             </div>
           </div>
 
           {/* ── Body : 2/3 timeline + 1/3 sidebar ── */}
           <div className="atelier-v2-body">
             <section className="atelier-v2-content">
-              <div className="atelier-v2-timeline">
+              <div className="atelier-v2-plan-card">
+                <div className="atelier-v2-plan-head">
+                  <div className="atelier-v2-plan-title">
+                    <span aria-hidden="true">☷</span>
+                    Plan d’action
+                  </div>
+
+                  <div className="atelier-v2-plan-actions">
+                    <button
+                      type="button"
+                      className="atelier-v2-plan-icon-btn"
+                      title="Filtrer"
+                    >
+                      ≡
+                    </button>
+
+                    <button
+                      type="button"
+                      className="atelier-v2-btn primary"
+                      style={{ minHeight: 32, borderRadius: 8, padding: '0 12px' }}
+                      onClick={() => openAddStep('activite')}
+                    >
+                      + Ajouter
+                    </button>
+                  </div>
+                </div>
+
+                <div className="atelier-v2-timeline">
                 {reminders.map(function renderReminder(reminder) {
                   return (
                     <LodgingReminderCard
@@ -1207,6 +1312,7 @@
                   <Icon name="plus" size={16} />
                   Ajouter une étape
                 </button>
+                </div>
               </div>
             </section>
 

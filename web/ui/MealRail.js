@@ -823,7 +823,7 @@
           <window.RailSection
             noBorder
             kicker="Restaurants"
-            title="Tables & pauses"
+            title="Où manger ?"
             subtitle={restaurants.length
               ? restaurants.length + ' adresse' + (restaurants.length > 1 ? 's' : '') + ' prévue' + (restaurants.length > 1 ? 's' : '')
               : 'Ajoute les repas importants de la journée.'}
@@ -910,6 +910,7 @@
           </window.RailSection>
 
           <window.RailSection
+            noBorder
             kicker="Météo"
             title="Préparer la journée"
             subtitle="Bloc indicatif avant météo connectée."

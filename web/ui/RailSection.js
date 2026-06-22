@@ -176,39 +176,48 @@
     );
   }
 
-  function RailCard({
-    children,
-    onClick,
-    selected,
-    compact
-  }) {
-    const Component = onClick ? 'button' : 'div';
+function RailCard({
+  children,
+  onClick,
+  selected,
+  compact
+}) {
+  function handleKeyDown(event) {
+    if (!onClick) return;
 
-    return (
-      <Component
-        type={onClick ? 'button' : undefined}
-        onClick={onClick}
-        style={{
-          width: '100%',
-          textAlign: 'left',
-          border: selected
-            ? '1px solid var(--accent)'
-            : '1px solid var(--outline-variant)',
-          background: selected ? 'var(--accent-soft)' : 'var(--card)',
-          color: 'var(--text)',
-          borderRadius: 14,
-          padding: compact ? 12 : 16,
-          cursor: onClick ? 'pointer' : 'default',
-          boxShadow: 'var(--shadow)',
-          fontFamily: 'inherit',
-          position: 'relative',
-          overflow: 'hidden'
-        }}
-      >
-        {children}
-      </Component>
-    );
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      onClick(event);
+    }
   }
+
+  return (
+    <div
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onClick={onClick}
+      onKeyDown={handleKeyDown}
+      style={{
+        width: '100%',
+        textAlign: 'left',
+        border: selected
+          ? '1px solid var(--accent)'
+          : '1px solid var(--outline-variant)',
+        background: selected ? 'var(--accent-soft)' : 'var(--card)',
+        color: 'var(--text)',
+        borderRadius: 14,
+        padding: compact ? 12 : 16,
+        cursor: onClick ? 'pointer' : 'default',
+        boxShadow: 'var(--shadow)',
+        fontFamily: 'inherit',
+        position: 'relative',
+        overflow: 'hidden'
+      }}
+    >
+      {children}
+    </div>
+  );
+}
 
   function RailSection({
     kicker,

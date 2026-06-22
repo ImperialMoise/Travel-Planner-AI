@@ -313,19 +313,25 @@
     );
   }
 
-  function InlineButton({
-    children,
-    onClick,
-    title,
-    accent,
-    disabled
-  }) {
-    return (
-      <button
-        type="button"
-        title={title}
-        onClick={onClick}
-        disabled={disabled}
+function InlineButton({
+  children,
+  onClick,
+  title,
+  accent,
+  disabled
+}) {
+  function handleClick(event) {
+    event.stopPropagation();
+
+    if (onClick) onClick(event);
+  }
+
+  return (
+    <button
+      type="button"
+      title={title}
+      onClick={handleClick}
+      disabled={disabled}
         style={{
           border: '1px solid var(--outline-variant)',
           background: accent ? 'var(--accent-soft)' : 'var(--inset)',

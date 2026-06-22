@@ -703,69 +703,34 @@
           height: '100%',
           minHeight: 0,
           borderLeft: '1px solid var(--outline-variant)',
-          background: 'var(--bg)',
+          background: 'var(--inset)',
           display: 'flex',
           flexDirection: 'column',
-          overflow: 'hidden',
-          boxShadow: '-4px 0 24px rgba(45,73,63,0.05)'
+          overflow: 'hidden'
         }}
       >
         <div
           style={{
-            padding: '20px 18px 16px',
+            padding: '14px 16px 12px',
             borderBottom: '1px solid var(--outline-variant)',
             background: 'var(--card)',
-            flexShrink: 0
+            flexShrink: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between'
           }}
         >
-          <div
+          <span
             style={{
-              display: 'flex',
-              alignItems: 'flex-start',
-              justifyContent: 'space-between',
-              gap: 12
+              fontSize: 11,
+              fontWeight: 800,
+              letterSpacing: '.14em',
+              textTransform: 'uppercase',
+              color: 'var(--faint, #827567)'
             }}
           >
-            <div style={{ minWidth: 0 }}>
-              <div
-                style={{
-                  fontSize: 11,
-                  fontWeight: 900,
-                  letterSpacing: '.16em',
-                  textTransform: 'uppercase',
-                  color: 'var(--accent)'
-                }}
-              >
-                Atelier
-              </div>
-
-              <div
-                style={{
-                  fontFamily: 'var(--font-serif)',
-                  fontStyle: 'italic',
-                  fontSize: 24,
-                  lineHeight: '30px',
-                  color: 'var(--text)',
-                  marginTop: 3
-                }}
-              >
-                Boîte à outils
-              </div>
-
-              <div
-                style={{
-                  marginTop: 5,
-                  fontSize: 12.5,
-                  lineHeight: '18px',
-                  color: 'var(--muted)'
-                }}
-              >
-                {day
-                  ? 'Jour ' + (selectedDayIndex + 1)
-                  : 'Aucune journée sélectionnée'}
-                {selectedStep ? ' · ' + (selectedStep.label || selectedStep.lieu || 'Étape') : ''}
-              </div>
-            </div>
+            Outils & Widgets
+          </span>
 
             <div
               style={{
@@ -791,7 +756,6 @@
                 ✎
               </ToolboxButton>
             </div>
-          </div>
         </div>
 
         <div

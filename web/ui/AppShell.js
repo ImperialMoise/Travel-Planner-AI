@@ -317,110 +317,100 @@
     min-height:0;
     flex-shrink:0;
     border-right:1px solid var(--outline-variant);
-    background:var(--card);
+    background:var(--inset);
     display:flex;
     flex-direction:column;
     overflow:hidden;
-    box-shadow:4px 0 24px rgba(45,73,63,.05);
   }
 
   .day-spine-head{
     flex-shrink:0;
-    padding:24px 22px 18px;
+    padding:18px 16px 14px;
     border-bottom:1px solid var(--outline-variant);
-    background:var(--soft);
+    background:var(--card);
   }
 
   .day-spine-kicker{
     font-size:11px;
-    font-weight:900;
-    letter-spacing:.16em;
+    font-weight:800;
+    letter-spacing:.14em;
     text-transform:uppercase;
-    color:var(--accent);
+    color:var(--faint,#827567);
   }
 
   .day-spine-title{
-    margin-top:5px;
-    font-family:var(--font-serif);
-    font-style:italic;
-    font-size:26px;
-    line-height:32px;
+    margin-top:4px;
+    font-family:var(--font-sans);
+    font-weight:800;
+    font-size:17px;
+    line-height:22px;
     color:var(--text);
   }
 
   .day-spine-meta{
     margin-top:6px;
-    font-size:12px;
-    color:var(--muted);
-    line-height:17px;
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+    font-size:11px;
+    color:var(--faint,#827567);
     font-family:var(--font-mono,monospace);
+    background:var(--inset);
+    padding:4px 8px;
+    border-radius:6px;
   }
 
   .day-spine-scroll{
     flex:1 1 0;
     min-height:0;
     overflow-y:auto;
-    padding:12px 10px 20px;
-    position:relative;
-  }
-
-  .day-spine-timeline{
-    position:absolute;
-    left:36px;
-    top:12px;
-    bottom:20px;
-    width:2px;
-    background:var(--surface-high,#ede8de);
-    z-index:0;
-    border-radius:1px;
+    padding:10px 10px 18px;
   }
 
   .day-card{
     position:relative;
-    z-index:1;
     width:100%;
-    border:1px solid transparent;
+    border:none;
     background:transparent;
     color:var(--text);
-    border-radius:14px;
-    padding:12px 12px 12px 12px;
+    border-radius:10px;
+    padding:8px 10px;
     text-align:left;
     cursor:pointer;
     font-family:inherit;
     display:flex;
     align-items:flex-start;
-    gap:12px;
-    transition:background .15s,border-color .15s;
-    margin-bottom:4px;
+    gap:10px;
+    transition:background .15s;
+    margin-bottom:2px;
   }
 
   .day-card:hover{
-    background:var(--inset);
+    background:var(--card);
   }
 
   .day-card.active{
-    background:rgba(124,84,16,.07);
-    border-color:rgba(124,84,16,.18);
-    border-radius:16px;
-    padding:14px 12px;
-    margin-top:4px;
-    margin-bottom:8px;
+    background:rgba(124,84,16,.08);
+    border:1px solid rgba(124,84,16,.18);
+    border-radius:12px;
+    padding:10px;
+    margin-bottom:4px;
   }
 
   .day-card-num{
-    width:44px;
-    height:44px;
-    border-radius:999px;
+    width:34px;
+    height:34px;
+    border-radius:10px;
     background:var(--card);
-    border:2px solid var(--outline-variant);
-    color:var(--muted);
+    border:1px solid var(--outline-variant);
+    color:var(--faint,#827567);
     display:grid;
     place-items:center;
     flex-shrink:0;
-    font-size:14px;
+    font-size:12px;
+    font-weight:800;
     font-family:var(--font-serif);
-    transition:all .2s;
-    box-shadow:0 2px 6px rgba(82,98,91,.06);
+    transition:all .15s;
   }
 
   .day-card:hover .day-card-num{
@@ -428,41 +418,40 @@
   }
 
   .day-card.active .day-card-num{
-    width:52px;
-    height:52px;
+    width:38px;
+    height:38px;
     background:var(--accent);
     border-color:var(--accent);
     color:var(--accent-ink);
-    font-size:16px;
-    box-shadow:0 0 0 4px rgba(124,84,16,.15),0 4px 12px rgba(124,84,16,.20);
+    font-size:14px;
+    box-shadow:0 2px 8px rgba(124,84,16,.20);
   }
 
   .day-card-body{
     flex:1;
     min-width:0;
-    padding-top:2px;
+    padding-top:1px;
   }
 
   .day-card-title{
-    font-size:14px;
+    font-size:13.5px;
     font-weight:700;
-    line-height:19px;
+    line-height:18px;
     color:var(--text);
-    display:-webkit-box;
-    -webkit-line-clamp:2;
-    -webkit-box-orient:vertical;
+    white-space:nowrap;
     overflow:hidden;
+    text-overflow:ellipsis;
   }
 
   .day-card.active .day-card-title{
-    font-size:15px;
     font-weight:800;
+    color:var(--text);
   }
 
   .day-card-date{
-    margin-top:3px;
-    font-size:12px;
-    line-height:16px;
+    margin-top:2px;
+    font-size:11.5px;
+    line-height:15px;
     color:var(--faint,#827567);
     font-weight:500;
   }
@@ -475,21 +464,21 @@
   .day-card-tags{
     display:flex;
     flex-wrap:wrap;
-    gap:5px;
-    margin-top:8px;
+    gap:4px;
+    margin-top:6px;
   }
 
   .day-card-tag{
     display:inline-flex;
     align-items:center;
-    gap:4px;
+    gap:3px;
     font-size:10px;
     font-weight:700;
-    letter-spacing:.04em;
     text-transform:uppercase;
-    padding:3px 8px;
+    letter-spacing:.03em;
+    padding:2px 7px;
     border-radius:999px;
-    background:var(--surface-high,#ede8de);
+    background:var(--card);
     color:var(--faint,#827567);
     border:1px solid var(--outline-variant);
   }
@@ -498,16 +487,17 @@
     background:var(--accent);
     color:var(--accent-ink);
     border-color:var(--accent);
+    box-shadow:0 1px 3px rgba(124,84,16,.15);
   }
 
   .day-card-note{
-    margin-top:6px;
-    font-size:11.5px;
-    line-height:16px;
+    margin-top:5px;
+    font-size:11px;
+    line-height:15px;
     color:var(--faint,#827567);
     font-style:italic;
     cursor:text;
-    border-radius:6px;
+    border-radius:5px;
     padding:2px 4px;
     margin-left:-4px;
     transition:background .15s;
@@ -515,12 +505,11 @@
     overflow:hidden;
     text-overflow:ellipsis;
     max-width:100%;
-    min-height:0;
     outline:none;
   }
 
   .day-card-note:hover{
-    background:rgba(124,84,16,.06);
+    background:rgba(124,84,16,.05);
   }
 
   .day-card-note:focus{
@@ -1513,23 +1502,22 @@
       >
         <div className="day-spine-head">
           <div className="day-spine-kicker">
-            Feuille de route
+            Itinéraire actif
           </div>
 
           <div className="day-spine-title">
             {trip.name || 'Mon voyage'}
           </div>
 
-          <div className="day-spine-meta">
-            {days.length} jour{days.length > 1 ? 's' : ''}
-            {trip.startDate && trip.endDate
-              ? ' · ' + formatDayDate(trip.startDate) + ' → ' + formatDayDate(trip.endDate)
-              : ''}
-          </div>
+          {trip.startDate && trip.endDate && (
+            <div className="day-spine-meta">
+              <Icon name="cal" size={12} />
+              {formatDayDate(trip.startDate)} → {formatDayDate(trip.endDate)}
+            </div>
+          )}
         </div>
 
         <div className="day-spine-scroll">
-          <div className="day-spine-timeline" />
 
           {days.map(function renderDay(day, index) {
             const active = index === selected;
@@ -1546,7 +1534,7 @@
                 onClick={() => selectDay(index)}
               >
                 <span className="day-card-num">
-                  {String(index + 1).padStart(2, '0')}
+                  J{index + 1}
                 </span>
 
                 <span className="day-card-body">

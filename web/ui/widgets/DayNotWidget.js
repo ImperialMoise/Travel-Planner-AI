@@ -29,17 +29,15 @@
     return String(value == null ? '' : value);
   }
 
-  function cardStyle() {
-    return {
-      background: 'var(--soft)',
-      borderRadius: 12,
-      boxShadow: '0 2px 8px rgba(82,98,91,0.05)',
-      border: '1px solid rgba(217,182,126,0.3)',
-      padding: 16,
-      position: 'relative',
-      overflow: 'hidden'
-    };
-  }
+function cardStyle() {
+  return {
+    background: 'var(--card)',
+    borderRadius: 12,
+    boxShadow: '0 2px 8px rgba(82,98,91,0.05)',
+    border: '1px solid var(--outline-variant)',
+    overflow: 'hidden'
+  };
+}
 
   function removeButtonStyle() {
     return {
@@ -141,65 +139,55 @@
       }, 0);
     }
 
-    return (
-      <div style={cardStyle()}>
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          right: 0,
-          width: 32,
-          height: 32,
-          background: 'rgba(217,182,126,0.1)',
-          borderRadius: '0 0 0 12px',
-          pointerEvents: 'none'
-        }} />
+<div style={{
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: 10,
+  padding: '12px 16px',
+  borderBottom: '1px solid var(--outline-variant)',
+  background: 'var(--soft)'
+}}>
+  <span style={{
+    fontSize: 13,
+    fontWeight: 700,
+    color: 'var(--text)',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8
+  }}>
+    <Icon name="sparkle" size={16} style={{ color: 'var(--tan)' }} />
+    Note du jour
+  </span>
 
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 10,
-          marginBottom: 12
-        }}>
-          <span style={{
-            fontSize: 13,
-            fontWeight: 700,
-            color: 'var(--text)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8
-          }}>
-            <Icon name="sparkle" size={16} style={{ color: 'var(--tan)' }} />
-            Journal du jour
-          </span>
+  <div style={{
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+    flexShrink: 0
+  }}>
+    <button
+      type="button"
+      onClick={saveNote}
+      disabled={saving || !dirty}
+      style={saveButtonStyle(dirty, saving)}
+    >
+      {saving ? '...' : dirty ? 'Sauver' : 'À jour'}
+    </button>
 
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-            flexShrink: 0
-          }}>
-            <button
-              type="button"
-              onClick={saveNote}
-              disabled={saving || !dirty}
-              style={saveButtonStyle(dirty, saving)}
-            >
-              {saving ? '...' : dirty ? 'Sauver' : 'À jour'}
-            </button>
+    {editMode && (
+      <button
+        type="button"
+        onClick={onRemove}
+        style={removeButtonStyle()}
+      >
+        {'\u00d7'}
+      </button>
+    )}
+  </div>
+</div>
 
-            {editMode && (
-              <button
-                type="button"
-                onClick={onRemove}
-                style={removeButtonStyle()}
-              >
-                {'\u00d7'}
-              </button>
-            )}
-          </div>
-        </div>
-
+<div style={{ padding: 16 }}>
         <textarea
           ref={textareaRef}
           value={draft}

@@ -67,27 +67,27 @@
     return safeString(div.textContent || div.innerText || '');
   }
 
-  function cardStyle() {
-    return {
-      background: 'var(--card)',
-      borderRadius: 12,
-      boxShadow: '0 2px 8px rgba(82,98,91,0.05)',
-      border: '1px solid var(--outline-variant)',
-      overflow: 'hidden'
-    };
-  }
+function cardStyle() {
+  return {
+    background: 'var(--card)',
+    borderRadius: 12,
+    boxShadow: '0 2px 8px rgba(82,98,91,0.05)',
+    border: '1px solid var(--outline-variant)',
+    overflow: 'hidden'
+  };
+}
 
-  function headerStyle() {
-    return {
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: 10,
-      padding: '12px 16px',
-      borderBottom: '1px solid var(--outline-variant)',
-      background: 'var(--soft)'
-    };
-  }
+function headerStyle() {
+  return {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+    padding: '12px 16px',
+    borderBottom: '1px solid var(--outline-variant)',
+    background: 'var(--soft)'
+  };
+}
 
   function removeButtonStyle() {
     return {
@@ -200,7 +200,7 @@
               gap: 8
             }}>
               <Icon name="file" size={16} style={{ color: 'var(--tan)' }} />
-              Carnet du voyage
+              Notes rapides
             </span>
 
             {editMode && (
@@ -262,11 +262,11 @@
 
         Store.showToast(
           stripHtml(html).trim()
-            ? 'Carnet du voyage sauvegardé'
-            : 'Carnet du voyage vidé'
+            ? 'Notes sauvegardées'
+            : 'Notes vidées'
         );
       } catch (error) {
-        Store.showToast('Erreur carnet : ' + (error.message || error));
+        Store.showToast('Erreur notes : ' + (error.message || error));
       } finally {
         setSaving(false);
       }
@@ -292,7 +292,7 @@
             gap: 8
           }}>
             <Icon name="file" size={16} style={{ color: 'var(--tan)' }} />
-            Carnet du voyage
+            Notes
           </span>
 
           <div style={{
@@ -407,7 +407,7 @@
 
             {!empty && (
               <ToolButton
-                title="Vider le carnet"
+                title="Vider les notes"
                 danger
                 disabled={saving}
                 onClick={clearGlobalNote}
@@ -430,7 +430,7 @@
                 pointerEvents: 'none',
                 fontStyle: 'italic'
               }}>
-                Notes globales du voyage : idées, rappels, adresses, choses à vérifier…
+                Notes du voyage : idées, rappels, adresses, choses à vérifier…
               </div>
             )}
 
@@ -451,7 +451,7 @@
                 overflowY: 'auto',
                 border: '1px solid var(--outline-variant)',
                 borderRadius: 12,
-                background: 'var(--bg)',
+                background: 'var(--card)',
                 color: 'var(--text)',
                 padding: '12px 14px',
                 fontFamily: 'inherit',

@@ -44,13 +44,13 @@
       icon: 'sparkle',
       defaultOpen: true
     },
-    globalNote: {
-      id: 'globalNote',
-      label: 'Carnet du voyage',
-      description: 'Notes globales du voyage.',
-      icon: 'file',
-      defaultOpen: true
-    },
+globalNote: {
+  id: 'globalNote',
+  label: 'Notes',
+  description: 'Notes globales du voyage.',
+  icon: 'file',
+  defaultOpen: true
+},
     currency: {
       id: 'currency',
       label: 'Convertisseur',
@@ -171,14 +171,14 @@
   }
 
   function widgetShellStyle() {
-    return {
-      background: 'var(--surface-container-lowest,#fff)',
-      borderRadius: 14,
-      boxShadow: '0 2px 8px rgba(82,98,91,0.05)',
-      border: '1px solid var(--outline-variant)',
-      overflow: 'hidden'
-    };
-  }
+  return {
+    background: 'var(--card)',
+    borderRadius: 14,
+    boxShadow: '0 2px 8px rgba(82,98,91,0.05)',
+    border: '1px solid var(--outline-variant)',
+    overflow: 'hidden'
+  };
+}
 
   function ToolboxButton({
     children,
@@ -232,156 +232,162 @@
   }
 
   function ToolFrame({
-    tool,
-    open,
-    editMode,
-    onToggle,
-    onRemove,
-    children
-  }) {
-    const definition = TOOL_DEFINITIONS[tool];
+  tool,
+  open,
+  editMode,
+  onToggle,
+  onRemove,
+  children
+}) {
+  const definition = TOOL_DEFINITIONS[tool];
 
-    if (!definition) return null;
+  if (!definition) return null;
 
-    return (
+  return (
+    <div
+      style={{
+        width: '100%',
+        flexShrink: 0,
+        ...widgetShellStyle()
+      }}
+    >
       <div
         style={{
-          width: '100%',
-          flexShrink: 0,
-          ...widgetShellStyle()
+          minHeight: 42,
+          padding: '9px 10px',
+          borderBottom: open ? '1px solid var(--outline-variant)' : 'none',
+          background: 'var(--card)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 10,
+          position: 'sticky',
+          top: 0,
+          zIndex: 2
         }}
       >
         <div
           style={{
-            minHeight: 38,
-            padding: '8px 9px',
-            borderBottom: open ? '1px solid var(--outline-variant)' : 'none',
-            background: 'rgba(235,225,216,.32)',
+            minWidth: 0,
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between',
             gap: 8
           }}
         >
-          <div
+          <span
+            aria-hidden="true"
             style={{
-              minWidth: 0,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 7
-            }}
-          >
-            <span
-              aria-hidden="true"
-              style={{
-                color: 'var(--faint,#827567)',
-                fontSize: 15,
-                lineHeight: 1,
-                cursor: editMode ? 'grab' : 'default'
-              }}
-            >
-              ⋮⋮
-            </span>
-
-            <span
-              style={{
-                width: 22,
-                height: 22,
-                borderRadius: 999,
-                background: 'var(--accent-soft)',
-                color: 'var(--accent)',
-                display: 'grid',
-                placeItems: 'center',
-                flexShrink: 0
-              }}
-            >
-              <Icon name={definition.icon} size={13} />
-            </span>
-
-            <span
-              style={{
-                minWidth: 0,
-                display: 'block',
-                fontFamily: 'var(--font-mono,monospace)',
-                fontSize: 10.5,
-                lineHeight: '13px',
-                fontWeight: 900,
-                letterSpacing: '.08em',
-                textTransform: 'uppercase',
-                color: 'var(--text)',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis'
-              }}
-            >
-              {definition.label}
-            </span>
-          </div>
-
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 2,
+              color: 'var(--faint)',
+              fontSize: 15,
+              lineHeight: 1,
+              letterSpacing: -4,
+              transform: 'rotate(90deg)',
+              opacity: 0.8,
               flexShrink: 0
             }}
           >
+            ⋮⋮
+          </span>
+
+          <span
+            style={{
+              width: 24,
+              height: 24,
+              borderRadius: 999,
+              background: 'var(--accent-soft)',
+              color: 'var(--accent)',
+              display: 'grid',
+              placeItems: 'center',
+              flexShrink: 0
+            }}
+          >
+            <Icon name={definition.icon} size={13} />
+          </span>
+
+          <span
+            style={{
+              minWidth: 0,
+              display: 'block',
+              fontSize: 11,
+              fontWeight: 900,
+              letterSpacing: '.14em',
+              textTransform: 'uppercase',
+              color: 'var(--text)',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis'
+            }}
+          >
+            {definition.label}
+          </span>
+        </div>
+
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 5,
+            flexShrink: 0
+          }}
+        >
+          <button
+            type="button"
+            title={open ? 'Réduire' : 'Développer'}
+            onClick={onToggle}
+            style={{
+              width: 24,
+              height: 24,
+              borderRadius: 999,
+              border: 'none',
+              background: 'transparent',
+              color: 'var(--muted)',
+              cursor: 'pointer',
+              display: 'grid',
+              placeItems: 'center',
+              fontFamily: 'inherit',
+              fontSize: 14,
+              fontWeight: 900,
+              lineHeight: 1
+            }}
+          >
+            {open ? '⌃' : '⌄'}
+          </button>
+
+          {editMode && (
             <button
               type="button"
-              title={open ? 'Réduire' : 'Développer'}
-              onClick={onToggle}
+              title="Retirer ce widget"
+              onClick={onRemove}
               style={{
                 width: 24,
                 height: 24,
-                border: 'none',
                 borderRadius: 999,
-                background: 'transparent',
-                color: 'var(--faint,#827567)',
+                border: 'none',
+                background: 'rgba(192,86,63,.08)',
+                color: '#c0563f',
                 cursor: 'pointer',
                 display: 'grid',
                 placeItems: 'center',
                 fontFamily: 'inherit',
-                fontSize: 14,
+                fontSize: 15,
+                fontWeight: 900,
                 lineHeight: 1
               }}
             >
-              {open ? '⌃' : '⌄'}
+              ×
             </button>
-
-            {editMode && (
-              <button
-                type="button"
-                title="Retirer ce widget"
-                onClick={onRemove}
-                style={{
-                  width: 24,
-                  height: 24,
-                  border: 'none',
-                  borderRadius: 999,
-                  background: 'transparent',
-                  color: '#c0563f',
-                  cursor: 'pointer',
-                  display: 'grid',
-                  placeItems: 'center',
-                  fontFamily: 'inherit',
-                  fontSize: 15,
-                  lineHeight: 1
-                }}
-              >
-                ×
-              </button>
-            )}
-          </div>
+          )}
         </div>
-
-        {open && (
-          <div>
-            {children}
-          </div>
-        )}
       </div>
-    );
-  }
+
+      {open && (
+        <div>
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
 
   function ToolboxLibrary({
     tools,
@@ -738,98 +744,68 @@
           overflow: 'hidden'
         }}
       >
-        <div
-          style={{
-            padding: '14px 14px 12px',
-            borderBottom: '1px solid var(--outline-variant)',
-            background: 'var(--surface-container-lowest,#fff)',
-            flexShrink: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 10
-          }}
-        >
-          <div style={{ minWidth: 0 }}>
-            <div
-              style={{
-                fontFamily: 'var(--font-mono,monospace)',
-                fontSize: 10.5,
-                lineHeight: '13px',
-                fontWeight: 900,
-                letterSpacing: '.14em',
-                textTransform: 'uppercase',
-                color: 'var(--faint,#827567)'
-              }}
-            >
-              Toolbox
-            </div>
+<div
+  style={{
+    padding: '14px 14px 12px',
+    borderBottom: '1px solid var(--outline-variant)',
+    background: 'var(--surface-container-low, #f8f3e9)',
+    flexShrink: 0,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10
+  }}
+>
+  <div style={{ minWidth: 0 }}>
+    <div
+      style={{
+        fontSize: 11,
+        fontWeight: 900,
+        letterSpacing: '.14em',
+        textTransform: 'uppercase',
+        color: 'var(--text)'
+      }}
+    >
+      Boîte à outils
+    </div>
 
-            <div
-              style={{
-                marginTop: 2,
-                fontSize: 11,
-                lineHeight: '14px',
-                color: 'var(--faint,#827567)'
-              }}
-            >
-              Widgets
-            </div>
-          </div>
+    <div
+      style={{
+        marginTop: 2,
+        fontSize: 10.5,
+        fontWeight: 700,
+        color: 'var(--faint)'
+      }}
+    >
+      Widgets utiles au voyage
+    </div>
+  </div>
 
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              flexShrink: 0
-            }}
-          >
-            <button
-              type="button"
-              title="Ajouter un widget"
-              onClick={() => setLibraryOpen(value => !value)}
-              style={{
-                width: 30,
-                height: 30,
-                borderRadius: 999,
-                border: libraryOpen ? '1px solid var(--accent)' : '1px solid var(--outline-variant)',
-                background: libraryOpen ? 'var(--accent)' : 'var(--surface-container-lowest,#fff)',
-                color: libraryOpen ? 'var(--accent-ink)' : 'var(--text)',
-                cursor: 'pointer',
-                display: 'grid',
-                placeItems: 'center',
-                fontFamily: 'inherit',
-                fontSize: 17,
-                fontWeight: 900
-              }}
-            >
-              +
-            </button>
+  <div
+    style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: 6,
+      flexShrink: 0
+    }}
+  >
+    <ToolboxButton
+      title="Ajouter un widget"
+      onClick={() => setLibraryOpen(value => !value)}
+      active={libraryOpen}
+    >
+      +
+    </ToolboxButton>
 
-            <button
-              type="button"
-              title={editMode ? 'Terminer l’édition' : 'Organiser les widgets'}
-              onClick={() => setEditMode(value => !value)}
-              style={{
-                width: 30,
-                height: 30,
-                borderRadius: 999,
-                border: editMode ? '1px solid var(--accent)' : '1px solid var(--outline-variant)',
-                background: editMode ? 'var(--accent)' : 'var(--surface-container-lowest,#fff)',
-                color: editMode ? 'var(--accent-ink)' : 'var(--text)',
-                cursor: 'pointer',
-                display: 'grid',
-                placeItems: 'center',
-                fontFamily: 'inherit',
-                fontSize: 13,
-                fontWeight: 900
-              }}
-            >
-              ✎
-            </button>
-          </div>
-        </div>
+    <ToolboxButton
+      title={editMode ? 'Terminer l’édition' : 'Organiser les widgets'}
+      onClick={() => setEditMode(value => !value)}
+      active={editMode}
+    >
+      ✎
+    </ToolboxButton>
+  </div>
+</div>
         <div
           data-toolbox-scroll="true"
           style={{

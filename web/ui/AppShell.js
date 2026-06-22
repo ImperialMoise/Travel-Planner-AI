@@ -315,6 +315,7 @@
   .day-spine{
     height:100%;
     min-height:0;
+    max-width:100%;
     flex-shrink:0;
     border-right:1px solid var(--outline-variant);
     background:var(--inset);
@@ -364,12 +365,15 @@
     flex:1 1 0;
     min-height:0;
     overflow-y:auto;
+    overflow-x:hidden;
     padding:10px 10px 18px;
   }
 
   .day-card{
     position:relative;
     width:100%;
+    max-width:100%;
+    box-sizing:border-box;
     border:none;
     background:transparent;
     color:var(--text);
@@ -383,6 +387,7 @@
     gap:10px;
     transition:background .15s;
     margin-bottom:2px;
+    overflow:hidden;
   }
 
   .day-card:hover{
@@ -434,13 +439,15 @@
   }
 
   .day-card-title{
+    display:block;
+    max-width:100%;
     font-size:13.5px;
-    font-weight:700;
+    font-weight:800;
     line-height:18px;
     color:var(--text);
-    white-space:nowrap;
+    white-space:normal;
     overflow:hidden;
-    text-overflow:ellipsis;
+    overflow-wrap:anywhere;
   }
 
   .day-card.active .day-card-title{
@@ -449,45 +456,59 @@
   }
 
   .day-card-date{
-    margin-top:2px;
-    font-size:11.5px;
+    margin-top:4px;
+    display:flex;
+    align-items:center;
+    gap:5px;
+    max-width:100%;
+    font-family:var(--font-mono,monospace);
+    font-size:11px;
     line-height:15px;
     color:var(--faint,#827567);
-    font-weight:500;
+    font-weight:700;
+    white-space:normal;
   }
 
   .day-card.active .day-card-date{
     color:var(--accent);
-    font-weight:600;
+    font-weight:800;
   }
 
   .day-card-tags{
     display:flex;
     flex-wrap:wrap;
     gap:4px;
-    margin-top:6px;
+    margin-top:7px;
+    max-width:100%;
   }
 
   .day-card-tag{
     display:inline-flex;
     align-items:center;
     gap:3px;
+    max-width:100%;
     font-size:10px;
-    font-weight:700;
+    font-weight:800;
     text-transform:uppercase;
-    letter-spacing:.03em;
-    padding:2px 7px;
+    letter-spacing:.04em;
+    padding:3px 7px;
     border-radius:999px;
     background:var(--card);
     color:var(--faint,#827567);
     border:1px solid var(--outline-variant);
+    white-space:nowrap;
   }
 
-  .day-card.active .day-card-tag{
-    background:var(--accent);
-    color:var(--accent-ink);
-    border-color:var(--accent);
-    box-shadow:0 1px 3px rgba(124,84,16,.15);
+  .day-card-tag.alert{
+    background:rgba(192,86,63,.08);
+    color:#a34732;
+    border-color:rgba(192,86,63,.28);
+  }
+
+  .day-card.active .day-card-tag.alert{
+    background:rgba(192,86,63,.10);
+    color:#8f3928;
+    border-color:rgba(192,86,63,.34);
   }
 
   .day-card-note{
@@ -1525,7 +1546,15 @@
             const tags = countDayTags(day);
             const title = getDisplayDayTitle(day);
             const dateStr = formatDayDate(day.dateISO) || '';
-            const stepCount = tags.steps || 0;
+            const missingBadges = [];
+
+            if (!tags.lodgings) {
+              missingBadges.push('Où dormir ?');
+            }
+
+            if (!tags.restaurants) {
+              missingBadges.push('Repas ?');
+            }
 
             return (
               <button
@@ -1543,31 +1572,30 @@
                     {title}
                   </span>
 
+                <span className="day-card-body">
+                  <span className="day-card-title">
+                    {title}
+                  </span>
+
                   <span className="day-card-date">
-                    {dateStr}
-                    {dateStr && stepCount ? ' · ' : ''}
-                    {stepCount ? stepCount + ' étape' + (stepCount > 1 ? 's' : '') : ''}
+                    <Icon name="cal" size={11} />
+                    {dateStr || 'Date à définir'}
                   </span>
 
-                  <span className="day-card-tags">
-                    {tags.transports > 0 && (
-                      <span className="day-card-tag">
-                        {tags.transports} Transport{tags.transports > 1 ? 's' : ''}
-                      </span>
-                    )}
-
-                    {tags.restaurants > 0 && (
-                      <span className="day-card-tag">
-                        {tags.restaurants} Resto{tags.restaurants > 1 ? 's' : ''}
-                      </span>
-                    )}
-
-                    {tags.lodgings > 0 && (
-                      <span className="day-card-tag">
-                        Logement
-                      </span>
-                    )}
-                  </span>
+                  {missingBadges.length > 0 && (
+                    <span className="day-card-tags">
+                      {missingBadges.map(function renderMissingBadge(label) {
+                        return (
+                          <span
+                            key={label}
+                            className="day-card-tag alert"
+                          >
+                            {label}
+                          </span>
+                        );
+                      })}
+                    </span>
+                  )}
 
                   <span
                     className="day-card-note"

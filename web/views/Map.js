@@ -134,6 +134,233 @@ html.dark .mv-glass{background:rgba(21,48,42,0.8);border-color:rgba(255,255,255,
 .mv-glass-btn{border:none;background:transparent;color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;padding:8px 14px;font-size:12.5px;font-weight:700;font-family:inherit;transition:all .15s;border-radius:10px;white-space:nowrap}
 .mv-glass-btn:hover{background:var(--accent-soft);color:var(--accent)}
 .mv-glass-btn.active{background:var(--accent);color:var(--accent-ink)}
+
+.mv-card{
+  width:340px;
+  max-width:calc(100vw - 32px);
+  background:rgba(254,249,239,.86);
+  backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
+  border:1px solid rgba(212,196,179,.88);
+  border-radius:22px;
+  box-shadow:0 22px 52px rgba(45,73,63,.16);
+  overflow:hidden;
+  color:var(--text);
+}
+
+.mv-card-head{
+  padding:16px 18px 15px;
+  background:rgba(255,255,255,.72);
+  border-bottom:1px solid rgba(45,73,63,.10);
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:14px;
+}
+
+.mv-card-status{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  font-family:var(--font-mono);
+  font-size:10.5px;
+  line-height:14px;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+  color:var(--muted);
+  font-weight:900;
+}
+
+.mv-live-dot{
+  width:8px;
+  height:8px;
+  border-radius:999px;
+  background:#5c8a6f;
+  box-shadow:0 0 0 4px rgba(92,138,111,.12);
+  flex-shrink:0;
+}
+
+.mv-card-title{
+  margin-top:5px;
+  font-family:var(--font-serif);
+  font-size:24px;
+  line-height:29px;
+  color:var(--text);
+}
+
+.mv-card-toggle{
+  width:32px;
+  height:32px;
+  border-radius:999px;
+  border:none;
+  background:transparent;
+  color:var(--muted);
+  cursor:pointer;
+  display:grid;
+  place-items:center;
+  font-size:20px;
+  font-weight:900;
+}
+
+.mv-card-toggle:hover{
+  background:rgba(248,243,233,.9);
+  color:var(--accent);
+}
+
+.mv-card-body{
+  padding:14px;
+  background:rgba(248,243,233,.62);
+  max-height:262px;
+  overflow:hidden;
+  transition:max-height .22s ease;
+}
+
+.mv-card-body.expanded{
+  max-height:calc(100vh - 180px);
+  overflow:auto;
+}
+
+.mv-bento{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+
+.mv-mini-tile{
+  min-height:98px;
+  background:rgba(255,255,255,.72);
+  border:1px solid rgba(212,196,179,.72);
+  border-radius:14px;
+  padding:12px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+}
+
+.mv-mini-icon{
+  width:28px;
+  height:28px;
+  border-radius:999px;
+  background:rgba(213,231,221,.65);
+  color:var(--secondary);
+  display:grid;
+  place-items:center;
+  margin-bottom:7px;
+}
+
+.mv-mini-value{
+  color:var(--text);
+  font-size:14px;
+  line-height:18px;
+  font-weight:900;
+}
+
+.mv-mini-label{
+  margin-top:2px;
+  color:var(--muted);
+  font-size:11.5px;
+  line-height:15px;
+}
+
+.mv-main-step{
+  grid-column:1 / -1;
+  background:rgba(255,255,255,.78);
+  border:1px solid rgba(212,196,179,.78);
+  border-radius:14px;
+  padding:12px;
+  display:flex;
+  align-items:flex-start;
+  gap:12px;
+}
+
+.mv-main-step-icon{
+  width:42px;
+  height:42px;
+  border-radius:12px;
+  background:rgba(213,231,221,.82);
+  color:var(--secondary);
+  display:grid;
+  place-items:center;
+  flex-shrink:0;
+}
+
+.mv-main-title{
+  color:var(--text);
+  font-size:14px;
+  line-height:18px;
+  font-weight:900;
+}
+
+.mv-main-sub{
+  margin-top:3px;
+  color:var(--muted);
+  font-size:12px;
+  line-height:17px;
+  display:-webkit-box;
+  -webkit-line-clamp:2;
+  -webkit-box-orient:vertical;
+  overflow:hidden;
+}
+
+.mv-card-note{
+  margin-top:10px;
+  padding:10px 12px;
+  border-radius:13px;
+  background:rgba(255,255,255,.58);
+  border:1px dashed rgba(212,196,179,.86);
+  color:var(--muted);
+  font-size:12px;
+  line-height:17px;
+}
+
+.mv-card-steps{
+  display:none;
+  margin-top:12px;
+  padding-top:10px;
+  border-top:1px solid rgba(212,196,179,.7);
+}
+
+.mv-card-body.expanded .mv-card-steps{
+  display:block;
+}
+
+.mv-card-foot{
+  margin-top:12px;
+  display:flex;
+  gap:8px;
+}
+
+.mv-card-foot button{
+  flex:1;
+  min-height:38px;
+  border-radius:999px;
+  border:1px solid rgba(212,196,179,.88);
+  background:rgba(255,255,255,.72);
+  color:var(--text);
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+  font-family:var(--font-mono);
+  font-size:10.5px;
+  font-weight:900;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  cursor:pointer;
+}
+
+.mv-card-foot button:first-child{
+  background:var(--accent);
+  border-color:var(--accent);
+  color:var(--accent-ink);
+}
+
+.mv-card-foot button:hover{
+  transform:translateY(-1px);
+  box-shadow:0 8px 18px rgba(82,98,91,.10);
+}
 `;
 
 /* ═══ TILES ═══ */
@@ -439,106 +666,182 @@ function clearStepMarkers(){markersRef.current.step.forEach(m=>m.remove());marke
   if (!cardRef.current) return;
 
   const d = T.days[i];
-  const rc = mvRegClass(d.region);
-  const pc = d.region === 'Busan' ? '#c98a3c' : d.region === 'Vol' ? 'var(--faint)' : 'var(--accent)';
+
+  if (!d) return;
+
+  const rc = regionClass(d.region);
+  const pc = regionPretty(d.region);
+  const date = fmtDate(d.dateISO);
+
+  const locatedSteps = d.steps.filter(function keepLocated(step) {
+    return !!step.c;
+  });
+
+  const mealCount = d.steps.filter(function keepMeal(step) {
+    return step.t === 'restaurant';
+  }).length;
+
+  const lodgingCount = d.steps.filter(function keepLodging(step) {
+    return step.t === 'logement';
+  }).length;
+
+  const mainStep =
+    d.steps.find(function findActivity(step) {
+      return step.t === 'activite';
+    }) ||
+    d.steps.find(function findMeal(step) {
+      return step.t === 'restaurant';
+    }) ||
+    d.steps[0] ||
+    null;
+
+  const mainIcon = mainStep ? mvStepIcon(mainStep) : 'pin';
+  const mainTitle = mainStep ? mainStep.l : 'Aucune étape prévue';
+  const mainSub = mainStep && mainStep.s
+    ? mainStep.s
+    : mainStep
+      ? 'Ajoute une description pour compléter cette étape.'
+      : 'Ajoute une première étape pour commencer à construire cette journée.';
+
+  const mealLabel = mealCount
+    ? mealCount + ' repas'
+    : 'Repas à prévoir';
+
+  const lodgingLabel = lodgingCount
+    ? lodgingCount + ' nuit' + (lodgingCount > 1 ? 's' : '')
+    : 'Où dormir ?';
 
   let rows = '';
 
-  d.steps.forEach((s, k) => {
-    const hasCoords = !!s.c;
+  d.steps.forEach(function renderStepRow(s, idx) {
+    const ic = mvStepIcon(s);
+    const time = s.time ? '<span>' + s.time + '</span>' : '';
+    const type = s.t ? '<span>' + s.t + '</span>' : '';
+    const meta = time || type
+      ? '<div class="mv-step-meta">' + time + type + '</div>'
+      : '';
 
-    rows += '<div class="mv-step-row" data-si="' + k + '" data-missing="' + (!hasCoords ? '1' : '0') + '">' +
-      '<div class="mv-step-ic">' + mvSvg(hasCoords ? mvStepIcon(s) : 'pin', 16) + '</div>' +
-      '<div style="flex:1;min-width:0">' +
-        '<div class="mv-step-name">' + (s.l || 'Étape') + '</div>' +
-        '<div class="mv-step-sub">' + (hasCoords ? (s.s || '') : 'Position à définir') + '</div>' +
-      '</div>' +
-      '<div class="mv-step-time">' + (hasCoords ? (s.time || '') : 'À localiser') + '</div>' +
-    '</div>';
+    rows +=
+      '<button class="mv-step-row" data-step="' + idx + '">' +
+        '<span class="mv-step-ico">' + mvSvg(ic, 14) + '</span>' +
+        '<span class="mv-step-txt">' +
+          '<strong>' + s.l + '</strong>' +
+          meta +
+        '</span>' +
+      '</button>';
   });
+
+  if (!rows) {
+    rows =
+      '<div class="mv-step-empty">' +
+        'Aucune étape pour cette journée.' +
+      '</div>';
+  }
 
   cardRef.current.innerHTML =
     '<div class="mv-card ' + rc + '">' +
-      '<div class="mv-hero">' +
-        '<div class="mv-hero-ov"></div>' +
-        '<div class="mv-hero-tag">' + d.tag + '</div>' +
-        '<div class="mv-hero-cap">' +
-          '<div class="mv-hero-pill"><span class="pdot" style="background:' + pc + '"></span>' + d.wd + ' ' + mvFmtDate(d.date) + ' · ' + d.region + '</div>' +
-          '<div style="display:flex;align-items:flex-end;gap:9px"><span class="mv-hj">J' + d.n + '</span><span class="mv-hn">' + d.title + '</span></div>' +
+      '<div class="mv-card-head">' +
+        '<div>' +
+          '<div class="mv-card-status">' +
+            '<span class="mv-live-dot"></span>' +
+            '<span>J' + (i + 1) + ' · ' + date + '</span>' +
+          '</div>' +
+          '<div class="mv-card-title">' + d.title + '</div>' +
+        '</div>' +
+        '<button id="mv-toggle-btn" class="mv-card-toggle" type="button" title="Déplier la journée">⌄</button>' +
+      '</div>' +
+
+      '<div id="mv-card-body" class="mv-card-body">' +
+        '<div class="mv-bento">' +
+          '<div class="mv-mini-tile">' +
+            '<span class="mv-mini-icon">☀</span>' +
+            '<span class="mv-mini-value">Préparation</span>' +
+            '<span class="mv-mini-label">Météo à compléter</span>' +
+          '</div>' +
+
+          '<div class="mv-mini-tile">' +
+            '<span class="mv-mini-icon">' + mvSvg('route', 15) + '</span>' +
+            '<span class="mv-mini-value">' + locatedSteps.length + '/' + d.steps.length + ' étapes</span>' +
+            '<span class="mv-mini-label">' + mealLabel + ' · ' + lodgingLabel + '</span>' +
+          '</div>' +
+
+          '<div class="mv-main-step">' +
+            '<span class="mv-main-step-icon">' + mvSvg(mainIcon, 20) + '</span>' +
+            '<span>' +
+              '<span class="mv-main-title">' + mainTitle + '</span>' +
+              '<span class="mv-main-sub">' + mainSub + '</span>' +
+            '</span>' +
+          '</div>' +
+        '</div>' +
+
+        '<div class="mv-card-note">' +
+          (d.note ? d.note : 'Aucune note pour ce jour. Ajoute un repère ou une intention de voyage.') +
+        '</div>' +
+
+        '<div class="mv-card-steps">' + rows + '</div>' +
+
+        '<div class="mv-card-foot">' +
+          '<button id="mv-fly-btn" type="button">' + mvSvg('route', 14) + 'Recadrer</button>' +
+          '<button id="mv-expand-btn" type="button">' + mvSvg('chevdown', 12) + 'Étapes (' + d.steps.length + ')</button>' +
         '</div>' +
       '</div>' +
-      '<div class="mv-card-body">' +
-  (d.note ? '<div class="mv-card-note">' + d.note + '</div>' : '<div class="mv-card-note">Aucune note pour cette journée.</div>') +
-  '<div class="mv-card-steps">' +
-    rows +
-  '</div>' +
-  '<div class="mv-card-foot">' +
-    '<button id="mv-fly-btn">' + mvSvg('route', 14) + 'Recadrer</button>' +
-    '<button id="mv-expand-btn">' + mvSvg('chevdown', 12) + 'Étapes (' + d.steps.length + ')</button>' +
-  '</div>' +
-'</div>' +
     '</div>';
 
   const map = mapRef.current;
 
-  cardRef.current.querySelectorAll('.mv-step-row').forEach(r => {
-    r.addEventListener('click', () => {
-      const s = d.steps[+r.dataset.si];
+  cardRef.current.querySelectorAll('.mv-step-row').forEach(function bindStep(btn) {
+    btn.addEventListener('click', function clickStep() {
+      const s = d.steps[Number(btn.getAttribute('data-step'))];
 
-      Store.set({
-        view: 'itinerary',
-        selectedDayIndex: i,
-        selectedStepId: s && s.id ? s.id : null,
-        pendingEditStepId: null,
-        mapPickMode: null,
-        mapLocateStep: null
-      });
+      if (s && s.c && map) {
+        map.setView(s.c, 14, { animate: true });
+      } else if (s) {
+        locateModeRef.current = { dayIndex: i, stepIndex: Number(btn.getAttribute('data-step')) };
+        Store.showToast('Clique sur la carte pour placer : ' + s.l);
+      }
     });
   });
 
-  const fb = document.getElementById('mv-fly-btn');
-  if (fb) fb.addEventListener('click', () => flyDay(i));
+  const flyBtn = document.getElementById('mv-fly-btn');
 
-  const eb = document.getElementById('mv-expand-btn');
-const cbody = cardRef.current.querySelector('.mv-card-body');
+  if (flyBtn) {
+    flyBtn.addEventListener('click', function recenterDay() {
+      flyDay(i);
+    });
+  }
 
-if (eb && cbody) {
-  eb.addEventListener('click', function() {
-    var ex = cbody.classList.toggle('expanded');
+  const cardBody = document.getElementById('mv-card-body');
+  const toggleBtn = document.getElementById('mv-toggle-btn');
+  const expandBtn = document.getElementById('mv-expand-btn');
 
-    eb.innerHTML = ex
-      ? (mvSvg('chevdown', 12) + 'Replier')
-      : (mvSvg('chevdown', 12) + 'Étapes (' + d.steps.length + ')');
+  function setExpanded(expanded) {
+    if (!cardBody) return;
 
-    var svg = eb.querySelector('svg');
-    if (svg) svg.style.transform = ex ? 'rotate(180deg)' : 'rotate(0deg)';
-  });
-}
+    cardBody.classList.toggle('expanded', expanded);
 
-  if (window.fetchAutoImage) {
-    var imgKey = 'hero_img_mv_' + i;
-    var cached = localStorage.getItem(imgKey);
-
-    function applyImg(url) {
-      var hero = cardRef.current && cardRef.current.querySelector('.mv-hero');
-      if (hero) {
-        hero.style.backgroundImage = 'url(' + url + ')';
-        hero.style.backgroundSize = 'cover';
-        hero.style.backgroundPosition = 'center';
-      }
+    if (toggleBtn) {
+      toggleBtn.textContent = expanded ? '⌃' : '⌄';
+      toggleBtn.title = expanded ? 'Replier la journée' : 'Déplier la journée';
     }
 
-    if (cached) {
-      try { applyImg(JSON.parse(cached).url); } catch(e) {}
-    } else {
-      var q = d.title + (d.region && d.region !== 'Vol' ? ' ' + d.region : '');
-      fetchAutoImage(q).then(function(result) {
-        if (result && result.url) {
-          localStorage.setItem(imgKey, JSON.stringify(result));
-          applyImg(result.url);
-        }
-      });
+    if (expandBtn) {
+      expandBtn.innerHTML = mvSvg(expanded ? 'chevup' : 'chevdown', 12) +
+        (expanded ? 'Replier' : 'Étapes (' + d.steps.length + ')');
     }
+  }
+
+  function toggleExpanded() {
+    if (!cardBody) return;
+
+    setExpanded(!cardBody.classList.contains('expanded'));
+  }
+
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', toggleExpanded);
+  }
+
+  if (expandBtn) {
+    expandBtn.addEventListener('click', toggleExpanded);
   }
 }
 

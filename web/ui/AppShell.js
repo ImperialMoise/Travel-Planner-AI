@@ -312,240 +312,231 @@
     flex-shrink:0;
   }
 
-  .day-spine{
-    height:100%;
-    min-height:0;
-    max-width:100%;
-    flex-shrink:0;
-    border-right:1px solid var(--outline-variant);
-    background:var(--inset);
-    display:flex;
-    flex-direction:column;
-    overflow:hidden;
-  }
+.day-spine{
+  height:100%;
+  min-height:0;
+  flex-shrink:0;
+  display:flex;
+  flex-direction:column;
+  width:280px;
+  background:var(--surface-container-low,#f8f3e9);
+  border-right:1px solid var(--outline-variant);
+  overflow:hidden;
+}
 
-  .day-spine-head{
-    flex-shrink:0;
-    padding:18px 16px 14px;
-    border-bottom:1px solid var(--outline-variant);
-    background:var(--card);
-  }
+.day-spine-head{
+  padding:22px 18px 18px;
+  border-bottom:1px solid rgba(212,196,179,.72);
+  background:linear-gradient(180deg,rgba(254,249,239,.96),rgba(248,243,233,.92));
+}
 
-  .day-spine-kicker{
-    font-size:11px;
-    font-weight:800;
-    letter-spacing:.14em;
-    text-transform:uppercase;
-    color:var(--faint,#827567);
-  }
+.day-spine-eyebrow{
+  font-family:var(--font-mono);
+  font-size:10px;
+  line-height:14px;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+  color:var(--muted);
+  font-weight:800;
+}
 
-  .day-spine-title{
-    margin-top:4px;
-    font-family:var(--font-sans);
-    font-weight:800;
-    font-size:17px;
-    line-height:22px;
-    color:var(--text);
-  }
+.day-spine-title{
+  margin-top:6px;
+  font-family:var(--font-serif);
+  font-size:24px;
+  line-height:29px;
+  color:var(--text);
+}
 
-  .day-spine-meta{
-    margin-top:6px;
-    display:inline-flex;
-    align-items:center;
-    gap:5px;
-    font-size:11px;
-    color:var(--faint,#827567);
-    font-family:var(--font-mono,monospace);
-    background:var(--inset);
-    padding:4px 8px;
-    border-radius:6px;
-  }
+.day-spine-meta{
+  margin-top:8px;
+  display:flex;
+  align-items:center;
+  gap:7px;
+  font-size:12px;
+  line-height:16px;
+  color:var(--muted);
+}
 
-  .day-spine-scroll{
-    flex:1 1 0;
-    min-height:0;
-    overflow-y:auto;
-    overflow-x:hidden;
-    padding:10px 10px 18px;
-  }
+.day-spine-scroll{
+  position:relative;
+  flex:1;
+  min-height:0;
+  overflow:auto;
+  padding:18px 14px 24px;
+}
 
-  .day-card{
-    position:relative;
-    width:100%;
-    max-width:100%;
-    box-sizing:border-box;
-    border:none;
-    background:transparent;
-    color:var(--text);
-    border-radius:10px;
-    padding:8px 10px;
-    text-align:left;
-    cursor:pointer;
-    font-family:inherit;
-    display:flex;
-    align-items:flex-start;
-    gap:10px;
-    transition:background .15s;
-    margin-bottom:2px;
-    overflow:hidden;
-  }
+.day-spine-scroll::before{
+  content:"";
+  position:absolute;
+  left:35px;
+  top:24px;
+  bottom:24px;
+  width:1px;
+  background:linear-gradient(180deg,transparent,var(--outline-variant),var(--outline-variant),transparent);
+  opacity:.9;
+}
 
-  .day-card:hover{
-    background:var(--card);
-  }
+.day-card{
+  position:relative;
+  z-index:1;
+  width:100%;
+  display:grid;
+  grid-template-columns:42px minmax(0,1fr);
+  gap:12px;
+  align-items:flex-start;
+  padding:10px 8px;
+  margin:0 0 10px;
+  border:1px solid transparent;
+  border-radius:18px;
+  background:transparent;
+  cursor:pointer;
+  text-align:left;
+  color:inherit;
+  font-family:inherit;
+  transition:
+    background .18s ease,
+    border-color .18s ease,
+    box-shadow .18s ease,
+    transform .18s ease;
+}
 
-  .day-card.active{
-    background:rgba(124,84,16,.08);
-    border:1px solid rgba(124,84,16,.18);
-    border-radius:12px;
-    padding:10px;
-    margin-bottom:4px;
-  }
+.day-card:hover{
+  background:rgba(255,255,255,.58);
+  border-color:rgba(212,196,179,.78);
+}
 
-  .day-card-num{
-    width:34px;
-    height:34px;
-    border-radius:10px;
-    background:var(--card);
-    border:1px solid var(--outline-variant);
-    color:var(--faint,#827567);
-    display:grid;
-    place-items:center;
-    flex-shrink:0;
-    font-size:12px;
-    font-weight:800;
-    font-family:var(--font-serif);
-    transition:all .15s;
-  }
+.day-card.active{
+  background:rgba(255,255,255,.88);
+  border-color:rgba(124,84,16,.28);
+  box-shadow:0 14px 30px rgba(82,98,91,.11);
+  transform:translateX(2px);
+}
 
-  .day-card:hover .day-card-num{
-    border-color:var(--accent);
-  }
+.day-card.active::before{
+  content:"";
+  position:absolute;
+  left:0;
+  top:14px;
+  bottom:14px;
+  width:3px;
+  border-radius:0 999px 999px 0;
+  background:var(--accent);
+}
 
-  .day-card.active .day-card-num{
-    width:38px;
-    height:38px;
-    background:var(--accent);
-    border-color:var(--accent);
-    color:var(--accent-ink);
-    font-size:14px;
-    box-shadow:0 2px 8px rgba(124,84,16,.20);
-  }
+.day-card-num{
+  width:40px;
+  height:40px;
+  border-radius:14px;
+  border:1px solid rgba(212,196,179,.95);
+  background:rgba(255,255,255,.88);
+  color:var(--muted);
+  display:grid;
+  place-items:center;
+  flex-shrink:0;
+  font-family:var(--font-mono);
+  font-size:12px;
+  line-height:14px;
+  font-weight:900;
+  box-shadow:0 4px 14px rgba(82,98,91,.06);
+}
 
-  .day-card-body{
-    flex:1;
-    min-width:0;
-    padding-top:1px;
-  }
+.day-card.active .day-card-num{
+  background:var(--accent);
+  border-color:var(--accent);
+  color:var(--accent-ink);
+  box-shadow:0 10px 20px rgba(124,84,16,.18);
+}
 
-  .day-card-title{
-    display:block;
-    max-width:100%;
-    font-size:13.5px;
-    font-weight:800;
-    line-height:18px;
-    color:var(--text);
-    white-space:normal;
-    overflow:hidden;
-    overflow-wrap:anywhere;
-  }
+.day-card-body{
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  padding-top:1px;
+}
 
-  .day-card.active .day-card-title{
-    font-weight:800;
-    color:var(--text);
-  }
+.day-card-title{
+  width:100%;
+  display:block;
+  color:var(--text);
+  font-size:14px;
+  line-height:18px;
+  font-weight:900;
+  letter-spacing:-.01em;
+  white-space:normal;
+  overflow-wrap:anywhere;
+}
 
-  .day-card-date{
-    margin-top:4px;
-    display:flex;
-    align-items:center;
-    gap:5px;
-    max-width:100%;
-    font-family:var(--font-mono,monospace);
-    font-size:11px;
-    line-height:15px;
-    color:var(--faint,#827567);
-    font-weight:700;
-    white-space:normal;
-  }
+.day-card-date{
+  margin-top:5px;
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  color:var(--muted);
+  font-family:var(--font-mono);
+  font-size:10.5px;
+  line-height:14px;
+  font-weight:700;
+}
 
-  .day-card.active .day-card-date{
-    color:var(--accent);
-    font-weight:800;
-  }
+.day-card-tags{
+  margin-top:8px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+}
 
-  .day-card-tags{
-    display:flex;
-    flex-wrap:wrap;
-    gap:4px;
-    margin-top:7px;
-    max-width:100%;
-  }
+.day-card-tag{
+  display:inline-flex;
+  align-items:center;
+  min-height:22px;
+  border-radius:999px;
+  padding:3px 8px 2px;
+  border:1px solid rgba(124,84,16,.22);
+  background:rgba(255,255,255,.66);
+  color:var(--accent);
+  font-family:var(--font-mono);
+  font-size:9px;
+  line-height:12px;
+  font-weight:900;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
 
-  .day-card-tag{
-    display:inline-flex;
-    align-items:center;
-    gap:3px;
-    max-width:100%;
-    font-size:10px;
-    font-weight:800;
-    text-transform:uppercase;
-    letter-spacing:.04em;
-    padding:3px 7px;
-    border-radius:999px;
-    background:var(--card);
-    color:var(--faint,#827567);
-    border:1px solid var(--outline-variant);
-    white-space:nowrap;
-  }
+.day-card-tag.alert{
+  border-color:rgba(192,86,63,.35);
+  background:rgba(255,248,244,.9);
+  color:#a8422a;
+}
 
-  .day-card-tag.alert{
-    background:rgba(192,86,63,.08);
-    color:#a34732;
-    border-color:rgba(192,86,63,.28);
-  }
+.day-card-note{
+  width:100%;
+  min-height:16px;
+  margin-top:7px;
+  color:rgba(80,69,56,.52);
+  font-size:12px;
+  line-height:16px;
+  font-style:italic;
+  outline:none;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
 
-  .day-card.active .day-card-tag.alert{
-    background:rgba(192,86,63,.10);
-    color:#8f3928;
-    border-color:rgba(192,86,63,.34);
-  }
+.day-card-note:focus{
+  color:var(--text);
+  white-space:normal;
+  background:rgba(255,255,255,.78);
+  border:1px solid rgba(212,196,179,.78);
+  border-radius:10px;
+  padding:6px 8px;
+}
 
-  .day-card-note{
-    display:block;
-    margin-top:3px;
-    margin-left:-4px;
-    max-width:100%;
-    border-radius:6px;
-    padding:2px 4px;
-    color:var(--faint,#827567);
-    cursor:text;
-    font-size:11px;
-    font-style:italic;
-    line-height:15px;
-    outline:none;
-    overflow:hidden;
-    text-overflow:ellipsis;
-    transition:background .15s;
-    white-space:nowrap;
-  }
-
-  .day-card-note:hover{
-    background:rgba(124,84,16,.05);
-  }
-
-  .day-card-note:focus{
-    background:var(--card);
-    border:1px solid var(--outline-variant);
-    white-space:normal;
-    box-shadow:0 2px 8px rgba(82,98,91,.08);
-  }
-
-  .day-card-note:empty::before{
-    content:'+ note…';
-    color:var(--outline-variant);
-    font-style:italic;
-  }
+.day-card-note:empty::before{
+  content:attr(data-placeholder);
+  color:rgba(80,69,56,.34);
+}
 
 .home-hero{
   position:relative;
@@ -2011,71 +2002,72 @@
         <div className="day-spine-scroll">
 
           {days.map(function renderDay(day, index) {
-            const active = index === selected;
-            const tags = countDayTags(day);
-            const title = getDisplayDayTitle(day);
-            const dateStr = formatDayDate(day.dateISO) || '';
-            const missingBadges = [];
+  const active = index === selected;
+  const tags = countDayTags(day);
+  const title = getDisplayDayTitle(day) || 'Journée à préciser';
+  const dateStr = formatDayDate(day.dateISO) || 'Date à définir';
 
-            if (!tags.lodgings) {
-              missingBadges.push('Où dormir ?');
-            }
+  const missingBadges = [];
 
-            if (!tags.restaurants) {
-              missingBadges.push('Repas ?');
-            }
+  if (!tags.lodgings) {
+    missingBadges.push('Où dormir ?');
+  }
 
-            return (
-              <button
-                key={day.id || index}
-                type="button"
-                className={'day-card' + (active ? ' active' : '')}
-                onClick={() => selectDay(index)}
-              >
-                <span className="day-card-num">
-                  J{index + 1}
+  if (!tags.restaurants) {
+    missingBadges.push('Repas ?');
+  }
+
+  if (!tags.steps) {
+    missingBadges.push('À compléter');
+  }
+
+  return (
+    <button
+      key={day.id || index}
+      type="button"
+      className={'day-card' + (active ? ' active' : '')}
+      onClick={() => Store.set({ selectedDayIndex: index })}
+    >
+      <span className="day-card-num">
+        J{index + 1}
+      </span>
+
+      <span className="day-card-body">
+        <span className="day-card-title">
+          {title}
+        </span>
+
+        <span className="day-card-date">
+          <Icon name="cal" size={11} />
+          {dateStr}
+        </span>
+
+        {missingBadges.length > 0 && (
+          <span className="day-card-tags">
+            {missingBadges.map(function renderMissingBadge(label) {
+              return (
+                <span key={label} className="day-card-tag alert">
+                  {label}
                 </span>
+              );
+            })}
+          </span>
+        )}
 
-                <span className="day-card-body">
-                  <span className="day-card-title">
-                    {title}
-                  </span>
-
-                  <span className="day-card-date">
-                    <Icon name="cal" size={11} />
-                    {dateStr || 'Date à définir'}
-                  </span>
-
-                  {missingBadges.length > 0 && (
-                    <span className="day-card-tags">
-                      {missingBadges.map(function renderMissingBadge(label) {
-                        return (
-                          <span
-                            key={label}
-                            className="day-card-tag alert"
-                          >
-                            {label}
-                          </span>
-                        );
-                      })}
-                    </span>
-                  )}
-
-                  <span
-                    className="day-card-note"
-                    contentEditable
-                    suppressContentEditableWarning
-                    onClick={function (e) { e.stopPropagation(); }}
-                    onBlur={function (e) { handleNoteBlur(day, e); }}
-                    onKeyDown={handleNoteKeyDown}
-                    dangerouslySetInnerHTML={{
-                      __html: day.note || ''
-                    }}
-                  />
-                </span>
-              </button>
-            );
-          })}
+        <span
+          className="day-card-note"
+          contentEditable
+          suppressContentEditableWarning
+          data-placeholder="+ note..."
+          onBlur={event => handleDayNoteBlur(day, event)}
+          dangerouslySetInnerHTML={{
+            __html: day.note || ''
+          }}
+        />
+      </span>
+    </button>
+  );
+})}
         </div>
       </aside>
     );

@@ -1,26 +1,15 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Voyage Planner - Atelier</title>
 
-  <link rel="stylesheet" href="styles.css" />
-
-  <script>
-    if (localStorage.getItem('it_theme') === 'dark') {
-      document.documentElement.classList.add('dark');
-    }
-  </script>
-
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-
-  <link
-    href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..700&family=DM+Serif+Display:ital@0;1&family=JetBrains+Mono:wght@400&display=swap"
-    rel="stylesheet"
-  />
+  <link rel="stylesheet" href="styles.css">
+  <script>if(localStorage.getItem('it_theme')==='dark')document.documentElement.classList.add('dark')</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..700&family=DM+Serif+Display:ital@0;1&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
 
   <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin></script>
@@ -29,25 +18,26 @@
   <link href="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.css" rel="stylesheet" />
   <script src="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.js"></script>
 </head>
-
 <body>
+
   <div id="root"></div>
 
-  <!-- Données et état global -->
-  <script src="views/trip-data.js"></script>
-  <script src="views/image-slot.js"></script>
-  <script src="lib/state.js"></script>
+  <!-- ════════════════════════════════════════════════════════
+       COUCHE 1 — Données brutes + état global (JS pur, pas Babel)
+       ════════════════════════════════════════════════════════ -->
+  <script src="trip-data.js"></script>
+  <script src="image-slot.js"></script>
+  <script src="state.js"></script>
 
-  <!-- Supabase -->
+  <!-- ════════════════════════════════════════════════════════
+       COUCHE 2 — Supabase (module ES, chargé en parallèle)
+       ════════════════════════════════════════════════════════ -->
   <script type="module">
-    import * as SB from './lib/supabase.js';
-
+    import * as SB from './supabase.js';
     window.SB = SB;
 
-    const startApp = setInterval(function dispatchStartSignal() {
-      const root = document.getElementById('root');
-
-      if (root && root.innerHTML !== '') {
+    const startApp = setInterval(() => {
+      if (document.getElementById('root').innerHTML !== '') {
         clearInterval(startApp);
       } else {
         window.dispatchEvent(new Event('sb-ready'));
@@ -55,21 +45,59 @@
     }, 250);
   </script>
 
-  <!-- UI partagée -->
-  <script type="text/babel" src="ui/Shared.js"></script>
-  <script type="text/babel" src="ui/AroundStepWidget.js"></script>
+  <!-- ════════════════════════════════════════════════════════
+       COUCHE 3 — Atomes partagés (Icon, Btn, helpers)
+       Dépendent de : React, Store
+       ════════════════════════════════════════════════════════ -->
+  <script type="text/babel" src="itin-shared.jsx"></script>
+  <script type="text/babel" src="Shared.js"></script>
 
-  <!-- Vues -->
-  <script type="text/babel" src="views/itin-shared.jsx"></script>
-  <script type="text/babel" src="views/itin-atelier-v2.jsx"></script>
-  <script type="text/babel" src="views/Itinerary.js"></script>
-  <script type="text/babel" src="views/Map.js"></script>
-  <script type="text/babel" src="views/Budget.js"></script>
-  <script type="text/babel" src="views/Docs.js"></script>
-  <script type="text/babel" src="views/Settings.js"></script>
+  <!-- ════════════════════════════════════════════════════════
+       COUCHE 4 — Utilitaires itinéraire + briques de base
+       Dépendent de : Icon, Store
+       ════════════════════════════════════════════════════════ -->
+  <script type="text/babel" src="itinerary-utils.js"></script>
+  <script type="text/babel" src="RailSection.js"></script>
 
-  <!-- Shell + démarrage -->
-  <script type="text/babel" src="ui/AppShell.js"></script>
+  <!-- ════════════════════════════════════════════════════════
+       COUCHE 5 — Widgets de la Toolbox
+       Dépendent de : Store, Icon, SB, ItineraryUtils
+       ════════════════════════════════════════════════════════ -->
+  <script type="text/babel" src="ChecklistWidget.js"></script>
+  <script type="text/babel" src="DayNotWidget.js"></script>
+  <script type="text/babel" src="GlobalNoteWidget.js"></script>
+  <script type="text/babel" src="CurrencyWidget.js"></script>
+  <script type="text/babel" src="DayScoreWidget.js"></script>
+  <script type="text/babel" src="CalendarWidget.js"></script>
+  <script type="text/babel" src="AroundStepWidget.js"></script>
+
+  <!-- ════════════════════════════════════════════════════════
+       COUCHE 6 — Composants métier (cards, éditeur, rails)
+       Dépendent de : Couches 3-5
+       ════════════════════════════════════════════════════════ -->
+  <script type="text/babel" src="StepCard.js"></script>
+  <script type="text/babel" src="StepEditor.js"></script>
+  <script type="text/babel" src="MealRail.js"></script>
+  <script type="text/babel" src="AccountModal.js"></script>
+  <script type="text/babel" src="Toolbox.js"></script>
+
+  <!-- ════════════════════════════════════════════════════════
+       COUCHE 7 — Vues principales
+       Dépendent de : Couches 3-6
+       ════════════════════════════════════════════════════════ -->
+  <script type="text/babel" src="itin-atelier-v2.jsx"></script>
+  <script type="text/babel" src="Itinerary.js"></script>
+  <script type="text/babel" src="Map.js"></script>
+  <script type="text/babel" src="Budget.js"></script>
+  <script type="text/babel" src="Docs.js"></script>
+  <script type="text/babel" src="Settings.js"></script>
+
+  <!-- ════════════════════════════════════════════════════════
+       COUCHE 8 — Shell + démarrage
+       Dépend de : TOUT ce qui précède
+       ════════════════════════════════════════════════════════ -->
+  <script type="text/babel" src="AppShell.js"></script>
   <script type="text/babel" src="app.js"></script>
+
 </body>
 </html>

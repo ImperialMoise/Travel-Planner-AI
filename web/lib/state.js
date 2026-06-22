@@ -1,251 +1,63 @@
 // ════════════════════════════════════════════════════════════
-// state.js — Store global minimaliste pour Voyage Planner
-// ════════════════════════════════════════════════════════════
-//
-// Objectif :
-// - Centraliser l'état partagé entre les vues.
-// - Garder une API simple : Store.get(), Store.set(), Store.useStore().
-// - Éviter les dépendances externes.
-// - Prévoir les interactions entre Itinéraire, Toolbox et Carte.
-//
-// Usage :
-//   const { trip, view } = Store.useStore();
-//   Store.set({ view: 'map' });
-//   Store.showToast('Voyage sauvegardé');
-//
+// state.js — store global minimaliste
+// Usage : Store.get() pour lire, Store.set({...}) pour modifier,
+//         useStore() comme hook React.
 // ════════════════════════════════════════════════════════════
 
-(function initStore() {
+(function() {
   const listeners = new Set();
 
-  const initialState = {
-    // Auth / session
-    user: null,
-    authReady: false,
-
-    // Voyages
-    trips: [],
-    activeTripId: null,
-    trip: null,
-
-    // Navigation principale
-    view: 'itinerary', // 'itinerary' | 'map' | 'budget' | 'docs'
+  let state = {
+    user: null,             // utilisateur Supabase connecté
+    authReady: false,       // session restaurée ?
+    trips: [],              // liste de mes voyages [{id, name, ...}]
+    activeTripId: null,     // id du voyage actif
+    trip: null,             // voyage actif complet {id, name, days:[...]}
+    view: 'itinerary',      // 'itinerary' | 'map' | 'budget' | 'docs'
     settingsOpen: false,
-
-    // Notifications
-    toast: null,
-
-    // Itinéraire
-    selectedDayIndex: 0,
+    toast: null,            // {msg, ts} ou null
+    selectedDayIndex: 0,    // jour sélectionné dans l'itinéraire
     selectedStepId: null,
-    pendingEditStepId: null,
-    todayIndex: 0,
-
-    // Carte
-    mapFocusStepId: null,
-    mapPickMode: null,
-    mapPickResult: null,
-    mapLocateStep: null,
-    mapPreviewPlace: null
+    todayIndex: 0,          // index du jour "aujourd'hui" calculé
   };
 
-  let state = initialState;
-
-  function get() {
-    return state;
-  }
-
-  function shallowEqual(a, b) {
-    if (Object.is(a, b)) return true;
-
-    if (
-      !a ||
-      !b ||
-      typeof a !== 'object' ||
-      typeof b !== 'object'
-    ) {
-      return false;
-    }
-
-    const aKeys = Object.keys(a);
-    const bKeys = Object.keys(b);
-
-    if (aKeys.length !== bKeys.length) return false;
-
-    for (let i = 0; i < aKeys.length; i += 1) {
-      const key = aKeys[i];
-
-      if (!Object.prototype.hasOwnProperty.call(b, key)) return false;
-      if (!Object.is(a[key], b[key])) return false;
-    }
-
-    return true;
-  }
+  function get() { return state; }
 
   function set(patch) {
-    const nextPatch = typeof patch === 'function'
-      ? patch(state)
-      : patch;
-
-    if (!nextPatch || typeof nextPatch !== 'object') return state;
-
-    const nextState = {
-      ...state,
-      ...nextPatch
-    };
-
-    if (shallowEqual(state, nextState)) return state;
-
-    state = nextState;
-
-    listeners.forEach(function notify(listener) {
-      listener(state);
-    });
-
-    return state;
+    const next = { ...state, ...(typeof patch === 'function' ? patch(state) : patch) };
+    if (next === state) return;
+    state = next;
+    listeners.forEach(l => l(state));
   }
 
-  function reset(patch) {
-    state = {
-      ...initialState,
-      ...(patch || {})
-    };
-
-    listeners.forEach(function notify(listener) {
-      listener(state);
-    });
-
-    return state;
+  function subscribe(fn) {
+    listeners.add(fn);
+    return () => listeners.delete(fn);
   }
 
-  function subscribe(listener) {
-    listeners.add(listener);
-
-    return function unsubscribe() {
-      listeners.delete(listener);
-    };
-  }
-
-  function useStore(selector) {
-    const select = selector || function identity(s) {
-      return s;
-    };
-
-    const [, forceRender] = React.useReducer(function increment(x) {
-      return x + 1;
-    }, 0);
-
-    const selectedRef = React.useRef(select(state));
-
-    React.useEffect(function subscribeToStore() {
-      return subscribe(function handleChange(nextState) {
-        const nextSelected = select(nextState);
-
-        if (!shallowEqual(selectedRef.current, nextSelected)) {
-          selectedRef.current = nextSelected;
-          forceRender();
-        }
-      });
-    }, [select]);
-
-    return select(state);
-  }
-
-  function showToast(message, options) {
-    const duration = options && Number(options.duration)
-      ? Number(options.duration)
-      : 2200;
-
-    const toast = {
-      msg: String(message || ''),
-      ts: Date.now()
-    };
-
-    set({ toast });
-
-    window.setTimeout(function clearToast() {
-      const currentToast = get().toast;
-
-      if (!currentToast) return;
-
-      if (currentToast.ts === toast.ts) {
-        set({ toast: null });
+  // Hook React (rafraîchit le composant quand le state change)
+  function useStore(selector = s => s) {
+    const [, force] = React.useReducer(x => x + 1, 0);
+    const ref = React.useRef(selector(state));
+    React.useEffect(() => subscribe(s => {
+      const next = selector(s);
+      // Comparaison shallow simple
+      if (next !== ref.current) {
+        ref.current = next;
+        force();
       }
-    }, duration);
-
-    return toast;
+    }), [selector]);
+    return selector(state);
   }
 
-  function clearToast() {
-    set({ toast: null });
+  // Helpers globaux
+  function showToast(msg) {
+    set({ toast: { msg, ts: Date.now() } });
+    setTimeout(() => {
+      const cur = get().toast;
+      if (cur && Date.now() - cur.ts >= 2000) set({ toast: null });
+    }, 2200);
   }
 
-  function selectDay(index) {
-    const safeIndex = Math.max(0, Number(index) || 0);
-
-    set({
-      selectedDayIndex: safeIndex,
-      selectedStepId: null
-    });
-  }
-
-  function selectStep(stepId) {
-    set({
-      selectedStepId: stepId || null
-    });
-  }
-
-  function openMapForStep(stepId) {
-    set({
-      view: 'map',
-      mapFocusStepId: stepId || null
-    });
-  }
-
-  function openMapPreview(place) {
-    if (!place) return;
-
-    set({
-      view: 'map',
-      mapPreviewPlace: place
-    });
-  }
-
-  function startLocateStep(payload) {
-    set({
-      view: 'map',
-      mapPickMode: 'locate-step',
-      mapLocateStep: payload || null,
-      mapPickResult: null
-    });
-  }
-
-  function clearMapIntent() {
-    set({
-      mapFocusStepId: null,
-      mapPickMode: null,
-      mapPickResult: null,
-      mapLocateStep: null,
-      mapPreviewPlace: null
-    });
-  }
-
-  window.Store = {
-    get,
-    set,
-    reset,
-    subscribe,
-    useStore,
-
-    showToast,
-    clearToast,
-
-    selectDay,
-    selectStep,
-
-    openMapForStep,
-    openMapPreview,
-    startLocateStep,
-    clearMapIntent
-  };
+  window.Store = { get, set, subscribe, useStore, showToast };
 })();

@@ -201,30 +201,29 @@ function tripToMapTrip(realTrip) {
       return list;
     }, []);
 
-    const firstCoords = steps.find(function(step) { return step.c; });
-    const center = firstCoords ? firstCoords.c : fallback.c;
+    const firstCoords = steps.find(function(step) {
+      return step.c;
+    });
 
     return {
-      ...fallback,
       id: day.id,
       n: day.index != null ? day.index + 1 : index + 1,
       date: day.dateISO || fallback.date,
       wd: fallback.wd,
-      region: day.title || realTrip.destination || realTrip.name || fallback.region,
-      city: day.title || realTrip.destination || realTrip.name || fallback.city,
-      title: day.title || fallback.title,
-      tag: realTrip.destination || fallback.tag,
+      region: day.title || realTrip.destination || realTrip.name || 'Voyage',
+      city: day.title || realTrip.destination || realTrip.name || 'Journée',
+      title: day.title || 'Journée ' + (index + 1),
+      tag: realTrip.destination || realTrip.name || 'Voyage',
       note: day.note || '',
-      c: center,
-      z: firstCoords ? 13.5 : fallback.z,
+      c: firstCoords ? firstCoords.c : null,
+      z: firstCoords ? 13.5 : 2,
       steps
     };
   });
 
   return {
-    ...MAP_TRIP,
-    name: realTrip.name || MAP_TRIP.name,
-    dates: [realTrip.startDate, realTrip.endDate].filter(Boolean).join(' — ') || MAP_TRIP.dates,
+    name: realTrip.name || 'Voyage',
+    dates: [realTrip.startDate, realTrip.endDate].filter(Boolean).join(' — ') || '',
     days
   };
 }
@@ -322,8 +321,44 @@ React.useEffect(() => {
   }
 
   // ── Markers ──
-  function buildDayMarkers(map){T.days.forEach((d,i)=>{const el=document.createElement('div');el.className='mv-pin '+mvRegClass(d.region);el.innerHTML='<div class="badge">'+d.n+'</div>';el.addEventListener('click',e=>{e.stopPropagation();var pick=Store.get().mapPickMode;if(pick){Store.set({mapPickResult:{field:pick,text:d.city+' (J'+d.n+')',coords:d.c},mapPickMode:null});return;}doSelect(i,true);});const m=new maplibregl.Marker({element:el,anchor:'center'}).setLngLat(d.c).addTo(map);markersRef.current.day.push({m,el});});}
-  function clearStepMarkers(){markersRef.current.step.forEach(m=>m.remove());markersRef.current.step=[];const map=mapRef.current;if(map){try{map.removeLayer('step-route-glow');}catch(e){}try{map.removeLayer('step-route-line');}catch(e){}try{map.removeSource('step-route');}catch(e){}}}
+function buildDayMarkers(map){
+  T.days.forEach((d,i)=>{
+    if (!d.c) return;
+
+    const el=document.createElement('div');
+    el.className='mv-pin '+mvRegClass(d.region);
+    el.innerHTML='<div class="badge">'+d.n+'</div>';
+
+    el.addEventListener('click',e=>{
+      e.stopPropagation();
+
+      var pick=Store.get().mapPickMode;
+
+      if(pick){
+        Store.set({
+          mapPickResult:{
+            field:pick,
+            text:d.city+' (J'+d.n+')',
+            coords:d.c
+          },
+          mapPickMode:null
+        });
+        return;
+      }
+
+      doSelect(i,true);
+    });
+
+    const m=new maplibregl.Marker({
+      element:el,
+      anchor:'center'
+    }).setLngLat(d.c).addTo(map);
+
+    markersRef.current.day.push({m,el});
+  });
+}
+
+function clearStepMarkers(){markersRef.current.step.forEach(m=>m.remove());markersRef.current.step=[];const map=mapRef.current;if(map){try{map.removeLayer('step-route-glow');}catch(e){}try{map.removeLayer('step-route-line');}catch(e){}try{map.removeSource('step-route');}catch(e){}}}
   function showStepMarkers(map,day){
     clearStepMarkers();
     var withCoords=[];
@@ -508,7 +543,53 @@ if (eb && cbody) {
 }
 
   // ── Navigation ──
-  function flyDay(i){const map=mapRef.current;if(!map)return;const d=T.days[i];var pts=d.steps.filter(function(s){return s.c;}).map(function(s){return s.c;});if(pts.length>1){var b=new maplibregl.LngLatBounds();pts.forEach(function(p){b.extend(p);});map.fitBounds(b,{padding:{top:80,bottom:140,left:60,right:60},pitch:42,bearing:0,duration:2200,maxZoom:15.5});}else{map.flyTo({center:d.c,zoom:d.z,pitch:d.region==='Vol'?0:42,bearing:0,duration:2200,curve:1.5,essential:true});}}
+function flyDay(i){
+  const map=mapRef.current;
+  if(!map)return;
+
+  const d=T.days[i];
+  if(!d)return;
+
+  var pts=d.steps.filter(function(s){
+    return s.c;
+  }).map(function(s){
+    return s.c;
+  });
+
+  if(pts.length>1){
+    var b=new maplibregl.LngLatBounds();
+    pts.forEach(function(p){
+      b.extend(p);
+    });
+
+    map.fitBounds(b,{
+      padding:{top:80,bottom:140,left:60,right:60},
+      pitch:42,
+      bearing:0,
+      duration:2200,
+      maxZoom:15.5
+    });
+
+    return;
+  }
+
+  if(d.c){
+    map.flyTo({
+      center:d.c,
+      zoom:d.z,
+      pitch:d.region==='Vol'?0:42,
+      bearing:0,
+      duration:2200,
+      curve:1.5,
+      essential:true
+    });
+    return;
+  }
+
+  if (Store.showToast) {
+    Store.showToast('Ajoute une localisation à cette journée pour l’afficher sur la carte.');
+  }
+}
     function focusStepById(stepId) {
   const map = mapRef.current;
   if (!map || !stepId || !T || !Array.isArray(T.days)) return false;
@@ -550,7 +631,48 @@ if (eb && cbody) {
 
   function doSelect(i,fly){spinRef.current=false;setSel(i);Store.set({selectedDayIndex:i});const map=mapRef.current;if(!map)return;markersRef.current.day.forEach((dm,k)=>{dm.el.classList.toggle('active',k===i);dm.el.classList.toggle('faded',k!==i);});showStepMarkers(map,T.days[i]);renderDayCard(i);if(fly)flyDay(i);}
   function showGlobe(){spinRef.current=true;setSel(null);clearStepMarkers();markersRef.current.day.forEach(dm=>{dm.el.classList.remove('active');dm.el.classList.remove('faded');});renderWelcome();const map=mapRef.current;if(!map)return;map.flyTo({center:[64,44],zoom:1.6,pitch:0,bearing:0,duration:2400,curve:1.4});setTimeout(()=>{if(spinRef.current)spinGlobe();},2500);}
-  function fitAll(){spinRef.current=false;setSel(null);clearStepMarkers();markersRef.current.day.forEach(dm=>{dm.el.classList.remove('active');dm.el.classList.remove('faded');});renderWelcome();const map=mapRef.current;if(!map)return;const b=new maplibregl.LngLatBounds();T.days.forEach(d=>b.extend(d.c));map.fitBounds(b,{padding:90,duration:2000,pitch:0,bearing:0});}
+function fitAll(){
+  spinRef.current=false;
+  setSel(null);
+  clearStepMarkers();
+
+  markersRef.current.day.forEach(dm=>{
+    dm.el.classList.remove('active');
+    dm.el.classList.remove('faded');
+  });
+
+  renderWelcome();
+
+  const map=mapRef.current;
+  if(!map)return;
+
+  const daysWithCoords = T.days.filter(function(day){
+    return day.c;
+  });
+
+  if (!daysWithCoords.length) {
+    showGlobe();
+
+    if (Store.showToast) {
+      Store.showToast('Aucun point localisé pour ce voyage.');
+    }
+
+    return;
+  }
+
+  const b=new maplibregl.LngLatBounds();
+
+  daysWithCoords.forEach(function(day){
+    b.extend(day.c);
+  });
+
+  map.fitBounds(b,{
+    padding:90,
+    duration:2000,
+    pitch:0,
+    bearing:0
+  });
+}
   function spinGlobe(){const map=mapRef.current;if(!map||!spinRef.current||map.getZoom()>3.2)return;const c=map.getCenter();c.lng-=.55;map.easeTo({center:c,duration:1300,easing:t=>t});}
 
   // ── Tour ──
@@ -821,7 +943,21 @@ function pickResult(f) {
     if(!mapEl.current||mapRef.current)return;
     const map=new maplibregl.Map({container:mapEl.current,style:theme==='dark'?MV_DARK:MV_LIGHT,center:[64,44],zoom:1.6,attributionControl:{compact:true},dragRotate:true,maxPitch:70});
     mapRef.current=map;
-    map.on('style.load',()=>{applyGlobe(map);addRoutes(map);map.getStyle().layers.forEach(l=>{if(l.type==='symbol'&&map.getLayoutProperty(l.id,'text-field')){try{map.setLayoutProperty(l.id,'text-field',['coalesce',['get','name:fr'],['get','name:latin'],['get','name']]);}catch(e){}}});});
+map.on('style.load',()=>{
+  applyGlobe(map);
+
+  if (!realTrip) {
+    addRoutes(map);
+  }
+
+  map.getStyle().layers.forEach(l=>{
+    if(l.type==='symbol'&&map.getLayoutProperty(l.id,'text-field')){
+      try{
+        map.setLayoutProperty(l.id,'text-field',['coalesce',['get','name:fr'],['get','name:latin'],['get','name']]);
+      }catch(e){}
+    }
+  });
+});
     let inited = false;
 function initContent() {
   if (inited) return;

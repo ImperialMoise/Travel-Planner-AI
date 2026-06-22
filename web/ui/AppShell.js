@@ -1581,22 +1581,24 @@
           )}
         </div>
 
-        <nav className="topbar-nav">
-          {navItems.map(function renderNavItem(item) {
-            const active = view === item.id;
+{trip && (
+  <nav className="topbar-nav">
+    {navItems.map(function renderNavItem(item) {
+      const active = view === item.id;
 
-            return (
-              <button
-                key={item.id}
-                type="button"
-                className={'topbar-nav-btn' + (active ? ' active' : '')}
-                onClick={() => Store.set({ view: item.id })}
-              >
-                {item.label}
-              </button>
-            );
-          })}
-        </nav>
+      return (
+        <button
+          key={item.id}
+          type="button"
+          className={'topbar-nav-btn' + (active ? ' active' : '')}
+          onClick={() => Store.set({ view: item.id })}
+        >
+          {item.label}
+        </button>
+      );
+    })}
+  </nav>
+)}
 
         <div className="topbar-right">
           {user ? (

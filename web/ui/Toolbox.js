@@ -640,7 +640,7 @@ function PlaceholderWidget({ children }) {
            hideHeader
           />
         ) : (
-          <PlaceholderWidget title="Checklist">
+          <PlaceholderWidget>
             Le widget Checklist n’est pas chargé.
           </PlaceholderWidget>
         );
@@ -655,7 +655,7 @@ function PlaceholderWidget({ children }) {
             hideHeader
           />
         ) : (
-          <PlaceholderWidget title="Journal du jour">
+          <PlaceholderWidget>
             Le widget Journal n’est pas chargé.
           </PlaceholderWidget>
         );
@@ -667,9 +667,9 @@ function PlaceholderWidget({ children }) {
            trip={trip}
            editMode={false}
            hideHeader
-          >
+          />
         ) : (
-          <PlaceholderWidget title="Carnet du voyage">
+          <PlaceholderWidget>
             Le widget Carnet n’est pas chargé.
           </PlaceholderWidget>
         );
@@ -679,7 +679,7 @@ function PlaceholderWidget({ children }) {
         return window.CurrencyWidget ? (
           <window.CurrencyWidget editMode={false} />
         ) : (
-          <PlaceholderWidget title="Convertisseur">
+          <PlaceholderWidget>
             Le widget Convertisseur n’est pas chargé.
           </PlaceholderWidget>
         );
@@ -692,7 +692,7 @@ function PlaceholderWidget({ children }) {
             editMode={false}
           />
         ) : (
-          <PlaceholderWidget title="Calendrier">
+          <PlaceholderWidget>
             Le widget Calendrier n’est pas chargé.
           </PlaceholderWidget>
         );
@@ -705,7 +705,7 @@ function PlaceholderWidget({ children }) {
             editMode={false}
           />
         ) : (
-          <PlaceholderWidget title="Score & trajets">
+          <PlaceholderWidget>
             Le widget Score n’est pas chargé.
           </PlaceholderWidget>
         );
@@ -719,14 +719,14 @@ function PlaceholderWidget({ children }) {
             hideHeader
           />
         ) : (
-          <PlaceholderWidget title="Autour de ce lieu">
+          <PlaceholderWidget>
             Le widget Autour de ce lieu n’est pas chargé.
           </PlaceholderWidget>
         );
       }
 
       return (
-        <PlaceholderWidget title="Widget inconnu">
+        <PlaceholderWidget>
           Ce widget n’existe plus.
         </PlaceholderWidget>
       );

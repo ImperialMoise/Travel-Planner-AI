@@ -501,11 +501,12 @@
         </IconButton>
 
         <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          minWidth: 60,
-          paddingTop: 2
+          display: 'grid',
+          gridTemplateRows: 'auto 1fr auto',
+          justifyItems: 'center',
+          minWidth: 62,
+          paddingTop: 2,
+          paddingBottom: 2
         }}>
           <div style={{
             fontFamily: 'var(--font-mono, ui-monospace)',
@@ -518,30 +519,45 @@
             {startTime || '—'}
           </div>
 
-          {endTime && (
-            <div style={{
-              fontFamily: 'var(--font-mono, ui-monospace)',
-              fontSize: 10,
-              lineHeight: '13px',
-              fontWeight: 800,
-              color: 'var(--muted)',
-              textAlign: 'center',
-              marginTop: 3
-            }}>
-              {endTime}
-            </div>
-          )}
+          <div style={{
+            position: 'relative',
+            width: 1,
+            minHeight: 76,
+            background: 'var(--outline-variant)',
+            margin: '8px 0'
+          }}>
+            {duration && (
+              <span style={{
+                position: 'absolute',
+                left: '50%',
+                top: '50%',
+                transform: 'translate(-50%, -50%)',
+                border: '1px solid var(--outline-variant)',
+                borderRadius: 999,
+                background: 'var(--card)',
+                color: 'var(--muted)',
+                boxShadow: '0 2px 8px rgba(82,98,91,.08)',
+                fontFamily: 'var(--font-mono, ui-monospace)',
+                fontSize: 10,
+                fontWeight: 900,
+                lineHeight: '14px',
+                padding: '3px 7px',
+                whiteSpace: 'nowrap'
+              }}>
+                {duration}
+              </span>
+            )}
+          </div>
 
           <div style={{
-            width: 1,
-            flex: 1,
-            background: 'var(--outline-variant)',
-            margin: '8px 0',
-            minHeight: 12
-          }} />
-
-          <div style={{ color: tone.accent }}>
-            <Icon name={stepIcon(step)} size={20} />
+            fontFamily: 'var(--font-mono, ui-monospace)',
+            fontSize: 11,
+            lineHeight: '14px',
+            fontWeight: 900,
+            color: endTime ? tone.accent : 'var(--faint)',
+            textAlign: 'center'
+          }}>
+            {endTime || '—'}
           </div>
         </div>
 
@@ -557,7 +573,7 @@
             gap: 7,
             marginBottom: 7
           }}>
-            <Pill tone={tone} strong>
+            <Pill tone={tone} icon={stepIcon(step)} strong>
               {tone.label}
             </Pill>
 
@@ -613,18 +629,7 @@
             alignItems: 'center',
             gap: 8
           }}>
-            {duration && (
-              <Pill icon="clock">
-                {duration}
-              </Pill>
-            )}
-
-            {range && range.includes('–') && (
-              <Pill icon="clock">
-                {range}
-              </Pill>
-            )}
-
+           
             {needsLocation && (
               <Pill
                 tone={{

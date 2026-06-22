@@ -478,7 +478,8 @@
         ? 'Check-in'
         : stay.status === 'checkout'
           ? 'Check-out'
-          : 'Nuit ' + stay.nightNumber + '/' + stay.nights;
+          : 'Nuitée';
+    const nightLabel = 'Nuit ' + Math.min(stay.nightNumber || 1, stay.nights || 1) + '/' + (stay.nights || 1);
 
     function openDocument(event) {
       event.stopPropagation();
@@ -561,18 +562,39 @@
           </div>
 
           <div style={{
-            width: 38,
-            height: 38,
-            borderRadius: 13,
-            background: 'var(--accent-soft)',
-            color: 'var(--accent)',
-            display: 'grid',
-            placeItems: 'center',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
             flexShrink: 0
           }}>
-            <Icon name="bed" size={18} />
+            <span style={{
+              border: '1px solid rgba(154,101,8,.20)',
+              borderRadius: 999,
+              background: 'var(--accent-soft)',
+              color: 'var(--accent)',
+              fontFamily: 'var(--font-mono, ui-monospace)',
+              fontSize: 10.5,
+              fontWeight: 900,
+              lineHeight: '14px',
+              padding: '5px 9px',
+              whiteSpace: 'nowrap'
+            }}>
+              {nightLabel}
+            </span>
+
+            <span style={{
+              width: 38,
+              height: 38,
+              borderRadius: 13,
+              background: 'var(--accent-soft)',
+              color: 'var(--accent)',
+              display: 'grid',
+              placeItems: 'center',
+              flexShrink: 0
+            }}>
+              <Icon name="bed" size={18} />
+            </span>
           </div>
-        </div>
 
         <div style={{
           marginTop: 12,
@@ -659,6 +681,63 @@
           </InlineButton>
         </div>
       </window.RailCard>
+    );
+  }
+
+  function EmptyLodgingCard({ onAdd }) {
+    return (
+      <button
+        type="button"
+        onClick={onAdd}
+        style={{
+          width: '100%',
+          minHeight: 196,
+          border: '1px dashed var(--accent)',
+          borderRadius: 14,
+          background: 'var(--inset)',
+          color: 'var(--accent)',
+          boxShadow: 'var(--shadow)',
+          cursor: 'pointer',
+          fontFamily: 'inherit',
+          padding: 18,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 10,
+          textAlign: 'center'
+        }}
+      >
+        <span style={{
+          width: 42,
+          height: 42,
+          borderRadius: 14,
+          background: 'var(--accent-soft)',
+          color: 'var(--accent)',
+          display: 'grid',
+          placeItems: 'center'
+        }}>
+          <Icon name="bed" size={19} />
+        </span>
+
+        <span style={{
+          fontFamily: 'var(--font-serif)',
+          fontSize: 21,
+          lineHeight: '26px',
+          color: 'var(--text)'
+        }}>
+          Ajouter un hébergement
+        </span>
+
+        <span style={{
+          maxWidth: 220,
+          color: 'var(--muted)',
+          fontSize: 12.5,
+          lineHeight: '18px'
+        }}>
+          Renseigne l’adresse, les horaires de check-in/check-out et le nombre de nuits.
+        </span>
+      </button>
     );
   }
 
@@ -822,8 +901,35 @@
         >
           <window.RailSection
             noBorder
+<<<<<<< HEAD
+            kicker="Hébergement"
+            title="Nuit du jour"
+            subtitle={stay
+              ? 'Hébergement actif sur cette journée.'
+              : 'Réserve cet espace pour choisir où dormir.'}
+            icon="bed"
+            open={openSections.lodging}
+            onToggle={() => toggleSection('lodging')}
+          >
+            {stay ? (
+              <LodgingCard
+                stay={stay}
+                day={day}
+                trip={trip}
+                onEditStep={onEditStep}
+              />
+            ) : (
+              <EmptyLodgingCard onAdd={addLodging} />
+            )}
+          </window.RailSection>
+
+          <window.RailSection
+            kicker="Où manger"
+            title="Où manger ?"
+=======
             kicker="Restaurants"
             title="Où manger ?"
+>>>>>>> 0d868801add4cd13edfde47ce771f43d439709bf
             subtitle={restaurants.length
               ? restaurants.length + ' adresse' + (restaurants.length > 1 ? 's' : '') + ' prévue' + (restaurants.length > 1 ? 's' : '')
               : 'Ajoute les repas importants de la journée.'}
@@ -920,7 +1026,6 @@
           >
             <WeatherBlock day={day} />
           </window.RailSection>
-        </div>
       </aside>
     );
   }

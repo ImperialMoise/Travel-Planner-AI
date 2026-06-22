@@ -885,11 +885,19 @@
     );
   }
 
-  function LodgingReminderCard({
+   function LodgingReminderCard({
     reminder,
+    dayIndex,
     onEdit
   }) {
     if (!reminder || !reminder.step) return null;
+
+    const nightNumber = reminder.kind === 'checkout'
+      ? reminder.nights || 1
+      : Math.max(1, (Number(dayIndex) || 0) - (Number(reminder.sourceDayIndex) || 0) + 1);
+    const nightLabel = reminder.nights
+      ? 'Nuit ' + Math.min(nightNumber, reminder.nights) + '/' + reminder.nights
+      : '';
 
     return (
       <button
@@ -911,6 +919,24 @@
             {reminder.nights ? ' · ' + reminder.nights + ' nuit' + (reminder.nights > 1 ? 's' : '') : ''}
           </span>
         </span>
+
+        {nightLabel && (
+          <span style={{
+            border: '1px solid rgba(154,101,8,.20)',
+            borderRadius: 999,
+            background: 'var(--accent-soft)',
+            color: 'var(--accent)',
+            flexShrink: 0,
+            fontFamily: 'var(--font-mono, ui-monospace)',
+            fontSize: 10.5,
+            fontWeight: 900,
+            lineHeight: '14px',
+            padding: '5px 9px',
+            whiteSpace: 'nowrap'
+          }}>
+            {nightLabel}
+          </span>
+        )}
       </button>
     );
   }
@@ -1233,6 +1259,7 @@
                     <LodgingReminderCard
                       key={reminder.key}
                       reminder={reminder}
+                      dayIndex={safeDayIndex}
                       onEdit={openEditorForStep}
                     />
                   );

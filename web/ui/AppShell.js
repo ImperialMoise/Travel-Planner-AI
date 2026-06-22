@@ -1572,11 +1572,6 @@
                     {title}
                   </span>
 
-                <span className="day-card-body">
-                  <span className="day-card-title">
-                    {title}
-                  </span>
-
                   <span className="day-card-date">
                     <Icon name="cal" size={11} />
                     {dateStr || 'Date à définir'}
@@ -1593,6 +1588,24 @@
                             {label}
                           </span>
                         );
+                      })}
+                    </span>
+                  )}
+
+                  <span
+                    className="day-card-note"
+                    contentEditable
+                    suppressContentEditableWarning
+                    onClick={function (e) { e.stopPropagation(); }}
+                    onBlur={function (e) { handleNoteBlur(day, e); }}
+                    onKeyDown={handleNoteKeyDown}
+                    dangerouslySetInnerHTML={{
+                      __html: day.note || ''
+                    }}
+                  />
+                </span>
+              </button>
+            );
                       })}
                     </span>
                   )}

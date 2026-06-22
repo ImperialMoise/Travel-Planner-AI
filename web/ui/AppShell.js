@@ -1606,24 +1606,6 @@
                 </span>
               </button>
             );
-                      })}
-                    </span>
-                  )}
-
-                  <span
-                    className="day-card-note"
-                    contentEditable
-                    suppressContentEditableWarning
-                    onClick={function (e) { e.stopPropagation(); }}
-                    onBlur={function (e) { handleNoteBlur(day, e); }}
-                    onKeyDown={handleNoteKeyDown}
-                    dangerouslySetInnerHTML={{
-                      __html: day.note || ''
-                    }}
-                  />
-                </span>
-              </button>
-            );
           })}
         </div>
       </aside>

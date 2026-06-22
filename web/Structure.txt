@@ -1,17 +1,38 @@
 /index.html              ← shell HTML, charge React + Babel + modules
-/styles.css              ← DA Atelier (couleurs, polices, layout)
+/styles.css              ← DA Atelier v2 (couleurs, polices, layout)
 /app.js                  ← point d'entrée
-/manifest.json
 /SUPABASE_SETUP.sql      ← à coller dans le nouveau projet Supabase
-/js/lib/
+
+/lib/
+  state.js               ← store global (Store.get, Store.set, Store.useStore)
   supabase.js            ← auth + CRUD + realtime
-  state.js               ← store global
-/js/ui/
+
+/ui/
   Shared.js              ← Icon, Avatars, Btn, helpers
   AppShell.js            ← topbar, navigation, modale auth, modale "nouveau voyage"
-/js/views/
-  Itinerary.js           ← placeholder (Phase 2)
-  Map.js                 ← placeholder
-  Budget.js              ← placeholder
-  Docs.js                ← placeholder
-  Settings.js            ← modale paramètres (compte + mes voyages)
+  Toolbox.js             ← panneau Toolbox (checklist, notes, calendrier, etc.)
+  itinerary-utils.js     ← helpers itinéraire (window.ItineraryUtils)
+  RailSection.js         ← composant Rail partagé
+  StepCard.js            ← carte d'une étape
+  StepEditor.js          ← éditeur d'étape (modale)
+  MealRail.js            ← rail repas
+  AroundStepWidget.js    ← widget "autour de l'étape"
+  ChecklistWidget.js     ← widget checklist
+  AccountModal.js        ← modale compte utilisateur
+  widgets/
+    CalendarWidget.js    ← widget calendrier
+    CurrencyWidget.js    ← widget conversion devises
+    DayNotWidget.js      ← widget note du jour
+    DayScoreWidget.js    ← widget score du jour
+    GlobalNoteWidget.js  ← widget note globale
+
+/views/
+  trip-data.js           ← données démo du voyage
+  image-slot.js          ← gestion des images
+  itin-shared.jsx        ← composants partagés itinéraire
+  itin-atelier-v2.jsx    ← design Atelier v2 de l'itinéraire
+  Itinerary.js           ← vue Itinéraire (charge AtelierV2)
+  Map.js                 ← vue Carte
+  Budget.js              ← vue Budget (Aperçu, Dépenses, Équilibre)
+  Docs.js                ← vue Documents (Résumé zigzag, Détail split-pane)
+  Settings.js            ← modale paramètres

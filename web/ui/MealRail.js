@@ -902,7 +902,29 @@
         >
           <window.RailSection
             noBorder
-            kicker="Restaurants"
+            kicker="Hébergement"
+            title="Nuit du jour"
+            subtitle={stay
+              ? 'Hébergement actif sur cette journée.'
+              : 'Réserve cet espace pour choisir où dormir.'}
+            icon="bed"
+            open={openSections.lodging}
+            onToggle={() => toggleSection('lodging')}
+          >
+            {stay ? (
+              <LodgingCard
+                stay={stay}
+                day={day}
+                trip={trip}
+                onEditStep={onEditStep}
+              />
+            ) : (
+              <EmptyLodgingCard onAdd={addLodging} />
+            )}
+          </window.RailSection>
+
+          <window.RailSection
+            kicker="Où manger"
             title="Où manger ?"
             subtitle={restaurants.length
               ? restaurants.length + ' adresse' + (restaurants.length > 1 ? 's' : '') + ' prévue' + (restaurants.length > 1 ? 's' : '')
@@ -951,46 +973,6 @@
           </window.RailSection>
 
           <window.RailSection
-            kicker="Hébergement"
-            title="Nuit du jour"
-            subtitle={stay
-              ? 'Hébergement actif sur cette journée.'
-              : 'Aucun hébergement associé à ce jour.'}
-            icon="bed"
-            open={openSections.lodging}
-            onToggle={() => toggleSection('lodging')}
-            actions={
-              !stay ? (
-                <window.RailActionButton
-                  title="Ajouter un hébergement"
-                  onClick={addLodging}
-                  primary
-                >
-                  +
-                </window.RailActionButton>
-              ) : null
-            }
-          >
-            {stay ? (
-              <LodgingCard
-                stay={stay}
-                day={day}
-                trip={trip}
-                onEditStep={onEditStep}
-              />
-            ) : (
-              <window.RailEmptyState
-                actionLabel="Ajouter un hébergement"
-                actionIcon="bed"
-                onAction={addLodging}
-              >
-                Ajoute un logement multi-nuits pour suivre check-in, check-out et documents.
-              </window.RailEmptyState>
-            )}
-          </window.RailSection>
-
-          <window.RailSection
-            noBorder
             kicker="Météo"
             title="Préparer la journée"
             subtitle="Bloc indicatif avant météo connectée."
@@ -1000,6 +982,7 @@
           >
             <WeatherBlock day={day} />
           </window.RailSection>
+        </div>
       </aside>
     );
   }

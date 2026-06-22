@@ -438,6 +438,78 @@ html.dark .mv-glass{background:rgba(21,48,42,0.8);border-color:rgba(255,255,255,
   transform:translateY(-1px);
   box-shadow:0 8px 18px rgba(82,98,91,.10);
 }
+
+/* Carte du jour : seule la liste des étapes défile */
+.mv-card-body{
+  display:flex;
+  flex-direction:column;
+  min-height:0;
+  overflow:hidden;
+}
+
+.mv-card-body.expanded{
+  overflow:hidden;
+}
+
+.mv-card-body.expanded .mv-card-steps{
+  display:block;
+  flex:1;
+  min-height:0;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  padding-right:2px;
+}
+
+.mv-card-foot{
+  flex-shrink:0;
+}
+
+/* Couleurs identiques aux catégories du reste du site */
+.mv-step-row{
+  --step-accent:#827567;
+  --step-soft:rgba(130,117,103,.12);
+  border-color:var(--step-soft);
+}
+
+.mv-step-row:hover,
+.mv-step-row.is-active{
+  border-color:var(--step-accent);
+  background:var(--step-soft);
+}
+
+.mv-step-row.is-active{
+  box-shadow:0 0 0 2px var(--step-soft);
+}
+
+.mv-step-ico{
+  background:var(--step-soft);
+  color:var(--step-accent);
+}
+
+.mv-step-activite{
+  --step-accent:#496f92;
+  --step-soft:rgba(73,111,146,.12);
+}
+
+.mv-step-restaurant{
+  --step-accent:#b4843e;
+  --step-soft:rgba(180,132,62,.14);
+}
+
+.mv-step-logement{
+  --step-accent:#9a6508;
+  --step-soft:rgba(154,101,8,.12);
+}
+
+.mv-step-transport{
+  --step-accent:#597b72;
+  --step-soft:rgba(89,123,114,.12);
+}
+
+.mv-step-autre{
+  --step-accent:#827567;
+  --step-soft:rgba(130,117,103,.12);
+}
 `;
 
 /* ═══ TILES ═══ */
@@ -833,7 +905,7 @@ if(src)src.setData({type:'Feature',geometry:route.geometry});
       : '';
 
     rows +=
-      '<button class="mv-step-row" data-step="' + idx + '">' +
+      '<button class="mv-step-row mv-step-' + (s.t || 'autre') + '" data-step="' + idx + '">' +
         '<span class="mv-step-ico">' + mvSvg(ic, 14) + '</span>' +
         '<span class="mv-step-txt">' +
           '<strong>' + s.l + '</strong>' +
@@ -903,18 +975,32 @@ if(src)src.setData({type:'Feature',geometry:route.geometry});
 
   const map = mapRef.current;
 
-  cardRef.current.querySelectorAll('.mv-step-row').forEach(function bindStep(btn) {
-    btn.addEventListener('click', function clickStep() {
-      const s = d.steps[Number(btn.getAttribute('data-step'))];
+cardRef.current.querySelectorAll('.mv-step-row').forEach(function bindStep(btn) {
+  btn.addEventListener('click', function clickStep() {
+    const s = d.steps[Number(btn.getAttribute('data-step'))];
 
-      if (s && s.c && map) {
-        map.setView(s.c, 14, { animate: true });
-      } else if (s) {
-        locateModeRef.current = { dayIndex: i, stepIndex: Number(btn.getAttribute('data-step')) };
-        Store.showToast('Clique sur la carte pour placer : ' + s.l);
-      }
-    });
+    if (s && s.c && map) {
+      cardRef.current.querySelectorAll('.mv-step-row.is-active').forEach(function clearActive(row) {
+        row.classList.remove('is-active');
+      });
+
+      btn.classList.add('is-active');
+
+      map.flyTo({
+        center: s.c,
+        zoom: 15,
+        duration: 700
+      });
+    } else if (s) {
+      locateModeRef.current = {
+        dayIndex: i,
+        stepIndex: Number(btn.getAttribute('data-step'))
+      };
+
+      Store.showToast('Clique sur la carte pour placer : ' + s.l);
+    }
   });
+});
 
 const itineraryBtn = document.getElementById('mv-itinerary-btn');
 

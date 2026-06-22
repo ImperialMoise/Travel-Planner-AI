@@ -547,32 +547,233 @@
     font-style:italic;
   }
 
-  .empty-screen{
-    flex:1;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:center;
-    text-align:center;
-    padding:40px;
-    gap:15px;
-    color:var(--text);
+.home-hero{
+  position:relative;
+  flex:1;
+  min-height:calc(100dvh - 48px);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+  background:var(--bg);
+  color:#fff;
+}
+
+.home-hero-bg{
+  position:absolute;
+  inset:0;
+  background-size:cover;
+  background-position:center;
+  transform:scale(1.02);
+  transition:background-image .8s ease, transform 8s ease;
+}
+
+.home-hero::after{
+  content:'';
+  position:absolute;
+  inset:0;
+  background:
+    linear-gradient(180deg, rgba(31,27,22,.10) 0%, rgba(31,27,22,.66) 100%),
+    radial-gradient(circle at center, rgba(31,27,22,.05) 0%, rgba(31,27,22,.48) 100%);
+  pointer-events:none;
+}
+
+.home-hero-inner{
+  position:relative;
+  z-index:1;
+  width:min(980px, calc(100% - 32px));
+  margin:0 auto;
+  text-align:center;
+  transform:translateY(-4vh);
+}
+
+.home-hero-kicker{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  margin-bottom:14px;
+  padding:6px 10px;
+  border:1px solid rgba(255,255,255,.32);
+  border-radius:999px;
+  background:rgba(255,248,244,.14);
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+  color:rgba(255,255,255,.88);
+  font-family:var(--font-mono, ui-monospace);
+  font-size:11px;
+  font-weight:800;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+}
+
+.home-hero-title{
+  margin:0;
+  color:#fff;
+  font-family:var(--font-serif);
+  font-size:clamp(42px, 6vw, 76px);
+  font-weight:400;
+  line-height:.98;
+  letter-spacing:-.04em;
+  text-shadow:0 12px 36px rgba(0,0,0,.34);
+}
+
+.home-hero-text{
+  max-width:650px;
+  margin:18px auto 30px;
+  color:rgba(255,255,255,.88);
+  font-size:16px;
+  line-height:1.65;
+  font-weight:700;
+  text-shadow:0 8px 24px rgba(0,0,0,.32);
+}
+
+.home-trip-bar{
+  width:min(780px, 100%);
+  margin:0 auto;
+  padding:12px;
+  display:grid;
+  grid-template-columns:1.35fr 1fr 1fr auto;
+  align-items:center;
+  gap:0;
+  border:1px solid rgba(255,255,255,.28);
+  border-radius:18px;
+  background:rgba(255,248,244,.88);
+  backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
+  box-shadow:0 22px 70px rgba(0,0,0,.25);
+  color:var(--text);
+}
+
+.home-trip-field{
+  min-width:0;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:6px 16px;
+  border-right:1px solid var(--outline-variant);
+  text-align:left;
+}
+
+.home-trip-field:last-of-type{
+  border-right:none;
+}
+
+.home-trip-field .icon{
+  width:30px;
+  height:30px;
+  border-radius:999px;
+  display:grid;
+  place-items:center;
+  flex-shrink:0;
+  color:var(--muted);
+  background:rgba(255,255,255,.48);
+}
+
+.home-trip-label{
+  display:block;
+  margin-bottom:2px;
+  color:var(--faint);
+  font-family:var(--font-mono, ui-monospace);
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+}
+
+.home-trip-input{
+  width:100%;
+  padding:0;
+  border:none;
+  outline:none;
+  background:transparent;
+  color:var(--text);
+  font-family:inherit;
+  font-size:14px;
+  font-weight:900;
+}
+
+.home-trip-input::placeholder{
+  color:var(--muted);
+  opacity:.82;
+}
+
+.home-trip-action{
+  width:48px;
+  height:48px;
+  border:none;
+  border-radius:13px;
+  display:grid;
+  place-items:center;
+  cursor:pointer;
+  background:var(--accent);
+  color:var(--accent-ink);
+  box-shadow:0 8px 18px rgba(124,84,16,.22);
+  transition:transform .15s ease, filter .15s ease;
+}
+
+.home-trip-action:hover{
+  transform:translateY(-1px);
+  filter:brightness(.98);
+}
+
+.home-trip-action:disabled{
+  cursor:wait;
+  opacity:.72;
+  transform:none;
+}
+
+.home-hero-error{
+  width:min(780px, 100%);
+  margin:12px auto 0;
+  padding:10px 12px;
+  border:1px solid rgba(192,86,63,.35);
+  border-radius:12px;
+  background:rgba(255,218,214,.88);
+  color:#93000a;
+  font-size:13px;
+  font-weight:800;
+}
+
+.home-hero-caption{
+  margin-top:18px;
+  color:rgba(255,255,255,.72);
+  font-family:var(--font-mono, ui-monospace);
+  font-size:10.5px;
+  font-weight:800;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+}
+
+@media(max-width:820px){
+  .home-hero{
+    min-height:calc(100dvh - 56px);
+    padding:56px 0;
   }
 
-  .empty-screen-title{
-    font-family:var(--font-serif);
-    font-style:italic;
-    font-size:36px;
-    line-height:42px;
-    color:var(--text);
+  .home-hero-inner{
+    transform:none;
   }
 
-  .empty-screen-text{
-    color:var(--muted);
-    max-width:440px;
-    line-height:1.6;
-    font-size:15px;
+  .home-trip-bar{
+    grid-template-columns:1fr;
+    gap:8px;
+    padding:12px;
   }
+
+  .home-trip-field{
+    border-right:none;
+    border-bottom:1px solid var(--outline-variant);
+    padding:10px 8px 14px;
+  }
+
+  .home-trip-field:last-of-type{
+    border-bottom:none;
+  }
+
+  .home-trip-action{
+    width:100%;
+  }
+}
 
   .modal-backdrop{
     position:fixed;
@@ -759,10 +960,10 @@
       display:none;
     }
 
-    .empty-screen-title{
-      font-size:30px;
-      line-height:36px;
-    }
+    .home-hero-title{
+    font-size:42px;
+    line-height:44px;
+}
   }
   `;
 
@@ -1612,97 +1813,266 @@
     );
   }
 
-  function LoggedOutHome() {
-    const [authOpen, setAuthOpen] = React.useState(false);
+ function HomeHero({
+  mode,
+  trips,
+  onAuthOpen
+}) {
+  const heroImages = React.useMemo(function buildHeroImages() {
+    return [
+      {
+        url: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=2200&q=90',
+        label: 'Lac alpin au lever du soleil'
+      },
+      {
+        url: 'https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=2200&q=90',
+        label: 'Côte amalfitaine, Italie'
+      },
+      {
+        url: 'https://images.unsplash.com/photo-1528164344705-47542687000d?auto=format&fit=crop&w=2200&q=90',
+        label: 'Kyoto, Japon'
+      },
+      {
+        url: 'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=2200&q=90',
+        label: 'Désert et lumière dorée'
+      },
+      {
+        url: 'https://images.unsplash.com/photo-1504893524553-b855bce32c67?auto=format&fit=crop&w=2200&q=90',
+        label: 'Cascade et grands espaces'
+      }
+    ];
+  }, []);
 
-    return (
-      <div className="empty-screen">
-        <div
-          style={{
-            width: 64,
-            height: 64,
-            borderRadius: 18,
-            background: 'var(--accent-soft)',
-            color: 'var(--accent)',
-            display: 'grid',
-            placeItems: 'center'
-          }}
-        >
-          <Icon name="map" size={30} />
-        </div>
+  const [imageIndex, setImageIndex] = React.useState(0);
+  const [destination, setDestination] = React.useState('');
+  const [startDate, setStartDate] = React.useState('');
+  const [endDate, setEndDate] = React.useState('');
+  const [busy, setBusy] = React.useState(false);
+  const [error, setError] = React.useState('');
 
-        <div className="empty-screen-title">
-          Bienvenue dans <span style={{ color: 'var(--accent)' }}>L&apos;Atelier</span>
-        </div>
+  const loggedOut = mode === 'loggedOut';
+  const activeImage = heroImages[imageIndex] || heroImages[0];
 
-        <p className="empty-screen-text">
-          Planifie tes voyages à plusieurs : itinéraire, carte, budget et documents au même endroit.
-        </p>
+  React.useEffect(function rotateHeroImage() {
+    const timer = window.setInterval(function nextImage() {
+      setImageIndex(function updateIndex(current) {
+        return (current + 1) % heroImages.length;
+      });
+    }, 7000);
 
-        <AppButton
-          variant="primary"
-          icon="user"
-          onClick={() => setAuthOpen(true)}
-        >
-          Se connecter / Créer un compte
-        </AppButton>
+    return function cleanupHeroImageRotation() {
+      window.clearInterval(timer);
+    };
+  }, [heroImages.length]);
 
-        {authOpen && (
-          <AuthModal onClose={() => setAuthOpen(false)} />
-        )}
-      </div>
-    );
+  function daysBetweenInclusive(start, end) {
+    if (!start || !end) return 7;
+
+    const startTime = new Date(start + 'T12:00:00').getTime();
+    const endTime = new Date(end + 'T12:00:00').getTime();
+
+    if (Number.isNaN(startTime) || Number.isNaN(endTime) || endTime < startTime) {
+      return 7;
+    }
+
+    return Math.max(1, Math.round((endTime - startTime) / 86400000) + 1);
   }
 
-  function NoTripHome() {
-    const [newOpen, setNewOpen] = React.useState(false);
+  async function createTripFromHero() {
+    if (loggedOut) {
+      if (onAuthOpen) onAuthOpen();
+      return;
+    }
 
-    const { trips = [] } = Store.useStore(function select(state) {
-      return {
-        trips: state.trips || []
-      };
-    });
+    const cleanDestination = safeString(destination);
 
-    return (
-      <div className="empty-screen">
-        <div
-          style={{
-            width: 64,
-            height: 64,
-            borderRadius: 18,
-            background: 'var(--accent-soft)',
-            color: 'var(--accent)',
-            display: 'grid',
-            placeItems: 'center'
-          }}
-        >
-          <Icon name="map" size={30} />
+    if (!cleanDestination) {
+      setError('Indique une destination pour créer ton itinéraire.');
+      return;
+    }
+
+    setError('');
+    setBusy(true);
+
+    try {
+      const created = await window.SB.createTrip({
+        name: cleanDestination,
+        startDate: startDate || null,
+        endDate: endDate || null,
+        days: daysBetweenInclusive(startDate, endDate)
+      });
+
+      const nextTrips = await window.SB.listMyTrips();
+      const fullTrip = await window.SB.loadTrip(created.id);
+
+      Store.set({
+        trips: nextTrips,
+        activeTripId: created.id,
+        trip: fullTrip,
+        selectedDayIndex: 0,
+        selectedStepId: null,
+        view: 'itinerary'
+      });
+
+      Store.showToast('Voyage « ' + created.name + ' » créé ✓');
+    } catch (err) {
+      setError(err.message || 'Impossible de créer le voyage.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="home-hero">
+      <div
+        className="home-hero-bg"
+        role="img"
+        aria-label={activeImage.label}
+        style={{
+          backgroundImage: 'url("' + activeImage.url + '")'
+        }}
+      />
+
+      <div className="home-hero-inner">
+        <div className="home-hero-kicker">
+          <Icon name="map" size={14} />
+          Atelier du voyage
         </div>
 
-        <div className="empty-screen-title">
-          {trips.length ? 'Choisis un voyage' : 'Crée ton premier voyage'}
-        </div>
+        <h1 className="home-hero-title">
+          Imagine ton prochain voyage.
+        </h1>
 
-        <p className="empty-screen-text">
-          {trips.length
-            ? 'Utilise le sélecteur en haut pour ouvrir un voyage existant, ou crée-en un nouveau.'
-            : 'Donne-lui un nom, des dates, et commence à planifier.'}
+        <p className="home-hero-text">
+          Crée un itinéraire clair, beau et partagé. Pose une destination, ajoute tes dates,
+          puis construis ton voyage jour après jour.
         </p>
 
-        <AppButton
-          variant="primary"
-          icon="plus"
-          onClick={() => setNewOpen(true)}
-        >
-          Nouveau voyage
-        </AppButton>
+        <div className="home-trip-bar">
+          <label className="home-trip-field">
+            <span className="icon">
+              <Icon name="pin" size={16} />
+            </span>
 
-        {newOpen && (
-          <NewTripModal onClose={() => setNewOpen(false)} />
+            <span style={{ minWidth: 0, flex: 1 }}>
+              <span className="home-trip-label">
+                Destination
+              </span>
+
+              <input
+                className="home-trip-input"
+                value={destination}
+                onChange={event => setDestination(event.target.value)}
+                placeholder="Corée du Sud, Lisbonne, Kyoto…"
+              />
+            </span>
+          </label>
+
+          <label className="home-trip-field">
+            <span className="icon">
+              <Icon name="cal" size={16} />
+            </span>
+
+            <span style={{ minWidth: 0, flex: 1 }}>
+              <span className="home-trip-label">
+                Départ
+              </span>
+
+              <input
+                className="home-trip-input"
+                type="date"
+                value={startDate}
+                onChange={event => {
+                  setStartDate(event.target.value);
+
+                  if (endDate && event.target.value && endDate < event.target.value) {
+                    setEndDate(event.target.value);
+                  }
+                }}
+              />
+            </span>
+          </label>
+
+          <label className="home-trip-field">
+            <span className="icon">
+              <Icon name="cal" size={16} />
+            </span>
+
+            <span style={{ minWidth: 0, flex: 1 }}>
+              <span className="home-trip-label">
+                Retour
+              </span>
+
+              <input
+                className="home-trip-input"
+                type="date"
+                value={endDate}
+                min={startDate || undefined}
+                onChange={event => setEndDate(event.target.value)}
+              />
+            </span>
+          </label>
+
+          <button
+            type="button"
+            className="home-trip-action"
+            onClick={createTripFromHero}
+            disabled={busy}
+            title={loggedOut ? 'Se connecter pour créer un itinéraire' : 'Créer l’itinéraire'}
+          >
+            {busy ? '…' : <Icon name={loggedOut ? 'user' : 'search'} size={20} />}
+          </button>
+        </div>
+
+        {error && (
+          <div className="home-hero-error">
+            {error}
+          </div>
         )}
+
+        <div className="home-hero-caption">
+          {loggedOut
+            ? 'Connecte-toi pour sauvegarder ton itinéraire'
+            : trips && trips.length
+              ? 'Tu peux aussi ouvrir un voyage existant depuis la barre du haut'
+              : 'Ton premier itinéraire commence ici'}
+        </div>
       </div>
-    );
-  }
+    </section>
+  );
+}
+
+function LoggedOutHome() {
+  const [authOpen, setAuthOpen] = React.useState(false);
+
+  return (
+    <React.Fragment>
+      <HomeHero
+        mode="loggedOut"
+        onAuthOpen={() => setAuthOpen(true)}
+      />
+
+      {authOpen && (
+        <AuthModal onClose={() => setAuthOpen(false)} />
+      )}
+    </React.Fragment>
+  );
+}
+
+function NoTripHome() {
+  const { trips = [] } = Store.useStore(function select(state) {
+    return {
+      trips: state.trips || []
+    };
+  });
+
+  return (
+    <HomeHero
+      mode="create"
+      trips={trips}
+    />
+  );
+}
 
   function LoadingTrip() {
     return (

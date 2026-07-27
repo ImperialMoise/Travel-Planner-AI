@@ -775,32 +775,12 @@ export async function acceptInvite(token) {
   const user = await getUser();
   if (!user) throw new Error('Connexion requise');
 
-  const invite = await getInvite(token);
+  const { data: tripId, error } = await sb.rpc('accept_trip_invite', {
+    invite_token: token
+  });
 
-  if (invite.usedAt) throw new Error('Invitation déjà utilisée');
-  if (invite.expiresAt && new Date(invite.expiresAt) < new Date()) {
-    throw new Error('Invitation expirée');
-  }
-
-  const { error: memberError } = await sb
-    .from('trip_members')
-    .upsert({
-      trip_id: invite.tripId,
-      user_id: user.id,
-      role: invite.role || 'editor'
-    }, { onConflict: 'trip_id,user_id' });
-
-  if (memberError) throw memberError;
-
-  await sb
-    .from('trip_invites')
-    .update({
-      used_by: user.id,
-      used_at: new Date().toISOString()
-    })
-    .eq('id', invite.id);
-
-  return invite.tripId;
+  if (error) throw error;
+  return tripId;
 }
 
 export async function removeTripMember(memberId) {

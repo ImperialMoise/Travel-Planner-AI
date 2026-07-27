@@ -40,6 +40,17 @@ La version web est compilée avant publication.
 cd web
 npm install
 npm run build
+```
+
+Le résultat est créé dans `web/dist/`.
+
+Pour tester exactement cette version localement :
+
+```bash
+npx serve dist
+```
+
+Ne modifie pas l'ordre des scripts dans `web/index.html` sans vérifier leurs dépendances.
 
 ## Base de données
 

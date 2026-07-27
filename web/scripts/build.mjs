@@ -1,4 +1,4 @@
-import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { transformFileAsync } from '@babel/core';
@@ -19,13 +19,28 @@ if (!babelSources.length) {
 await rm(outputDir, { recursive: true, force: true });
 await mkdir(outputDir, { recursive: true });
 
-await cp(sourceDir, outputDir, {
-  recursive: true,
-  filter(source) {
-    const name = path.basename(source);
-    return !['dist', 'node_modules', '.vercel'].includes(name);
+async function copyDirectory(source, destination) {
+  await mkdir(destination, { recursive: true });
+
+  const entries = await readdir(source, { withFileTypes: true });
+
+  for (const entry of entries) {
+    if (['dist', 'node_modules', '.vercel'].includes(entry.name)) {
+      continue;
+    }
+
+    const sourcePath = path.join(source, entry.name);
+    const destinationPath = path.join(destination, entry.name);
+
+    if (entry.isDirectory()) {
+      await copyDirectory(sourcePath, destinationPath);
+    } else if (entry.isFile()) {
+      await copyFile(sourcePath, destinationPath);
+    }
   }
-});
+}
+
+await copyDirectory(sourceDir, outputDir);
 
 for (const relativePath of babelSources) {
   const sourceFile = path.join(sourceDir, relativePath);

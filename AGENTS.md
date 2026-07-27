@@ -40,7 +40,8 @@ Travel-Planner-AI/
 
 - La version web est dans `web/`.
 - La production Vercel est déclenchée depuis la branche `main`.
-- L'application utilise React chargé dans le navigateur.
+- L'application utilise React côté navigateur ; les fichiers JSX sont compilés avec `npm run build` avant le déploiement.
+- Le résultat de production est créé dans `web/dist/` et ne doit pas être committé.
 - Les scripts dans `web/index.html` doivent rester dans le bon ordre.
 - Avant de déplacer, supprimer ou renommer un fichier JavaScript ou JSX, vérifier ses balises `<script>` dans `web/index.html`.
 - Ne pas modifier `mobile/` lors d'une demande concernant le web, sauf demande explicite.

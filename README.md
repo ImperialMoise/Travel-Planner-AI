@@ -10,7 +10,7 @@ Application de planification de voyages avec itinéraire, carte, budget, documen
 
 ## Technologies
 
-- React chargé dans le navigateur
+- React côté navigateur, avec JSX compilé avant le déploiement
 - Supabase pour l'authentification, la base de données, le stockage et les fonctions serveur
 - Vercel pour le déploiement
 - MapLibre pour la carte
@@ -34,9 +34,12 @@ supabase/
 
 ## Développement web
 
-La version web est une application statique. Ouvre `web/index.html` avec une extension de serveur local, par exemple Live Server dans VS Code.
+La version web est compilée avant publication.
 
-Ne modifie pas l'ordre des scripts dans `web/index.html` sans vérifier leurs dépendances.
+```bash
+cd web
+npm install
+npm run build
 
 ## Base de données
 

@@ -2,5 +2,9 @@
   "private": true,
   "scripts": {
     "build": "node scripts/build.mjs"
+  },
+  "devDependencies": {
+    "@babel/core": "^8.0.1",
+    "@babel/preset-react": "^8.0.1"
   }
 }

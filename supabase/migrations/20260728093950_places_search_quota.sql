@@ -11,7 +11,8 @@ WHERE actor_key IS NULL;
 ALTER TABLE public.api_usage
 ALTER COLUMN actor_key SET NOT NULL;
 
-DROP INDEX IF EXISTS public.api_usage_usage_day_user_id_ip_hash_provider_endpoint_key;
+ALTER TABLE public.api_usage
+DROP CONSTRAINT IF EXISTS api_usage_usage_day_user_id_ip_hash_provider_endpoint_key;
 
 CREATE UNIQUE INDEX IF NOT EXISTS api_usage_daily_actor_provider_endpoint_key
 ON public.api_usage (usage_day, actor_key, provider, endpoint);

@@ -3,7 +3,7 @@
 // Tirés de itin-shared.jsx fourni par Claude Design.
 // ════════════════════════════════════════════════════════════
 
-const IT_ICONS = {
+const SHARED_ICONS = {
   avion:   '<path d="M21 16v-2l-8-5V3.6a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.4V19l-2 1.4V22l3.5-1 3.5 1v-1.6L13 19v-5.4z"/>',
   train:   '<rect x="5" y="3.5" width="14" height="13" rx="3.5"/><path d="M5 11h14"/><circle cx="9" cy="13.8" r="1"/><circle cx="15" cy="13.8" r="1"/><path d="M8 16.5 6 20M16 16.5 18 20"/>',
   metro:   '<rect x="5" y="4" width="14" height="12" rx="4"/><path d="M5 10.5h14"/><circle cx="9" cy="13.4" r="1"/><circle cx="15" cy="13.4" r="1"/><path d="M7.5 16 6 20M16.5 16 18 20"/>',
@@ -55,7 +55,7 @@ function Icon({ name, size = 18, sw = 1.6, style }) {
       stroke="currentColor" strokeWidth={sw}
       strokeLinecap="round" strokeLinejoin="round"
       style={{ display: 'block', flexShrink: 0, ...style }}
-      dangerouslySetInnerHTML={{ __html: IT_ICONS[name] || IT_ICONS.pin }}
+      dangerouslySetInnerHTML={{ __html: SHARED_ICONS[name] || SHARED_ICONS.pin }}
     />
   );
 }

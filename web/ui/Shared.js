@@ -3,6 +3,7 @@
 // Tirés de itin-shared.jsx fourni par Claude Design.
 // ════════════════════════════════════════════════════════════
 
+(() => {
 const SHARED_ICONS = {
   avion:   '<path d="M21 16v-2l-8-5V3.6a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.4V19l-2 1.4V22l3.5-1 3.5 1v-1.6L13 19v-5.4z"/>',
   train:   '<rect x="5" y="3.5" width="14" height="13" rx="3.5"/><path d="M5 11h14"/><circle cx="9" cy="13.8" r="1"/><circle cx="15" cy="13.8" r="1"/><path d="M8 16.5 6 20M16 16.5 18 20"/>',
@@ -344,3 +345,4 @@ window.dayRange = dayRange;
 window.todayISO = todayISO;
 window.statusOf = statusOf;
 window.hashHue = hashHue;
+})();

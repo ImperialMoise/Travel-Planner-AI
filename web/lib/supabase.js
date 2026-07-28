@@ -905,7 +905,7 @@ export async function searchPlaces(params = {}) {
     limit: params.limit || 5
   };
 
-  const { data, error } = await sb.functions.invoke('hyper-processor', {
+  const { data, error } = await sb.functions.invoke('places-search', {
     body: payload
   });
 

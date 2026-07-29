@@ -562,6 +562,163 @@
     line-height:20px;
   }
 
+    .atelier-v2-hero{
+    background:var(--card);
+  }
+
+  .atelier-v2-hero-img{
+    opacity:1;
+  }
+
+  .atelier-v2-hero-overlay{
+    display:none;
+  }
+
+  .atelier-v2-hero.has-cover .atelier-v2-hero-overlay{
+    display:block;
+    background:rgba(13,27,23,.42);
+  }
+
+  .atelier-v2-hero.has-cover .atelier-v2-hero-title,
+  .atelier-v2-hero.has-cover .atelier-v2-hero-note{
+    color:#fff;
+    text-shadow:0 2px 14px rgba(0,0,0,.45);
+  }
+
+  .atelier-v2-hero.has-cover .atelier-v2-hero-badge,
+  .atelier-v2-hero.has-cover .atelier-v2-hero-date{
+    color:#fff;
+    border-color:rgba(255,255,255,.28);
+    background:rgba(16,31,26,.42);
+  }
+
+  .atelier-v2-hero.has-cover .atelier-v2-hero-btn:not(.primary){
+    background:rgba(255,255,255,.92);
+  }
+
+  .atelier-v2-hero-credit{
+    position:absolute;
+    z-index:3;
+    right:16px;
+    bottom:14px;
+    max-width:calc(100% - 32px);
+    padding:6px 9px;
+    border-radius:6px;
+    background:rgba(13,27,23,.62);
+    color:rgba(255,255,255,.94);
+    font-size:10px;
+    line-height:14px;
+    text-decoration:none;
+  }
+
+  .atelier-v2-cover-modal{
+    max-width:900px;
+  }
+
+  .atelier-v2-cover-modal-title{
+    margin-top:3px;
+    font-family:var(--font-serif);
+    font-size:26px;
+    line-height:32px;
+  }
+
+  .atelier-v2-cover-search{
+    display:flex;
+    gap:10px;
+    margin-bottom:16px;
+  }
+
+  .atelier-v2-cover-search .atelier-v2-input{
+    min-width:0;
+    flex:1;
+  }
+
+  .atelier-v2-cover-grid{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:12px;
+  }
+
+  .atelier-v2-cover-option{
+    position:relative;
+    min-height:185px;
+    overflow:hidden;
+    border:1px solid var(--outline-variant);
+    border-radius:12px;
+    background:var(--inset);
+    cursor:pointer;
+    text-align:left;
+  }
+
+  .atelier-v2-cover-option:hover{
+    border-color:var(--accent);
+    box-shadow:var(--shadow-lg);
+    transform:translateY(-2px);
+  }
+
+  .atelier-v2-cover-option img{
+    width:100%;
+    height:185px;
+    display:block;
+    object-fit:cover;
+  }
+
+  .atelier-v2-cover-option-info{
+    position:absolute;
+    left:0;
+    right:0;
+    bottom:0;
+    padding:11px 12px;
+    background:rgba(13,27,23,.72);
+    color:#fff;
+  }
+
+  .atelier-v2-cover-option-info strong,
+  .atelier-v2-cover-option-info small{
+    display:block;
+  }
+
+  .atelier-v2-cover-option-info strong{
+    font-size:12px;
+  }
+
+  .atelier-v2-cover-option-info small{
+    margin-top:2px;
+    font-size:10px;
+    opacity:.82;
+  }
+
+  .atelier-v2-cover-error,
+  .atelier-v2-cover-empty{
+    margin-bottom:14px;
+    padding:12px;
+    border-radius:10px;
+    background:var(--inset);
+    color:var(--muted);
+    font-size:13px;
+  }
+
+  .atelier-v2-cover-error{
+    color:var(--danger);
+  }
+
+  .atelier-v2-cover-empty{
+    display:flex;
+    align-items:center;
+    gap:9px;
+  }
+
+  @media(max-width:620px){
+    .atelier-v2-cover-search,
+    .atelier-v2-cover-grid{
+      grid-template-columns:1fr;
+    }
+
+    .atelier-v2-cover-search{
+      flex-direction:column;
+    }
+  }
+  
   @media(max-width:1180px){
     .atelier-v2-body{
       grid-template-columns:minmax(0,1fr);
@@ -982,11 +1139,169 @@
     );
   }
 
+    function TripCoverPickerModal({ trip, onClose, onSaved }) {
+    const [query, setQuery] = React.useState(trip?.name || '');
+    const [photos, setPhotos] = React.useState([]);
+    const [loading, setLoading] = React.useState(false);
+    const [saving, setSaving] = React.useState(false);
+    const [errorMessage, setErrorMessage] = React.useState('');
+
+    React.useEffect(function loadInitialPhotos() {
+      searchPhotos(trip?.name || '');
+    }, []);
+
+    async function searchPhotos(nextQuery) {
+      const value = String(nextQuery ?? query).trim();
+
+      if (value.length < 2) {
+        setErrorMessage('Indique une destination ou une ambiance.');
+        return;
+      }
+
+      setLoading(true);
+      setErrorMessage('');
+
+      try {
+        const results = await window.SB.searchTripCoverPhotos(trip.id, value);
+        setPhotos(results);
+      } catch (error) {
+        setPhotos([]);
+        setErrorMessage(error.message || 'Recherche photo impossible.');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    async function choosePhoto(photo) {
+      if (saving) return;
+
+      setSaving(true);
+
+      try {
+        await window.SB.saveTripCover(trip.id, photo);
+        await onSaved();
+        Store.showToast('Photo de couverture enregistrée');
+        onClose();
+      } catch (error) {
+        setErrorMessage(error.message || 'Enregistrement impossible.');
+      } finally {
+        setSaving(false);
+      }
+    }
+
+    async function removePhoto() {
+      if (saving || !window.confirm('Retirer la photo de couverture ?')) return;
+
+      setSaving(true);
+
+      try {
+        await window.SB.saveTripCover(trip.id, null);
+        await onSaved();
+        Store.showToast('Photo de couverture retirée');
+        onClose();
+      } catch (error) {
+        setErrorMessage(error.message || 'Suppression impossible.');
+      } finally {
+        setSaving(false);
+      }
+    }
+
+    return ReactDOM.createPortal(
+      <div className="atelier-v2-modal-backdrop" onClick={saving ? undefined : onClose}>
+        <div
+          className="atelier-v2-modal atelier-v2-cover-modal"
+          onClick={event => event.stopPropagation()}
+        >
+          <div className="atelier-v2-modal-head">
+            <div>
+              <div className="atelier-v2-kicker">Couverture du voyage</div>
+              <div className="atelier-v2-cover-modal-title">Choisir une photo</div>
+            </div>
+
+            <button
+              type="button"
+              className="atelier-v2-btn"
+              onClick={onClose}
+              disabled={saving}
+              aria-label="Fermer"
+            >
+              <Icon name="x" size={16} />
+            </button>
+          </div>
+
+          <div className="atelier-v2-modal-body">
+            <form
+              className="atelier-v2-cover-search"
+              onSubmit={event => {
+                event.preventDefault();
+                searchPhotos();
+              }}
+            >
+              <input
+                className="atelier-v2-input"
+                value={query}
+                onChange={event => setQuery(event.target.value)}
+                placeholder="Nouvelle-Zélande, fjords, Tokyo de nuit..."
+              />
+
+              <button type="submit" className="atelier-v2-btn primary" disabled={loading || saving}>
+                {loading ? 'Recherche...' : 'Rechercher'}
+              </button>
+            </form>
+
+            {errorMessage && (
+              <div className="atelier-v2-cover-error">{errorMessage}</div>
+            )}
+
+            <div className="atelier-v2-cover-grid">
+              {photos.map(photo => (
+                <button
+                  key={photo.id}
+                  type="button"
+                  className="atelier-v2-cover-option"
+                  onClick={() => choosePhoto(photo)}
+                  disabled={saving}
+                >
+                  <img src={photo.imageUrl} alt={photo.alt || query} />
+                  <span className="atelier-v2-cover-option-info">
+                    <strong>Choisir cette photo</strong>
+                    <small>Photo par {photo.photographer || 'Pexels'}</small>
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            {!loading && !photos.length && !errorMessage && (
+              <div className="atelier-v2-cover-empty">
+                <Icon name="camera" size={22} />
+                Aucune photo trouvée pour cette recherche.
+              </div>
+            )}
+
+            {trip.coverImageUrl && (
+              <button
+                type="button"
+                className="atelier-v2-btn danger"
+                onClick={removePhoto}
+                disabled={saving}
+                style={{ marginTop: 18 }}
+              >
+                Retirer la couverture
+              </button>
+            )}
+          </div>
+        </div>
+      </div>,
+      document.body
+    );
+  }
+
   function AtelierV2() {
     injectAtelierCss();
 
     const {
       trip,
+      user,
       selectedDayIndex = 0,
       pendingEditStepId
     } = Store.useStore(function select(state) {
@@ -1004,6 +1319,7 @@
     });
 
     const [dayEditorOpen, setDayEditorOpen] = React.useState(false);
+    const [coverPickerOpen, setCoverPickerOpen] = React.useState(false);
     const [dragIndex, setDragIndex] = React.useState(null);
     const [dragOverIndex, setDragOverIndex] = React.useState(null);
 
@@ -1197,18 +1513,27 @@
     const dayTitle = getDisplayDayTitle(day);
     const dayDate = formatDayDate(day.dateISO);
     const importantCount = allSteps.filter(stepImportant).length;
+    const hasTripCover = Boolean(String(trip.coverImageUrl || '').trim());
+    const isTripOwner = Boolean(
+      user &&
+      trip.ownerId &&
+      String(user.id) === String(trip.ownerId)
+    );
 
     return (
       <div className="atelier-v2">
         <div className="atelier-v2-main">
 
           {/* ── Hero ── */}
-          <div className="atelier-v2-hero">
-            <img
-              className="atelier-v2-hero-img"
-              src="https://images.unsplash.com/photo-1538485399081-7c8f7d82f0c4?auto=format&fit=crop&w=1600&q=80"
-              alt=""
-            />
+          <div className={'atelier-v2-hero' + (hasTripCover ? ' has-cover' : '')}>
+            {hasTripCover && (
+              <img
+                className="atelier-v2-hero-img"
+                src={trip.coverImageUrl}
+                alt={trip.coverImageAlt || 'Photo de couverture du voyage'}
+              />
+            )}
+
             <div className="atelier-v2-hero-overlay" />
 
             <div className="atelier-v2-hero-inner">
@@ -1218,20 +1543,14 @@
                 </span>
 
                 {dayDate && (
-                  <span className="atelier-v2-hero-date">
-                    {dayDate}
-                  </span>
+                  <span className="atelier-v2-hero-date">{dayDate}</span>
                 )}
               </div>
 
-              <h1 className="atelier-v2-hero-title">
-                {dayTitle}
-              </h1>
+              <h1 className="atelier-v2-hero-title">{dayTitle}</h1>
 
               {day.note && (
-                <p className="atelier-v2-hero-note">
-                  {day.note}
-                </p>
+                <p className="atelier-v2-hero-note">{day.note}</p>
               )}
 
               <div className="atelier-v2-hero-actions">
@@ -1258,10 +1577,32 @@
                   className="atelier-v2-hero-btn"
                   onClick={() => setDayEditorOpen(true)}
                 >
-                  ✎ Modifier
+                  Modifier
                 </button>
+
+                {isTripOwner && (
+                  <button
+                    type="button"
+                    className="atelier-v2-hero-btn"
+                    onClick={() => setCoverPickerOpen(true)}
+                  >
+                    <Icon name="camera" size={14} />
+                    Changer la photo
+                  </button>
+                )}
               </div>
             </div>
+
+            {hasTripCover && trip.coverSourceUrl && (
+              <a
+                className="atelier-v2-hero-credit"
+                href={trip.coverSourceUrl}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Photo par {trip.coverPhotographerName || 'Pexels'} via Pexels
+              </a>
+            )}
           </div>
 
           {/* ── Body : 2/3 timeline + 1/3 sidebar ── */}
@@ -1397,6 +1738,14 @@
             </div>
           </div>
         </div>
+
+                {coverPickerOpen && (
+          <TripCoverPickerModal
+            trip={trip}
+            onClose={() => setCoverPickerOpen(false)}
+            onSaved={reloadTrip}
+          />
+        )}
 
         <window.StepEditor
           open={editor.open}

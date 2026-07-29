@@ -154,6 +154,11 @@ export async function loadTrip(tripId) {
     startDate: trip.start_date,
     endDate: trip.end_date,
     ownerId: trip.owner_id,
+    coverImageUrl: trip.cover_image_url || '',
+    coverImageAlt: trip.cover_image_alt || '',
+    coverPhotographerName: trip.cover_photographer_name || '',
+    coverPhotographerUrl: trip.cover_photographer_url || '',
+    coverSourceUrl: trip.cover_source_url || '',
     globalNote: trip.global_note || '',
     days: (days ?? []).map(d => ({
       id: d.id,
@@ -192,6 +197,37 @@ export async function updateTrip(tripId, patch) {
     .maybeSingle();
 
   if (readError) throw readError;
+  return data;
+}
+
+export async function searchTripCoverPhotos(tripId, query) {
+  const { data, error } = await sb.functions.invoke('trip-cover-search', {
+    body: { tripId, query }
+  });
+
+  if (error) throw error;
+  if (data?.error) throw new Error(data.error);
+
+  return data?.results || [];
+}
+
+export async function saveTripCover(tripId, photo) {
+  const value = photo || {};
+
+  const { data, error } = await sb
+    .from('trips')
+    .update({
+      cover_image_url: value.imageUrl || null,
+      cover_image_alt: value.alt || '',
+      cover_photographer_name: value.photographer || '',
+      cover_photographer_url: value.photographerUrl || '',
+      cover_source_url: value.sourceUrl || ''
+    })
+    .eq('id', tripId)
+    .select()
+    .single();
+
+  if (error) throw error;
   return data;
 }
 
@@ -1012,6 +1048,8 @@ window.SB = {
   createTrip,
   loadTrip,
   updateTrip,
+  searchTripCoverPhotos,
+  saveTripCover,
   updateDay,
   deleteTrip,
 

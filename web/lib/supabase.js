@@ -792,6 +792,19 @@ export async function removeTripMember(tripId, memberId) {
   if (error) throw error;
 }
 
+export async function listTripActivity(tripId, limit = 40) {
+  if (!tripId) return [];
+
+  const { data, error } = await sb.rpc('get_trip_activity', {
+    p_trip_id: tripId,
+    p_limit: limit
+  });
+
+  if (error) throw error;
+
+  return data || [];
+}
+
 // ─── Documents ─────────────────────────────────────
 export async function listDocuments(tripId) {
   if (!tripId) return [];
@@ -1019,6 +1032,7 @@ window.SB = {
   getInvite,
   acceptInvite,
   removeTripMember,
+  listTripActivity,
 
   listDocuments,
   uploadDocument,

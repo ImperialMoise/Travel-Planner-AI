@@ -30,6 +30,11 @@ const SETTINGS_SECTIONS = {
     title: 'Partage',
     description: 'Invite et gère les membres du voyage actif.',
     icon: 'users'
+  },
+  activity: {
+    title: 'Journal',
+    description: 'Les dernières modifications de chaque voyage.',
+    icon: 'clock'
   }
 };
 
@@ -226,6 +231,14 @@ function SettingsModal() {
     user={user}
   />
 )}
+
+{section === 'activity' && (
+  <ActivitySection
+    trips={trips || []}
+    activeTripId={activeTripId}
+  />
+)}
+
           </div>
         </section>
       </div>
@@ -907,6 +920,213 @@ function ShareSection({ trips, activeTripId, user }) {
         )}
       </SettingsCard>
     </div>
+  );
+}
+
+function ActivitySection({ trips, activeTripId }) {
+  const [tripId, setTripId] = React.useState(activeTripId || trips[0]?.id || '');
+  const [activities, setActivities] = React.useState([]);
+  const [members, setMembers] = React.useState([]);
+  const [loading, setLoading] = React.useState(false);
+
+  const selectedTrip = trips.find(trip => trip.id === tripId);
+
+  React.useEffect(() => {
+    if (activeTripId && !tripId) {
+      setTripId(activeTripId);
+    }
+  }, [activeTripId, tripId]);
+
+  async function loadActivity() {
+    if (!tripId) {
+      setActivities([]);
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const [activityRows, memberRows] = await Promise.all([
+        SB.listTripActivity(tripId, 40),
+        SB.listTripMembers(tripId)
+      ]);
+
+      setActivities(activityRows);
+      setMembers(memberRows);
+    } catch (error) {
+      Store.showToast('Erreur journal : ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  React.useEffect(() => {
+    loadActivity();
+  }, [tripId]);
+
+  const names = Object.fromEntries(
+    members.map(member => [member.userId, member.name])
+  );
+
+  if (!trips.length) {
+    return (
+      <SettingsCard title="Aucun voyage">
+        <div style={{ color: 'var(--muted)', fontSize: 13 }}>
+          Crée un voyage pour voir son journal.
+        </div>
+      </SettingsCard>
+    );
+  }
+
+  return (
+    <div style={{ maxWidth: 740, display: 'flex', flexDirection: 'column', gap: 20 }}>
+      <SettingsCard eyebrow="Voyage" title="Journal de quel voyage ?">
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <select
+            value={tripId}
+            onChange={event => setTripId(event.target.value)}
+            style={{ ...settingsInputStyle, flex: 1 }}
+          >
+            {trips.map(trip => (
+              <option key={trip.id} value={trip.id}>
+                {trip.name}
+                {trip.id === activeTripId ? ' — voyage ouvert' : ''}
+              </option>
+            ))}
+          </select>
+
+          <button
+            type="button"
+            onClick={loadActivity}
+            title="Actualiser le journal"
+            aria-label="Actualiser le journal"
+            style={settingsIconButtonStyle}
+          >
+            <Icon name="arrowsm" size={16} />
+          </button>
+        </div>
+      </SettingsCard>
+
+      <SettingsCard
+        eyebrow="Historique"
+        title={`Modifications récentes — ${selectedTrip?.name || 'Voyage'}`}
+      >
+        {loading ? (
+          <div style={{ color: 'var(--muted)', fontSize: 13 }}>
+            Chargement du journal…
+          </div>
+        ) : !activities.length ? (
+          <div style={{ color: 'var(--muted)', fontSize: 13 }}>
+            Aucune modification enregistrée pour le moment. Les nouvelles actions apparaîtront ici.
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            {activities.map((activity, index) => (
+              <div
+                key={activity.id}
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '30px minmax(0, 1fr)',
+                  gap: 11,
+                  padding: index === 0 ? '0 0 14px' : '14px 0',
+                  borderTop: index === 0 ? 'none' : '1px solid var(--line)'
+                }}
+              >
+                <div style={{
+                  width: 28,
+                  height: 28,
+                  marginTop: 1,
+                  display: 'grid',
+                  placeItems: 'center',
+                  borderRadius: '50%',
+                  background: 'var(--accent-soft)',
+                  color: 'var(--accent)'
+                }}>
+                  <Icon name={activityIcon(activity.entity_type)} size={14} />
+                </div>
+
+                <div>
+                  <div style={{ fontSize: 13, lineHeight: 1.4 }}>
+                    {activityDescription(activity, names)}
+                  </div>
+                  <div style={{ marginTop: 4, color: 'var(--muted)', fontSize: 11 }}>
+                    {activityDate(activity.created_at)}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </SettingsCard>
+    </div>
+  );
+}
+
+function activityIcon(type) {
+  const icons = {
+    trips: 'map',
+    trip_days: 'cal',
+    trip_steps: 'pin',
+    budget_items: 'badge',
+    trip_documents: 'file',
+    trip_members: 'users',
+    trip_participants: 'users',
+    trip_invites: 'share'
+  };
+
+  return icons[type] || 'clock';
+}
+
+function activityDate(value) {
+  return new Intl.DateTimeFormat('fr-FR', {
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit'
+  }).format(new Date(value));
+}
+
+function activityDescription(activity, names) {
+  const details = activity.details || {};
+  const actor = names[activity.actor_id] || 'Quelqu’un';
+  const label = details.label || details.name || 'un élément';
+
+  if (activity.entity_type === 'trip_members') {
+    if (activity.action === 'joined') {
+      return <><strong>{details.member_name || 'Un membre'}</strong> a rejoint le voyage.</>;
+    }
+
+    return <><strong>{details.member_name || 'Un membre'}</strong> a quitté ou a été retiré du voyage.</>;
+  }
+
+  if (activity.entity_type === 'trip_invites') {
+    return <><strong>{actor}</strong> a créé une invitation {details.role === 'viewer' ? 'en lecture seule' : 'avec modification'}.</>;
+  }
+
+  const entityNames = {
+    trips: 'le voyage',
+    trip_days: 'la journée',
+    trip_steps: 'une étape',
+    budget_items: 'une dépense',
+    trip_documents: 'un document',
+    trip_participants: 'un participant'
+  };
+
+  const verbs = {
+    created: 'a ajouté',
+    updated: 'a modifié',
+    deleted: 'a supprimé'
+  };
+
+  const target = activity.entity_type === 'trips'
+    ? details.name || 'le voyage'
+    : label;
+
+  return (
+    <>
+      <strong>{actor}</strong> {verbs[activity.action] || 'a modifié'}{' '}
+      {entityNames[activity.entity_type] || 'un élément'} : <strong>{target}</strong>.
+    </>
   );
 }
 

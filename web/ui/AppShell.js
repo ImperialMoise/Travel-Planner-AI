@@ -121,13 +121,13 @@
   }
 
   .topbar{
-    height:64px;
+    height:62px;
     flex-shrink:0;
     display:flex;
     align-items:center;
     justify-content:space-between;
-    gap:16px;
-    padding:0 16px;
+    gap:18px;
+    padding:0 18px;
     background:var(--topbar);
     border-bottom:1px solid var(--outline-variant);
     position:relative;
@@ -141,18 +141,40 @@
   }
 
   .topbar-brand{
+    display:flex;
+    align-items:baseline;
+    gap:7px;
     font-family:var(--font-serif);
     font-style:italic;
-    font-size:26px;
-    line-height:32px;
+    font-size:25px;
+    line-height:1;
     color:var(--accent);
     white-space:nowrap;
     cursor:pointer;
+    transition:transform .18s ease, filter .18s ease;
+  }
+
+  .topbar-brand:hover{
+    transform:translateY(-1px);
+    filter:brightness(.92);
+  }
+
+  .topbar-brand-suffix{
+    font-family:inherit;
+    font-size:12px;
+    font-style:normal;
+    font-weight:900;
+    letter-spacing:.09em;
+    text-transform:uppercase;
+    color:var(--muted);
   }
 
   .topbar.compact .topbar-brand{
     font-size:22px;
-    line-height:28px;
+  }
+
+  .topbar.compact .topbar-brand-suffix{
+    display:none;
   }
 
   .topbar-left,
@@ -163,7 +185,7 @@
   }
 
   .topbar-left{
-    gap:24px;
+    gap:22px;
     min-width:0;
   }
 
@@ -172,75 +194,50 @@
   }
 
   .topbar-right{
-    gap:8px;
+    gap:10px;
     flex-shrink:0;
   }
 
-  .places-usage{
-    min-height:32px;
-    display:inline-flex;
-    align-items:center;
-    gap:6px;
-    padding:0 10px;
-    border:1px solid var(--outline-variant);
-    border-radius:999px;
-    background:var(--inset);
-    color:var(--muted);
-    font-family:var(--font-mono, ui-monospace);
-    font-size:11px;
-    font-weight:900;
-    white-space:nowrap;
-  }
-
-  .places-usage.reached{
-    border-color:var(--danger, #c0563f);
-    color:var(--danger, #c0563f);
-  }
-
-  @media(max-width:760px){
-    .places-usage-label{
-      display:none;
-    }
-  }
-
   .topbar-nav{
-    gap:4px;
+    gap:5px;
     flex-shrink:0;
   }
 
   .topbar-nav-btn{
-    border:none;
+    min-height:34px;
+    border:1px solid transparent;
     background:transparent;
     color:var(--muted);
     cursor:pointer;
     font-size:13px;
-    font-weight:700;
+    font-weight:800;
     font-family:inherit;
-    padding:8px 16px;
-    border-radius:999px;
-    transition:all .2s;
+    padding:7px 15px;
+    border-radius:8px;
+    transition:transform .18s ease, box-shadow .18s ease, background .18s ease, color .18s ease;
+  }
+
+  .topbar-nav-btn:hover{
+    transform:translateY(-2px);
+    background:var(--card);
+    color:var(--text);
+    box-shadow:0 5px 12px rgba(66, 48, 18, .10);
   }
 
   .topbar-nav-btn.active{
     background:var(--accent);
     color:var(--accent-ink);
+    box-shadow:0 4px 10px rgba(128, 87, 12, .22);
+  }
+
+  .topbar-nav-btn.active:hover{
+    transform:translateY(-1px);
+    box-shadow:0 6px 14px rgba(128, 87, 12, .28);
   }
 
   .topbar.compact .topbar-nav-btn{
     font-size:12px;
     padding:7px 10px;
-  }
-
-  .topbar-icon-btn{
-    width:36px;
-    height:36px;
-    border-radius:50%;
-    background:transparent;
-    border:none;
-    color:var(--faint);
-    cursor:pointer;
-    display:grid;
-    place-items:center;
   }
 
   .trip-switcher{
@@ -251,16 +248,24 @@
     display:flex;
     align-items:center;
     gap:8px;
-    padding:6px 12px;
+    min-height:34px;
+    padding:6px 11px;
     background:var(--inset);
     border:1px solid var(--outline-variant);
-    border-radius:9px;
+    border-radius:8px;
     cursor:pointer;
     font-size:13px;
-    font-weight:700;
+    font-weight:800;
     font-family:inherit;
     color:var(--text);
-    max-width:240px;
+    max-width:250px;
+    transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+  }
+
+  .trip-switcher-btn:hover{
+    transform:translateY(-1px);
+    border-color:rgba(157, 104, 12, .35);
+    box-shadow:0 5px 12px rgba(66, 48, 18, .09);
   }
 
   .trip-switcher-label{
@@ -276,14 +281,14 @@
 
   .trip-menu{
     position:absolute;
-    top:calc(100% + 7px);
+    top:calc(100% + 8px);
     left:0;
-    min-width:275px;
+    min-width:285px;
     max-height:365px;
     overflow-y:auto;
     background:var(--card);
     border:1px solid var(--outline-variant);
-    border-radius:14px;
+    border-radius:12px;
     padding:6px;
     box-shadow:var(--shadow-lg);
     z-index:300;
@@ -291,12 +296,12 @@
 
   .trip-menu-btn{
     width:100%;
-    border:none;
-    border-radius:10px;
-    padding:9px 10px;
+    border:1px solid transparent;
+    border-radius:8px;
+    padding:10px;
     cursor:pointer;
     font-size:13px;
-    font-weight:700;
+    font-weight:800;
     font-family:inherit;
     text-align:left;
     display:flex;
@@ -304,6 +309,12 @@
     gap:8px;
     background:transparent;
     color:var(--text);
+    transition:background .16s ease, transform .16s ease;
+  }
+
+  .trip-menu-btn:hover{
+    background:var(--bg-2);
+    transform:translateX(2px);
   }
 
   .trip-menu-btn.active{
@@ -311,33 +322,195 @@
     color:var(--accent);
   }
 
+  .places-control{
+    position:relative;
+    display:flex;
+    align-items:center;
+    gap:7px;
+    padding:4px 6px 4px 8px;
+    border:1px solid var(--outline-variant);
+    border-radius:9px;
+    background:var(--inset);
+  }
+
+  .places-usage{
+    min-height:26px;
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+    padding:0 5px;
+    border:none;
+    border-radius:6px;
+    background:transparent;
+    color:var(--muted);
+    font-family:var(--font-mono, ui-monospace);
+    font-size:11px;
+    font-weight:900;
+    white-space:nowrap;
+    cursor:pointer;
+  }
+
+  .places-usage:hover{
+    color:var(--accent);
+    background:var(--card);
+  }
+
+  .places-usage.reached{
+    color:var(--danger, #c0563f);
+  }
+
+  .places-mode-control{
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+    padding-left:7px;
+    border-left:1px solid var(--outline-variant);
+    color:var(--muted);
+    font-size:11px;
+    font-weight:900;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+
+  .places-mode-input{
+    position:absolute;
+    opacity:0;
+    pointer-events:none;
+  }
+
+  .places-mode-track{
+    width:28px;
+    height:16px;
+    padding:2px;
+    display:flex;
+    align-items:center;
+    border-radius:999px;
+    background:var(--line);
+    transition:background .18s ease;
+  }
+
+  .places-mode-knob{
+    width:12px;
+    height:12px;
+    border-radius:50%;
+    background:var(--card);
+    box-shadow:0 1px 3px rgba(0,0,0,.2);
+    transition:transform .18s ease;
+  }
+
+  .places-mode-input:checked + .places-mode-track{
+    background:var(--accent);
+  }
+
+  .places-mode-input:checked + .places-mode-track .places-mode-knob{
+    transform:translateX(12px);
+  }
+
+  .places-help-btn{
+    width:19px;
+    height:19px;
+    padding:0;
+    border:1px solid var(--outline-variant);
+    border-radius:50%;
+    background:var(--card);
+    color:var(--muted);
+    display:grid;
+    place-items:center;
+    font-size:11px;
+    font-weight:900;
+    cursor:help;
+  }
+
+  .topbar-account{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    padding-left:10px;
+    border-left:1px solid var(--outline-variant);
+  }
+
+  .topbar-settings-btn{
+    width:34px;
+    height:34px;
+    border:1px solid transparent;
+    border-radius:8px;
+    background:transparent;
+    color:var(--muted);
+    cursor:pointer;
+    display:grid;
+    place-items:center;
+    transition:transform .18s ease, background .18s ease, box-shadow .18s ease, color .18s ease;
+  }
+
+  .topbar-settings-btn:hover{
+    transform:translateY(-2px) rotate(10deg);
+    background:var(--card);
+    color:var(--accent);
+    box-shadow:0 5px 12px rgba(66, 48, 18, .10);
+  }
+
   .user-pill{
     display:flex;
     align-items:center;
     gap:8px;
-    padding:6px 10px 6px 12px;
-    background:transparent;
+    min-height:34px;
+    padding:4px 7px 4px 11px;
+    background:var(--card);
     border:1px solid var(--outline-variant);
-    border-radius:999px;
+    border-radius:9px;
     cursor:pointer;
     font-size:13px;
-    font-weight:700;
+    font-weight:800;
     font-family:inherit;
     color:var(--text);
+    transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+  }
+
+  .user-pill:hover{
+    transform:translateY(-2px);
+    border-color:rgba(157, 104, 12, .35);
+    box-shadow:0 5px 12px rgba(66, 48, 18, .10);
   }
 
   .user-avatar{
-    width:26px;
-    height:26px;
+    width:25px;
+    height:25px;
     border-radius:50%;
     background:var(--accent);
     color:var(--accent-ink);
     display:grid;
     place-items:center;
-    font-size:11px;
+    font-size:10px;
     font-weight:900;
     flex-shrink:0;
   }
+
+  @media(max-width:900px){
+    .places-mode-label,
+    .user-name{
+      display:none;
+    }
+
+    .topbar-account{
+      padding-left:6px;
+    }
+  }
+
+  @media(max-width:760px){
+    .places-usage-label{
+      display:none;
+    }
+
+    .places-control{
+      gap:4px;
+      padding-left:5px;
+    }
+
+    .places-mode-control{
+      padding-left:5px;
+    }
+  }
+
 
 .day-spine{
   height:100%;
@@ -1852,7 +2025,8 @@ function toggleToolboxCollapsed() {
               selectedStepId: null
             })}
           >
-            L&apos;Atelier
+            <span>La Fabrique</span>
+            <span className="topbar-brand-suffix">à Voyages</span>
           </div>
 
           {user && (
@@ -1865,6 +2039,11 @@ function toggleToolboxCollapsed() {
                 className="trip-switcher-btn"
                 onClick={() => setTripMenuOpen(open => !open)}
               >
+                <Icon
+                  name="map"
+                  size={14}
+                  style={{ color: 'var(--accent)', flexShrink: 0 }}
+                />
                 <span className="trip-switcher-label">
                   {trip?.name || (activeTripId ? 'Chargement…' : 'Choisir un voyage')}
                 </span>
@@ -1980,42 +2159,32 @@ function toggleToolboxCollapsed() {
         <div className="topbar-right">
           {user ? (
             <>
-                            <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 7,
-                position: 'relative'
-              }}>
-                <div
+              <div className="places-control">
+                <button
+                  type="button"
                   className={'places-usage' + (placesUsage?.reached ? ' reached' : '')}
-                  style={{ opacity: placesUsage ? 1 : 0.65 }}
+                  onClick={() => setPlacesHelpOpen(open => !open)}
+                  title="Consulter le fonctionnement des recherches de lieux"
+                  style={{ opacity: placesUsage ? 1 : .65 }}
                 >
                   <Icon name="search" size={14} />
-                  <span className="places-usage-label">Google</span>
+                  <span className="places-usage-label">Places</span>
                   <span>
                     {placesUsage ? placesUsage.count : '…'} / {placesUsage ? placesUsage.limit : 100}
                   </span>
-                </div>
+                </button>
 
-                <label
-                  title="Coché : recherche précise Google Places. Décoché : recherche simple, sans consommation du compteur Google."
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 5,
-                    fontSize: 11,
-                    fontWeight: 800,
-                    color: 'var(--muted)',
-                    cursor: 'pointer',
-                    whiteSpace: 'nowrap'
-                  }}
-                >
+                <label className="places-mode-control" title="Recherche précise Google Places">
                   <input
+                    className="places-mode-input"
                     type="checkbox"
                     checked={placesMode === 'google'}
                     onChange={event => updatePlacesMode(event.target.checked)}
                   />
-                  Google Places
+                  <span className="places-mode-track">
+                    <span className="places-mode-knob" />
+                  </span>
+                  <span className="places-mode-label">Précis</span>
                 </label>
 
                 <div
@@ -2025,22 +2194,9 @@ function toggleToolboxCollapsed() {
                 >
                   <button
                     type="button"
+                    className="places-help-btn"
                     onClick={() => setPlacesHelpOpen(open => !open)}
                     aria-label="Comprendre le compteur Google Places"
-                    style={{
-                      width: 18,
-                      height: 18,
-                      padding: 0,
-                      border: '1px solid var(--outline-variant)',
-                      borderRadius: '50%',
-                      background: 'var(--card)',
-                      color: 'var(--muted)',
-                      display: 'grid',
-                      placeItems: 'center',
-                      fontSize: 11,
-                      fontWeight: 900,
-                      cursor: 'help'
-                    }}
                   >
                     ?
                   </button>
@@ -2070,16 +2226,12 @@ function toggleToolboxCollapsed() {
                       </div>
 
                       <div style={{ marginTop: 8, color: 'var(--muted)' }}>
-                        Coche Google Places pour les musées, restaurants, hôtels et lieux précis. Décoche-le pour utiliser la recherche simple Geoapify, qui ne consomme pas ce compteur.
+                        Active Précis pour les musées, restaurants, hôtels et lieux exacts. Désactive-le pour utiliser la recherche simple, sans consommation Google.
                       </div>
                     </div>
                   )}
                 </div>
               </div>
-
-              <button
-                type="button"
-                className="topbar-icon-btn"
                 title={theme === 'dark' ? 'Mode clair' : 'Mode sombre'}
                 onClick={toggleTheme}
               >
@@ -2088,37 +2240,32 @@ function toggleToolboxCollapsed() {
 
               <button
                 type="button"
-                className="topbar-icon-btn"
-                title="Paramètres"
-                onClick={() => Store.set({ settingsOpen: true })}
-              >
-                <Icon name="gear" size={18} />
-              </button>
+              <div className="topbar-account">
+                <button
+                  type="button"
+                  className="topbar-settings-btn"
+                  title="Paramètres"
+                  aria-label="Paramètres"
+                  onClick={() => Store.set({ settingsOpen: true })}
+                >
+                  <Icon name="gear" size={17} />
+                </button>
 
-              <div
-                style={{
-                  width: 1,
-                  height: 24,
-                  background: 'var(--outline-variant)',
-                  margin: '0 4px',
-                  opacity: 0.5
-                }}
-              />
+                <button
+                  type="button"
+                  className="user-pill"
+                  onClick={() => Store.set({ settingsOpen: true })}
+                  title={displayName}
+                >
+                  <span className="user-name">
+                    {compactDisplayName}
+                  </span>
 
-              <button
-                type="button"
-                className="user-pill"
-                onClick={() => Store.set({ settingsOpen: true })}
-                title={displayName}
-              >
-                <span className="user-name">
-                  {compactDisplayName}
-                </span>
-
-                <span className="user-avatar">
-                  {initials}
-                </span>
-              </button>
+                  <span className="user-avatar">
+                    {initials}
+                  </span>
+                </button>
+              </div>
             </>
           ) : (
             <AppButton

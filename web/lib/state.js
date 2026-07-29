@@ -14,6 +14,7 @@
     activeTripId: null,     // id du voyage actif
     trip: null,             // voyage actif complet {id, name, days:[...]}
     view: 'itinerary',      // 'itinerary' | 'map' | 'budget' | 'docs'
+    appMode: localStorage.getItem('atelier_app_mode') === 'travel' ? 'travel' : 'plan',
     settingsOpen: false,
     toast: null,            // {msg, ts} ou null
     selectedDayIndex: 0,    // jour sélectionné dans l'itinéraire

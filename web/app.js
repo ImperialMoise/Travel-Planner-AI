@@ -17,7 +17,7 @@
   function ready() {
     return window.Store && window.AppShell && window.ItineraryView
         && window.MapView && window.BudgetView && window.DocsView
-        && window.SettingsModal && window.Icon;
+        && window.SettingsModal && window.TravelModeView && window.Icon;
   }
   while (!ready()) await new Promise(r => setTimeout(r, 40));
 

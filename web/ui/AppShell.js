@@ -1441,6 +1441,42 @@
       gap:8px;
     }
 
+    .topbar-center{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  min-width:0;
+}
+
+.workspace-mode{
+  display:inline-flex;
+  align-items:center;
+  gap:2px;
+  padding:3px;
+  border:1px solid var(--outline-variant);
+  border-radius:9px;
+  background:var(--inset);
+}
+
+.workspace-mode-btn{
+  min-height:28px;
+  padding:0 9px;
+  border:none;
+  border-radius:6px;
+  background:transparent;
+  color:var(--muted);
+  cursor:pointer;
+  font-family:inherit;
+  font-size:11px;
+  font-weight:900;
+}
+
+.workspace-mode-btn.active{
+  background:var(--accent);
+  color:var(--accent-ink);
+  box-shadow:0 3px 8px var(--accent-shadow);
+}
+
     .topbar-nav{
       gap:2px;
     }
@@ -1712,7 +1748,8 @@
       activeTripId,
       trip,
       toast,
-      settingsOpen
+      settingsOpen,
+      appMode = 'plan'
     } = Store.useStore(function select(state) {
       return {
         user: state.user,
@@ -1721,7 +1758,8 @@
         activeTripId: state.activeTripId,
         trip: state.trip,
         toast: state.toast,
-        settingsOpen: state.settingsOpen
+        settingsOpen: state.settingsOpen,
+        appMode: state.appMode || 'plan'
       };
     });
 
@@ -1750,7 +1788,9 @@ function toggleToolboxCollapsed() {
   });
 }
 
-    const CurrentView = getCurrentView(view);
+    const CurrentView = appMode === 'travel'
+  ? window.TravelModeView
+  : getCurrentView(view);
 
     if (!authReady) {
       return (
@@ -1784,7 +1824,7 @@ function toggleToolboxCollapsed() {
             <LoadingTrip />
           ) : (
             <>
-              {!isTinyShell && (
+              {appMode !== 'travel' && !isTinyShell && (
                 <DaySpine width={sideWidth} />
               )}
 
@@ -1936,6 +1976,7 @@ function toggleToolboxCollapsed() {
       activeTripId,
       trip,
       view,
+      appMode = 'plan',
       theme = localStorage.getItem('it_theme') || 'light'
     } = Store.useStore(function select(state) {
       return {
@@ -1944,6 +1985,7 @@ function toggleToolboxCollapsed() {
         activeTripId: state.activeTripId,
         trip: state.trip,
         view: state.view || 'itinerary',
+        appMode: state.appMode || 'plan',
         theme: state.theme || localStorage.getItem('it_theme') || 'light'
       };
     });
@@ -2024,24 +2066,47 @@ function toggleToolboxCollapsed() {
       ? displayName.slice(0, 13) + '…'
       : displayName;
 
-    const navItems = [
-      {
-        id: 'itinerary',
-        label: compact ? 'Plan' : 'Itinéraire'
-      },
-      {
-        id: 'map',
-        label: 'Carte'
-      },
-      {
-        id: 'budget',
-        label: compact ? '€' : 'Budget'
-      },
-      {
-        id: 'docs',
-        label: compact ? 'Docs' : 'Docs'
-      }
-    ];
+const navItems = [
+  {
+    id: 'itinerary',
+    label: compact ? 'Plan' : 'Itinéraire'
+  },
+  {
+    id: 'map',
+    label: 'Carte'
+  },
+  {
+    id: 'budget',
+    label: compact ? '€' : 'Budget'
+  },
+  {
+    id: 'docs',
+    label: 'Docs'
+  }
+];
+
+function setAppMode(nextMode) {
+  const patch = { appMode: nextMode };
+
+  if (nextMode === 'travel' && Array.isArray(trip?.days)) {
+    const now = new Date();
+    const today = [
+      now.getFullYear(),
+      String(now.getMonth() + 1).padStart(2, '0'),
+      String(now.getDate()).padStart(2, '0')
+    ].join('-');
+
+    const todayIndex = trip.days.findIndex(day => day.dateISO === today);
+
+    if (todayIndex >= 0) {
+      patch.selectedDayIndex = todayIndex;
+    }
+  }
+
+  localStorage.setItem('atelier_app_mode', nextMode);
+  Store.set(patch);
+}
+
 
         function updatePlacesMode(enabled) {
       const nextMode = enabled ? 'google' : 'basic';
@@ -2190,22 +2255,44 @@ function toggleToolboxCollapsed() {
         </div>
 
 {trip && (
-  <nav className="topbar-nav">
-    {navItems.map(function renderNavItem(item) {
-      const active = view === item.id;
+  <div className="topbar-center">
+    <div className="workspace-mode" aria-label="Mode d’utilisation">
+      <button
+        type="button"
+        className={'workspace-mode-btn' + (appMode === 'plan' ? ' active' : '')}
+        onClick={() => setAppMode('plan')}
+      >
+        Préparer
+      </button>
 
-      return (
-        <button
-          key={item.id}
-          type="button"
-          className={'topbar-nav-btn' + (active ? ' active' : '')}
-          onClick={() => Store.set({ view: item.id })}
-        >
-          {item.label}
-        </button>
-      );
-    })}
-  </nav>
+      <button
+        type="button"
+        className={'workspace-mode-btn' + (appMode === 'travel' ? ' active' : '')}
+        onClick={() => setAppMode('travel')}
+      >
+        Voyager
+      </button>
+    </div>
+
+    {appMode !== 'travel' && (
+      <nav className="topbar-nav">
+        {navItems.map(function renderNavItem(item) {
+          const active = view === item.id;
+
+          return (
+            <button
+              key={item.id}
+              type="button"
+              className={'topbar-nav-btn' + (active ? ' active' : '')}
+              onClick={() => Store.set({ view: item.id })}
+            >
+              {item.label}
+            </button>
+          );
+        })}
+      </nav>
+    )}
+  </div>
 )}
 
         <div className="topbar-right">

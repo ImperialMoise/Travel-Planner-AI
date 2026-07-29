@@ -65,6 +65,7 @@
     background:var(--card);
     border:1px solid var(--outline-variant);
     box-shadow:0 2px 12px rgba(82,98,91,.08);
+    animation:atelier-day-enter .28s ease both;
   }
 
   .atelier-v2-hero-img{
@@ -585,12 +586,15 @@
     text-shadow:0 2px 14px rgba(0,0,0,.45);
   }
 
-  .atelier-v2-hero.has-cover .atelier-v2-hero-badge,
-  .atelier-v2-hero.has-cover .atelier-v2-hero-date{
-    color:#fff;
-    border-color:rgba(255,255,255,.28);
-    background:rgba(16,31,26,.42);
-  }
+.atelier-v2-hero.has-cover .atelier-v2-hero-badge,
+.atelier-v2-hero.has-cover .atelier-v2-hero-date{
+  color:#fff;
+  border-color:rgba(255,255,255,.52);
+  background:rgba(13,27,23,.74);
+  box-shadow:0 5px 16px rgba(0,0,0,.18);
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+}
 
   .atelier-v2-hero.has-cover .atelier-v2-hero-btn:not(.primary){
     background:rgba(255,255,255,.92);
@@ -739,7 +743,25 @@
   .atelier-v2-hero.crop-editable .atelier-v2-hero-img{
     cursor:grab;
   }
-  
+
+  @keyframes atelier-day-enter{
+  from{
+    opacity:.84;
+    transform:translateY(4px);
+  }
+
+  to{
+    opacity:1;
+    transform:translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion:reduce){
+  .atelier-v2-hero{
+    animation:none;
+  }
+}
+
   @media(max-width:620px){
     .atelier-v2-cover-search,
     .atelier-v2-cover-grid{
@@ -1635,6 +1657,7 @@ return {
 
           {/* ── Hero ── */}
           <div
+  key={day.id || safeDayIndex}
   className={
     'atelier-v2-hero' +
     (hasDayCover ? ' has-cover' : '') +

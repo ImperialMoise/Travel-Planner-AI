@@ -691,6 +691,38 @@
   font-weight:700;
 }
 
+.day-card-progress{
+  margin-top:8px;
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  color:var(--muted);
+  font-family:var(--font-mono);
+  font-size:10px;
+  line-height:14px;
+  font-weight:900;
+}
+
+.day-card-progress-track{
+  width:42px;
+  height:5px;
+  overflow:hidden;
+  border-radius:999px;
+  background:var(--line);
+}
+
+.day-card-progress-fill{
+  display:block;
+  height:100%;
+  border-radius:inherit;
+  background:var(--accent);
+  transition:width .24s ease;
+}
+
+.day-card-progress.complete{
+  color:var(--accent);
+}
+
 .day-card-tags{
   margin-top:8px;
   display:flex;
@@ -2384,19 +2416,17 @@ function toggleToolboxCollapsed() {
   const title = getDisplayDayTitle(day) || 'Journée à préciser';
   const dateStr = formatDayDate(day.dateISO) || 'Date à définir';
 
-  const missingBadges = [];
+  const preparation = [
+    { label: 'programme', ready: tags.steps > 0 },
+    { label: 'repas', ready: tags.restaurants > 0 },
+    { label: 'hébergement', ready: tags.lodgings > 0 }
+  ];
 
-  if (!tags.lodgings) {
-    missingBadges.push('Où dormir ?');
-  }
-
-  if (!tags.restaurants) {
-    missingBadges.push('Repas ?');
-  }
-
-  if (!tags.steps) {
-    missingBadges.push('À compléter');
-  }
+  const preparationDone = preparation.filter(item => item.ready).length;
+  const preparationMissing = preparation
+    .filter(item => !item.ready)
+    .map(item => item.label)
+    .join(', ');
 
   return (
     <button
@@ -2419,17 +2449,25 @@ function toggleToolboxCollapsed() {
           {dateStr}
         </span>
 
-        {missingBadges.length > 0 && (
-          <span className="day-card-tags">
-            {missingBadges.map(function renderMissingBadge(label) {
-              return (
-                <span key={label} className="day-card-tag alert">
-                  {label}
-                </span>
-              );
-            })}
-          </span>
-        )}
+        <span
+  className={'day-card-progress' + (preparationDone === 3 ? ' complete' : '')}
+  title={
+    preparationDone === 3
+      ? 'Journée entièrement préparée'
+      : 'À compléter : ' + preparationMissing
+  }
+>
+  <span className="day-card-progress-track" aria-hidden="true">
+    <span
+      className="day-card-progress-fill"
+      style={{ width: `${(preparationDone / preparation.length) * 100}%` }}
+    />
+  </span>
+
+  <span>
+    {preparationDone === 3 ? 'Prête' : `${preparationDone}/3 préparé`}
+  </span>
+</span>
 
         <span
           className="day-card-note"

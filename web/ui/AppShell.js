@@ -2030,8 +2030,6 @@
                   )}
                 </div>
               </div>
-                </span>
-              </div>
 
               <button
                 type="button"

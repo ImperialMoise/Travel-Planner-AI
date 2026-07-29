@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 type SearchBody = {
+  action?: "search" | "usage";
   query?: string;
   language?: string;
   country?: string;
@@ -11,29 +12,27 @@ type SearchBody = {
   limit?: number;
 };
 
+const GOOGLE_PROVIDER = "google_places";
+const GOOGLE_GLOBAL_MONTHLY_LIMIT = 9000;
+
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Content-Type': 'application/json'
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Content-Type": "application/json",
 };
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: {
-      ...corsHeaders,
-      "Content-Type": "application/json",
-    },
+    headers: corsHeaders,
   });
 }
 
 function normalizeQuery(value: string) {
   return value
     .trim()
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
     .replace(/\s+/g, " ");
 }
 
@@ -42,13 +41,8 @@ async function sha256(input: string) {
   const hash = await crypto.subtle.digest("SHA-256", data);
 
   return Array.from(new Uint8Array(hash))
-    .map((b) => b.toString(16).padStart(2, "0"))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
     .join("");
-}
-
-function gridCoord(value: number | null | undefined) {
-  if (typeof value !== "number" || !Number.isFinite(value)) return null;
-  return Math.round(value * 100) / 100;
 }
 
 function getClientIp(req: Request) {
@@ -59,7 +53,11 @@ function getClientIp(req: Request) {
   ).split(",")[0].trim();
 }
 
-async function getUserFromRequest(req: Request, supabaseUrl: string, anonKey: string) {
+async function getUserFromRequest(
+  req: Request,
+  supabaseUrl: string,
+  anonKey: string,
+) {
   const authHeader = req.headers.get("Authorization") || "";
 
   if (!authHeader) return null;
@@ -76,185 +74,141 @@ async function getUserFromRequest(req: Request, supabaseUrl: string, anonKey: st
   return data.user || null;
 }
 
-function hasKorean(value: string) {
-  return /[\u3130-\u318F\uAC00-\uD7AF]/.test(String(value || ""));
+function firstRow<T>(value: T[] | T | null) {
+  return Array.isArray(value) ? value[0] || null : value;
 }
 
-function toTitleCase(value: string) {
-  return String(value || "")
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
+function formatUsage(row: any, warnRatio: number) {
+  const count = Number(row?.user_count || 0);
+  const limit = Number(row?.user_limit || 100);
+  const globalCount = Number(row?.global_count || 0);
+  const globalLimit = Number(
+    row?.global_limit || GOOGLE_GLOBAL_MONTHLY_LIMIT,
+  );
+  const warnAt = Math.floor(limit * warnRatio);
+
+  return {
+    count,
+    limit,
+    warn: count >= warnAt && count < limit,
+    reached: count >= limit,
+    globalCount,
+    globalLimit,
+    globalReached: globalCount >= globalLimit,
+  };
 }
 
-function readableNameFromQuery(query: string) {
-  const text = String(query || "")
-    .replace(/corée du sud/gi, "")
-    .replace(/coree du sud/gi, "")
-    .replace(/south korea/gi, "")
-    .replace(/korea/gi, "")
-    .replace(/république de corée/gi, "")
-    .replace(/republique de coree/gi, "")
-    .replace(/séoul/gi, "")
-    .replace(/seoul/gi, "")
-    .replace(/busan/gi, "")
-    .replace(/,/g, " ")
-    .trim();
+async function getUsage(
+  admin: ReturnType<typeof createClient>,
+  actorKey: string,
+  userLimit: number,
+) {
+  const { data, error } = await admin.rpc("get_places_search_usage", {
+    p_actor_key: actorKey,
+    p_provider: GOOGLE_PROVIDER,
+    p_monthly_limit: userLimit,
+  });
 
-  return toTitleCase(text);
+  if (error) throw error;
+
+  return firstRow(data);
 }
 
-function cleanFrenchPlaceText(value: string) {
-  const text = String(value || "").trim();
-  if (!text) return "";
+async function reserveQuota(
+  admin: ReturnType<typeof createClient>,
+  actorKey: string,
+  userId: string | null,
+  ipHash: string | null,
+  userLimit: number,
+) {
+  const { data, error } = await admin.rpc("consume_places_search_quota", {
+    p_actor_key: actorKey,
+    p_user_id: userId,
+    p_ip_hash: ipHash,
+    p_provider: GOOGLE_PROVIDER,
+    p_endpoint: "text_search",
+    p_monthly_limit: userLimit,
+  });
 
-  return text
-    .replaceAll("서울특별시", "Séoul")
-    .replaceAll("서울", "Séoul")
-    .replaceAll("부산광역시", "Busan")
-    .replaceAll("부산", "Busan")
-    .replaceAll("인천광역시", "Incheon")
-    .replaceAll("인천", "Incheon")
-    .replaceAll("대구", "Daegu")
-    .replaceAll("대전", "Daejeon")
-    .replaceAll("광주", "Gwangju")
-    .replaceAll("제주", "Jeju")
-    .replaceAll("경주", "Gyeongju")
-    .replaceAll("전주", "Jeonju")
-    .replaceAll("강릉", "Gangneung")
-    .replaceAll("수원", "Suwon");
+  if (error) throw error;
+
+  return firstRow(data);
 }
 
-function pickLocalizedName(p: any, query: string) {
-  const candidates = [
-    p["name:fr"],
-    p.name_fr,
-    p["official_name:fr"],
-    p.official_name_fr,
-    p["alt_name:fr"],
-    p.alt_name_fr,
-    p["name:en"],
-    p.name_en,
-    p.int_name,
-    p["int_name"],
-    p.address_line1,
-    p.formatted,
-    p.name,
-  ].filter(Boolean).map((item) => cleanFrenchPlaceText(String(item)));
-
-  const latin = candidates.find((item) => item && !hasKorean(item));
-  if (latin) return latin;
-
-  const fromQuery = readableNameFromQuery(query);
-  if (fromQuery) return fromQuery;
-
-  return candidates[0] || "Lieu";
-}
-
-function pickLocalizedAddress(p: any) {
-  return cleanFrenchPlaceText(p.formatted || p.address_line2 || "");
-}
-
-function pickLocalizedCity(p: any) {
-  return cleanFrenchPlaceText(p.city || p.town || p.village || "");
-}
-
-function pickLocalizedCountry(p: any) {
-  const country = cleanFrenchPlaceText(p.country || "");
-
-  if (country.toLowerCase() === "south korea") return "Corée du Sud";
-  if (country.toLowerCase() === "republic of korea") return "Corée du Sud";
-  if (country === "대한민국") return "Corée du Sud";
-
-  return country;
-}
-
-function mapTypeToGeoapify(type: string) {
-  const t = String(type || "").toLowerCase();
-
-  if (t === "restaurant" || t === "table") return "catering.restaurant";
-  if (t === "cafe") return "catering.cafe";
-  if (t === "hotel" || t === "logement") return "accommodation.hotel";
-  if (t === "museum" || t === "musee") return "entertainment.museum";
-  if (t === "activity" || t === "activite") return "tourism,entertainment";
-  if (t === "transport") return "public_transport";
-  if (t === "shop" || t === "shopping") return "commercial";
-
-  return "";
-}
-
-async function callGeoapifyAutocomplete(params: {
+async function callGooglePlacesTextSearch(params: {
   query: string;
   language: string;
-  country: string;
   lat: number | null;
   lng: number | null;
-  type: string;
   limit: number;
 }) {
-  const key = Deno.env.get("GEOAPIFY_API_KEY");
-  if (!key) throw new Error("GEOAPIFY_API_KEY manquante");
+  const key = Deno.env.get("GOOGLE_PLACES_API_KEY");
 
-  const url = new URL("https://api.geoapify.com/v1/geocode/autocomplete");
-
-  url.searchParams.set("text", params.query);
-  url.searchParams.set("apiKey", key);
-  url.searchParams.set("lang", params.language || "fr");
-  url.searchParams.set("limit", String(params.limit || 5));
-
-  if (params.country) {
-    url.searchParams.set("filter", "countrycode:" + params.country.toLowerCase());
+  if (!key) {
+    throw new Error("GOOGLE_PLACES_API_KEY manquante");
   }
 
-  if (typeof params.lat === "number" && typeof params.lng === "number") {
-    url.searchParams.set("bias", "proximity:" + params.lng + "," + params.lat);
-  }
+  const body: Record<string, unknown> = {
+    textQuery: params.query,
+    languageCode: params.language || "fr",
+    maxResultCount: Math.max(1, Math.min(params.limit, 10)),
+  };
 
-  const category = mapTypeToGeoapify(params.type);
-  if (category) {
-    url.searchParams.set("type", "amenity");
-  }
-
-  const res = await fetch(url.toString());
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error("Geoapify autocomplete error: " + text);
-  }
-
-  const data = await res.json();
-
-  return ((data && data.features) || []).map((feature: any) => {
-    const p = feature.properties || {};
-    const coords = feature.geometry && feature.geometry.coordinates || [];
-
-    return {
-      provider: "geoapify",
-      placeId: p.place_id || p.datasource?.raw?.osm_id || p.formatted,
-      label: pickLocalizedName(p, params.query),
-      address: pickLocalizedAddress(p),
-      city: pickLocalizedCity(p),
-      country: pickLocalizedCountry(p),
-      postcode: p.postcode || "",
-      lat: coords[1] ?? p.lat ?? null,
-      lng: coords[0] ?? p.lon ?? null,
-      categories: p.categories || [],
-      raw: {
-        place_id: p.place_id || null,
-        datasource: p.datasource || null,
+  if (
+    typeof params.lat === "number" &&
+    Number.isFinite(params.lat) &&
+    typeof params.lng === "number" &&
+    Number.isFinite(params.lng)
+  ) {
+    body.locationBias = {
+      circle: {
+        center: {
+          latitude: params.lat,
+          longitude: params.lng,
+        },
+        radius: 50000,
       },
     };
-  });
+  }
+
+  const response = await fetch(
+    "https://places.googleapis.com/v1/places:searchText",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": key,
+        "X-Goog-FieldMask":
+          "places.id,places.displayName,places.formattedAddress,places.location,places.primaryType",
+      },
+      body: JSON.stringify(body),
+    },
+  );
+
+  if (!response.ok) {
+    const details = await response.text();
+    throw new Error("Google Places error: " + details);
+  }
+
+  const data = await response.json();
+
+  return (data.places || []).map((place: any) => ({
+    provider: "google",
+    placeId: place.id || "",
+    label: place.displayName?.text || place.formattedAddress || "Lieu",
+    address: place.formattedAddress || "",
+    city: "",
+    country: "",
+    postcode: "",
+    lat: place.location?.latitude ?? null,
+    lng: place.location?.longitude ?? null,
+    categories: place.primaryType ? [place.primaryType] : [],
+  }));
 }
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response("ok", {
-      status: 200,
-      headers: corsHeaders,
-    });
+    return new Response("ok", { status: 200, headers: corsHeaders });
   }
 
   if (req.method !== "POST") {
@@ -273,31 +227,7 @@ serve(async (req) => {
 
   try {
     const body = (await req.json()) as SearchBody;
-
-    const query = normalizeQuery(body.query || "");
-    const language = body.language || "fr";
-    const country = body.country || "";
-    const lat = typeof body.lat === "number" ? body.lat : null;
-    const lng = typeof body.lng === "number" ? body.lng : null;
-    const type = body.type || "place";
-    const limit = Math.max(1, Math.min(Number(body.limit || 5), 10));
-
-    if (query.length < 3) {
-      return json({
-        provider: "geoapify",
-        mode: "too_short",
-        results: [],
-        usage: null,
-      });
-    }
-
     const user = await getUserFromRequest(req, supabaseUrl, anonKey);
-    const ip = getClientIp(req);
-    const ipHash = await sha256(ip);
-
-    const now = new Date();
-    const usageDay = now.toISOString().slice(0, 10);
-    const usageMonth = now.toISOString().slice(0, 7);
 
     const { data: settingsRow } = await admin
       .from("api_settings")
@@ -306,187 +236,119 @@ serve(async (req) => {
       .maybeSingle();
 
     const settings = settingsRow || {
-      places_provider: "geoapify",
       places_enriched_enabled: true,
       places_free_user_monthly_limit: 100,
-      places_global_daily_limit: 2500,
       places_warn_ratio: 0.8,
       places_allow_anonymous: false,
-      places_cache_days: 30,
     };
 
     if (!settings.places_enriched_enabled) {
       return json({
-        provider: "none",
+        provider: "google",
         mode: "disabled",
         results: [],
         usage: null,
-        message: "Recherche enrichie désactivée.",
+        message: "Recherche de lieux désactivée.",
       });
     }
 
     if (!user && !settings.places_allow_anonymous) {
       return json({
-        provider: "none",
+        provider: "google",
         mode: "login_required",
         results: [],
         usage: null,
-        message: "Connecte-toi pour utiliser la recherche enrichie.",
+        message: "Connecte-toi pour utiliser la recherche de lieux.",
       });
     }
 
-    const cacheKey = await sha256(
-      JSON.stringify({
-        provider: "geoapify",
-        endpoint: "autocomplete",
-        query,
-        language,
-        country,
-        lat: gridCoord(lat),
-        lng: gridCoord(lng),
-        type,
-        limit,
-      }),
+    const userLimit = Number(
+      settings.places_free_user_monthly_limit || 100,
+    );
+    const warnRatio = Number(settings.places_warn_ratio || 0.8);
+    const ipHash = user ? null : await sha256(getClientIp(req));
+    const actorKey = user ? "user:" + user.id : "ip:" + ipHash;
+
+    if (body.action === "usage") {
+      const usageRow = await getUsage(admin, actorKey, userLimit);
+
+      return json({
+        provider: "google",
+        mode: "usage",
+        results: [],
+        usage: formatUsage(usageRow, warnRatio),
+      });
+    }
+
+    const query = normalizeQuery(body.query || "");
+
+    if (query.length < 3) {
+      const usageRow = await getUsage(admin, actorKey, userLimit);
+
+      return json({
+        provider: "google",
+        mode: "too_short",
+        results: [],
+        usage: formatUsage(usageRow, warnRatio),
+      });
+    }
+
+    const quota = await reserveQuota(
+      admin,
+      actorKey,
+      user?.id || null,
+      ipHash,
+      userLimit,
     );
 
-    const { data: cached } = await admin
-      .from("places_cache")
-      .select("results, expires_at, provider")
-      .eq("cache_key", cacheKey)
-      .gt("expires_at", now.toISOString())
-      .maybeSingle();
-
-    if (cached) {
-      return json({
-        provider: cached.provider,
-        mode: "cache",
-        results: cached.results,
-        usage: null,
-      });
-    }
-
-    const userLimit = Number(settings.places_free_user_monthly_limit || 100);
-
-    const { data: currentUsage } = await admin
-      .from("api_usage")
-      .select("count")
-      .eq("usage_month", usageMonth)
-      .eq("provider", "geoapify")
-      .eq("endpoint", "places-search")
-      .eq(user ? "user_id" : "ip_hash", user ? user.id : ipHash)
-      .maybeSingle();
-
-    const userCount = currentUsage?.count || 0;
-
-    if (userCount >= userLimit) {
-      return json({
-        provider: "geoapify",
-        mode: "monthly_limit_reached",
-        results: [],
-        usage: {
-          count: userCount,
-          limit: userLimit,
-          warn: false,
-          reached: true,
-        },
-        message: "Limite mensuelle de recherche enrichie atteinte.",
-      });
-    }
-
-    const { data: globalRows } = await admin
-      .from("api_usage")
-      .select("count")
-      .eq("usage_day", usageDay)
-      .eq("provider", "geoapify")
-      .eq("endpoint", "places-search");
-
-    const globalCount = (globalRows || []).reduce(
-      (sum: number, row: any) => sum + (row.count || 0),
-      0,
+    const usage = formatUsage(
+      {
+        user_count: quota?.user_count,
+        user_limit: userLimit,
+        global_count: quota?.global_count,
+        global_limit: GOOGLE_GLOBAL_MONTHLY_LIMIT,
+      },
+      warnRatio,
     );
 
-    if (globalCount >= Number(settings.places_global_daily_limit || 2500)) {
+    if (!quota?.allowed) {
+      const globalLimitReached =
+        quota?.reason === "global_monthly_limit_reached";
+
       return json({
-        provider: "geoapify",
-        mode: "global_limit_reached",
+        provider: "google",
+        mode: quota?.reason || "limit_reached",
         results: [],
-        usage: {
-          count: userCount,
-          limit: userLimit,
-          warn: false,
-          reached: false,
-        },
-        message: "Limite globale quotidienne atteinte.",
+        usage,
+        message: globalLimitReached
+          ? "Le quota global mensuel de recherche est atteint."
+          : "Ta limite mensuelle de recherche est atteinte.",
       });
     }
 
-    const results = await callGeoapifyAutocomplete({
+    const results = await callGooglePlacesTextSearch({
       query,
-      language,
-      country,
-      lat,
-      lng,
-      type,
-      limit,
+      language: body.language || "fr",
+      lat: typeof body.lat === "number" ? body.lat : null,
+      lng: typeof body.lng === "number" ? body.lng : null,
+      limit: Number(body.limit || 5),
     });
 
-    await admin
-      .from("api_usage")
-      .upsert({
-        usage_day: usageDay,
-        usage_month: usageMonth,
-        user_id: user ? user.id : null,
-        ip_hash: user ? null : ipHash,
-        provider: "geoapify",
-        endpoint: "places-search",
-        count: userCount + 1,
-        updated_at: now.toISOString(),
-      }, {
-        onConflict: "usage_month,user_id,ip_hash,provider,endpoint",
-      });
-
-    const cacheDays = Number(settings.places_cache_days || 30);
-    const expiresAt = new Date(Date.now() + cacheDays * 24 * 60 * 60 * 1000).toISOString();
-
-    await admin
-      .from("places_cache")
-      .upsert({
-        cache_key: cacheKey,
-        provider: "geoapify",
-        endpoint: "autocomplete",
-        query,
-        params: {
-          language,
-          country,
-          lat: gridCoord(lat),
-          lng: gridCoord(lng),
-          type,
-          limit,
-        },
-        results,
-        expires_at: expiresAt,
-      });
-
-    const nextCount = userCount + 1;
-    const warnAt = Math.floor(userLimit * Number(settings.places_warn_ratio || 0.8));
-
     return json({
-      provider: "geoapify",
+      provider: "google",
       mode: "enriched",
       results,
-      usage: {
-        count: nextCount,
-        limit: userLimit,
-        warn: nextCount >= warnAt && nextCount < userLimit,
-        reached: nextCount >= userLimit,
-      },
+      usage,
     });
   } catch (error) {
-    return json({
-      provider: "geoapify",
-      mode: "error",
-      results: [],
-      error: error instanceof Error ? error.message : String(error),
-    }, 500);
+    return json(
+      {
+        provider: "google",
+        mode: "error",
+        results: [],
+        error: error instanceof Error ? error.message : String(error),
+      },
+      500,
+    );
   }
 });

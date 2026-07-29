@@ -176,6 +176,33 @@
     flex-shrink:0;
   }
 
+  .places-usage{
+    min-height:32px;
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    padding:0 10px;
+    border:1px solid var(--outline-variant);
+    border-radius:999px;
+    background:var(--inset);
+    color:var(--muted);
+    font-family:var(--font-mono, ui-monospace);
+    font-size:11px;
+    font-weight:900;
+    white-space:nowrap;
+  }
+
+  .places-usage.reached{
+    border-color:var(--danger, #c0563f);
+    color:var(--danger, #c0563f);
+  }
+
+  @media(max-width:760px){
+    .places-usage-label{
+      display:none;
+    }
+  }
+
   .topbar-nav{
     gap:4px;
     flex-shrink:0;
@@ -1654,6 +1681,38 @@
     const [tripMenuOpen, setTripMenuOpen] = React.useState(false);
     const [newTripOpen, setNewTripOpen] = React.useState(false);
 
+        const [placesUsage, setPlacesUsage] = React.useState(null);
+
+    React.useEffect(function syncPlacesUsage() {
+      if (!user) {
+        setPlacesUsage(null);
+        return undefined;
+      }
+
+      let alive = true;
+
+      function applyUsage(event) {
+        if (alive && event.detail) {
+          setPlacesUsage(event.detail);
+        }
+      }
+
+      window.addEventListener('places-usage', applyUsage);
+
+      if (window.SB && window.SB.getPlacesUsage) {
+        window.SB.getPlacesUsage()
+          .then(function setInitialUsage(usage) {
+            if (alive && usage) setPlacesUsage(usage);
+          })
+          .catch(function ignoreUsageError() {});
+      }
+
+      return function cleanup() {
+        alive = false;
+        window.removeEventListener('places-usage', applyUsage);
+      };
+    }, [user]);
+
     const menuRef = React.useRef(null);
 
     React.useEffect(function openInviteAuth() {
@@ -1860,6 +1919,17 @@
         <div className="topbar-right">
           {user ? (
             <>
+              {placesUsage && (
+                <div
+                  className={'places-usage' + (placesUsage.reached ? ' reached' : '')}
+                  title={'Recherches de lieux ce mois : ' + placesUsage.count + ' sur ' + placesUsage.limit}
+                >
+                  <Icon name="search" size={14} />
+                  <span className="places-usage-label">Lieux</span>
+                  <span>{placesUsage.count} / {placesUsage.limit}</span>
+                </div>
+              )}
+
               <button
                 type="button"
                 className="topbar-icon-btn"

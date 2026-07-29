@@ -1025,6 +1025,14 @@ window.SB = {
   deleteDocument,
 
   searchPlaces,
+    async getPlacesUsage() {
+    const { data, error } = await sb.functions.invoke("places-search", {
+      body: { action: "usage" }
+    });
+
+    if (error) throw error;
+    return data?.usage || null;
+  },
 
   subscribeTrip,
   unsubscribeTrip

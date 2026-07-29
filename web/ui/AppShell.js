@@ -2232,14 +2232,7 @@ function toggleToolboxCollapsed() {
                   )}
                 </div>
               </div>
-                title={theme === 'dark' ? 'Mode clair' : 'Mode sombre'}
-                onClick={toggleTheme}
-              >
-                <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={18} />
-              </button>
 
-              <button
-                type="button"
               <div className="topbar-account">
                 <button
                   type="button"

@@ -1,68 +1,227 @@
-// ════════════════════════════════════════════════════════════
-// Settings.js — Modale paramètres (compte + mes voyages)
-// Version Phase 1, sera enrichie plus tard (membres, journal…)
-// ════════════════════════════════════════════════════════════
+function useSettingsCompact() {
+  const [compact, setCompact] = React.useState(() => window.innerWidth < 760);
+
+  React.useEffect(() => {
+    const onResize = () => setCompact(window.innerWidth < 760);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  return compact;
+}
+
+const SETTINGS_SECTIONS = {
+  account: {
+    title: 'Mon profil',
+    description: 'Tes informations et ta session.',
+    icon: 'user'
+  },
+  preferences: {
+    title: 'Paramètres',
+    description: 'Apparence et recherche de lieux.',
+    icon: 'gear'
+  },
+  trips: {
+    title: 'Mes voyages',
+    description: 'Ouvre ou organise tes voyages.',
+    icon: 'map'
+  },
+  share: {
+    title: 'Partage',
+    description: 'Invite et gère les membres du voyage actif.',
+    icon: 'users'
+  }
+};
 
 function SettingsModal() {
   const { user, trips, activeTripId, trip } = Store.useStore();
   const [section, setSection] = React.useState('account');
+  const compact = useSettingsCompact();
   const close = () => Store.set({ settingsOpen: false });
+  const current = SETTINGS_SECTIONS[section];
 
   React.useEffect(() => {
-    const onEsc = e => e.key === 'Escape' && close();
+    const onEsc = event => {
+      if (event.key === 'Escape') close();
+    };
+
     document.addEventListener('keydown', onEsc);
     return () => document.removeEventListener('keydown', onEsc);
   }, []);
 
+  function openTrip(id) {
+    if (window.selectTrip) {
+      window.selectTrip(id);
+      close();
+    }
+  }
+
   return (
-    <div onClick={close} style={{
-      position: 'fixed', inset: 0, zIndex: 500,
-      background: 'rgba(0,0,0,.6)',
-      backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
-      display: 'grid', placeItems: 'center', padding: 16
-    }}>
-      <div onClick={e => e.stopPropagation()} style={{
-        width: '100%', maxWidth: 820, height: 'min(86vh, 640px)',
-        background: 'var(--card)',
-        border: '1px solid var(--line)',
-        borderRadius: 18, boxShadow: 'var(--shadow-lg)',
-        overflow: 'hidden', display: 'grid',
-        gridTemplateColumns: '220px 1fr'
-      }}>
-        {/* Sidebar */}
+    <div
+      onClick={close}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 500,
+        padding: compact ? 0 : 18,
+        display: 'grid',
+        placeItems: 'center',
+        background: 'rgba(30, 25, 18, .48)',
+        backdropFilter: 'blur(7px)'
+      }}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Paramètres du compte"
+        onClick={event => event.stopPropagation()}
+        style={{
+          width: '100%',
+          maxWidth: 1040,
+          height: compact ? '100dvh' : 'min(88dvh, 720px)',
+          display: 'grid',
+          gridTemplateColumns: compact ? '1fr' : '238px minmax(0, 1fr)',
+          overflow: 'hidden',
+          background: 'var(--card)',
+          border: compact ? 'none' : '1px solid var(--line)',
+          borderRadius: compact ? 0 : 14,
+          boxShadow: 'var(--shadow-lg)'
+        }}
+      >
         <aside style={{
-          background: 'var(--bg-2)', borderRight: '1px solid var(--line)',
-          padding: '18px 12px', display: 'flex', flexDirection: 'column', gap: 4
+          display: 'flex',
+          flexDirection: compact ? 'row' : 'column',
+          gap: compact ? 4 : 6,
+          overflowX: compact ? 'auto' : 'visible',
+          padding: compact ? '10px 12px' : '22px 14px',
+          background: 'var(--bg-2)',
+          borderRight: compact ? 'none' : '1px solid var(--line)',
+          borderBottom: compact ? '1px solid var(--line)' : 'none'
         }}>
-          <div style={{ padding: '0 8px 12px', borderBottom: '1px solid var(--line)', marginBottom: 6 }}>
-            <div style={{ fontFamily: 'var(--serif)', fontStyle: 'italic', fontSize: 22 }}>Paramètres</div>
-          </div>
-          <NavItem icon="user" on={section === 'account'} onClick={() => setSection('account')}>Compte</NavItem>
-          <NavItem icon="map"  on={section === 'trips'}   onClick={() => setSection('trips')}>Mes voyages</NavItem>
-          <NavItem icon="users" on={section === 'share'} onClick={() => setSection('share')}>Partage</NavItem>
+          {!compact && (
+            <div style={{ padding: '0 10px 18px' }}>
+              <div style={{
+                fontFamily: 'var(--serif)',
+                fontStyle: 'italic',
+                fontSize: 25,
+                color: 'var(--text)'
+              }}>
+                L&apos;Atelier
+              </div>
+              <div style={{ marginTop: 5, fontSize: 12, color: 'var(--muted)' }}>
+                Espace personnel
+              </div>
+            </div>
+          )}
+
+          {Object.entries(SETTINGS_SECTIONS).map(([key, item]) => (
+            <SettingsNavItem
+              key={key}
+              compact={compact}
+              icon={item.icon}
+              active={section === key}
+              onClick={() => setSection(key)}
+            >
+              {key === 'account' ? 'Mon compte' : item.title}
+            </SettingsNavItem>
+          ))}
+
+          {!compact && (
+            <div style={{
+              marginTop: 'auto',
+              padding: '16px 10px 4px',
+              borderTop: '1px solid var(--line)'
+            }}>
+              <div style={{
+                width: 34,
+                height: 34,
+                borderRadius: '50%',
+                display: 'grid',
+                placeItems: 'center',
+                background: 'var(--accent)',
+                color: 'var(--bg)',
+                fontWeight: 900,
+                fontSize: 12
+              }}>
+                {initials(user)}
+              </div>
+              <div style={{ marginTop: 8, fontSize: 12, fontWeight: 800 }}>
+                {displayName(user)}
+              </div>
+              <div style={{
+                marginTop: 2,
+                color: 'var(--muted)',
+                fontSize: 11,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis'
+              }}>
+                {user?.email || ''}
+              </div>
+            </div>
+          )}
         </aside>
 
-        {/* Contenu */}
-        <section style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+        <section style={{ minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
           <header style={{
-            padding: '18px 24px 14px',
-            borderBottom: '1px solid var(--line)',
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: 'space-between',
+            gap: 18,
+            padding: compact ? '18px 18px 14px' : '26px 30px 20px',
+            borderBottom: '1px solid var(--line)'
           }}>
-            <div style={{ fontFamily: 'var(--serif)', fontStyle: 'italic', fontSize: 24 }}>
-              {section === 'account' ? 'Compte' : section === 'trips' ? 'Mes voyages' : 'Partage'}
+            <div>
+              <div style={{
+                color: 'var(--accent)',
+                fontSize: 10,
+                fontWeight: 900,
+                letterSpacing: '.12em',
+                textTransform: 'uppercase'
+              }}>
+                Espace personnel
+              </div>
+              <h1 style={{
+                margin: '5px 0 0',
+                fontFamily: 'var(--serif)',
+                fontSize: compact ? 27 : 32,
+                lineHeight: 1.05,
+                fontWeight: 500
+              }}>
+                {current.title}
+              </h1>
+              <p style={{ margin: '7px 0 0', fontSize: 13, color: 'var(--muted)' }}>
+                {current.description}
+              </p>
             </div>
-            <button onClick={close} style={{
-              background: 'transparent', border: '1px solid var(--line)',
-              color: 'var(--muted)', cursor: 'pointer',
-              width: 32, height: 32, borderRadius: 9,
-              display: 'grid', placeItems: 'center'
-            }}><Icon name="x" size={16} /></button>
+
+            <button
+              type="button"
+              onClick={close}
+              title="Fermer"
+              aria-label="Fermer"
+              style={settingsIconButtonStyle}
+            >
+              <Icon name="x" size={17} />
+            </button>
           </header>
-          <div style={{ flex: 1, overflowY: 'auto', padding: 24 }}>
+
+          <div style={{
+            flex: 1,
+            overflowY: 'auto',
+            padding: compact ? 18 : 30
+          }}>
             {section === 'account' && <AccountSection user={user} />}
-            {section === 'trips' && <TripsSection trips={trips} activeTripId={activeTripId} onClose={close} />}
-            {section === 'share' && <ShareSection activeTripId={activeTripId} trip={trip} />}
+            {section === 'preferences' && <PreferencesSection user={user} />}
+            {section === 'trips' && (
+              <TripsSection
+                trips={trips || []}
+                activeTripId={activeTripId}
+                onOpen={openTrip}
+              />
+            )}
+            {section === 'share' && (
+              <ShareSection activeTripId={activeTripId} trip={trip} />
+            )}
           </div>
         </section>
       </div>
@@ -70,68 +229,406 @@ function SettingsModal() {
   );
 }
 
-function NavItem({ icon, on, onClick, children }) {
+function SettingsNavItem({ icon, active, onClick, children, compact }) {
   return (
-    <button onClick={onClick} style={{
-      display: 'flex', alignItems: 'center', gap: 9,
-      padding: '9px 11px', border: 'none', cursor: 'pointer',
-      background: on ? 'var(--accent-soft)' : 'transparent',
-      color: on ? 'var(--accent)' : 'var(--muted)',
-      borderRadius: 9, fontSize: 13.5, fontWeight: 600,
-      fontFamily: 'inherit', textAlign: 'left'
-    }}>
-      <Icon name={icon} size={15} />{children}
+    <button
+      type="button"
+      onClick={onClick}
+      title={compact ? children : undefined}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: compact ? 'center' : 'flex-start',
+        gap: 10,
+        minWidth: compact ? 42 : 0,
+        padding: compact ? '9px 11px' : '11px 12px',
+        border: '1px solid ' + (active ? 'rgba(157, 104, 12, .22)' : 'transparent'),
+        borderRadius: 8,
+        background: active ? 'var(--accent-soft)' : 'transparent',
+        color: active ? 'var(--accent)' : 'var(--muted)',
+        cursor: 'pointer',
+        fontFamily: 'inherit',
+        fontSize: 13,
+        fontWeight: 800,
+        whiteSpace: 'nowrap',
+        textAlign: 'left'
+      }}
+    >
+      <Icon name={icon} size={16} />
+      {!compact && children}
     </button>
   );
 }
 
 function AccountSection({ user }) {
-  const pseudo = user?.user_metadata?.display_name || user?.email?.split('@')[0] || '';
-  const [val, setVal] = React.useState(pseudo);
+  const initialPseudo = displayName(user);
+  const [pseudo, setPseudo] = React.useState(initialPseudo);
+  const [editing, setEditing] = React.useState(false);
   const [busy, setBusy] = React.useState(false);
 
   async function savePseudo() {
-    if (!val.trim()) return;
+    const next = pseudo.trim();
+
+    if (!next) {
+      Store.showToast('Choisis un pseudo.');
+      return;
+    }
+
     setBusy(true);
+
     try {
-      await SB.sb.auth.updateUser({ data: { display_name: val.trim() } });
-      await SB.sb.from('profiles').update({ display_name: val.trim() }).eq('id', user.id);
-      // Mettre à jour le user dans le store
-      Store.set({ user: { ...user, user_metadata: { ...(user.user_metadata||{}), display_name: val.trim() } } });
-      Store.showToast('Pseudo mis à jour ✓');
-    } catch (e) {
-      Store.showToast('Erreur : ' + e.message);
+      await SB.sb.auth.updateUser({ data: { display_name: next } });
+      await SB.sb.from('profiles').update({ display_name: next }).eq('id', user.id);
+
+      Store.set({
+        user: {
+          ...user,
+          user_metadata: {
+            ...(user.user_metadata || {}),
+            display_name: next
+          }
+        }
+      });
+
+      setEditing(false);
+      Store.showToast('Profil mis à jour');
+    } catch (error) {
+      Store.showToast('Erreur : ' + error.message);
     } finally {
       setBusy(false);
     }
   }
 
-  async function doSignOut() {
+  async function signOut() {
     await SB.signOut();
-    Store.set({ user: null, trips: [], activeTripId: null, trip: null, settingsOpen: false });
+    Store.set({
+      user: null,
+      trips: [],
+      activeTripId: null,
+      trip: null,
+      settingsOpen: false
+    });
     Store.showToast('Déconnecté');
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-      <Card title="Profil">
-        <Row label="Pseudo">
-          <div style={{ display: 'flex', gap: 8, flex: 1 }}>
-            <input value={val} onChange={e => setVal(e.target.value)} style={inputStyle} />
-            <Btn variant="primary" onClick={savePseudo}>{busy ? '…' : 'Sauver'}</Btn>
+    <div style={{ maxWidth: 740, display: 'flex', flexDirection: 'column', gap: 20 }}>
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 16,
+        padding: 18,
+        border: '1px solid var(--line)',
+        borderRadius: 12,
+        background: 'var(--bg-2)'
+      }}>
+        <div style={{
+          width: 62,
+          height: 62,
+          borderRadius: '50%',
+          display: 'grid',
+          placeItems: 'center',
+          flexShrink: 0,
+          background: 'var(--accent)',
+          color: 'var(--bg)',
+          fontSize: 19,
+          fontWeight: 900
+        }}>
+          {initials(user)}
+        </div>
+
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <div style={{
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            fontFamily: 'var(--serif)',
+            fontSize: 24
+          }}>
+            {displayName(user)}
           </div>
-        </Row>
-        <Row label="Email">
-          <span style={{ color: 'var(--muted)' }}>{user.email}</span>
-        </Row>
-      </Card>
-      <Card title="Session">
-        <Row label="Déconnexion">
-          <Btn variant="ghost" onClick={doSignOut} style={{ color: 'var(--danger)', borderColor: 'rgba(224,169,109,.3)' }}>
+          <div style={{
+            marginTop: 3,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            color: 'var(--muted)',
+            fontSize: 13
+          }}>
+            {user?.email || 'Adresse e-mail indisponible'}
+          </div>
+        </div>
+      </div>
+
+      <SettingsCard eyebrow="Identité" title="Tes informations">
+        <SettingsField label="Pseudo" description="Le nom affiché dans L’Atelier.">
+          <div style={{ display: 'flex', gap: 8, width: '100%', alignItems: 'center' }}>
+            <input
+              value={pseudo}
+              disabled={!editing}
+              onChange={event => setPseudo(event.target.value)}
+              style={{
+                ...settingsInputStyle,
+                opacity: editing ? 1 : .72
+              }}
+            />
+
+            {editing ? (
+              <SettingsButton
+                variant="primary"
+                icon="check"
+                onClick={savePseudo}
+                disabled={busy}
+              >
+                {busy ? 'Enregistrement' : 'Enregistrer'}
+              </SettingsButton>
+            ) : (
+              <SettingsButton icon="gear" onClick={() => setEditing(true)}>
+                Modifier
+              </SettingsButton>
+            )}
+          </div>
+        </SettingsField>
+
+        <SettingsField label="E-mail" description="Géré par ton compte de connexion.">
+          <div style={{ color: 'var(--text)', fontSize: 13, wordBreak: 'break-word' }}>
+            {user?.email || 'Non renseigné'}
+          </div>
+        </SettingsField>
+      </SettingsCard>
+
+      <SettingsCard eyebrow="Session" title="Connexion">
+        <SettingsField label="Déconnexion" description="Ferme la session sur cet appareil.">
+          <SettingsButton variant="danger" icon="x" onClick={signOut}>
             Se déconnecter
-          </Btn>
-        </Row>
-      </Card>
+          </SettingsButton>
+        </SettingsField>
+      </SettingsCard>
+    </div>
+  );
+}
+
+function PreferencesSection({ user }) {
+  const [theme, setTheme] = React.useState(
+    () => Store.get().theme || localStorage.getItem('it_theme') || 'light'
+  );
+  const [placesMode, setPlacesMode] = React.useState(
+    () => localStorage.getItem('places_search_mode') === 'google' ? 'google' : 'basic'
+  );
+  const [usage, setUsage] = React.useState(null);
+
+  async function refreshUsage() {
+    if (!user || !window.SB?.getPlacesUsage) return;
+
+    try {
+      const nextUsage = await window.SB.getPlacesUsage();
+      setUsage(nextUsage);
+    } catch (error) {
+      setUsage(null);
+    }
+  }
+
+  React.useEffect(() => {
+    refreshUsage();
+  }, [user?.id]);
+
+  function applyTheme(nextTheme) {
+    localStorage.setItem('it_theme', nextTheme);
+    document.documentElement.classList.toggle('dark', nextTheme === 'dark');
+    Store.set({ theme: nextTheme });
+    setTheme(nextTheme);
+  }
+
+  function applyPlacesMode(enabled) {
+    const nextMode = enabled ? 'google' : 'basic';
+    localStorage.setItem('places_search_mode', nextMode);
+    window.dispatchEvent(new CustomEvent('places-search-mode', { detail: nextMode }));
+    setPlacesMode(nextMode);
+  }
+
+  function savePreferences() {
+    localStorage.setItem('atelier_preferences', JSON.stringify({
+      theme,
+      placesMode
+    }));
+    Store.showToast('Paramètres enregistrés');
+  }
+
+  return (
+    <div style={{ maxWidth: 740, display: 'flex', flexDirection: 'column', gap: 20 }}>
+      <SettingsCard eyebrow="Apparence" title="Choisis ton ambiance">
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+          gap: 10
+        }}>
+          <SettingsChoice
+            icon="sun"
+            label="Mode clair"
+            description="L’interface lumineuse actuelle."
+            active={theme === 'light'}
+            onClick={() => applyTheme('light')}
+          />
+          <SettingsChoice
+            icon="moon"
+            label="Mode sombre"
+            description="Une interface plus douce le soir."
+            active={theme === 'dark'}
+            onClick={() => applyTheme('dark')}
+          />
+        </div>
+      </SettingsCard>
+
+      <SettingsCard eyebrow="Recherche" title="Lieux et Google Places">
+        <SettingsToggle
+          checked={placesMode === 'google'}
+          onChange={applyPlacesMode}
+          label="Utiliser Google Places"
+          description="Pour les musées, restaurants, hôtels et lieux précis. Décoche cette option pour revenir à la recherche simple, sans consommation Google."
+        />
+
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 12,
+          marginTop: 16,
+          paddingTop: 15,
+          borderTop: '1px solid var(--line)'
+        }}>
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 900 }}>
+              Compteur personnel Google Places
+            </div>
+            <div style={{ marginTop: 3, color: 'var(--muted)', fontSize: 12 }}>
+              100 recherches Google Places par utilisateur et par mois.
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <strong style={{
+              whiteSpace: 'nowrap',
+              color: 'var(--accent)',
+              fontSize: 13
+            }}>
+              {usage ? `${usage.count} / ${usage.limit}` : '... / 100'}
+            </strong>
+            <button
+              type="button"
+              onClick={refreshUsage}
+              title="Actualiser le compteur"
+              aria-label="Actualiser le compteur"
+              style={settingsIconButtonStyle}
+            >
+              <Icon name="arrowsm" size={16} />
+            </button>
+          </div>
+        </div>
+      </SettingsCard>
+
+      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+        <SettingsButton variant="primary" icon="check" onClick={savePreferences}>
+          Enregistrer les paramètres
+        </SettingsButton>
+      </div>
+    </div>
+  );
+}
+
+function TripsSection({ trips, activeTripId, onOpen }) {
+  async function removeTrip(trip) {
+    if (!confirm(`Supprimer « ${trip.name} » définitivement ?`)) return;
+
+    try {
+      await SB.deleteTrip(trip.id);
+      const remaining = await SB.listMyTrips();
+      const wasActive = trip.id === activeTripId;
+
+      Store.set({
+        trips: remaining,
+        activeTripId: wasActive ? null : activeTripId,
+        trip: wasActive ? null : Store.get().trip
+      });
+
+      Store.showToast('Voyage supprimé');
+    } catch (error) {
+      Store.showToast('Erreur : ' + error.message);
+    }
+  }
+
+  if (!trips.length) {
+    return (
+      <SettingsCard title="Aucun voyage">
+        <div style={{ textAlign: 'center', padding: '22px 8px', color: 'var(--muted)' }}>
+          <Icon name="map" size={28} />
+          <div style={{ marginTop: 10, fontSize: 13 }}>
+            Crée ton premier voyage depuis le sélecteur en haut.
+          </div>
+        </div>
+      </SettingsCard>
+    );
+  }
+
+  return (
+    <div style={{ maxWidth: 740, display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {trips.map(trip => (
+        <div key={trip.id} style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 13,
+          padding: 14,
+          border: '1px solid ' + (trip.id === activeTripId ? 'rgba(157, 104, 12, .35)' : 'var(--line)'),
+          borderRadius: 10,
+          background: trip.id === activeTripId ? 'var(--accent-soft)' : 'var(--bg-2)'
+        }}>
+          <div style={{
+            width: 38,
+            height: 38,
+            borderRadius: 8,
+            display: 'grid',
+            placeItems: 'center',
+            flexShrink: 0,
+            background: 'var(--card)',
+            color: 'var(--accent)'
+          }}>
+            <Icon name="map" size={17} />
+          </div>
+
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+              <strong style={{
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                fontSize: 14
+              }}>
+                {trip.name}
+              </strong>
+              {trip.id === activeTripId && (
+                <span style={{
+                  padding: '2px 6px',
+                  borderRadius: 5,
+                  background: 'var(--accent)',
+                  color: 'var(--bg)',
+                  fontSize: 9,
+                  fontWeight: 900,
+                  letterSpacing: '.08em'
+                }}>
+                  ACTIF
+                </span>
+              )}
+            </div>
+            <div style={{ marginTop: 4, color: 'var(--muted)', fontSize: 12 }}>
+              {trip.start_date ? `Départ ${fmtDate(trip.start_date)}` : 'Sans date définie'}
+            </div>
+          </div>
+
+          <SettingsButton icon="arrow" onClick={() => onOpen(trip.id)}>
+            Ouvrir
+          </SettingsButton>
+          <SettingsButton variant="danger" icon="x" onClick={() => removeTrip(trip)}>
+            Supprimer
+          </SettingsButton>
+        </div>
+      ))}
     </div>
   );
 }
@@ -148,8 +645,7 @@ function ShareSection({ activeTripId, trip }) {
     }
 
     try {
-      const list = await SB.listTripMembers(activeTripId);
-      setMembers(list);
+      setMembers(await SB.listTripMembers(activeTripId));
     } catch (error) {
       Store.showToast('Erreur membres : ' + error.message);
     }
@@ -161,18 +657,17 @@ function ShareSection({ activeTripId, trip }) {
   }, [activeTripId]);
 
   async function createInvite() {
-    if (!activeTripId) return;
-
     setBusy(true);
+
     try {
       const created = await SB.createTripInvite(activeTripId, 'editor');
       setInvite(created);
 
       try {
         await navigator.clipboard.writeText(created.url);
-        Store.showToast('Lien copié');
+        Store.showToast('Lien créé et copié');
       } catch (error) {
-        Store.showToast('Lien créé');
+        Store.showToast('Lien créé : copie-le depuis le champ');
       }
     } catch (error) {
       Store.showToast('Erreur invitation : ' + error.message);
@@ -181,9 +676,7 @@ function ShareSection({ activeTripId, trip }) {
     }
   }
 
-    async function addToBudget(member) {
-    if (!activeTripId) return;
-
+  async function addToBudget(member) {
     try {
       await SB.addMemberAsParticipant(
         activeTripId,
@@ -191,20 +684,15 @@ function ShareSection({ activeTripId, trip }) {
         trip?.participants?.length || 0
       );
 
-      const full = await SB.loadTrip(activeTripId);
-      Store.set({ trip: full });
+      const fullTrip = await SB.loadTrip(activeTripId);
+      Store.set({ trip: fullTrip });
       Store.showToast('Membre ajouté au budget');
     } catch (error) {
       Store.showToast('Erreur : ' + error.message);
     }
   }
-  
-  async function removeMember(member) {
-    if (member.role === 'owner') {
-      Store.showToast('Le propriétaire ne peut pas être retiré ici.');
-      return;
-    }
 
+  async function removeMember(member) {
     if (!confirm(`Retirer ${member.name} du voyage ?`)) return;
 
     try {
@@ -218,214 +706,307 @@ function ShareSection({ activeTripId, trip }) {
 
   if (!activeTripId) {
     return (
-      <div style={{ color: 'var(--muted)', fontSize: 13 }}>
-        Sélectionne un voyage pour gérer le partage.
-      </div>
+      <SettingsCard title="Aucun voyage actif">
+        <div style={{ color: 'var(--muted)', fontSize: 13 }}>
+          Sélectionne un voyage pour gérer son partage.
+        </div>
+      </SettingsCard>
     );
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-      <Card title="Inviter quelqu’un">
-        <Row label="Lien">
-          <div style={{ display: 'flex', gap: 8, flex: 1 }}>
-            <Btn variant="primary" onClick={createInvite} disabled={busy}>
-              {busy ? 'Création...' : 'Créer un lien'}
-            </Btn>
+    <div style={{ maxWidth: 740, display: 'flex', flexDirection: 'column', gap: 20 }}>
+      <SettingsCard eyebrow="Invitation" title="Voyager à plusieurs">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, minWidth: 210, color: 'var(--muted)', fontSize: 13 }}>
+            Crée un lien pour inviter quelqu’un à modifier ce voyage.
           </div>
-        </Row>
+          <SettingsButton variant="primary" icon="share" onClick={createInvite} disabled={busy}>
+            {busy ? 'Création' : 'Créer un lien'}
+          </SettingsButton>
+        </div>
 
         {invite && (
-          <Row label="Invitation">
-            <div style={{
-              flex: 1,
-              display: 'flex',
-              gap: 8,
-              alignItems: 'center',
-              minWidth: 0
-            }}>
-              <input readOnly value={invite.url} style={{ ...inputStyle, flex: 1 }} />
-              <Btn
-                variant="ghost"
-                onClick={() => {
-                  navigator.clipboard?.writeText(invite.url);
-                  Store.showToast('Lien copié');
-                }}
-              >
-                Copier
-              </Btn>
-            </div>
-          </Row>
+          <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+            <input readOnly value={invite.url} style={settingsInputStyle} />
+            <SettingsButton
+              icon="check"
+              onClick={() => {
+                navigator.clipboard?.writeText(invite.url);
+                Store.showToast('Lien copié');
+              }}
+            >
+              Copier
+            </SettingsButton>
+          </div>
         )}
-      </Card>
+      </SettingsCard>
 
-      <Card title="Membres du voyage">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
-          {members.length ? members.map(member => (
+      <SettingsCard eyebrow="Membres" title="Personnes qui participent">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {members.map(member => (
             <div key={member.id} style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 12,
-              padding: '10px 12px',
-              borderRadius: 12,
-              background: 'var(--bg-2)',
-              border: '1px solid var(--line)'
+              gap: 11,
+              padding: 11,
+              border: '1px solid var(--line)',
+              borderRadius: 9,
+              background: 'var(--card)'
             }}>
               <div style={{
-                width: 34,
-                height: 34,
+                width: 33,
+                height: 33,
                 borderRadius: '50%',
                 display: 'grid',
                 placeItems: 'center',
+                flexShrink: 0,
                 background: 'var(--accent-soft)',
                 color: 'var(--accent)',
-                fontWeight: 800
+                fontWeight: 900
               }}>
                 {(member.name || member.email || 'M').slice(0, 1).toUpperCase()}
               </div>
 
               <div style={{ flex: 1, minWidth: 0 }}>
                 <strong style={{ display: 'block', fontSize: 13 }}>
-                  {member.name}
+                  {member.name || 'Membre'}
                 </strong>
                 <span style={{ color: 'var(--muted)', fontSize: 12 }}>
-                  {member.email || 'Email masqué'} · {member.role}
+                  {member.role === 'owner' ? 'Propriétaire' : 'Éditeur'}
                 </span>
               </div>
 
               {!SB.isMemberAlreadyParticipant(member, trip?.participants || []) && (
-                <Btn
-                  variant="ghost"
-                  onClick={() => addToBudget(member)}
-                >
-                  Ajouter au budget
-                </Btn>
+                <SettingsButton onClick={() => addToBudget(member)}>
+                  Budget
+                </SettingsButton>
               )}
 
               {member.role !== 'owner' && (
-                <Btn
-                  variant="ghost"
-                  onClick={() => removeMember(member)}
-                  style={{ color: 'var(--danger)' }}
-                >
+                <SettingsButton variant="danger" onClick={() => removeMember(member)}>
                   Retirer
-                </Btn>
+                </SettingsButton>
               )}
             </div>
-          )) : (
-            <p style={{ margin: 0, color: 'var(--muted)', fontSize: 13 }}>
+          ))}
+
+          {!members.length && (
+            <div style={{ color: 'var(--muted)', fontSize: 13 }}>
               Aucun membre pour le moment.
-            </p>
+            </div>
           )}
         </div>
-      </Card>
+      </SettingsCard>
     </div>
   );
 }
 
-function TripsSection({ trips, activeTripId, onClose }) {
-  async function del(t) {
-    if (!confirm(`Supprimer « ${t.name} » définitivement ?`)) return;
-    try {
-      await SB.deleteTrip(t.id);
-      const remaining = await SB.listMyTrips();
-      const wasActive = t.id === activeTripId;
-      Store.set({
-        trips: remaining,
-        activeTripId: wasActive ? null : activeTripId,
-        trip: wasActive ? null : Store.get().trip
-      });
-      Store.showToast('Voyage supprimé');
-    } catch (e) {
-      Store.showToast('Erreur : ' + e.message);
-    }
-  }
-
-  if (!trips.length) {
-    return (
-      <div style={{
-        textAlign: 'center', color: 'var(--muted)', padding: '40px 20px'
-      }}>
-        <div style={{ fontSize: 32, marginBottom: 8, opacity: .5 }}>✈️</div>
-        <div style={{ fontFamily: 'var(--serif)', fontStyle: 'italic', fontSize: 20, color: 'var(--text)' }}>Aucun voyage</div>
-        <div style={{ marginTop: 6, fontSize: 13 }}>Crée ton premier voyage depuis le sélecteur en haut.</div>
-      </div>
-    );
-  }
-
+function SettingsCard({ eyebrow, title, children }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      {trips.map(t => (
-        <div key={t.id} style={{
-          display: 'flex', alignItems: 'center', gap: 12,
-          padding: '12px 14px',
-          background: t.id === activeTripId ? 'var(--accent-soft)' : 'var(--bg-2)',
-          border: '1px solid ' + (t.id === activeTripId ? 'rgba(217,182,126,.3)' : 'var(--line)'),
-          borderRadius: 12
+    <section style={{
+      padding: 18,
+      border: '1px solid var(--line)',
+      borderRadius: 12,
+      background: 'var(--bg-2)'
+    }}>
+      {eyebrow && (
+        <div style={{
+          color: 'var(--accent)',
+          fontSize: 10,
+          fontWeight: 900,
+          letterSpacing: '.12em',
+          textTransform: 'uppercase'
         }}>
-          <div style={{
-            width: 36, height: 36, borderRadius: 9,
-            background: 'rgba(217,182,126,.12)', color: 'var(--accent)',
-            display: 'grid', placeItems: 'center'
-          }}><Icon name="map" size={16} /></div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontWeight: 700, fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
-              {t.name}
-              {t.id === activeTripId && (
-                <span style={{
-                  fontSize: 10, fontWeight: 800, letterSpacing: '.05em',
-                  background: 'var(--accent)', color: 'var(--bg)',
-                  padding: '2px 6px', borderRadius: 5
-                }}>ACTIF</span>
-              )}
-            </div>
-            <div style={{ fontSize: 12, color: 'var(--faint)', marginTop: 2 }}>
-              {t.start_date ? `Départ ${fmtDate(t.start_date)}` : 'Sans date'}
-              {' · '}Modifié {fmtDate(t.updated_at)}
-            </div>
-          </div>
-          <Btn variant="ghost" onClick={() => del(t)} style={{ color: 'var(--danger)', borderColor: 'rgba(224,169,109,.3)' }}>
-            Supprimer
-          </Btn>
+          {eyebrow}
         </div>
-      ))}
-    </div>
-  );
-}
-
-// ─── Atomes ─────────────────────────────────────────────────
-function Card({ title, children }) {
-  return (
-    <div style={{
-      background: 'var(--bg-2)', border: '1px solid var(--line)',
-      borderRadius: 14, padding: '14px 16px'
-    }}>
-      {title && <div style={{
-        fontSize: 10.5, fontWeight: 800, letterSpacing: '.1em',
-        textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 10
-      }}>{title}</div>}
+      )}
+      {title && (
+        <h2 style={{
+          margin: eyebrow ? '6px 0 15px' : '0 0 15px',
+          fontFamily: 'var(--serif)',
+          fontSize: 21,
+          fontWeight: 500
+        }}>
+          {title}
+        </h2>
+      )}
       {children}
-    </div>
+    </section>
   );
 }
 
-function Row({ label, children }) {
+function SettingsField({ label, description, children }) {
   return (
     <div style={{
-      display: 'flex', alignItems: 'center', gap: 12,
-      padding: '8px 0',
-      borderBottom: '1px solid var(--line-2)'
+      display: 'grid',
+      gridTemplateColumns: 'minmax(120px, .7fr) minmax(0, 1.3fr)',
+      gap: 16,
+      alignItems: 'center',
+      padding: '14px 0',
+      borderTop: '1px solid var(--line)'
     }}>
-      <div style={{ fontSize: 13, color: 'var(--muted)', minWidth: 100, fontWeight: 600 }}>{label}</div>
-      <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', minWidth: 0 }}>{children}</div>
+      <div>
+        <div style={{ fontSize: 13, fontWeight: 900 }}>{label}</div>
+        <div style={{ marginTop: 3, color: 'var(--muted)', fontSize: 12, lineHeight: 1.35 }}>
+          {description}
+        </div>
+      </div>
+      <div style={{ minWidth: 0 }}>{children}</div>
     </div>
   );
 }
 
-const inputStyle = {
-  flex: 1, background: 'var(--inset)', border: '1px solid var(--line)',
-  borderRadius: 9, padding: '8px 11px', color: 'var(--text)',
-  fontFamily: 'inherit', fontSize: 13.5, outline: 'none'
+function SettingsChoice({ icon, label, description, active, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        minHeight: 106,
+        padding: 14,
+        border: '1px solid ' + (active ? 'var(--accent)' : 'var(--line)'),
+        borderRadius: 9,
+        background: active ? 'var(--accent-soft)' : 'var(--card)',
+        color: active ? 'var(--accent)' : 'var(--text)',
+        cursor: 'pointer',
+        textAlign: 'left',
+        fontFamily: 'inherit'
+      }}
+    >
+      <Icon name={icon} size={18} />
+      <div style={{ marginTop: 11, fontSize: 13, fontWeight: 900 }}>{label}</div>
+      <div style={{ marginTop: 4, fontSize: 12, lineHeight: 1.35, color: 'var(--muted)' }}>
+        {description}
+      </div>
+    </button>
+  );
+}
+
+function SettingsToggle({ checked, onChange, label, description }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        onClick={() => onChange(!checked)}
+        style={{
+          width: 44,
+          height: 25,
+          padding: 3,
+          border: 'none',
+          borderRadius: 20,
+          flexShrink: 0,
+          background: checked ? 'var(--accent)' : 'var(--line)',
+          cursor: 'pointer'
+        }}
+      >
+        <span style={{
+          display: 'block',
+          width: 19,
+          height: 19,
+          borderRadius: '50%',
+          background: 'white',
+          transform: checked ? 'translateX(19px)' : 'translateX(0)',
+          transition: 'transform .16s ease'
+        }} />
+      </button>
+
+      <div>
+        <div style={{ fontSize: 13, fontWeight: 900 }}>{label}</div>
+        <div style={{ marginTop: 3, color: 'var(--muted)', fontSize: 12, lineHeight: 1.35 }}>
+          {description}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SettingsButton({ variant = 'secondary', icon, children, style, ...props }) {
+  const colors = {
+    primary: {
+      background: 'var(--accent)',
+      border: '1px solid var(--accent)',
+      color: 'var(--bg)'
+    },
+    danger: {
+      background: 'transparent',
+      border: '1px solid rgba(193, 93, 72, .35)',
+      color: 'var(--danger)'
+    },
+    secondary: {
+      background: 'var(--card)',
+      border: '1px solid var(--line)',
+      color: 'var(--text)'
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      {...props}
+      style={{
+        minHeight: 34,
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 7,
+        padding: '7px 10px',
+        borderRadius: 8,
+        cursor: props.disabled ? 'default' : 'pointer',
+        opacity: props.disabled ? .6 : 1,
+        fontFamily: 'inherit',
+        fontSize: 12,
+        fontWeight: 900,
+        whiteSpace: 'nowrap',
+        ...colors[variant],
+        ...style
+      }}
+    >
+      {icon && <Icon name={icon} size={14} />}
+      {children}
+    </button>
+  );
+}
+
+function displayName(user) {
+  return user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'Voyageur';
+}
+
+function initials(user) {
+  return displayName(user)
+    .split(/\s+/)
+    .slice(0, 2)
+    .map(part => part[0])
+    .join('')
+    .toUpperCase();
+}
+
+const settingsIconButtonStyle = {
+  width: 34,
+  height: 34,
+  display: 'grid',
+  placeItems: 'center',
+  flexShrink: 0,
+  border: '1px solid var(--line)',
+  borderRadius: 8,
+  background: 'var(--card)',
+  color: 'var(--muted)',
+  cursor: 'pointer'
+};
+
+const settingsInputStyle = {
+  width: '100%',
+  minWidth: 0,
+  padding: '9px 10px',
+  border: '1px solid var(--line)',
+  borderRadius: 8,
+  outline: 'none',
+  background: 'var(--inset)',
+  color: 'var(--text)',
+  fontFamily: 'inherit',
+  fontSize: 13
 };
 
 window.SettingsModal = SettingsModal;

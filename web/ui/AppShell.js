@@ -1519,8 +1519,19 @@
     const sideWidth = isCompactShell ? 260 : 300;
     const toolWidth = isCompactShell ? 280 : 320;
 
-    const [toolboxOpen, setToolboxOpen] = React.useState(false);
-    const [daySpineOpen, setDaySpineOpen] = React.useState(false);
+const [toolboxOpen, setToolboxOpen] = React.useState(false);
+const [daySpineOpen, setDaySpineOpen] = React.useState(false);
+const [toolboxCollapsed, setToolboxCollapsed] = React.useState(
+  () => localStorage.getItem('toolbox_collapsed') === 'true'
+);
+
+function toggleToolboxCollapsed() {
+  setToolboxCollapsed(current => {
+    const next = !current;
+    localStorage.setItem('toolbox_collapsed', String(next));
+    return next;
+  });
+}
 
     const CurrentView = getCurrentView(view);
 
@@ -1589,8 +1600,43 @@
               </section>
 
               {!isNarrowShell && window.Toolbox && (
-                <window.Toolbox width={toolWidth} />
-              )}
+  <div style={{
+    width: toolboxCollapsed ? 48 : toolWidth + 48,
+    height: '100%',
+    flexShrink: 0,
+    display: 'flex',
+    background: 'var(--surface-container-low, var(--bg-2))',
+    borderLeft: '1px solid var(--outline-variant, var(--line))'
+  }}>
+    {!toolboxCollapsed && (
+      <div style={{ width: toolWidth, minWidth: 0, height: '100%' }}>
+        <window.Toolbox width="100%" />
+      </div>
+    )}
+
+    <button
+      type="button"
+      onClick={toggleToolboxCollapsed}
+      title={toolboxCollapsed ? 'Déployer la boîte à outils' : 'Ranger la boîte à outils'}
+      aria-label={toolboxCollapsed ? 'Déployer la boîte à outils' : 'Ranger la boîte à outils'}
+      style={{
+        width: 48,
+        minWidth: 48,
+        height: '100%',
+        border: 'none',
+        borderLeft: toolboxCollapsed ? 'none' : '1px solid var(--outline-variant, var(--line))',
+        background: 'transparent',
+        color: 'var(--accent)',
+        cursor: 'pointer',
+        display: 'grid',
+        placeItems: 'start center',
+        paddingTop: 18
+      }}
+    >
+      <Icon name={toolboxCollapsed ? 'chevleft' : 'chevright'} size={19} />
+    </button>
+  </div>
+)}
 
               {isNarrowShell && toolboxOpen && window.Toolbox && (
                 <div

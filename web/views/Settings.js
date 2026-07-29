@@ -550,6 +550,18 @@ function PreferencesSection({ user }) {
   );
 }
 
+const TRIP_ACCENT_THEMES = [
+  { key: 'ochre', label: 'Ocre', accent: '#9d680c' },
+  { key: 'forest', label: 'Vert forêt', accent: '#2f6a55' },
+  { key: 'ocean', label: 'Bleu océan', accent: '#2f617b' },
+  { key: 'terracotta', label: 'Terre cuite', accent: '#a45132' },
+  { key: 'plum', label: 'Prune', accent: '#71506c' }
+];
+
+function getTripAccentTheme(key) {
+  return TRIP_ACCENT_THEMES.find(theme => theme.key === key) || TRIP_ACCENT_THEMES[0];
+}
+
 function TripsSection({ trips, activeTripId, onOpen }) {
   async function removeTrip(trip) {
     if (!confirm(`Supprimer « ${trip.name} » définitivement ?`)) return;
@@ -566,6 +578,27 @@ function TripsSection({ trips, activeTripId, onOpen }) {
       });
 
       Store.showToast('Voyage supprimé');
+    } catch (error) {
+      Store.showToast('Erreur : ' + error.message);
+    }
+  }
+
+    async function saveTripAccent(trip, accentTheme) {
+    if (trip.accent_theme === accentTheme) return;
+
+    try {
+      await SB.updateTrip(trip.id, { accentTheme });
+
+      const nextTrips = await SB.listMyTrips();
+
+      if (trip.id === activeTripId) {
+        const nextTrip = await SB.loadTrip(trip.id);
+        Store.set({ trips: nextTrips, trip: nextTrip });
+      } else {
+        Store.set({ trips: nextTrips });
+      }
+
+      Store.showToast('Couleur du voyage mise à jour');
     } catch (error) {
       Store.showToast('Erreur : ' + error.message);
     }
@@ -593,6 +626,7 @@ function TripsSection({ trips, activeTripId, onOpen }) {
           gap: 13,
           padding: 14,
           border: '1px solid ' + (trip.id === activeTripId ? 'rgba(157, 104, 12, .35)' : 'var(--line)'),
+          borderLeft: '4px solid ' + getTripAccentTheme(trip.accent_theme).accent,
           borderRadius: 10,
           background: trip.id === activeTripId ? 'var(--accent-soft)' : 'var(--bg-2)'
         }}>
@@ -636,6 +670,39 @@ function TripsSection({ trips, activeTripId, onOpen }) {
             <div style={{ marginTop: 4, color: 'var(--muted)', fontSize: 12 }}>
               {trip.start_date ? `Départ ${fmtDate(trip.start_date)}` : 'Sans date définie'}
             </div>
+            <div
+  aria-label={'Couleur de ' + trip.name}
+  style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 10 }}
+>
+  <span style={{ color: 'var(--muted)', fontSize: 11, fontWeight: 800 }}>
+    Couleur
+  </span>
+
+  {TRIP_ACCENT_THEMES.map(theme => {
+    const active = (trip.accent_theme || 'ochre') === theme.key;
+
+    return (
+      <button
+        key={theme.key}
+        type="button"
+        title={theme.label}
+        aria-label={theme.label}
+        aria-pressed={active}
+        onClick={() => saveTripAccent(trip, theme.key)}
+        style={{
+          width: 20,
+          height: 20,
+          padding: 0,
+          border: '2px solid ' + (active ? 'var(--text)' : 'transparent'),
+          borderRadius: '50%',
+          background: theme.accent,
+          boxShadow: active ? '0 0 0 2px var(--card)' : 'none',
+          cursor: 'pointer'
+        }}
+      />
+    );
+  })}
+</div>
           </div>
 
           <SettingsButton icon="arrow" onClick={() => onOpen(trip.id)}>

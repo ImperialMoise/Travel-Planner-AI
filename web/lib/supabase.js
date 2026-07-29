@@ -54,7 +54,7 @@ export async function signOut() {
 export async function listMyTrips() {
   const { data, error } = await sb
     .from('trips')
-    .select('id, name, start_date, end_date, owner_id, updated_at')
+    .select('id, name, start_date, end_date, owner_id, updated_at, accent_theme')
     .order('updated_at', { ascending: false });
   if (error) throw error;
   return data ?? [];
@@ -153,7 +153,7 @@ export async function loadTrip(tripId) {
     name: trip.name,
     startDate: trip.start_date,
     endDate: trip.end_date,
-    ownerId: trip.owner_id,
+    accentTheme: trip.accent_theme || 'ochre',
     coverImageUrl: trip.cover_image_url || '',
     coverImageAlt: trip.cover_image_alt || '',
     coverPhotographerName: trip.cover_photographer_name || '',
@@ -191,6 +191,7 @@ export async function updateTrip(tripId, patch) {
   if (patch.startDate !== undefined) row.start_date = patch.startDate || null;
   if (patch.endDate !== undefined) row.end_date = patch.endDate || null;
   if (patch.globalNote !== undefined) row.global_note = patch.globalNote || '';
+  if (patch.accentTheme !== undefined) row.accent_theme = patch.accentTheme || 'ochre';
 
   const { error } = await sb
     .from('trips')

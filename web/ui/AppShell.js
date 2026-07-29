@@ -35,6 +35,17 @@
 
 (function initAppShell() {
   const U = window.ItineraryUtils || {};
+    const TRIP_ACCENTS = {
+    ochre: { accent: '#9d680c', soft: '#f4ead7', ink: '#fffaf1', shadow: 'rgba(157,104,12,.26)' },
+    forest: { accent: '#2f6a55', soft: '#e2f0e8', ink: '#f7fffb', shadow: 'rgba(47,106,85,.25)' },
+    ocean: { accent: '#2f617b', soft: '#e2eef4', ink: '#f8fcff', shadow: 'rgba(47,97,123,.25)' },
+    terracotta: { accent: '#a45132', soft: '#f6e6df', ink: '#fffaf8', shadow: 'rgba(164,81,50,.25)' },
+    plum: { accent: '#71506c', soft: '#efe5ed', ink: '#fffaff', shadow: 'rgba(113,80,108,.25)' }
+  };
+
+  function getTripAccent(theme) {
+    return TRIP_ACCENTS[theme] || TRIP_ACCENTS.ochre;
+  }
 
   const APP_SHELL_CSS = `
   .app-shell{
@@ -227,12 +238,12 @@
   .topbar-nav-btn.active{
     background:var(--accent);
     color:var(--accent-ink);
-    box-shadow:0 4px 10px rgba(128, 87, 12, .22);
+    box-shadow:0 4px 10px var(--accent-shadow);
   }
 
   .topbar-nav-btn.active:hover{
     transform:translateY(-1px);
-    box-shadow:0 6px 14px rgba(128, 87, 12, .28);
+    box-shadow:0 6px 14px var(--accent-shadow);
   }
 
   .topbar.compact .topbar-nav-btn{
@@ -1688,6 +1699,7 @@
     const isNarrowShell = width < 1100;
     const isTinyShell = width < 900;
     const isTopbarCompact = width < 1180;
+   const accent = getTripAccent(trip?.accentTheme);
 
     const sideWidth = isCompactShell ? 260 : 300;
     const toolWidth = isCompactShell ? 280 : 320;
@@ -1720,7 +1732,15 @@ function toggleToolboxCollapsed() {
     }
 
     return (
-      <div className="app-shell">
+      <div
+  className="app-shell"
+  style={{
+    '--accent': accent.accent,
+    '--accent-soft': accent.soft,
+    '--accent-ink': accent.ink,
+    '--accent-shadow': accent.shadow
+  }}
+>
         <Topbar compact={isTopbarCompact} />
 
         <main className="app-main">

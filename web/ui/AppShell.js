@@ -1436,32 +1436,40 @@
     text-transform:uppercase;
   }
 
-  @media(max-width:1180px){
-    .topbar{
-      gap:8px;
-    }
-
-    .topbar-center{
+  .topbar-center{
   display:flex;
   align-items:center;
-  gap:12px;
+  justify-content:center;
+  gap:10px;
   min-width:0;
+  flex:1;
+}
+
+.topbar-center .topbar-nav{
+  order:1;
 }
 
 .workspace-mode{
+  order:2;
   display:inline-flex;
   align-items:center;
-  gap:2px;
+  gap:3px;
   padding:3px;
   border:1px solid var(--outline-variant);
   border-radius:9px;
-  background:var(--inset);
+  background:var(--card);
+  box-shadow:0 2px 8px rgba(66,48,18,.08);
 }
 
 .workspace-mode-btn{
-  min-height:28px;
+  min-width:88px;
+  height:30px;
   padding:0 9px;
-  border:none;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+  border:1px solid transparent;
   border-radius:6px;
   background:transparent;
   color:var(--muted);
@@ -1469,6 +1477,13 @@
   font-family:inherit;
   font-size:11px;
   font-weight:900;
+  transition:background .18s ease, color .18s ease, transform .18s ease, box-shadow .18s ease;
+}
+
+.workspace-mode-btn:hover{
+  transform:translateY(-1px);
+  background:var(--accent-soft);
+  color:var(--accent);
 }
 
 .workspace-mode-btn.active{
@@ -1477,10 +1492,24 @@
   box-shadow:0 3px 8px var(--accent-shadow);
 }
 
+.workspace-mode-btn:focus-visible{
+  outline:2px solid var(--accent);
+  outline-offset:2px;
+}
+
+  @media(max-width:1180px){
+    .topbar{
+      gap:8px;
+    }
+
     .topbar-nav{
       gap:2px;
     }
+   .workspace-mode-btn{
+    min-width:76px;
+    padding:0 7px;
   }
+}
 
   @media(max-width:760px){
     .topbar{
@@ -2261,17 +2290,19 @@ function setAppMode(nextMode) {
         type="button"
         className={'workspace-mode-btn' + (appMode === 'plan' ? ' active' : '')}
         onClick={() => setAppMode('plan')}
-      >
-        Préparer
-      </button>
+>
+  <Icon name="cal" size={13} />
+  Préparer
+</button>
 
       <button
         type="button"
         className={'workspace-mode-btn' + (appMode === 'travel' ? ' active' : '')}
         onClick={() => setAppMode('travel')}
-      >
-        Voyager
-      </button>
+>
+  <Icon name="pin" size={13} />
+  Voyager
+</button>
     </div>
 
     {appMode !== 'travel' && (

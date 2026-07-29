@@ -194,6 +194,12 @@ function LocationInput({ value, onChange, onSelect, placeholder, style }) {
 
         if (!alive) return;
 
+        if (data && data.usage) {
+          window.dispatchEvent(new CustomEvent('places-usage', {
+            detail: data.usage
+          }));
+        }
+
         if (data && data.error) {
           setResults([]);
           setErrorMsg(data.error);
@@ -329,6 +335,22 @@ function LocationInput({ value, onChange, onSelect, placeholder, style }) {
               </div>
             );
           })}
+
+          {results.some(place => place.provider === 'google_places') && (
+            <div style={{
+              display: 'flex',
+              justifyContent: 'flex-end',
+              padding: '6px 10px',
+              borderTop: '1px solid var(--line2)',
+              background: 'var(--inset)'
+            }}>
+              <img
+                src="https://maps.gstatic.com/mapfiles/api-3/images/powered-by-google-on-white3.png"
+                alt="Powered by Google"
+                style={{ width: 120, height: 15, objectFit: 'contain' }}
+              />
+            </div>
+          )}
         </div>
       )}
     </div>

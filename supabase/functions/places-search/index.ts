@@ -3,16 +3,17 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 type SearchBody = {
   action?: "search" | "usage";
+  provider?: "basic" | "google";
   query?: string;
   language?: string;
   country?: string;
   lat?: number | null;
   lng?: number | null;
-  type?: string;
   limit?: number;
 };
 
 const GOOGLE_PROVIDER = "google_places";
+const BASIC_PROVIDER = "geoapify";
 const GOOGLE_GLOBAL_MONTHLY_LIMIT = 9000;
 
 const corsHeaders = {
@@ -24,16 +25,11 @@ const corsHeaders = {
 };
 
 function json(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: corsHeaders,
-  });
+  return new Response(JSON.stringify(body), { status, headers: corsHeaders });
 }
 
 function normalizeQuery(value: string) {
-  return value
-    .trim()
-    .replace(/\s+/g, " ");
+  return value.trim().replace(/\s+/g, " ");
 }
 
 async function sha256(input: string) {
@@ -59,15 +55,10 @@ async function getUserFromRequest(
   anonKey: string,
 ) {
   const authHeader = req.headers.get("Authorization") || "";
-
   if (!authHeader) return null;
 
   const client = createClient(supabaseUrl, anonKey, {
-    global: {
-      headers: {
-        Authorization: authHeader,
-      },
-    },
+    global: { headers: { Authorization: authHeader } },
   });
 
   const { data } = await client.auth.getUser();
@@ -82,15 +73,12 @@ function formatUsage(row: any, warnRatio: number) {
   const count = Number(row?.user_count || 0);
   const limit = Number(row?.user_limit || 100);
   const globalCount = Number(row?.global_count || 0);
-  const globalLimit = Number(
-    row?.global_limit || GOOGLE_GLOBAL_MONTHLY_LIMIT,
-  );
-  const warnAt = Math.floor(limit * warnRatio);
+  const globalLimit = Number(row?.global_limit || GOOGLE_GLOBAL_MONTHLY_LIMIT);
 
   return {
     count,
     limit,
-    warn: count >= warnAt && count < limit,
+    warn: count >= Math.floor(limit * warnRatio) && count < limit,
     reached: count >= limit,
     globalCount,
     globalLimit,
@@ -98,11 +86,7 @@ function formatUsage(row: any, warnRatio: number) {
   };
 }
 
-async function getUsage(
-  admin: ReturnType<typeof createClient>,
-  actorKey: string,
-  userLimit: number,
-) {
+async function getGoogleUsage(admin: any, actorKey: string, userLimit: number) {
   const { data, error } = await admin.rpc("get_places_search_usage", {
     p_actor_key: actorKey,
     p_provider: GOOGLE_PROVIDER,
@@ -110,12 +94,11 @@ async function getUsage(
   });
 
   if (error) throw error;
-
   return firstRow(data);
 }
 
-async function reserveQuota(
-  admin: ReturnType<typeof createClient>,
+async function reserveGoogleQuota(
+  admin: any,
   actorKey: string,
   userId: string | null,
   ipHash: string | null,
@@ -131,7 +114,6 @@ async function reserveQuota(
   });
 
   if (error) throw error;
-
   return firstRow(data);
 }
 
@@ -143,15 +125,12 @@ async function callGooglePlacesTextSearch(params: {
   limit: number;
 }) {
   const key = Deno.env.get("GOOGLE_PLACES_API_KEY");
-
-  if (!key) {
-    throw new Error("GOOGLE_PLACES_API_KEY manquante");
-  }
+  if (!key) throw new Error("GOOGLE_PLACES_API_KEY manquante");
 
   const body: Record<string, unknown> = {
     textQuery: params.query,
     languageCode: params.language || "fr",
-    maxResultCount: Math.max(1, Math.min(params.limit, 10)),
+    maxResultCount: Math.max(1, Math.min(params.limit, 5)),
   };
 
   if (
@@ -162,10 +141,7 @@ async function callGooglePlacesTextSearch(params: {
   ) {
     body.locationBias = {
       circle: {
-        center: {
-          latitude: params.lat,
-          longitude: params.lng,
-        },
+        center: { latitude: params.lat, longitude: params.lng },
         radius: 50000,
       },
     };
@@ -186,14 +162,13 @@ async function callGooglePlacesTextSearch(params: {
   );
 
   if (!response.ok) {
-    const details = await response.text();
-    throw new Error("Google Places error: " + details);
+    throw new Error("Google Places error: " + await response.text());
   }
 
   const data = await response.json();
 
   return (data.places || []).map((place: any) => ({
-    provider: "google",
+    provider: GOOGLE_PROVIDER,
     placeId: place.id || "",
     label: place.displayName?.text || place.formattedAddress || "Lieu",
     address: place.formattedAddress || "",
@@ -203,6 +178,59 @@ async function callGooglePlacesTextSearch(params: {
     lat: place.location?.latitude ?? null,
     lng: place.location?.longitude ?? null,
     categories: place.primaryType ? [place.primaryType] : [],
+  }));
+}
+
+async function callGeoapifyAutocomplete(params: {
+  query: string;
+  language: string;
+  country: string;
+  lat: number | null;
+  lng: number | null;
+  limit: number;
+}) {
+  const key = Deno.env.get("GEOAPIFY_API_KEY");
+  if (!key) throw new Error("GEOAPIFY_API_KEY manquante");
+
+  const url = new URL("https://api.geoapify.com/v1/geocode/autocomplete");
+  url.searchParams.set("text", params.query);
+  url.searchParams.set("format", "json");
+  url.searchParams.set("lang", params.language || "fr");
+  url.searchParams.set("limit", String(Math.max(1, Math.min(params.limit, 5))));
+  url.searchParams.set("apiKey", key);
+
+  if (params.country && /^[a-z]{2}$/i.test(params.country)) {
+    url.searchParams.set("filter", "countrycode:" + params.country.toLowerCase());
+  }
+
+  if (
+    typeof params.lat === "number" &&
+    Number.isFinite(params.lat) &&
+    typeof params.lng === "number" &&
+    Number.isFinite(params.lng)
+  ) {
+    url.searchParams.set("bias", "proximity:" + params.lng + "," + params.lat);
+  }
+
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error("Geoapify error: " + await response.text());
+  }
+
+  const data = await response.json();
+
+  return (data.results || []).map((place: any) => ({
+    provider: BASIC_PROVIDER,
+    placeId: String(place.place_id || ""),
+    label: place.name || place.address_line1 || place.formatted || "Lieu",
+    address: place.formatted || "",
+    city: place.city || place.town || place.village || "",
+    country: place.country || "",
+    postcode: place.postcode || "",
+    lat: place.lat ?? null,
+    lng: place.lon ?? null,
+    categories: [],
   }));
 }
 
@@ -223,10 +251,9 @@ serve(async (req) => {
     return json({ error: "Configuration Supabase manquante" }, 500);
   }
 
-  const admin = createClient(supabaseUrl, serviceRoleKey);
-
   try {
     const body = (await req.json()) as SearchBody;
+    const admin = createClient(supabaseUrl, serviceRoleKey);
     const user = await getUserFromRequest(req, supabaseUrl, anonKey);
 
     const { data: settingsRow } = await admin
@@ -242,19 +269,16 @@ serve(async (req) => {
       places_allow_anonymous: false,
     };
 
-    if (!settings.places_enriched_enabled) {
-      return json({
-        provider: "google",
-        mode: "disabled",
-        results: [],
-        usage: null,
-        message: "Recherche de lieux désactivée.",
-      });
-    }
+    const userLimit = Number(settings.places_free_user_monthly_limit || 100);
+    const warnRatio = Number(settings.places_warn_ratio || 0.8);
+    const requestedProvider = body.provider === "google"
+      ? GOOGLE_PROVIDER
+      : BASIC_PROVIDER;
+    const useGoogle = requestedProvider === GOOGLE_PROVIDER;
 
     if (!user && !settings.places_allow_anonymous) {
       return json({
-        provider: "google",
+        provider: requestedProvider,
         mode: "login_required",
         results: [],
         usage: null,
@@ -262,18 +286,14 @@ serve(async (req) => {
       });
     }
 
-    const userLimit = Number(
-      settings.places_free_user_monthly_limit || 100,
-    );
-    const warnRatio = Number(settings.places_warn_ratio || 0.8);
     const ipHash = user ? null : await sha256(getClientIp(req));
     const actorKey = user ? "user:" + user.id : "ip:" + ipHash;
 
     if (body.action === "usage") {
-      const usageRow = await getUsage(admin, actorKey, userLimit);
+      const usageRow = await getGoogleUsage(admin, actorKey, userLimit);
 
       return json({
-        provider: "google",
+        provider: GOOGLE_PROVIDER,
         mode: "usage",
         results: [],
         usage: formatUsage(usageRow, warnRatio),
@@ -283,17 +303,43 @@ serve(async (req) => {
     const query = normalizeQuery(body.query || "");
 
     if (query.length < 3) {
-      const usageRow = await getUsage(admin, actorKey, userLimit);
-
       return json({
-        provider: "google",
+        provider: requestedProvider,
         mode: "too_short",
         results: [],
-        usage: formatUsage(usageRow, warnRatio),
+        usage: null,
       });
     }
 
-    const quota = await reserveQuota(
+    if (!useGoogle) {
+      const results = await callGeoapifyAutocomplete({
+        query,
+        language: body.language || "fr",
+        country: body.country || "",
+        lat: typeof body.lat === "number" ? body.lat : null,
+        lng: typeof body.lng === "number" ? body.lng : null,
+        limit: Number(body.limit || 5),
+      });
+
+      return json({
+        provider: BASIC_PROVIDER,
+        mode: "basic",
+        results,
+        usage: null,
+      });
+    }
+
+    if (!settings.places_enriched_enabled) {
+      return json({
+        provider: GOOGLE_PROVIDER,
+        mode: "disabled",
+        results: [],
+        usage: null,
+        message: "Google Places est temporairement désactivé.",
+      });
+    }
+
+    const quota = await reserveGoogleQuota(
       admin,
       actorKey,
       user?.id || null,
@@ -301,28 +347,22 @@ serve(async (req) => {
       userLimit,
     );
 
-    const usage = formatUsage(
-      {
-        user_count: quota?.user_count,
-        user_limit: userLimit,
-        global_count: quota?.global_count,
-        global_limit: GOOGLE_GLOBAL_MONTHLY_LIMIT,
-      },
-      warnRatio,
-    );
+    const usage = formatUsage({
+      user_count: quota?.user_count,
+      user_limit: userLimit,
+      global_count: quota?.global_count,
+      global_limit: GOOGLE_GLOBAL_MONTHLY_LIMIT,
+    }, warnRatio);
 
     if (!quota?.allowed) {
-      const globalLimitReached =
-        quota?.reason === "global_monthly_limit_reached";
-
       return json({
-        provider: "google",
+        provider: GOOGLE_PROVIDER,
         mode: quota?.reason || "limit_reached",
         results: [],
         usage,
-        message: globalLimitReached
+        message: quota?.reason === "global_monthly_limit_reached"
           ? "Le quota global mensuel de recherche est atteint."
-          : "Ta limite mensuelle de recherche est atteinte.",
+          : "Ta limite mensuelle Google Places est atteinte.",
       });
     }
 
@@ -335,20 +375,17 @@ serve(async (req) => {
     });
 
     return json({
-      provider: "google",
+      provider: GOOGLE_PROVIDER,
       mode: "enriched",
       results,
       usage,
     });
   } catch (error) {
-    return json(
-      {
-        provider: "google",
-        mode: "error",
-        results: [],
-        error: error instanceof Error ? error.message : String(error),
-      },
-      500,
-    );
+    return json({
+      provider: "error",
+      mode: "error",
+      results: [],
+      error: error instanceof Error ? error.message : String(error),
+    }, 500);
   }
 });

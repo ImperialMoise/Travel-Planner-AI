@@ -783,11 +783,11 @@ export async function acceptInvite(token) {
   return tripId;
 }
 
-export async function removeTripMember(memberId) {
-  const { error } = await sb
-    .from('trip_members')
-    .delete()
-    .eq('id', memberId);
+export async function removeTripMember(tripId, memberId) {
+  const { error } = await sb.rpc('remove_trip_member', {
+    p_trip_id: tripId,
+    p_member_id: memberId
+  });
 
   if (error) throw error;
 }

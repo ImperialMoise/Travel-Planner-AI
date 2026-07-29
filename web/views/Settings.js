@@ -220,8 +220,12 @@ function SettingsModal() {
               />
             )}
             {section === 'share' && (
-              <ShareSection activeTripId={activeTripId} trip={trip} />
-            )}
+  <ShareSection
+    trips={trips || []}
+    activeTripId={activeTripId}
+    user={user}
+  />
+)}
           </div>
         </section>
       </div>
@@ -633,34 +637,86 @@ function TripsSection({ trips, activeTripId, onOpen }) {
   );
 }
 
-function ShareSection({ activeTripId, trip }) {
+function ShareSection({ trips, activeTripId, user }) {
+  const [managedTripId, setManagedTripId] = React.useState(activeTripId || trips[0]?.id || '');
   const [members, setMembers] = React.useState([]);
+  const [managedTrip, setManagedTrip] = React.useState(null);
   const [invite, setInvite] = React.useState(null);
+  const [inviteRole, setInviteRole] = React.useState('editor');
   const [busy, setBusy] = React.useState(false);
+  const [loading, setLoading] = React.useState(false);
 
-  async function loadMembers() {
-    if (!activeTripId) {
+  const selectedTrip = trips.find(trip => trip.id === managedTripId) || null;
+  const canManage = selectedTrip?.owner_id === user?.id;
+
+  React.useEffect(() => {
+    if (activeTripId && !managedTripId) {
+      setManagedTripId(activeTripId);
+    }
+  }, [activeTripId, managedTripId]);
+
+  React.useEffect(() => {
+    if (!managedTripId) {
       setMembers([]);
+      setManagedTrip(null);
       return;
     }
 
-    try {
-      setMembers(await SB.listTripMembers(activeTripId));
-    } catch (error) {
-      Store.showToast('Erreur membres : ' + error.message);
+    let alive = true;
+    setInvite(null);
+    setLoading(true);
+
+    Promise.all([
+      SB.listTripMembers(managedTripId),
+      SB.loadTrip(managedTripId)
+    ])
+      .then(([memberList, fullTrip]) => {
+        if (!alive) return;
+        setMembers(memberList);
+        setManagedTrip(fullTrip);
+
+        if (managedTripId === activeTripId) {
+          Store.set({ trip: fullTrip });
+        }
+      })
+      .catch(error => {
+        if (alive) Store.showToast('Erreur : ' + error.message);
+      })
+      .finally(() => {
+        if (alive) setLoading(false);
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, [managedTripId]);
+
+  async function refreshTrip() {
+    if (!managedTripId) return;
+
+    const [memberList, fullTrip] = await Promise.all([
+      SB.listTripMembers(managedTripId),
+      SB.loadTrip(managedTripId)
+    ]);
+
+    setMembers(memberList);
+    setManagedTrip(fullTrip);
+
+    if (managedTripId === activeTripId) {
+      Store.set({ trip: fullTrip });
     }
   }
 
-  React.useEffect(() => {
-    loadMembers();
-    setInvite(null);
-  }, [activeTripId]);
-
   async function createInvite() {
+    if (!canManage) {
+      Store.showToast('Seul le propriétaire peut inviter des membres.');
+      return;
+    }
+
     setBusy(true);
 
     try {
-      const created = await SB.createTripInvite(activeTripId, 'editor');
+      const created = await SB.createTripInvite(managedTripId, inviteRole);
       setInvite(created);
 
       try {
@@ -679,13 +735,12 @@ function ShareSection({ activeTripId, trip }) {
   async function addToBudget(member) {
     try {
       await SB.addMemberAsParticipant(
-        activeTripId,
+        managedTripId,
         member,
-        trip?.participants?.length || 0
+        managedTrip?.participants?.length || 0
       );
 
-      const fullTrip = await SB.loadTrip(activeTripId);
-      Store.set({ trip: fullTrip });
+      await refreshTrip();
       Store.showToast('Membre ajouté au budget');
     } catch (error) {
       Store.showToast('Erreur : ' + error.message);
@@ -693,22 +748,22 @@ function ShareSection({ activeTripId, trip }) {
   }
 
   async function removeMember(member) {
-    if (!confirm(`Retirer ${member.name} du voyage ?`)) return;
+    if (!confirm(`Retirer ${member.name} de « ${selectedTrip.name} » ?`)) return;
 
     try {
-      await SB.removeTripMember(member.id);
-      await loadMembers();
+      await SB.removeTripMember(managedTripId, member.id);
+      await refreshTrip();
       Store.showToast('Membre retiré');
     } catch (error) {
       Store.showToast('Erreur : ' + error.message);
     }
   }
 
-  if (!activeTripId) {
+  if (!trips.length) {
     return (
-      <SettingsCard title="Aucun voyage actif">
+      <SettingsCard title="Aucun voyage">
         <div style={{ color: 'var(--muted)', fontSize: 13 }}>
-          Sélectionne un voyage pour gérer son partage.
+          Crée un voyage avant de gérer le partage.
         </div>
       </SettingsCard>
     );
@@ -716,12 +771,50 @@ function ShareSection({ activeTripId, trip }) {
 
   return (
     <div style={{ maxWidth: 740, display: 'flex', flexDirection: 'column', gap: 20 }}>
+      <SettingsCard eyebrow="Voyage" title="Quel voyage veux-tu gérer ?">
+        <select
+          value={managedTripId}
+          onChange={event => setManagedTripId(event.target.value)}
+          style={{ ...settingsInputStyle, maxWidth: 420 }}
+        >
+          {trips.map(trip => (
+            <option key={trip.id} value={trip.id}>
+              {trip.name}
+              {trip.id === activeTripId ? ' — voyage ouvert' : ''}
+            </option>
+          ))}
+        </select>
+
+        <div style={{ marginTop: 10, color: 'var(--muted)', fontSize: 12 }}>
+          {canManage
+            ? 'Tu es propriétaire de ce voyage : tu peux inviter et retirer des membres.'
+            : 'Tu participes à ce voyage, mais seul son propriétaire peut gérer les invitations.'}
+        </div>
+      </SettingsCard>
+
       <SettingsCard eyebrow="Invitation" title="Voyager à plusieurs">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-          <div style={{ flex: 1, minWidth: 210, color: 'var(--muted)', fontSize: 13 }}>
-            Crée un lien pour inviter quelqu’un à modifier ce voyage.
+        <div style={{ display: 'flex', alignItems: 'end', gap: 10, flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, minWidth: 210 }}>
+            <label style={{ display: 'block', marginBottom: 6, fontSize: 12, fontWeight: 900 }}>
+              Rôle de l’invitation
+            </label>
+            <select
+              value={inviteRole}
+              disabled={!canManage}
+              onChange={event => setInviteRole(event.target.value)}
+              style={settingsInputStyle}
+            >
+              <option value="editor">Éditeur : peut modifier le voyage</option>
+              <option value="viewer">Lecteur : peut uniquement consulter</option>
+            </select>
           </div>
-          <SettingsButton variant="primary" icon="share" onClick={createInvite} disabled={busy}>
+
+          <SettingsButton
+            variant="primary"
+            icon="share"
+            onClick={createInvite}
+            disabled={!canManage || busy}
+          >
             {busy ? 'Création' : 'Créer un lien'}
           </SettingsButton>
         </div>
@@ -742,61 +835,76 @@ function ShareSection({ activeTripId, trip }) {
         )}
       </SettingsCard>
 
-      <SettingsCard eyebrow="Membres" title="Personnes qui participent">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {members.map(member => (
-            <div key={member.id} style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 11,
-              padding: 11,
-              border: '1px solid var(--line)',
-              borderRadius: 9,
-              background: 'var(--card)'
-            }}>
-              <div style={{
-                width: 33,
-                height: 33,
-                borderRadius: '50%',
-                display: 'grid',
-                placeItems: 'center',
-                flexShrink: 0,
-                background: 'var(--accent-soft)',
-                color: 'var(--accent)',
-                fontWeight: 900
+      <SettingsCard eyebrow="Membres" title={`Personnes de ${selectedTrip?.name || 'ce voyage'}`}>
+        {loading ? (
+          <div style={{ color: 'var(--muted)', fontSize: 13 }}>
+            Chargement des membres…
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {members.map(member => (
+              <div key={member.id} style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 11,
+                padding: 11,
+                border: '1px solid var(--line)',
+                borderRadius: 9,
+                background: 'var(--card)'
               }}>
-                {(member.name || member.email || 'M').slice(0, 1).toUpperCase()}
+                <div style={{
+                  width: 33,
+                  height: 33,
+                  borderRadius: '50%',
+                  display: 'grid',
+                  placeItems: 'center',
+                  flexShrink: 0,
+                  background: 'var(--accent-soft)',
+                  color: 'var(--accent)',
+                  fontWeight: 900
+                }}>
+                  {(member.name || member.email || 'M').slice(0, 1).toUpperCase()}
+                </div>
+
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <strong style={{ display: 'block', fontSize: 13 }}>
+                    {member.name || 'Membre'}
+                  </strong>
+                  <span style={{ color: 'var(--muted)', fontSize: 12 }}>
+                    {member.role === 'owner'
+                      ? 'Propriétaire'
+                      : member.role === 'viewer'
+                        ? 'Lecteur'
+                        : 'Éditeur'}
+                  </span>
+                </div>
+
+                {canManage && member.role !== 'owner' && (
+                  <>
+                    {!SB.isMemberAlreadyParticipant(member, managedTrip?.participants || []) && (
+                      <SettingsButton onClick={() => addToBudget(member)}>
+                        Budget
+                      </SettingsButton>
+                    )}
+
+                    <SettingsButton
+                      variant="danger"
+                      onClick={() => removeMember(member)}
+                    >
+                      Retirer
+                    </SettingsButton>
+                  </>
+                )}
               </div>
+            ))}
 
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <strong style={{ display: 'block', fontSize: 13 }}>
-                  {member.name || 'Membre'}
-                </strong>
-                <span style={{ color: 'var(--muted)', fontSize: 12 }}>
-                  {member.role === 'owner' ? 'Propriétaire' : 'Éditeur'}
-                </span>
+            {!members.length && (
+              <div style={{ color: 'var(--muted)', fontSize: 13 }}>
+                Aucun membre pour le moment.
               </div>
-
-              {!SB.isMemberAlreadyParticipant(member, trip?.participants || []) && (
-                <SettingsButton onClick={() => addToBudget(member)}>
-                  Budget
-                </SettingsButton>
-              )}
-
-              {member.role !== 'owner' && (
-                <SettingsButton variant="danger" onClick={() => removeMember(member)}>
-                  Retirer
-                </SettingsButton>
-              )}
-            </div>
-          ))}
-
-          {!members.length && (
-            <div style={{ color: 'var(--muted)', fontSize: 13 }}>
-              Aucun membre pour le moment.
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </SettingsCard>
     </div>
   );

@@ -1682,6 +1682,9 @@
     const [newTripOpen, setNewTripOpen] = React.useState(false);
 
         const [placesUsage, setPlacesUsage] = React.useState(null);
+        const [placesMode, setPlacesMode] = React.useState(
+      () => localStorage.getItem('places_search_mode') === 'google' ? 'google' : 'basic'
+    );
 
     React.useEffect(function syncPlacesUsage() {
       if (!user) {
@@ -1767,6 +1770,17 @@
         label: compact ? 'Docs' : 'Docs'
       }
     ];
+
+        function updatePlacesMode(enabled) {
+      const nextMode = enabled ? 'google' : 'basic';
+
+      localStorage.setItem('places_search_mode', nextMode);
+      setPlacesMode(nextMode);
+
+      window.dispatchEvent(new CustomEvent('places-search-mode', {
+        detail: nextMode
+      }));
+    }
 
     function toggleTheme() {
       const nextTheme = theme === 'dark' ? 'light' : 'dark';
@@ -1919,16 +1933,64 @@
         <div className="topbar-right">
           {user ? (
             <>
-              {placesUsage && (
-                <div
-                  className={'places-usage' + (placesUsage.reached ? ' reached' : '')}
-                  title={'Recherches de lieux ce mois : ' + placesUsage.count + ' sur ' + placesUsage.limit}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                {placesUsage && (
+                  <div
+                    className={'places-usage' + (placesUsage.reached ? ' reached' : '')}
+                    title={
+                      'Recherche Google Places : ' + placesUsage.count + ' / ' + placesUsage.limit + ' ce mois.\n\n' +
+                      'Chaque utilisateur dispose de 100 recherches Google Places par mois.\n' +
+                      'Décoche Google Places pour utiliser la recherche simple : elle ne consomme pas ce compteur.'
+                    }
+                  >
+                    <Icon name="search" size={14} />
+                    <span className="places-usage-label">Google</span>
+                    <span>{placesUsage.count} / {placesUsage.limit}</span>
+                  </div>
+                )}
+
+                <label
+                  title="Coché : recherche précise Google Places. Décoché : recherche simple, sans consommation du compteur Google."
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 5,
+                    fontSize: 11,
+                    fontWeight: 800,
+                    color: 'var(--muted)',
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap'
+                  }}
                 >
-                  <Icon name="search" size={14} />
-                  <span className="places-usage-label">Lieux</span>
-                  <span>{placesUsage.count} / {placesUsage.limit}</span>
-                </div>
-              )}
+                  <input
+                    type="checkbox"
+                    checked={placesMode === 'google'}
+                    onChange={event => updatePlacesMode(event.target.checked)}
+                  />
+                  Google Places
+                </label>
+
+                <span
+                  title={
+                    'Chaque utilisateur dispose de 100 recherches Google Places par mois.\n\n' +
+                    'Décoche Google Places pour utiliser la recherche simple Geoapify, sans consommation du compteur Google.'
+                  }
+                  style={{
+                    width: 16,
+                    height: 16,
+                    border: '1px solid var(--outline-variant)',
+                    borderRadius: '50%',
+                    display: 'inline-grid',
+                    placeItems: 'center',
+                    color: 'var(--muted)',
+                    fontSize: 10,
+                    fontWeight: 900,
+                    cursor: 'help'
+                  }}
+                >
+                  ?
+                </span>
+              </div>
 
               <button
                 type="button"

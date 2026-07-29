@@ -902,7 +902,8 @@ export async function searchPlaces(params = {}) {
     lat: params.lat ?? null,
     lng: params.lng ?? null,
     type: params.type || 'place',
-    limit: params.limit || 5
+    limit: params.limit || 5,
+    provider: params.provider === 'google' ? 'google' : 'basic'
   };
 
   const { data, error } = await sb.functions.invoke('places-search', {

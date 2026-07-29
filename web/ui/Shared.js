@@ -151,6 +151,21 @@ function LocationInput({ value, onChange, onSelect, placeholder, style }) {
   const [open, setOpen] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [errorMsg, setErrorMsg] = React.useState('');
+  const [searchMode, setSearchMode] = React.useState(
+    () => localStorage.getItem('places_search_mode') === 'google' ? 'google' : 'basic'
+  );
+
+  React.useEffect(() => {
+    function updateSearchMode(event) {
+      setSearchMode(event.detail === 'google' ? 'google' : 'basic');
+    }
+
+    window.addEventListener('places-search-mode', updateSearchMode);
+
+    return () => {
+      window.removeEventListener('places-search-mode', updateSearchMode);
+    };
+  }, []);
 
   React.useEffect(() => {
     setQuery(value || '');
@@ -189,7 +204,8 @@ function LocationInput({ value, onChange, onSelect, placeholder, style }) {
           language: 'fr',
           country: '',
           type: inferTypeFromPlaceholder(placeholder),
-          limit: 5
+          limit: 5,
+          provider: searchMode
         });
 
         if (!alive) return;

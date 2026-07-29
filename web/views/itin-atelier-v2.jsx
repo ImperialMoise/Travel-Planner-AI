@@ -708,6 +708,38 @@
     gap:9px;
   }
 
+    .atelier-v2-hero-icon-btn{
+    width:40px;
+    min-width:40px;
+    height:40px;
+    border:1px solid var(--outline-variant);
+    border-radius:8px;
+    background:var(--card);
+    color:var(--text);
+    display:grid;
+    place-items:center;
+    cursor:pointer;
+    box-shadow:0 2px 8px rgba(82,98,91,.06);
+  }
+
+  .atelier-v2-hero-icon-btn:hover{
+    border-color:var(--accent);
+    color:var(--accent);
+    background:var(--accent-soft);
+  }
+
+  .atelier-v2-hero.has-cover .atelier-v2-hero-icon-btn{
+    background:rgba(255,255,255,.92);
+  }
+
+  .atelier-v2-hero.crop-editable{
+    touch-action:none;
+  }
+
+  .atelier-v2-hero.crop-editable .atelier-v2-hero-img{
+    cursor:grab;
+  }
+  
   @media(max-width:620px){
     .atelier-v2-cover-search,
     .atelier-v2-cover-grid{
@@ -1310,6 +1342,8 @@ return {
 
     const [dayEditorOpen, setDayEditorOpen] = React.useState(false);
     const [coverPickerOpen, setCoverPickerOpen] = React.useState(false);
+    const [coverPositionY, setCoverPositionY] = React.useState(50);
+    const cropDragRef = React.useRef(null);
     const [dragIndex, setDragIndex] = React.useState(null);
     const [dragOverIndex, setDragOverIndex] = React.useState(null);
 
@@ -1320,6 +1354,91 @@ return {
     );
 
     const day = days[safeDayIndex] || null;
+        const savedCoverPositionY = Number.isFinite(Number(day?.coverPositionY))
+      ? Number(day.coverPositionY)
+      : 50;
+
+    const isCoverCropLocked = day?.coverCropLocked !== false;
+
+    React.useEffect(function syncCoverPosition() {
+      setCoverPositionY(savedCoverPositionY);
+      cropDragRef.current = null;
+    }, [day?.id, savedCoverPositionY]);
+
+    function clampCoverPosition(value) {
+      return Math.max(0, Math.min(100, value));
+    }
+
+    function handleCoverPointerDown(event) {
+      if (!day?.coverImageUrl || isCoverCropLocked) return;
+      if (event.target.closest && event.target.closest('button, a')) return;
+
+      cropDragRef.current = {
+        pointerId: event.pointerId,
+        startY: event.clientY,
+        startPosition: coverPositionY,
+        positionY: coverPositionY,
+        moved: false
+      };
+
+      event.currentTarget.setPointerCapture(event.pointerId);
+    }
+
+    function handleCoverPointerMove(event) {
+      const drag = cropDragRef.current;
+
+      if (!drag || drag.pointerId !== event.pointerId) return;
+
+      const delta = event.clientY - drag.startY;
+      const nextPosition = clampCoverPosition(drag.startPosition - delta * 0.18);
+
+      drag.positionY = nextPosition;
+      drag.moved = drag.moved || Math.abs(delta) > 3;
+      setCoverPositionY(nextPosition);
+    }
+
+    async function handleCoverPointerUp(event) {
+      const drag = cropDragRef.current;
+
+      if (!drag || drag.pointerId !== event.pointerId) return;
+
+      cropDragRef.current = null;
+
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      }
+
+      if (!drag.moved) return;
+
+      try {
+        await window.SB.updateDayCoverCrop(day.id, {
+          positionY: drag.positionY
+        });
+        await reloadTrip();
+      } catch (error) {
+        Store.showToast(error.message || 'Recadrage impossible.');
+        setCoverPositionY(savedCoverPositionY);
+      }
+    }
+
+    async function toggleCoverCropLock() {
+      try {
+        await window.SB.updateDayCoverCrop(day.id, {
+          positionY: coverPositionY,
+          locked: !isCoverCropLocked
+        });
+
+        await reloadTrip();
+        Store.showToast(
+          isCoverCropLocked
+            ? 'Recadrage déverrouillé'
+            : 'Recadrage verrouillé'
+        );
+      } catch (error) {
+        Store.showToast(error.message || 'Modification impossible.');
+      }
+    }
+
     const allSteps = Array.isArray(day && day.steps) ? day.steps : [];
     const timelineSteps = sortStepsByTime(
       allSteps.filter(isVisibleTimelineStep)
@@ -1515,12 +1634,27 @@ return {
         <div className="atelier-v2-main">
 
           {/* ── Hero ── */}
-          <div className={'atelier-v2-hero' + (hasDayCover ? ' has-cover' : '')}>
+          <div
+  className={
+    'atelier-v2-hero' +
+    (hasDayCover ? ' has-cover' : '') +
+    (hasDayCover && !isCoverCropLocked ? ' crop-editable' : '')
+  }
+  onPointerDown={handleCoverPointerDown}
+  onPointerMove={handleCoverPointerMove}
+  onPointerUp={handleCoverPointerUp}
+  onPointerCancel={() => {
+    cropDragRef.current = null;
+    setCoverPositionY(savedCoverPositionY);
+  }}
+>
             {hasDayCover && (
               <img
                 className="atelier-v2-hero-img"
                 src={day.coverImageUrl}
                 alt={day.coverImageAlt || 'Photo de couverture du voyage'}
+                style={{ objectPosition: `center ${coverPositionY}%` }}
+                draggable="false"
               />
             )}
 
@@ -1544,41 +1678,45 @@ return {
               )}
 
               <div className="atelier-v2-hero-actions">
-                <button
-                  type="button"
-                  className="atelier-v2-hero-btn primary"
-                  onClick={() => openAddStep('activite')}
-                >
-                  <Icon name="plus" size={14} />
-                  Ajouter
-                </button>
+  <button
+    type="button"
+    className="atelier-v2-hero-btn"
+    onClick={selectMapForDay}
+  >
+    <Icon name="map" size={14} />
+    Carte
+  </button>
 
-                <button
-                  type="button"
-                  className="atelier-v2-hero-btn"
-                  onClick={selectMapForDay}
-                >
-                  <Icon name="map" size={14} />
-                  Carte
-                </button>
+  <button
+    type="button"
+    className="atelier-v2-hero-btn"
+    onClick={() => setDayEditorOpen(true)}
+  >
+    Modifier
+  </button>
 
-                <button
-                  type="button"
-                  className="atelier-v2-hero-btn"
-                  onClick={() => setDayEditorOpen(true)}
-                >
-                  Modifier
-                </button>
+  <button
+    type="button"
+    className="atelier-v2-hero-icon-btn"
+    title="Changer la photo"
+    aria-label="Changer la photo"
+    onClick={() => setCoverPickerOpen(true)}
+  >
+    <Icon name="camera" size={17} />
+  </button>
 
-                  <button
-                    type="button"
-                    className="atelier-v2-hero-btn"
-                    onClick={() => setCoverPickerOpen(true)}
-                  >
-                    <Icon name="camera" size={14} />
-                    Changer la photo
-                  </button>
-              </div>
+  {hasDayCover && (
+    <button
+      type="button"
+      className="atelier-v2-hero-icon-btn"
+      title={isCoverCropLocked ? 'Déverrouiller le recadrage' : 'Verrouiller le recadrage'}
+      aria-label={isCoverCropLocked ? 'Déverrouiller le recadrage' : 'Verrouiller le recadrage'}
+      onClick={toggleCoverCropLock}
+    >
+      <Icon name={isCoverCropLocked ? 'lock' : 'unlock'} size={17} />
+    </button>
+  )}
+</div>
             </div>
 
             {hasDayCover && day.coverSourceUrl && (

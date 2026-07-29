@@ -617,18 +617,18 @@ function PlaceholderWidget({ children }) {
     }
 
     function resetTools() {
-      setTools(DEFAULT_TOOLS.slice());
+  setTools(DEFAULT_TOOLS.slice());
 
-      const nextOpen = {};
+  const nextOpen = {};
 
-      Object.keys(TOOL_DEFINITIONS).forEach(function resetOpen(id) {
-        nextOpen[id] = !!TOOL_DEFINITIONS[id].defaultOpen;
-      });
+  Object.keys(TOOL_DEFINITIONS).forEach(function closeTool(id) {
+    nextOpen[id] = false;
+  });
 
-      setOpenMap(nextOpen);
-      setLibraryOpen(false);
-      setEditMode(false);
-    }
+  setOpenMap(nextOpen);
+  setLibraryOpen(false);
+  setEditMode(false);
+}
 
     function renderToolContent(id) {
       if (id === 'checklist') {

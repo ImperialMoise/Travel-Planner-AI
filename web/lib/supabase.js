@@ -173,6 +173,10 @@ export async function loadTrip(tripId) {
       coverPhotographerName: d.cover_photographer_name || '',
       coverPhotographerUrl: d.cover_photographer_url || '',
       coverSourceUrl: d.cover_source_url || '',
+            coverPositionY: Number.isFinite(Number(d.cover_position_y))
+        ? Number(d.cover_position_y)
+        : 50,
+      coverCropLocked: d.cover_crop_locked !== false,
       steps: (steps ?? []).filter(s => s.day_id === d.id).map(dbStepToLocal)
     })),
     budget: (budget ?? []).map(dbBudgetToLocal),
@@ -226,8 +230,32 @@ export async function saveDayCover(dayId, photo) {
       cover_image_alt: value.alt || '',
       cover_photographer_name: value.photographer || '',
       cover_photographer_url: value.photographerUrl || '',
-      cover_source_url: value.sourceUrl || ''
+      cover_source_url: value.sourceUrl || '',
+      cover_position_y: 50,
+      cover_crop_locked: true
     })
+    .eq('id', dayId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function updateDayCoverCrop(dayId, patch = {}) {
+  const row = {};
+
+  if (patch.positionY !== undefined) {
+    row.cover_position_y = Math.max(0, Math.min(100, Math.round(Number(patch.positionY))));
+  }
+
+  if (patch.locked !== undefined) {
+    row.cover_crop_locked = !!patch.locked;
+  }
+
+  const { data, error } = await sb
+    .from('trip_days')
+    .update(row)
     .eq('id', dayId)
     .select()
     .single();
@@ -1055,6 +1083,7 @@ window.SB = {
   updateTrip,
   searchTripCoverPhotos,
   saveDayCover,
+  updateDayCoverCrop,
   updateDay,
   deleteTrip,
 

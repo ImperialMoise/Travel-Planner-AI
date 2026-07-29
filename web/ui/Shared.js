@@ -15,6 +15,8 @@ const SHARED_ICONS = {
   bed:     '<path d="M3 19v-8a2 2 0 0 1 2-2h8.5a4.5 4.5 0 0 1 4.5 4.5V19M3 14.5h18M3 19v1.5M21 16.5V20.5"/><circle cx="7.6" cy="12" r="1.4"/>',
   fork:    '<path d="M6.5 3v6.5a2 2 0 0 0 4 0V3M8.5 3v18M16.5 3c-1.6 0-2.6 2.1-2.6 5.2s1 4.3 2.6 4.3M16.5 3v18"/>',
   camera:  '<rect x="3" y="7" width="18" height="12.5" rx="2.5"/><path d="M8.6 7 10 4.5h4L15.4 7"/><circle cx="12" cy="13.2" r="3.2"/>',
+  lock:    '<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><path d="M12 14v3"/>',
+  unlock:  '<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M16 10V7a4 4 0 0 0-7-2.6"/><path d="M12 14v3"/>',
   pin:     '<path d="M12 21.5s6.5-5.8 6.5-11A6.5 6.5 0 0 0 5.5 10.5c0 5.2 6.5 11 6.5 11z"/><circle cx="12" cy="10.2" r="2.4"/>',
   map:     '<path d="M9 4 3 6.6v13.4L9 17.4l6 2.6 6-2.6V4l-6 2.6L9 4z"/><path d="M9 4v13.4M15 6.6V20"/>',
   users:   '<circle cx="9" cy="8" r="3.1"/><path d="M2.8 20a6.2 6.2 0 0 1 12.4 0"/><path d="M16 5.4a3.1 3.1 0 0 1 0 6M21.2 20a6.2 6.2 0 0 0-4.6-6"/>',

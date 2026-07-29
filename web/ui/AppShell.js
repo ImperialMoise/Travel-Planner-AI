@@ -159,15 +159,15 @@
     filter:brightness(.92);
   }
 
-  .topbar-brand-suffix{
-    font-family:inherit;
-    font-size:12px;
-    font-style:normal;
-    font-weight:900;
-    letter-spacing:.09em;
-    text-transform:uppercase;
-    color:var(--muted);
-  }
+.topbar-brand-suffix{
+  font-family:inherit;
+  font-size:inherit;
+  font-style:inherit;
+  font-weight:inherit;
+  letter-spacing:0;
+  text-transform:none;
+  color:inherit;
+}
 
   .topbar.compact .topbar-brand{
     font-size:22px;
@@ -326,7 +326,7 @@
     position:relative;
     display:flex;
     align-items:center;
-    gap:7px;
+    gap:5px;
     padding:4px 6px 4px 8px;
     border:1px solid var(--outline-variant);
     border-radius:9px;

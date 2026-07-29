@@ -718,7 +718,7 @@
       flex-direction:column;
     }
   }
-  
+
   @media(max-width:1180px){
     .atelier-v2-body{
       grid-template-columns:minmax(0,1fr);
@@ -1305,8 +1305,9 @@
       selectedDayIndex = 0,
       pendingEditStepId
     } = Store.useStore(function select(state) {
-      return {
+return {
         trip: state.trip,
+        user: state.user,
         selectedDayIndex: state.selectedDayIndex || 0,
         pendingEditStepId: state.pendingEditStepId
       };

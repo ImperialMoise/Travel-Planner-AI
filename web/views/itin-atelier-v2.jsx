@@ -1139,15 +1139,15 @@
     );
   }
 
-    function TripCoverPickerModal({ trip, onClose, onSaved }) {
-    const [query, setQuery] = React.useState(trip?.name || '');
+    function TripCoverPickerModal({ tripId, tripName, day, onClose, onSaved }) {
+    const [query, setQuery] = React.useState(tripName || day?.title || '');
     const [photos, setPhotos] = React.useState([]);
     const [loading, setLoading] = React.useState(false);
     const [saving, setSaving] = React.useState(false);
     const [errorMessage, setErrorMessage] = React.useState('');
 
     React.useEffect(function loadInitialPhotos() {
-      searchPhotos(trip?.name || '');
+      searchPhotos(tripName || day?.title || '');
     }, []);
 
     async function searchPhotos(nextQuery) {
@@ -1162,7 +1162,7 @@
       setErrorMessage('');
 
       try {
-        const results = await window.SB.searchTripCoverPhotos(trip.id, value);
+        const results = await window.SB.searchTripCoverPhotos(tripId, value);
         setPhotos(results);
       } catch (error) {
         setPhotos([]);
@@ -1178,9 +1178,9 @@
       setSaving(true);
 
       try {
-        await window.SB.saveTripCover(trip.id, photo);
+        await window.SB.saveDayCover(day.id, photo);
         await onSaved();
-        Store.showToast('Photo de couverture enregistrée');
+        Store.showToast('Photo de cette journée enregistrée');
         onClose();
       } catch (error) {
         setErrorMessage(error.message || 'Enregistrement impossible.');
@@ -1190,14 +1190,14 @@
     }
 
     async function removePhoto() {
-      if (saving || !window.confirm('Retirer la photo de couverture ?')) return;
+      if (saving || !window.confirm('Retirer la photo de cette journée ?')) return;
 
       setSaving(true);
 
       try {
-        await window.SB.saveTripCover(trip.id, null);
+        await window.SB.saveDayCover(day.id, null);
         await onSaved();
-        Store.showToast('Photo de couverture retirée');
+        Store.showToast('Photo retirée');
         onClose();
       } catch (error) {
         setErrorMessage(error.message || 'Suppression impossible.');
@@ -1208,23 +1208,14 @@
 
     return ReactDOM.createPortal(
       <div className="atelier-v2-modal-backdrop" onClick={saving ? undefined : onClose}>
-        <div
-          className="atelier-v2-modal atelier-v2-cover-modal"
-          onClick={event => event.stopPropagation()}
-        >
+        <div className="atelier-v2-modal atelier-v2-cover-modal" onClick={event => event.stopPropagation()}>
           <div className="atelier-v2-modal-head">
             <div>
-              <div className="atelier-v2-kicker">Couverture du voyage</div>
+              <div className="atelier-v2-kicker">Photo de la journée</div>
               <div className="atelier-v2-cover-modal-title">Choisir une photo</div>
             </div>
 
-            <button
-              type="button"
-              className="atelier-v2-btn"
-              onClick={onClose}
-              disabled={saving}
-              aria-label="Fermer"
-            >
+            <button type="button" className="atelier-v2-btn" onClick={onClose} disabled={saving}>
               <Icon name="x" size={16} />
             </button>
           </div>
@@ -1241,7 +1232,7 @@
                 className="atelier-v2-input"
                 value={query}
                 onChange={event => setQuery(event.target.value)}
-                placeholder="Nouvelle-Zélande, fjords, Tokyo de nuit..."
+                placeholder="Narbonne, plage, musée, fjords..."
               />
 
               <button type="submit" className="atelier-v2-btn primary" disabled={loading || saving}>
@@ -1249,9 +1240,7 @@
               </button>
             </form>
 
-            {errorMessage && (
-              <div className="atelier-v2-cover-error">{errorMessage}</div>
-            )}
+            {errorMessage && <div className="atelier-v2-cover-error">{errorMessage}</div>}
 
             <div className="atelier-v2-cover-grid">
               {photos.map(photo => (
@@ -1274,11 +1263,11 @@
             {!loading && !photos.length && !errorMessage && (
               <div className="atelier-v2-cover-empty">
                 <Icon name="camera" size={22} />
-                Aucune photo trouvée pour cette recherche.
+                Aucune photo trouvée.
               </div>
             )}
 
-            {trip.coverImageUrl && (
+            {day.coverImageUrl && (
               <button
                 type="button"
                 className="atelier-v2-btn danger"
@@ -1286,7 +1275,7 @@
                 disabled={saving}
                 style={{ marginTop: 18 }}
               >
-                Retirer la couverture
+                Retirer la photo
               </button>
             )}
           </div>
@@ -1514,7 +1503,7 @@ return {
     const dayTitle = getDisplayDayTitle(day);
     const dayDate = formatDayDate(day.dateISO);
     const importantCount = allSteps.filter(stepImportant).length;
-    const hasTripCover = Boolean(String(trip.coverImageUrl || '').trim());
+    const hasDayCover = Boolean(String(day.coverImageUrl || '').trim());
     const isTripOwner = Boolean(
       user &&
       trip.ownerId &&
@@ -1526,12 +1515,12 @@ return {
         <div className="atelier-v2-main">
 
           {/* ── Hero ── */}
-          <div className={'atelier-v2-hero' + (hasTripCover ? ' has-cover' : '')}>
-            {hasTripCover && (
+          <div className={'atelier-v2-hero' + (hasDayCover ? ' has-cover' : '')}>
+            {hasDayCover && (
               <img
                 className="atelier-v2-hero-img"
-                src={trip.coverImageUrl}
-                alt={trip.coverImageAlt || 'Photo de couverture du voyage'}
+                src={day.coverImageUrl}
+                alt={day.coverImageAlt || 'Photo de couverture du voyage'}
               />
             )}
 
@@ -1581,7 +1570,6 @@ return {
                   Modifier
                 </button>
 
-                {isTripOwner && (
                   <button
                     type="button"
                     className="atelier-v2-hero-btn"
@@ -1590,18 +1578,17 @@ return {
                     <Icon name="camera" size={14} />
                     Changer la photo
                   </button>
-                )}
               </div>
             </div>
 
-            {hasTripCover && trip.coverSourceUrl && (
+            {hasDayCover && day.coverSourceUrl && (
               <a
                 className="atelier-v2-hero-credit"
-                href={trip.coverSourceUrl}
+                href={day.coverSourceUrl}
                 target="_blank"
                 rel="noreferrer"
               >
-                Photo par {trip.coverPhotographerName || 'Pexels'} via Pexels
+                Photo par {day.coverPhotographerName || 'Pexels'} via Pexels
               </a>
             )}
           </div>
@@ -1742,7 +1729,9 @@ return {
 
                 {coverPickerOpen && (
           <TripCoverPickerModal
-            trip={trip}
+  tripId={trip.id}
+  tripName={trip.name}
+  day={day}
             onClose={() => setCoverPickerOpen(false)}
             onSaved={reloadTrip}
           />

@@ -168,6 +168,11 @@ export async function loadTrip(tripId) {
       dateLabel: d.date_label || '',
       dateISO: d.date_iso,
       todo: Array.isArray(d.todo) ? d.todo : [],
+      coverImageUrl: d.cover_image_url || '',
+      coverImageAlt: d.cover_image_alt || '',
+      coverPhotographerName: d.cover_photographer_name || '',
+      coverPhotographerUrl: d.cover_photographer_url || '',
+      coverSourceUrl: d.cover_source_url || '',
       steps: (steps ?? []).filter(s => s.day_id === d.id).map(dbStepToLocal)
     })),
     budget: (budget ?? []).map(dbBudgetToLocal),
@@ -211,11 +216,11 @@ export async function searchTripCoverPhotos(tripId, query) {
   return data?.results || [];
 }
 
-export async function saveTripCover(tripId, photo) {
+export async function saveDayCover(dayId, photo) {
   const value = photo || {};
 
   const { data, error } = await sb
-    .from('trips')
+    .from('trip_days')
     .update({
       cover_image_url: value.imageUrl || null,
       cover_image_alt: value.alt || '',
@@ -223,7 +228,7 @@ export async function saveTripCover(tripId, photo) {
       cover_photographer_url: value.photographerUrl || '',
       cover_source_url: value.sourceUrl || ''
     })
-    .eq('id', tripId)
+    .eq('id', dayId)
     .select()
     .single();
 
@@ -1049,7 +1054,7 @@ window.SB = {
   loadTrip,
   updateTrip,
   searchTripCoverPhotos,
-  saveTripCover,
+  saveDayCover,
   updateDay,
   deleteTrip,
 

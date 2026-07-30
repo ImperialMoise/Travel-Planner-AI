@@ -502,6 +502,7 @@ const stepFieldSets = {
 
 let selectedStepCategory = 'transport';
 let editingStepDraft = null;
+let activeActivityDetail = null;
 let mapStepDraft = null;
 let transportStopoverUid = 0;
 
@@ -3461,7 +3462,7 @@ function renderItinerary() {
 
         <section class="timeline" aria-label="Programme de la journée">
           ${timelineSteps.map((step, stepIndex) => `
-            <article class="timeline-item ${step.type === 'Activité' ? 'clickable' : ''}" ${step.type === 'Activité' ? 'data-action="activity-detail" tabindex="0" role="button" aria-label="Ouvrir le détail de Sanctuaire Meiji"' : ''}>
+            <article class="timeline-item ${step.type === 'Activité' ? 'clickable' : ''}" ${step.type === 'Activité' ? `data-action="activity-detail" data-step-index="${stepIndex}" tabindex="0" role="button" aria-label="Ouvrir le détail de ${escapeHtml(step.title)}"` : ''}>
               <span class="timeline-pin ${step.tone}">
                 <span class="material-symbols-outlined" aria-hidden="true">${step.icon}</span>
               </span>
@@ -3512,28 +3513,43 @@ function renderItinerary() {
 
 
 function renderActivityDetail() {
+  const detail = activeActivityDetail;
+
+  if (!detail) {
+    navigate('itinerary');
+    return;
+  }
+
+  const step = detail.rawStep || {};
+  const title = detail.title || getStepDisplayTitle(step);
+  const type = detail.type || 'Activité';
+  const time = detail.time || step.time || 'À préciser';
+  const duration = step.dureeEstimee || step.duree || 'À préciser';
+  const location = step.lieu || 'Lieu à préciser';
+  const note = step.note || 'Aucune note ajoutée pour cette activité.';
+  const canShowOnMap = Number.isFinite(Number(step.lat)) && Number.isFinite(Number(step.lng));
+
   app.innerHTML = `
     <div class="mobile-shell activity-detail-shell">
       <header class="activity-detail-topbar glass-panel">
         <button type="button" data-action="itinerary" aria-label="Retour au programme">
           <span class="material-symbols-outlined" aria-hidden="true">arrow_back</span>
         </button>
+
         <div>
-          <button type="button" aria-label="Modifier l'activité">
+          <button type="button" data-action="activity-edit" aria-label="Modifier l'activité">
             <span class="material-symbols-outlined" aria-hidden="true">edit</span>
-          </button>
-          <button type="button" aria-label="Plus d'options">
-            <span class="material-symbols-outlined" aria-hidden="true">more_vert</span>
           </button>
         </div>
       </header>
 
-      <section class="activity-hero" aria-label="Sanctuaire Meiji">
+      <section class="activity-hero" aria-label="${escapeHtml(title)}">
         <div class="activity-hero-image" aria-hidden="true"></div>
         <div class="activity-hero-overlay" aria-hidden="true"></div>
+
         <div class="activity-hero-content">
-          <span class="kicker">Activité Culturelle</span>
-          <h1>Sanctuaire Meiji</h1>
+          <span class="kicker">${escapeHtml(type)}</span>
+          <h1>${escapeHtml(title)}</h1>
         </div>
       </section>
 
@@ -3541,16 +3557,19 @@ function renderActivityDetail() {
         <section class="activity-info-grid" aria-label="Informations clés">
           <article class="activity-info-card">
             <span class="activity-info-icon material-symbols-outlined" aria-hidden="true">schedule</span>
+
             <div>
               <span class="kicker">Heure</span>
-              <strong>10:00</strong>
+              <strong>${escapeHtml(time)}</strong>
             </div>
           </article>
+
           <article class="activity-info-card">
             <span class="activity-info-icon material-symbols-outlined" aria-hidden="true">hourglass_top</span>
+
             <div>
               <span class="kicker">Durée</span>
-              <strong>2 heures</strong>
+              <strong>${escapeHtml(duration)}</strong>
             </div>
           </article>
         </section>
@@ -3560,12 +3579,14 @@ function renderActivityDetail() {
             <span class="material-symbols-outlined" aria-hidden="true">location_on</span>
             <span>Lieu</span>
           </h2>
+
           <div class="activity-location-card">
             <div>
-              <strong>Shibuya, Tokyo</strong>
-              <p>1-1 Yoyogikamizonocho</p>
+              <strong>${escapeHtml(location)}</strong>
+              <p>${canShowOnMap ? 'Localisé sur la carte du voyage.' : 'Ajoute une localisation pour l’afficher sur la carte.'}</p>
             </div>
-            <button type="button" data-action="map">
+
+            <button type="button" data-action="activity-show-on-map">
               <span>Voir sur la carte</span>
               <span class="material-symbols-outlined" aria-hidden="true">map</span>
             </button>
@@ -3575,23 +3596,13 @@ function renderActivityDetail() {
         <section class="activity-section" aria-labelledby="activity-notes-title">
           <h2 id="activity-notes-title">
             <span class="material-symbols-outlined" aria-hidden="true">edit_note</span>
-            <span>Notes de Voyage</span>
+            <span>Notes</span>
           </h2>
+
           <article class="activity-notes-card">
             <span class="quote-icon material-symbols-outlined" aria-hidden="true">format_quote</span>
-            <p>Arriver tôt, de préférence juste après l'ouverture, pour éviter les foules massives et profiter du calme de la forêt qui entoure le sanctuaire. La marche depuis la gare de Harajuku à travers l'allée des cèdres est particulièrement apaisante.</p>
-            <p>Ne pas oublier d'observer les barils de saké (Kazaridaru) offerts au sanctuaire, situés le long du chemin principal. C'est un excellent point photo. Prévoir des chaussures confortables car les allées de gravier peuvent être fatigantes.</p>
-            <div class="activity-tags" aria-label="Tags">
-              <span>#calme</span>
-              <span>#photo</span>
-              <span>#culture</span>
-            </div>
+            <p>${escapeHtml(note)}</p>
           </article>
-        </section>
-
-        <section class="activity-gallery" aria-label="Galerie de l'activité">
-          <div class="activity-gallery-item sake" aria-label="Barils de saké"></div>
-          <div class="activity-gallery-item ema" aria-label="Plaques Ema"></div>
         </section>
       </main>
 
@@ -5712,7 +5723,7 @@ if (action === 'delete-trip') {
 
     return;
   }
-  
+
   if (action === 'add-step-to-program') {
     handleAddStepToProgram();
     return;
@@ -5833,6 +5844,55 @@ if (action === 'delete-expense-category') {
 if (action === 'delete-expense') {
   const button = event.target.closest('[data-group-index][data-item-index]');
   handleDeleteExpense(Number(button.dataset.groupIndex), Number(button.dataset.itemIndex));
+  return;
+}
+
+if (action === 'activity-detail') {
+  const stepIndex = Number(
+    event.target.closest('[data-step-index]')?.dataset.stepIndex
+  );
+
+  const step = getCurrentTimelineSteps()[stepIndex];
+
+  if (step) {
+    activeActivityDetail = step;
+    navigate('activity-detail');
+  }
+
+  return;
+}
+
+if (action === 'activity-edit') {
+  const step = activeActivityDetail;
+
+  if (!step) {
+    navigate('itinerary');
+    return;
+  }
+
+  editingStepDraft = {
+    ...step.rawStep,
+    id: step.id,
+    stepIndex: step.stepIndex,
+    dayIndex: step.dayIndex
+  };
+
+  selectedStepCategory = step.rawStep?.type || 'activity';
+  navigate('new-step');
+  return;
+}
+
+if (action === 'activity-show-on-map') {
+  const step = activeActivityDetail;
+
+  if (step) {
+    pendingMobileMapFocus = {
+      dayIndex: step.dayIndex ?? 0,
+      stepIndex: step.stepIndex ?? 0
+    };
+  }
+
+  navigate('map');
   return;
 }
 
@@ -6390,7 +6450,14 @@ window.addEventListener('keydown', event => {
   if (!detailTrigger) return;
 
   event.preventDefault();
-  navigate('activity-detail');
+
+  const stepIndex = Number(detailTrigger.dataset.stepIndex);
+  const step = getCurrentTimelineSteps()[stepIndex];
+
+  if (step) {
+    activeActivityDetail = step;
+    navigate('activity-detail');
+  }
 });
 
 window.addEventListener('change', event => {

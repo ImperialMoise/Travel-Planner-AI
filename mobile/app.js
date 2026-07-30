@@ -272,6 +272,9 @@ const expenseCategories = [
 ];
 
 let selectedExpenseCategory = 'meal';
+let budgetExpenseSort = localStorage.getItem('mobileBudgetExpenseSort') === 'category'
+  ? 'category'
+  : 'day';
 let selectedExpensePayer = 'me';
 let selectedExpenseSplit = 'equal';
 let isEditingExpenseCategories = false;
@@ -594,7 +597,7 @@ function updateMobilePlacesControl() {
     : 'Standard';
 
   control.querySelector('[data-mobile-places-usage]').textContent =
-    `Google ${used} / ${limit}`;
+    `${used} / ${limit}`;
 
   control.querySelector('[data-mobile-places-toggle]').setAttribute(
     'aria-pressed',
@@ -1675,6 +1678,7 @@ function renderMap() {
                 <div class="mobile-map-days-tool">
           <button class="mobile-map-days-fab glass-panel" type="button" data-action="map-days-toggle" aria-label="Choisir un jour">
             <span class="material-symbols-outlined" aria-hidden="true">${mobileMapDaysOpen ? 'close' : 'calendar_month'}</span>
+            <span class="mobile-map-tool-label">Jour</span>
           </button>
 
           <div class="mobile-map-days-menu glass-panel ${mobileMapDaysOpen ? 'open' : ''}">
@@ -1709,6 +1713,7 @@ function renderMap() {
                 <div class="mobile-map-actions-tool">
           <button class="mobile-map-actions-fab glass-panel" type="button" data-action="map-actions-toggle" aria-label="Ouvrir les outils">
             <span class="material-symbols-outlined" aria-hidden="true">${mobileMapActionsOpen ? 'close' : 'construction'}</span>
+            <span class="mobile-map-tool-label">Trajets</span>
           </button>
 
           <div class="mobile-map-actions-menu glass-panel ${mobileMapActionsOpen ? 'open' : ''}">
@@ -1731,6 +1736,7 @@ function renderMap() {
         <div class="mobile-map-tools">
           <button class="mobile-map-tools-fab glass-panel" type="button" data-action="map-tools-toggle" aria-label="Ouvrir les outils de carte">
             <span class="material-symbols-outlined" aria-hidden="true">${mobileMapToolsOpen ? 'close' : 'tune'}</span>
+            <span class="mobile-map-tool-label">Carte</span>
           </button>
 
           <div class="mobile-map-tools-menu glass-panel ${mobileMapToolsOpen ? 'open' : ''}">
@@ -3423,8 +3429,14 @@ function initMobileMapSearch() {
   const input = document.querySelector('#mobile-map-search');
   const results = document.querySelector('#mobile-map-results');
 
-  if (!input || !results) return;
-  ensureMobilePlacesControl(input);
+if (!input || !results) return;
+
+const searchPanel = input.closest('.mobile-map-search');
+ensureMobilePlacesControl(searchPanel);
+
+document
+  .querySelector('#mobile-places-control')
+  ?.classList.add('mobile-map-places-control');
 
   input.addEventListener('input', () => {
     clearTimeout(mobileMapSearchTimer);
@@ -4641,7 +4653,7 @@ function renderBudget() {
       const tone = item.tone || 'primary';
 
       return `
-        <article class="expense-card">
+        <article class="expense-card expense-card-${tone}">
           <div class="expense-left">
             <span class="expense-icon ${tone}" aria-hidden="true">
               <span class="material-symbols-outlined">${iconName}</span>
@@ -4705,6 +4717,28 @@ function renderBudget() {
           <span class="material-symbols-outlined">add_circle</span>
           <span>Ajouter une dépense</span>
         </button>
+
+        <div class="budget-sort-control" role="group" aria-label="Classer les dépenses">
+  <button
+    type="button"
+    class="${budgetExpenseSort === 'day' ? 'active' : ''}"
+    data-action="budget-sort"
+    data-budget-sort="day"
+  >
+    <span class="material-symbols-outlined">calendar_month</span>
+    Par jour
+  </button>
+
+  <button
+    type="button"
+    class="${budgetExpenseSort === 'category' ? 'active' : ''}"
+    data-action="budget-sort"
+    data-budget-sort="category"
+  >
+    <span class="material-symbols-outlined">category</span>
+    Catégories
+  </button>
+</div>
 
         <div class="expense-list">
           ${groupsHtml || `
@@ -4785,29 +4819,70 @@ function getCurrentBudgetTotal() {
   return getCurrentBudgetItems().reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
 }
 
-function getBudgetGroupsForDisplay() {
-  if (activeTrip?.budget?.length) {
-    return [
-      {
-        group: 'Aujourd’hui',
-        items: getCurrentBudgetItems().map(item => ({
-          ...item,
-          amountLabel: `- ${formatEuroAmount(item.amount)}`,
-          icon: getBudgetCategoryIcon(item.cat),
-          tone: 'primary'
-        }))
-      }
-    ];
+function formatBudgetGroupDate(value) {
+  const date = value ? new Date(value) : null;
+
+  if (!date || Number.isNaN(date.getTime())) {
+    return 'Sans date';
   }
 
-  return expenses.map(group => ({
-    ...group,
-    items: group.items.map(item => ({
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+
+  const sameDay = (first, second) =>
+    first.getFullYear() === second.getFullYear() &&
+    first.getMonth() === second.getMonth() &&
+    first.getDate() === second.getDate();
+
+  if (sameDay(date, today)) return "Aujourd'hui";
+  if (sameDay(date, yesterday)) return 'Hier';
+
+  return date.toLocaleDateString('fr-FR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long'
+  });
+}
+
+function getBudgetGroupsForDisplay() {
+  const items = getCurrentBudgetItems()
+    .map(item => ({
       ...item,
-      amountLabel: item.amount,
-      synced: false
+      amountLabel: `- ${formatEuroAmount(item.amount)}`,
+      icon: item.icon || getBudgetCategoryIcon(item.cat || item.title || ''),
+      tone: getBudgetCategoryTone(item.cat || item.title || '')
     }))
-  }));
+    .sort((first, second) =>
+      new Date(second.createdAt || 0).getTime() -
+      new Date(first.createdAt || 0).getTime()
+    );
+
+  const groups = new Map();
+
+  items.forEach(item => {
+    const date = item.createdAt ? new Date(item.createdAt) : null;
+    const key = budgetExpenseSort === 'category'
+      ? String(item.cat || 'Autres')
+      : date && !Number.isNaN(date.getTime())
+        ? date.toISOString().slice(0, 10)
+        : 'unknown';
+
+    if (!groups.has(key)) {
+      groups.set(key, {
+        group: budgetExpenseSort === 'category'
+          ? String(item.cat || 'Autres')
+          : formatBudgetGroupDate(item.createdAt),
+        items: []
+      });
+    }
+
+    groups.get(key).items.push(item);
+  });
+
+  return Array.from(groups.values()).sort((first, second) =>
+    first.group.localeCompare(second.group, 'fr')
+  );
 }
 
 function getCustomExpenseCategories() {
@@ -5546,8 +5621,30 @@ ${splitMoreButtonHtml}
   `;
 }
 
-function getBudgetCategoryTone(index) {
-  return ['primary', 'tertiary', 'accent', 'neutral'][index % 4];
+function getBudgetCategoryTone(category = '') {
+  const value = String(category).toLowerCase();
+
+  if (value.includes('transport') || value.includes('train') || value.includes('vol')) {
+    return 'transport';
+  }
+
+  if (value.includes('hôtel') || value.includes('hotel') || value.includes('logement')) {
+    return 'lodging';
+  }
+
+  if (value.includes('repas') || value.includes('restaurant') || value.includes('café')) {
+    return 'food';
+  }
+
+  if (value.includes('activité') || value.includes('activite')) {
+    return 'activity';
+  }
+
+  if (value.includes('achat')) {
+    return 'shopping';
+  }
+
+  return 'other';
 }
 
 function getBudgetCategoryBreakdown() {
@@ -5582,7 +5679,7 @@ function getBudgetCategoryBreakdown() {
     .sort((a, b) => b.amount - a.amount)
     .map((item, index) => ({
       ...item,
-      tone: getBudgetCategoryTone(index),
+      tone: getBudgetCategoryTone(item.label),
       percent: total ? Math.round((item.amount / total) * 100) : 0
     }));
 }
@@ -5636,24 +5733,24 @@ function renderBudgetOverview() {
   const total = getCurrentBudgetTotal();
   const formattedTotal = formatEuroAmount(total);
   const breakdown = getBudgetCategoryBreakdown();
-  const donutClasses = ['primary', 'tertiary', 'accent'];
   let donutOffset = 0;
 
-  const donutSegments = breakdown.slice(0, 3).map((category, index) => {
-    const dash = Math.max(0, Math.min(100, category.percent));
-    const segment = `
-      <circle
-        class="donut-segment ${donutClasses[index] || 'primary'}"
-        cx="18"
-        cy="18"
-        r="15.9155"
-        style="stroke-dasharray:${dash} 100; stroke-dashoffset:-${donutOffset};"
-      ></circle>
-    `;
+const donutSegments = breakdown.map(category => {
+  const dash = Math.max(0, Math.min(100, category.percent));
 
-    donutOffset += dash;
-    return segment;
-  }).join('');
+  const segment = `
+    <circle
+      class="donut-segment ${category.tone}"
+      cx="18"
+      cy="18"
+      r="15.9155"
+      style="stroke-dasharray:${dash} 100; stroke-dashoffset:-${donutOffset};"
+    ></circle>
+  `;
+
+  donutOffset += dash;
+  return segment;
+}).join('');
 
   const mainCategory = breakdown[0];
 
@@ -5727,7 +5824,7 @@ function renderBudgetOverview() {
 
 function renderBudgetBalance() {
   const peopleBalances = getBudgetPeopleBalanceData();
-  const breakdown = getBudgetCategoryBreakdown().slice(0, 3);
+  const breakdown = getBudgetCategoryBreakdown();
   const debtors = peopleBalances.filter(person => person.balance < -0.01).sort((a, b) => a.balance - b.balance);
   const creditors = peopleBalances.filter(person => person.balance > 0.01).sort((a, b) => b.balance - a.balance);
   const debtor = debtors[0];
@@ -5766,13 +5863,13 @@ function renderBudgetBalance() {
 
                   <div class="balance-mini-lines">
                     ${breakdown.length ? breakdown.map(category => `
-                      <div class="balance-mini-line">
+                      <div class="balance-mini-line ${category.tone}">
                         <span class="material-symbols-outlined" aria-hidden="true">${category.icon}</span>
                         <div><i style="width:${category.percent}%"></i></div>
                         <small>${category.percent}%</small>
                       </div>
                     `).join('') : `
-                      <div class="balance-mini-line">
+                      <div class="balance-mini-line ${category.tone}">
                         <span class="material-symbols-outlined" aria-hidden="true">receipt_long</span>
                         <div><i style="width:0%"></i></div>
                         <small>0%</small>
@@ -6871,6 +6968,18 @@ if (action === 'edit-budget-person') {
 if (action === 'delete-budget-person') {
   const personId = event.target.closest('[data-person-id]')?.dataset.personId;
   if (personId) handleDeleteBudgetPerson(personId);
+  return;
+}
+
+if (action === 'budget-sort') {
+  const sort = event.target.closest('[data-budget-sort]')?.dataset.budgetSort;
+
+  if (sort === 'day' || sort === 'category') {
+    budgetExpenseSort = sort;
+    localStorage.setItem('mobileBudgetExpenseSort', sort);
+    renderBudget();
+  }
+
   return;
 }
 

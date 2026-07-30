@@ -1079,6 +1079,7 @@ function dbStepToLocal(s) {
 function dbBudgetToLocal(b) {
   return {
     id: b.id,
+    createdAt: b.created_at || null,
     stepId: b.step_id,
     cat: b.cat,
     desc: b.description,

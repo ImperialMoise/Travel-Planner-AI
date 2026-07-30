@@ -9934,3 +9934,287 @@ button {
     transform: scale(1.05);
   }
 }
+
+/* === Correctif final : page Carte mobile === */
+
+.map-shell .mobile-real-map-screen {
+  height: calc(100dvh - 64px - env(safe-area-inset-top, 0px));
+  min-height: calc(100dvh - 64px - env(safe-area-inset-top, 0px));
+  overflow: hidden;
+}
+
+/* Le panneau du voyage reste toujours au-dessus de la navigation du téléphone. */
+.map-shell .mobile-map-card {
+  position: fixed;
+  z-index: 30;
+  left: 12px;
+  right: 12px;
+  bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+  max-height: min(46dvh, 380px);
+}
+
+.map-shell .mobile-map-card.is-open {
+  max-height: min(52dvh, 440px);
+}
+
+.map-shell .mobile-map-place-card,
+.map-shell .mobile-map-focused-step-card {
+  position: fixed;
+  z-index: 35;
+  left: 12px;
+  right: 12px;
+  bottom: calc(88px + min(46dvh, 380px) + env(safe-area-inset-bottom, 0px));
+}
+
+/* Le choix Standard / Précis est sous la recherche, jamais à l'intérieur du champ. */
+.map-shell .mobile-map-places-control {
+  position: absolute !important;
+  z-index: 26;
+  top: calc(128px + env(safe-area-inset-top, 0px));
+  left: 12px;
+  right: auto;
+  width: auto;
+  margin: 0;
+  padding: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 999px;
+  background: rgba(254, 249, 239, 0.86);
+  box-shadow: 0 8px 22px rgba(45, 73, 63, 0.12);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.map-shell .mobile-map-places-control .mobile-places-caption {
+  display: none;
+}
+
+.map-shell .mobile-map-places-control .mobile-places-toggle {
+  min-height: 30px;
+  padding: 5px 8px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  box-shadow: none;
+}
+
+.map-shell .mobile-map-places-control .mobile-places-toggle.is-precise {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+
+.map-shell .mobile-map-places-control .mobile-places-usage {
+  padding-right: 3px;
+  color: var(--on-surface-variant);
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+
+.map-shell .mobile-map-places-control .mobile-places-help {
+  width: 26px;
+  height: 26px;
+  border: 0;
+  box-shadow: none;
+}
+
+/* Les trois actions deviennent une barre compacte et lisible. */
+.map-shell .mobile-map-days-tool,
+.map-shell .mobile-map-actions-tool,
+.map-shell .mobile-map-tools {
+  top: calc(128px + env(safe-area-inset-top, 0px));
+  z-index: 27;
+}
+
+.map-shell .mobile-map-days-tool {
+  right: 166px;
+}
+
+.map-shell .mobile-map-actions-tool {
+  right: 86px;
+}
+
+.map-shell .mobile-map-tools {
+  right: 12px;
+}
+
+.map-shell .mobile-map-days-fab,
+.map-shell .mobile-map-actions-fab,
+.map-shell .mobile-map-tools-fab {
+  width: auto;
+  min-width: 66px;
+  height: 38px;
+  padding: 0 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 12px;
+  background: rgba(254, 249, 239, 0.9);
+  box-shadow: 0 8px 22px rgba(45, 73, 63, 0.12);
+}
+
+.map-shell .mobile-map-actions-fab {
+  min-width: 74px;
+}
+
+.map-shell .mobile-map-tool-label {
+  font-size: 10px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.map-shell .mobile-map-days-fab .material-symbols-outlined,
+.map-shell .mobile-map-actions-fab .material-symbols-outlined,
+.map-shell .mobile-map-tools-fab .material-symbols-outlined {
+  font-size: 18px;
+}
+
+@media (max-width: 360px) {
+  .map-shell .mobile-map-days-tool {
+    right: 158px;
+  }
+
+  .map-shell .mobile-map-actions-tool {
+    right: 82px;
+  }
+
+  .map-shell .mobile-map-tools {
+    right: 8px;
+  }
+
+  .map-shell .mobile-map-days-fab,
+  .map-shell .mobile-map-actions-fab,
+  .map-shell .mobile-map-tools-fab {
+    min-width: 60px;
+    padding: 0 7px;
+  }
+
+  .map-shell .mobile-map-actions-fab {
+    min-width: 70px;
+  }
+
+  .map-shell .mobile-map-tool-label {
+    font-size: 9px;
+  }
+}
+
+/* === Budget mobile : couleurs et cohérence === */
+
+.budget-main,
+.budget-overview-main,
+.budget-balance-main {
+  padding: 16px 18px 112px;
+  gap: 18px;
+}
+
+.budget-main .seg-control,
+.budget-overview-main .seg-control,
+.budget-balance-main .seg-control {
+  margin: 0;
+}
+
+.donut-segment {
+  animation: none !important;
+}
+
+.donut-segment.transport { stroke: #a56e16; }
+.donut-segment.lodging { stroke: #2f8374; }
+.donut-segment.food { stroke: #c95d47; }
+.donut-segment.activity { stroke: #816187; }
+.donut-segment.shopping { stroke: #3e728e; }
+.donut-segment.other { stroke: #737066; }
+
+.budget-category-icon.transport,
+.expense-icon.transport {
+  background: rgba(165, 110, 22, 0.14);
+  color: #a56e16;
+}
+
+.budget-category-icon.lodging,
+.expense-icon.lodging {
+  background: rgba(47, 131, 116, 0.14);
+  color: #2f8374;
+}
+
+.budget-category-icon.food,
+.expense-icon.food {
+  background: rgba(201, 93, 71, 0.14);
+  color: #c95d47;
+}
+
+.budget-category-icon.activity,
+.expense-icon.activity {
+  background: rgba(129, 97, 135, 0.14);
+  color: #816187;
+}
+
+.budget-category-icon.shopping,
+.expense-icon.shopping {
+  background: rgba(62, 114, 142, 0.14);
+  color: #3e728e;
+}
+
+.budget-category-icon.other,
+.expense-icon.other {
+  background: rgba(115, 112, 102, 0.14);
+  color: #737066;
+}
+
+.expense-card.transport { border-left: 4px solid #a56e16; }
+.expense-card.lodging { border-left: 4px solid #2f8374; }
+.expense-card.food { border-left: 4px solid #c95d47; }
+.expense-card.activity { border-left: 4px solid #816187; }
+.expense-card.shopping { border-left: 4px solid #3e728e; }
+.expense-card.other { border-left: 4px solid #737066; }
+
+.balance-mini-line.transport .material-symbols-outlined,
+.balance-mini-line.transport i { color: #a56e16; background: #a56e16; }
+
+.balance-mini-line.lodging .material-symbols-outlined,
+.balance-mini-line.lodging i { color: #2f8374; background: #2f8374; }
+
+.balance-mini-line.food .material-symbols-outlined,
+.balance-mini-line.food i { color: #c95d47; background: #c95d47; }
+
+.balance-mini-line.activity .material-symbols-outlined,
+.balance-mini-line.activity i { color: #816187; background: #816187; }
+
+.balance-mini-line.shopping .material-symbols-outlined,
+.balance-mini-line.shopping i { color: #3e728e; background: #3e728e; }
+
+.balance-mini-line.other .material-symbols-outlined,
+.balance-mini-line.other i { color: #737066; background: #737066; }
+
+.budget-sort-control {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 4px;
+  border: 1px solid var(--faint-border);
+  border-radius: 14px;
+  background: var(--surface-container);
+}
+
+.budget-sort-control button {
+  min-height: 38px;
+  border: 0;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: transparent;
+  color: var(--on-surface-variant);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.budget-sort-control button.active {
+  background: var(--surface-container-lowest);
+  color: var(--primary);
+  box-shadow: var(--shadow-card);
+}
+
+.budget-sort-control .material-symbols-outlined {
+  font-size: 18px;
+}

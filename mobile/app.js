@@ -11,6 +11,9 @@ let showAllTrips = false;
 let mobileSupabaseReady = false;
 let mobileSupabaseError = '';
 let mobileItineraryDayIndex = 0;
+let mobileShareMembers = [];
+let mobileShareActivity = [];
+let mobileShareLoading = false;
 
 function getMobileTheme() {
   return localStorage.getItem('mobileTheme') || 'light';
@@ -1111,21 +1114,41 @@ function getActiveTripDayForNewStep() {
 }
 
 function topbar() {
+  const personalPage = [
+    '#account',
+    '#settings',
+    '#share'
+  ].includes(window.location.hash);
+
   return `
     <header class="topbar">
       <button
-  class="icon-button"
-  type="button"
-  data-action="trip-menu"
-  aria-label="Choisir un voyage"
->
+        class="icon-button"
+        type="button"
+        data-action="trip-menu"
+        aria-label="Choisir un voyage"
+      >
         <span class="material-symbols-outlined" aria-hidden="true">menu</span>
       </button>
-      <h1 class="topbar-title">
-  ${escapeHtml(activeTrip?.name || 'La Fabrique à Voyages')}
-</h1>
-      <button class="icon-button" type="button" data-action="account" aria-label="Ouvrir le profil">
-        <span class="material-symbols-outlined" aria-hidden="true">account_circle</span>
+
+      <button
+        class="topbar-title topbar-home-button"
+        type="button"
+        data-action="home"
+        aria-label="Retourner à l’accueil"
+      >
+        ${escapeHtml(activeTrip?.name || 'La Fabrique à Voyages')}
+      </button>
+
+      <button
+        class="icon-button"
+        type="button"
+        data-action="${personalPage ? 'home' : 'account'}"
+        aria-label="${personalPage ? 'Fermer' : 'Ouvrir le profil'}"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">
+          ${personalPage ? 'close' : 'account_circle'}
+        </span>
       </button>
     </header>
   `;
@@ -1194,6 +1217,14 @@ function openMobileTripMenu() {
           <span class="material-symbols-outlined">person</span>
           Mon compte
         </button>
+        <button
+  type="button"
+  data-action="share"
+  ${activeTrip?.id ? '' : 'disabled'}
+>
+  <span class="material-symbols-outlined">group</span>
+  Partage du voyage
+</button>
         <button type="button" data-action="settings">
   <span class="material-symbols-outlined">settings</span>
   Paramètres
@@ -3682,6 +3713,275 @@ function renderSettings() {
 
             <span class="material-symbols-outlined">chevron_right</span>
           </button>
+        </section>
+      </main>
+    </div>
+  `;
+}
+
+function formatMobileActivityDate(value) {
+  if (!value) return '';
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+
+  return date.toLocaleString('fr-FR', {
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
+function getMobileActivityDescription(activity) {
+  return (
+    activity?.description ||
+    activity?.summary ||
+    activity?.details ||
+    activity?.entity_label ||
+    activity?.action_label ||
+    'Modification du voyage'
+  );
+}
+
+async function renderShare() {
+  if (!mobileUser) {
+    navigate('auth');
+    return;
+  }
+
+  if (!activeTrip?.id) {
+    alert('Choisissez d’abord un voyage.');
+    navigate('home');
+    return;
+  }
+
+  mobileShareLoading = true;
+
+  app.innerHTML = `
+    <div class="mobile-shell share-shell">
+      ${topbar()}
+
+      <main class="mobile-personal-main">
+        <header class="mobile-personal-heading">
+          <span>Collaboration</span>
+          <h2>Partage</h2>
+          <p>Chargement des membres du voyage…</p>
+        </header>
+
+        <div class="mobile-share-loading">
+          <span class="material-symbols-outlined">group</span>
+          <span>Préparation de l’espace partagé</span>
+        </div>
+      </main>
+    </div>
+  `;
+
+  const [membersResult, activityResult] = await Promise.allSettled([
+    window.SB.listTripMembers(activeTrip.id),
+    window.SB.listTripActivity(activeTrip.id, 20)
+  ]);
+
+  mobileShareMembers =
+    membersResult.status === 'fulfilled'
+      ? membersResult.value
+      : [];
+
+  mobileShareActivity =
+    activityResult.status === 'fulfilled'
+      ? activityResult.value
+      : [];
+
+  mobileShareLoading = false;
+
+  if (window.location.hash !== '#share') return;
+
+  const tripSummary =
+    mobileTrips.find(trip => String(trip.id) === String(activeTrip.id)) || {};
+
+  const isOwner =
+    String(tripSummary.owner_id || '') === String(mobileUser.id || '');
+
+  const ownerName = isOwner
+    ? mobileUser?.user_metadata?.display_name ||
+      mobileUser?.email?.split('@')[0] ||
+      'Vous'
+    : 'Propriétaire du voyage';
+
+  app.innerHTML = `
+    <div class="mobile-shell share-shell">
+      ${topbar()}
+
+      <main class="mobile-personal-main">
+        <header class="mobile-personal-heading">
+          <span>Collaboration</span>
+          <h2>Partage</h2>
+          <p>Invitez et gérez les personnes qui participent.</p>
+        </header>
+
+        <nav class="mobile-personal-tabs mobile-personal-tabs-three">
+          <button type="button" data-action="account">
+            <span class="material-symbols-outlined">person</span>
+            Compte
+          </button>
+
+          <button type="button" data-action="settings">
+            <span class="material-symbols-outlined">settings</span>
+            Paramètres
+          </button>
+
+          <button type="button" class="active" data-action="share">
+            <span class="material-symbols-outlined">group</span>
+            Partage
+          </button>
+        </nav>
+
+        <label class="mobile-share-trip-picker">
+          <span>Voyage concerné</span>
+
+          <div>
+            <span class="material-symbols-outlined">map</span>
+
+            <select id="mobile-share-trip">
+              ${mobileTrips.map(trip => `
+                <option
+                  value="${trip.id}"
+                  ${String(trip.id) === String(activeTrip.id) ? 'selected' : ''}
+                >
+                  ${escapeHtml(trip.name || 'Voyage sans nom')}
+                </option>
+              `).join('')}
+            </select>
+
+            <span class="material-symbols-outlined">expand_more</span>
+          </div>
+        </label>
+
+        <section class="mobile-personal-card mobile-share-invite">
+          <header>
+            <span>Invitation</span>
+            <h3>Voyager à plusieurs</h3>
+          </header>
+
+          <p>
+            Créez un lien temporaire pour inviter une personne sur
+            « ${escapeHtml(activeTrip.name || 'ce voyage')} ».
+          </p>
+
+          <label>
+            <span>Droit accordé</span>
+
+            <select id="mobile-share-role">
+              <option value="editor">Peut modifier</option>
+              <option value="viewer">Lecture uniquement</option>
+            </select>
+          </label>
+
+          <button
+            class="mobile-personal-primary"
+            type="button"
+            data-action="create-trip-invite"
+          >
+            <span class="material-symbols-outlined">share</span>
+            Créer et copier le lien
+          </button>
+        </section>
+
+        <section class="mobile-personal-card">
+          <header>
+            <span>Membres</span>
+            <h3>Personnes qui participent</h3>
+          </header>
+
+          <div class="mobile-member-list">
+            <article class="mobile-member-row owner">
+              <span class="mobile-member-avatar">
+                ${escapeHtml(ownerName.slice(0, 1).toUpperCase())}
+              </span>
+
+              <span>
+                <strong>${escapeHtml(ownerName)}</strong>
+                <small>Propriétaire</small>
+              </span>
+
+              <span class="mobile-member-role">Propriétaire</span>
+            </article>
+
+            ${mobileShareMembers.map(member => `
+              <article class="mobile-member-row">
+                <span class="mobile-member-avatar">
+                  ${escapeHtml((member.name || member.email || 'M').slice(0, 1).toUpperCase())}
+                </span>
+
+                <span>
+                  <strong>${escapeHtml(member.name || 'Membre')}</strong>
+                  <small>${escapeHtml(member.email || '')}</small>
+                </span>
+
+                ${isOwner ? `
+                  <button
+                    type="button"
+                    data-action="remove-trip-member"
+                    data-member-id="${member.id}"
+                    aria-label="Retirer ce membre"
+                  >
+                    <span class="material-symbols-outlined">person_remove</span>
+                  </button>
+                ` : `
+                  <span class="mobile-member-role">
+                    ${member.role === 'viewer' ? 'Lecture' : 'Édition'}
+                  </span>
+                `}
+              </article>
+            `).join('')}
+
+            ${mobileShareMembers.length ? '' : `
+              <p class="mobile-share-empty">
+                Aucun autre membre n’a encore rejoint ce voyage.
+              </p>
+            `}
+          </div>
+        </section>
+
+        <section class="mobile-personal-card">
+          <header>
+            <span>Journal de suivi</span>
+            <h3>Modifications récentes</h3>
+          </header>
+
+          <div class="mobile-activity-list">
+            ${mobileShareActivity.length ? mobileShareActivity.map(activity => `
+              <article>
+                <span class="mobile-activity-dot"></span>
+
+                <div>
+                  <strong>
+                    ${escapeHtml(
+                      activity.actor_name ||
+                      activity.display_name ||
+                      activity.email ||
+                      'Un membre'
+                    )}
+                  </strong>
+
+                  <p>${escapeHtml(getMobileActivityDescription(activity))}</p>
+
+                  <time>
+                    ${escapeHtml(
+                      formatMobileActivityDate(
+                        activity.created_at ||
+                        activity.occurred_at
+                      )
+                    )}
+                  </time>
+                </div>
+              </article>
+            `).join('') : `
+              <p class="mobile-share-empty">
+                Aucune modification récente à afficher.
+              </p>
+            `}
+          </div>
         </section>
       </main>
     </div>
@@ -6188,7 +6488,7 @@ function navigate(route) {
   }
 }
 
-window.addEventListener('click', event => {
+window.addEventListener('click', async event => {
   const action = event.target.closest('[data-action]')?.dataset.action;
   if (!action) return;
 
@@ -6200,6 +6500,16 @@ window.addEventListener('click', event => {
 if (action === 'close-trip-menu') {
   document.querySelector('.mobile-trip-menu-backdrop')?.remove();
   return;
+}
+
+if ([
+  'home',
+  'account',
+  'settings',
+  'share',
+  'create-trip'
+].includes(action)) {
+  document.querySelector('.mobile-trip-menu-backdrop')?.remove();
 }
 
     if (action === 'doc-detail') {
@@ -6257,6 +6567,112 @@ if (action === 'close-trip-menu') {
   localStorage.setItem('places_search_mode', mobilePlacesMode);
   updateMobilePlacesControl();
   renderSettings();
+  return;
+}
+
+if (action === 'create-trip-invite') {
+  const button = event.target.closest(
+    '[data-action="create-trip-invite"]'
+  );
+
+  const roleSelect = document.querySelector(
+    '#mobile-share-role'
+  );
+
+  const role = roleSelect?.value || 'editor';
+
+  if (!activeTrip?.id) {
+    alert('Aucun voyage sélectionné.');
+    return;
+  }
+
+  if (!button) return;
+
+  button.disabled = true;
+
+  const originalContent = button.innerHTML;
+
+  button.innerHTML = `
+    <span class="material-symbols-outlined">progress_activity</span>
+    Création du lien…
+  `;
+
+  try {
+    const invitation = await window.SB.createTripInvite(
+      activeTrip.id,
+      role
+    );
+
+    if (!invitation?.url) {
+      throw new Error("Le lien d'invitation est vide");
+    }
+
+    try {
+      await navigator.clipboard.writeText(invitation.url);
+
+      alert(
+        'Le lien d’invitation a été copié. ' +
+        'Vous pouvez maintenant l’envoyer à la personne.'
+      );
+    } catch (clipboardError) {
+      prompt(
+        'La copie automatique est bloquée. Copiez ce lien :',
+        invitation.url
+      );
+    }
+  } catch (error) {
+    console.error('Create mobile invite error:', error);
+
+    alert(
+      'Impossible de créer le lien : ' +
+      (error.message || error)
+    );
+  } finally {
+    button.disabled = false;
+    button.innerHTML = originalContent;
+  }
+
+  return;
+}
+
+if (action === 'remove-trip-member') {
+  const memberButton = event.target.closest(
+    '[data-action="remove-trip-member"]'
+  );
+
+  const memberId = memberButton?.dataset.memberId;
+
+  if (!activeTrip?.id || !memberId) {
+    alert('Membre ou voyage introuvable.');
+    return;
+  }
+
+  const confirmed = confirm(
+    'Voulez-vous vraiment retirer cette personne du voyage ?'
+  );
+
+  if (!confirmed) return;
+
+  memberButton.disabled = true;
+
+  try {
+    await window.SB.removeTripMember(
+      activeTrip.id,
+      memberId
+    );
+
+    await renderShare();
+  } catch (error) {
+    console.error('Remove mobile member error:', error);
+
+    alert(
+      'Impossible de retirer cette personne : ' +
+      (error.message || error)
+    );
+
+    memberButton.disabled = false;
+  }
+
   return;
 }
 
@@ -7096,6 +7512,44 @@ window.addEventListener('change', event => {
 
   label.textContent = formatDateLabel(input.value, input.id === 'start-date' ? 'Sélectionner' : 'Optionnel');
   label.classList.toggle('muted', !input.value && input.id === 'end-date');
+});
+
+window.addEventListener('change', async event => {
+  const select = event.target;
+
+  if (select?.id !== 'mobile-share-trip') return;
+
+  const tripId = select.value;
+
+  if (!tripId) {
+    alert('Voyage introuvable.');
+    return;
+  }
+
+  if (!window.SB?.loadTrip) {
+    alert('La connexion aux voyages est indisponible.');
+    return;
+  }
+
+  select.disabled = true;
+
+  try {
+    activeTrip = await window.SB.loadTrip(tripId);
+    mobileItineraryDayIndex = 0;
+
+    window.location.hash = 'share';
+
+    await renderShare();
+  } catch (error) {
+    console.error('Mobile share trip change error:', error);
+
+    alert(
+      'Impossible de charger ce voyage : ' +
+      (error.message || error)
+    );
+
+    select.disabled = false;
+  }
 });
 
 initMobileData().then(() => {

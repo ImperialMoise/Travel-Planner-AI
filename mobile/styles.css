@@ -9653,3 +9653,255 @@ button {
   font-size: 10px;
   line-height: 1.45;
 }
+
+.mobile-trip-menu-backdrop {
+  background: #fffdf8;
+  backdrop-filter: none;
+}
+
+.mobile-trip-menu {
+  width: 100vw;
+  max-width: none;
+  height: 100dvh;
+  padding-bottom: env(safe-area-inset-bottom);
+  box-shadow: none;
+}
+
+.topbar-home-button {
+  display: block;
+  min-width: 0;
+  max-width: 240px;
+  overflow: hidden;
+  padding: 4px 8px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+@media (min-width: 600px) {
+  .mobile-trip-menu-backdrop {
+    background: rgba(30, 24, 18, 0.42);
+  }
+
+  .mobile-trip-menu {
+    width: min(88vw, 380px);
+    box-shadow: 18px 0 45px rgba(38, 27, 14, 0.2);
+  }
+}
+
+.mobile-personal-tabs-three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.mobile-personal-tabs-three button {
+  min-width: 0;
+  padding: 0 4px;
+  font-size: 10px;
+}
+
+.mobile-personal-tabs-three .material-symbols-outlined {
+  font-size: 16px;
+}
+
+.mobile-share-trip-picker {
+  display: block;
+  margin-bottom: 14px;
+}
+
+.mobile-share-trip-picker > span,
+.mobile-share-invite label > span {
+  display: block;
+  margin-bottom: 6px;
+  color: #735a37;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.mobile-share-trip-picker > div {
+  display: grid;
+  grid-template-columns: 25px minmax(0, 1fr) 20px;
+  align-items: center;
+  min-height: 48px;
+  padding: 0 12px;
+  border: 1px solid #dfd1bd;
+  border-radius: 7px;
+  background: #fff;
+}
+
+.mobile-share-trip-picker select,
+.mobile-share-invite select {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #4e3d27;
+  font-weight: 800;
+  appearance: none;
+}
+
+.mobile-share-invite > p {
+  color: #7e725f;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.mobile-share-invite label {
+  display: block;
+  margin: 14px 0;
+  padding: 11px;
+  border: 1px solid #e2d5c3;
+  border-radius: 7px;
+  background: #faf6ef;
+}
+
+.mobile-share-invite .mobile-personal-primary:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.mobile-member-list {
+  display: grid;
+  gap: 8px;
+}
+
+.mobile-member-row {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid #e6dac9;
+  border-radius: 7px;
+}
+
+.mobile-member-row.owner {
+  background: #faf4e9;
+}
+
+.mobile-member-avatar {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #eadcc6;
+  color: #845807;
+  font-family: Georgia, serif;
+  font-weight: 800;
+}
+
+.mobile-member-row strong,
+.mobile-member-row small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mobile-member-row small {
+  margin-top: 3px;
+  color: #8b7e6d;
+  font-size: 10px;
+}
+
+.mobile-member-row button {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 50%;
+  background: #f8ebe6;
+  color: #b64f38;
+}
+
+.mobile-member-row button:disabled {
+  opacity: 0.45;
+}
+
+.mobile-member-role {
+  color: #8a7658;
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.mobile-activity-list article {
+  position: relative;
+  display: grid;
+  grid-template-columns: 15px minmax(0, 1fr);
+  gap: 8px;
+  padding-bottom: 16px;
+}
+
+.mobile-activity-list article:not(:last-child)::before {
+  position: absolute;
+  top: 12px;
+  bottom: 0;
+  left: 4px;
+  width: 1px;
+  background: #dfd2bf;
+  content: "";
+}
+
+.mobile-activity-dot {
+  position: relative;
+  z-index: 1;
+  width: 9px;
+  height: 9px;
+  margin-top: 4px;
+  border-radius: 50%;
+  background: #76506f;
+}
+
+.mobile-activity-list strong {
+  font-size: 12px;
+}
+
+.mobile-activity-list p {
+  margin: 4px 0;
+  color: #706554;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.mobile-activity-list time {
+  color: #9a8e7e;
+  font-size: 9px;
+}
+
+.mobile-share-empty,
+.mobile-share-loading {
+  color: #887c6b;
+  font-size: 11px;
+  text-align: center;
+}
+
+.mobile-share-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 160px;
+}
+
+.mobile-share-loading .material-symbols-outlined {
+  animation: mobileSharePulse 1.2s ease-in-out infinite;
+}
+
+@keyframes mobileSharePulse {
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: scale(0.95);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+}

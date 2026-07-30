@@ -8869,3 +8869,379 @@ button {
   font-size: 12px;
   font-weight: 800;
 }
+
+.mobile-mode-switch {
+  position: sticky;
+  top: 0;
+  z-index: 45;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px;
+  width: calc(100% - 32px);
+  max-width: 360px;
+  margin: 8px auto 0;
+  padding: 3px;
+  border: 1px solid #e6dac8;
+  border-radius: 9px;
+  background: rgba(255, 253, 248, 0.96);
+  box-shadow: 0 5px 16px rgba(65, 42, 15, 0.08);
+  backdrop-filter: blur(12px);
+}
+
+.mobile-mode-switch button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 36px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #76654d;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.mobile-mode-switch button.active {
+  background: #926008;
+  color: #fff;
+  box-shadow: 0 3px 9px rgba(120, 75, 7, 0.2);
+}
+
+.mobile-mode-switch button.travel-active {
+  background: #76506f;
+}
+
+.mobile-mode-switch .material-symbols-outlined {
+  font-size: 17px;
+}
+
+.travel-mode-main {
+  padding: 14px 16px 110px;
+}
+
+.travel-day-navigation {
+  display: grid;
+  grid-template-columns: 38px 1fr 38px;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.travel-day-navigation button {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid #e3d5c2;
+  border-radius: 50%;
+  background: #fff;
+  color: #6d4c1d;
+}
+
+.travel-day-navigation button:disabled {
+  opacity: 0.3;
+}
+
+.travel-day-navigation div {
+  text-align: center;
+}
+
+.travel-day-navigation span {
+  display: block;
+  color: #927f63;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.travel-day-navigation strong {
+  display: block;
+  margin-top: 2px;
+  font-family: Georgia, serif;
+  font-size: 16px;
+}
+
+.travel-day-list,
+.travel-tools-list {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 2px 1px 10px;
+  scrollbar-width: none;
+  touch-action: pan-x;
+  -webkit-overflow-scrolling: touch;
+}
+
+.travel-day-list::-webkit-scrollbar,
+.travel-tools-list::-webkit-scrollbar {
+  display: none;
+}
+
+.travel-day-list button {
+  flex: 0 0 42px;
+  height: 34px;
+  border: 1px solid #e2d5c2;
+  border-radius: 17px;
+  background: #fff;
+  color: #746247;
+  font-weight: 800;
+}
+
+.travel-day-list button.active {
+  background: #76506f;
+  border-color: #76506f;
+  color: #fff;
+}
+
+.travel-mode-hero {
+  position: relative;
+  min-height: 190px;
+  overflow: hidden;
+  margin-top: 4px;
+  border-radius: 8px;
+  background: #ded6ca;
+}
+
+.travel-mode-hero img {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.travel-mode-hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(20, 15, 12, 0.08), rgba(20, 15, 12, 0.74));
+}
+
+.travel-mode-hero-copy {
+  position: absolute;
+  right: 18px;
+  bottom: 18px;
+  left: 18px;
+  color: #fff;
+}
+
+.travel-mode-hero-copy span,
+.travel-mode-hero-copy p {
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.travel-mode-hero-copy h2 {
+  margin: 5px 0;
+  font-family: Georgia, serif;
+  font-size: 27px;
+  line-height: 1.05;
+}
+
+.travel-next-step,
+.travel-later,
+.travel-tools,
+.travel-empty-day {
+  margin-top: 12px;
+  border: 1px solid #e4d6c3;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.travel-next-step,
+.travel-later,
+.travel-tools {
+  padding: 14px;
+}
+
+.travel-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.travel-section-heading > span {
+  color: #896b3f;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.travel-section-heading time,
+.travel-section-heading small {
+  color: #76506f;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.travel-next-step article {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 12px;
+}
+
+.travel-next-icon,
+.travel-later-icon {
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #f1e8db;
+  color: #8a5b0b;
+}
+
+.travel-next-icon {
+  width: 44px;
+  height: 44px;
+}
+
+.travel-next-copy > span {
+  color: #8a7656;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.travel-next-copy h3 {
+  margin: 3px 0 5px;
+  font-family: Georgia, serif;
+  font-size: 21px;
+}
+
+.travel-next-copy p {
+  margin: 0;
+  color: #756b5e;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.travel-next-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.travel-next-actions button {
+  min-height: 38px;
+  padding: 0 13px;
+  border: 1px solid #ded0bc;
+  border-radius: 6px;
+  background: #fff;
+  font-weight: 800;
+}
+
+.travel-next-actions button.primary {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-color: #76506f;
+  background: #76506f;
+  color: #fff;
+}
+
+.travel-later-list > button {
+  display: grid;
+  grid-template-columns: 42px 34px minmax(0, 1fr) 20px;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 12px 0;
+  border: 0;
+  border-top: 1px solid #eee4d7;
+  background: transparent;
+  text-align: left;
+}
+
+.travel-later-list > button:first-child {
+  border-top: 0;
+}
+
+.travel-later-list time {
+  color: #76506f;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.travel-later-icon {
+  width: 32px;
+  height: 32px;
+}
+
+.travel-later-icon .material-symbols-outlined {
+  font-size: 17px;
+}
+
+.travel-later-copy {
+  min-width: 0;
+}
+
+.travel-later-copy strong,
+.travel-later-copy small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.travel-later-copy strong {
+  font-size: 13px;
+}
+
+.travel-later-copy small {
+  margin-top: 3px;
+  color: #8a8073;
+  font-size: 10px;
+}
+
+.travel-tools-list button {
+  flex: 0 0 132px;
+  min-height: 94px;
+  padding: 12px;
+  border: 1px solid #e7dac8;
+  border-radius: 7px;
+  background: #faf6ef;
+  color: #614b2d;
+  text-align: left;
+}
+
+.travel-tools-list button > span {
+  font-size: 21px;
+}
+
+.travel-tools-list strong,
+.travel-tools-list small {
+  display: block;
+}
+
+.travel-tools-list strong {
+  margin-top: 9px;
+  font-size: 13px;
+}
+
+.travel-tools-list small {
+  margin-top: 3px;
+  color: #8b806f;
+  font-size: 10px;
+}
+
+.travel-empty-day {
+  padding: 26px 18px;
+  text-align: center;
+}
+
+.travel-empty-day > span {
+  color: #76506f;
+  font-size: 34px;
+}
+
+.travel-empty-day h3 {
+  margin: 8px 0 4px;
+  font-family: Georgia, serif;
+}
+
+.travel-empty-day p {
+  margin: 0;
+  color: #827666;
+  font-size: 12px;
+}

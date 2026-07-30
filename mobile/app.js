@@ -3616,7 +3616,19 @@ function renderItinerary() {
     <div class="mobile-shell itinerary-shell">
       ${topbar()}
 
-      <main class="itinerary-main">
+<nav class="mobile-mode-switch" aria-label="Mode de consultation">
+  <button type="button" class="active" data-action="itinerary">
+    <span class="material-symbols-outlined">edit_calendar</span>
+    Préparer
+  </button>
+
+  <button type="button" data-action="travel">
+    <span class="material-symbols-outlined">near_me</span>
+    Voyager
+  </button>
+</nav>
+
+<main class="itinerary-main">
         <section class="itinerary-hero" aria-label="Itinéraire du jour 6">
           <img src="https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1200&auto=format&fit=crop" alt="Paysage de montagnes verdoyantes" loading="lazy">
           <div class="itinerary-hero-overlay"></div>
@@ -3679,6 +3691,243 @@ function renderItinerary() {
   `;
 }
 
+function renderTravelMode() {
+  const days = activeTrip?.days || [];
+  const activeDay = getActiveItineraryDay();
+  const steps = getCurrentTimelineSteps();
+  const dayNumber = mobileItineraryDayIndex + 1;
+
+  const todayISO = new Date().toISOString().slice(0, 10);
+  const isToday = activeDay?.dateISO === todayISO;
+  const now = new Date();
+  const currentMinutes = (now.getHours() * 60) + now.getMinutes();
+
+  let nextStepIndex = 0;
+
+  if (isToday && steps.length) {
+    const foundIndex = steps.findIndex(step => {
+      const [hours, minutes] = String(step.time || '00:00')
+        .split(':')
+        .map(Number);
+
+      return ((hours * 60) + minutes) >= currentMinutes;
+    });
+
+    nextStepIndex = foundIndex >= 0 ? foundIndex : steps.length;
+  }
+
+  const nextStep = steps[nextStepIndex] || null;
+  const laterSteps = nextStep
+    ? steps.slice(nextStepIndex + 1)
+    : [];
+
+  const period = activeDay?.dateISO
+    ? formatDateLabel(activeDay.dateISO, '')
+    : activeDay?.dateLabel || `Jour ${dayNumber}`;
+
+  const title =
+    activeDay?.title ||
+    activeTrip?.name ||
+    'Votre voyage';
+
+  const heroImage =
+    activeDay?.coverUrl ||
+    activeDay?.cover_url ||
+    activeDay?.imageUrl ||
+    activeDay?.image_url ||
+    activeTrip?.coverUrl ||
+    activeTrip?.cover_url ||
+    'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1200&auto=format&fit=crop';
+
+  app.innerHTML = `
+    <div class="mobile-shell travel-mode-shell">
+      ${topbar()}
+
+      <nav class="mobile-mode-switch" aria-label="Mode de consultation">
+        <button type="button" data-action="itinerary">
+          <span class="material-symbols-outlined">edit_calendar</span>
+          Préparer
+        </button>
+
+        <button type="button" class="active travel-active" data-action="travel">
+          <span class="material-symbols-outlined">near_me</span>
+          Voyager
+        </button>
+      </nav>
+
+      <main class="travel-mode-main">
+        <section class="travel-day-navigation">
+          <button
+            type="button"
+            data-action="travel-previous-day"
+            aria-label="Journée précédente"
+            ${mobileItineraryDayIndex <= 0 ? 'disabled' : ''}
+          >
+            <span class="material-symbols-outlined">chevron_left</span>
+          </button>
+
+          <div>
+            <span>Jour ${dayNumber} sur ${days.length || 1}</span>
+            <strong>${escapeHtml(period)}</strong>
+          </div>
+
+          <button
+            type="button"
+            data-action="travel-next-day"
+            aria-label="Journée suivante"
+            ${mobileItineraryDayIndex >= days.length - 1 ? 'disabled' : ''}
+          >
+            <span class="material-symbols-outlined">chevron_right</span>
+          </button>
+        </section>
+
+        ${days.length > 1 ? `
+          <div class="travel-day-list" aria-label="Toutes les journées">
+            ${days.map((day, index) => `
+              <button
+                type="button"
+                class="${index === mobileItineraryDayIndex ? 'active' : ''}"
+                data-action="itinerary-day"
+                data-day-index="${index}"
+              >
+                J${index + 1}
+              </button>
+            `).join('')}
+          </div>
+        ` : ''}
+
+        <section class="travel-mode-hero">
+          <img src="${escapeHtml(heroImage)}" alt="" loading="eager">
+          <div class="travel-mode-hero-overlay"></div>
+
+          <div class="travel-mode-hero-copy">
+            <span>${isToday ? "Aujourd'hui" : escapeHtml(period)}</span>
+            <h2>${escapeHtml(title)}</h2>
+            <p>${steps.length} étape${steps.length > 1 ? 's' : ''} au programme</p>
+          </div>
+        </section>
+
+        ${nextStep ? `
+          <section class="travel-next-step">
+            <div class="travel-section-heading">
+              <span>Prochaine étape</span>
+              <time>${escapeHtml(nextStep.time)}</time>
+            </div>
+
+            <article>
+              <span class="travel-next-icon ${nextStep.tone}">
+                <span class="material-symbols-outlined">${nextStep.icon}</span>
+              </span>
+
+              <div class="travel-next-copy">
+                <span>${escapeHtml(nextStep.type)}</span>
+                <h3>${escapeHtml(nextStep.title)}</h3>
+                <p>${escapeHtml(nextStep.description)}</p>
+              </div>
+            </article>
+
+            <div class="travel-next-actions">
+              <button
+                type="button"
+                class="primary"
+                data-action="show-step-on-map"
+                data-step-index="${nextStepIndex}"
+              >
+                <span class="material-symbols-outlined">map</span>
+                Voir sur la carte
+              </button>
+
+              ${nextStep.type === 'Activité' ? `
+                <button
+                  type="button"
+                  data-action="activity-detail"
+                  data-step-index="${nextStepIndex}"
+                >
+                  Détails
+                </button>
+              ` : ''}
+            </div>
+          </section>
+        ` : `
+          <section class="travel-empty-day">
+            <span class="material-symbols-outlined">task_alt</span>
+            <h3>${steps.length ? 'Programme terminé' : 'Journée libre'}</h3>
+            <p>
+              ${steps.length
+                ? 'Toutes les étapes prévues pour cette journée sont passées.'
+                : 'Aucune étape n’est encore prévue pour cette journée.'}
+            </p>
+          </section>
+        `}
+
+        ${laterSteps.length ? `
+          <section class="travel-later">
+            <div class="travel-section-heading">
+              <span>Ensuite</span>
+              <small>${laterSteps.length} étape${laterSteps.length > 1 ? 's' : ''}</small>
+            </div>
+
+            <div class="travel-later-list">
+              ${laterSteps.map((step, offset) => {
+                const realIndex = nextStepIndex + offset + 1;
+
+                return `
+                  <button
+                    type="button"
+                    data-action="${step.type === 'Activité' ? 'activity-detail' : 'show-step-on-map'}"
+                    data-step-index="${realIndex}"
+                  >
+                    <time>${escapeHtml(step.time)}</time>
+
+                    <span class="travel-later-icon ${step.tone}">
+                      <span class="material-symbols-outlined">${step.icon}</span>
+                    </span>
+
+                    <span class="travel-later-copy">
+                      <strong>${escapeHtml(step.title)}</strong>
+                      <small>${escapeHtml(step.description)}</small>
+                    </span>
+
+                    <span class="material-symbols-outlined">chevron_right</span>
+                  </button>
+                `;
+              }).join('')}
+            </div>
+          </section>
+        ` : ''}
+
+        <section class="travel-tools">
+          <div class="travel-section-heading">
+            <span>Outils utiles</span>
+            <small>Accès rapide</small>
+          </div>
+
+          <div class="travel-tools-list">
+            <button type="button" data-action="map">
+              <span class="material-symbols-outlined">map</span>
+              <strong>Carte</strong>
+              <small>Lieux et trajets</small>
+            </button>
+
+            <button type="button" data-action="budget">
+              <span class="material-symbols-outlined">payments</span>
+              <strong>Budget</strong>
+              <small>Dépenses du voyage</small>
+            </button>
+
+            <button type="button" data-action="docs">
+              <span class="material-symbols-outlined">folder</span>
+              <strong>Documents</strong>
+              <small>Billets et réservations</small>
+            </button>
+          </div>
+        </section>
+      </main>
+
+      ${bottomNav('plan')}
+    </div>
+  `;
+}
 
 function renderActivityDetail() {
   const detail = activeActivityDetail;
@@ -5752,6 +6001,9 @@ function navigate(route) {
   } else if (route === 'new-expense') {
     window.location.hash = 'new-expense';
     renderNewExpense();
+  } else if (route === 'travel') {
+  window.location.hash = 'travel';
+  renderTravelMode();
   } else if (route === 'itinerary') {
     window.location.hash = 'itinerary';
     renderItinerary();
@@ -5875,7 +6127,27 @@ if (action === 'delete-trip') {
     return;
   }
 
-    if (action === 'itinerary-day') {
+if (action === 'travel-previous-day') {
+  if (mobileItineraryDayIndex > 0) {
+    mobileItineraryDayIndex -= 1;
+    renderTravelMode();
+  }
+
+  return;
+}
+
+if (action === 'travel-next-day') {
+  const totalDays = activeTrip?.days?.length || 0;
+
+  if (mobileItineraryDayIndex < totalDays - 1) {
+    mobileItineraryDayIndex += 1;
+    renderTravelMode();
+  }
+
+  return;
+}
+
+  if (action === 'itinerary-day') {
     const dayIndex = Number(
       event.target.closest('[data-day-index]')?.dataset.dayIndex
     );
@@ -5886,7 +6158,11 @@ if (action === 'delete-trip') {
       mobileItineraryDayIndex = dayIndex;
       editingStepDraft = null;
       mapStepDraft = null;
-      renderItinerary();
+      if (window.location.hash === '#travel') {
+  renderTravelMode();
+} else {
+  renderItinerary();
+}
     }
 
     return;
@@ -6548,6 +6824,7 @@ function renderCurrentRoute() {
   else if (window.location.hash === '#map') renderMap();
   else if (window.location.hash === '#activity-detail') renderActivityDetail();
   else if (window.location.hash === '#docs') renderDocs();
+  else if (window.location.hash === '#travel') renderTravelMode();
   else if (window.location.hash === '#itinerary') renderItinerary();
   else if (window.location.hash === '#new-step') renderNewStep();
   else if (window.location.hash === '#doc-scanner') renderDocScanner();

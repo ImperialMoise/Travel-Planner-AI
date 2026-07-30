@@ -13,7 +13,7 @@ await mkdir(outputDir, { recursive: true });
 const entries = await readdir(mobileDir, { withFileTypes: true });
 
 for (const entry of entries) {
-  if (['dist', 'node_modules', '.vercel'].includes(entry.name)) {
+  if (['dist', 'node_modules', '.vercel', 'android', 'ios'].includes(entry.name)) {
     continue;
   }
 

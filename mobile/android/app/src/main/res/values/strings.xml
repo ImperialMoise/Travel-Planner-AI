@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">La Fabrique à Voyages</string>
+    <string name="title_activity_main">La Fabrique à Voyages</string>
+    <string name="package_name">com.imperialmoise.lafabriqueavoyages</string>
+    <string name="custom_url_scheme">com.imperialmoise.lafabriqueavoyages</string>
+</resources>

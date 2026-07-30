@@ -1,0 +1,65 @@
+name: Build Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "mobile/**"
+      - "web/lib/supabase.js"
+      - ".github/workflows/android-apk.yml"
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Recuperer le projet
+        uses: actions/checkout@v4
+
+      - name: Installer Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Installer Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+
+      - name: Installer Android
+        uses: android-actions/setup-android@v3
+
+      - name: Installer Android SDK 36
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Installer les dependances
+        working-directory: mobile
+        run: npm ci
+
+      - name: Construire l'application web mobile
+        working-directory: mobile
+        run: npm run build
+
+      - name: Synchroniser Capacitor
+        working-directory: mobile
+        run: npx cap sync android
+
+      - name: Construire l'APK
+        working-directory: mobile/android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Publier l'APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: la-fabrique-a-voyages-debug
+          path: mobile/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 30

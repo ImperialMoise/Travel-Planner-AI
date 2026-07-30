@@ -8802,3 +8802,70 @@ button {
   font-weight: 800;
   font-size: 13px;
 }
+
+.mobile-places-control {
+  position: static;
+  z-index: auto;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  width: 100%;
+  max-width: none;
+  margin: 8px 0 2px;
+  padding: 0;
+}
+
+.mobile-places-caption {
+  margin-right: auto;
+  color: #88765a;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.mobile-places-toggle,
+.mobile-places-help {
+  border: 1px solid #e4d7c2;
+  background: #fffdf8;
+  color: #65481d;
+  box-shadow: none;
+}
+
+.mobile-places-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 28px;
+  padding: 5px 8px;
+  border-radius: 14px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.mobile-places-toggle.is-precise {
+  background: #8b5a08;
+  border-color: #8b5a08;
+  color: #fff;
+}
+
+.mobile-places-toggle .material-symbols-outlined {
+  font-size: 14px;
+}
+
+.mobile-places-usage {
+  color: #8a7a63;
+  font-size: 10px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.mobile-places-help {
+  width: 25px;
+  height: 25px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 800;
+}

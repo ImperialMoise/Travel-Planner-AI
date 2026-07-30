@@ -580,9 +580,13 @@ function updateMobilePlacesControl() {
   const { used, limit } = getMobilePlacesNumbers();
 
   control.classList.toggle('is-precise', precise);
+
   control.querySelector('[data-mobile-places-label]').textContent = precise
-    ? `Google Places · ${used} / ${limit}`
-    : 'Recherche standard gratuite';
+    ? 'Précis'
+    : 'Standard';
+
+  control.querySelector('[data-mobile-places-usage]').textContent =
+    `Google ${used} / ${limit}`;
 
   control.querySelector('[data-mobile-places-toggle]').setAttribute(
     'aria-pressed',
@@ -601,14 +605,17 @@ async function refreshMobilePlacesUsage() {
   }
 }
 
-function ensureMobilePlacesControl() {
+function ensureMobilePlacesControl(anchor) {
   let control = document.querySelector('#mobile-places-control');
 
   if (!control) {
     control = document.createElement('section');
     control.id = 'mobile-places-control';
     control.className = 'mobile-places-control';
+
     control.innerHTML = `
+      <span class="mobile-places-caption">Recherche</span>
+
       <button
         type="button"
         class="mobile-places-toggle"
@@ -616,19 +623,21 @@ function ensureMobilePlacesControl() {
         aria-pressed="false"
       >
         <span class="material-symbols-outlined">travel_explore</span>
-        <span data-mobile-places-label>Recherche standard gratuite</span>
+        <span data-mobile-places-label>Standard</span>
       </button>
+
+      <span class="mobile-places-usage" data-mobile-places-usage>
+        Google 0 / 100
+      </span>
 
       <button
         type="button"
         class="mobile-places-help"
-        aria-label="Comprendre les recherches de lieux"
+        aria-label="Comprendre la recherche précise"
       >
         ?
       </button>
     `;
-
-    document.body.appendChild(control);
 
     control.querySelector('[data-mobile-places-toggle]').addEventListener('click', () => {
       mobilePlacesMode = mobilePlacesMode === 'google' ? 'basic' : 'google';
@@ -638,11 +647,15 @@ function ensureMobilePlacesControl() {
 
     control.querySelector('.mobile-places-help').addEventListener('click', () => {
       alert(
-        'Recherche standard : gratuite, idéale pour les villes, rues et lieux simples.\\n\\n' +
-        'Google Places : plus précis pour les musées, restaurants, hôtels et lieux exacts. ' +
+        'Standard : recherche gratuite, adaptée aux villes, rues et lieux simples.\\n\\n' +
+        'Précis : utilise Google Places pour les musées, hôtels, restaurants et lieux exacts. ' +
         'Chaque utilisateur dispose de 100 recherches Google Places par mois.'
       );
     });
+  }
+
+  if (anchor) {
+    anchor.insertAdjacentElement('afterend', control);
   }
 
   updateMobilePlacesControl();
@@ -697,6 +710,7 @@ function attachAutocomplete(input) {
 
   const wrapper = input.closest('.input-shell') || input.closest('.step-input') || input.parentElement;
   wrapper.style.position = 'relative';
+  ensureMobilePlacesControl(wrapper);
 
   const dropdown = document.createElement('div');
   dropdown.className = 'ac-dropdown';
@@ -759,7 +773,6 @@ function attachAutocomplete(input) {
 }
 
 function initAutocompleteOnPage() {
-  ensureMobilePlacesControl();
   setTimeout(() => {
     document.querySelectorAll('[data-autocomplete]').forEach(input => attachAutocomplete(input));
   }, 150);
@@ -3216,6 +3229,7 @@ function initMobileMapSearch() {
   const results = document.querySelector('#mobile-map-results');
 
   if (!input || !results) return;
+  ensureMobilePlacesControl(input);
 
   input.addEventListener('input', () => {
     clearTimeout(mobileMapSearchTimer);

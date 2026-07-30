@@ -1267,6 +1267,70 @@ function bottomNav(active = 'plan') {
   `;
 }
 
+function hasMobileTripCover(trip) {
+  return Boolean(
+    trip?.coverImageUrl ||
+    trip?.cover_image_url
+  );
+}
+
+function getMobileTripCoverUrl(trip) {
+  return (
+    trip?.coverImageUrl ||
+    trip?.cover_image_url ||
+    'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=900&auto=format&fit=crop'
+  );
+}
+
+async function ensureMobileHomeCovers(tripsToCheck = []) {
+  if (
+    !mobileUser ||
+    !window.SB?.searchTripCoverPhotos ||
+    !window.SB?.saveTripCover
+  ) {
+    return;
+  }
+
+  const missingTrips = tripsToCheck
+    .filter(trip => trip?.id && trip?.name && !hasMobileTripCover(trip))
+    .slice(0, 2);
+
+  let changed = false;
+
+  for (const trip of missingTrips) {
+    try {
+      const photos = await window.SB.searchTripCoverPhotos(
+        trip.id,
+        trip.name
+      );
+
+      const photo = photos?.[0];
+
+      if (!photo?.imageUrl) continue;
+
+      await window.SB.saveTripCover(trip.id, photo);
+
+      Object.assign(trip, {
+        cover_image_url: photo.imageUrl,
+        cover_image_alt: photo.alt || ''
+      });
+
+      if (activeTrip?.id === trip.id) {
+        activeTrip.coverImageUrl = photo.imageUrl;
+        activeTrip.coverImageAlt = photo.alt || '';
+      }
+
+      changed = true;
+    } catch (error) {
+      console.warn('Photo de couverture indisponible :', error);
+    }
+  }
+
+  if (changed && window.location.hash === '') {
+    renderHome();
+  }
+}
+
 function renderHome() {
   const realTrips = mobileTrips || [];
   const visibleTrips = showAllTrips ? realTrips : realTrips.slice(0, 2);
@@ -1331,7 +1395,7 @@ function renderHome() {
           <div class="trip-strip ${showAllTrips ? 'expanded' : ''}">
             ${visibleTrips.length ? visibleTrips.map(trip => `
               <article class="trip-card" data-action="open-trip" data-trip-id="${trip.id}" style="cursor:pointer">
-                <div class="trip-image" style="background-image: url('https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=900&auto=format&fit=crop')">
+                <div  class="trip-image"  style="background-image: url('${escapeHtml(getMobileTripCoverUrl(trip))}')">
                   <span class="trip-status">Synchronisé</span>
                 </div>
 
@@ -1354,6 +1418,8 @@ function renderHome() {
 
     </div>
   `;
+
+  void ensureMobileHomeCovers(visibleTrips);
 }
 
 

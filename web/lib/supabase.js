@@ -54,7 +54,7 @@ export async function signOut() {
 export async function listMyTrips() {
   const { data, error } = await sb
     .from('trips')
-    .select('id, name, start_date, end_date, owner_id, updated_at, accent_theme')
+    .select('id, name, start_date, end_date, owner_id, updated_at, accent_theme, cover_image_url, cover_image_alt, cover_photographer_name, cover_photographer_url, cover_source_url')
     .order('updated_at', { ascending: false });
   if (error) throw error;
   return data ?? [];
@@ -219,6 +219,26 @@ export async function searchTripCoverPhotos(tripId, query) {
   if (data?.error) throw new Error(data.error);
 
   return data?.results || [];
+}
+
+export async function saveTripCover(tripId, photo) {
+  const value = photo || {};
+
+  const { data, error } = await sb
+    .from('trips')
+    .update({
+      cover_image_url: value.imageUrl || null,
+      cover_image_alt: value.alt || '',
+      cover_photographer_name: value.photographer || '',
+      cover_photographer_url: value.photographerUrl || '',
+      cover_source_url: value.sourceUrl || ''
+    })
+    .eq('id', tripId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
 }
 
 export async function saveDayCover(dayId, photo) {
@@ -1083,6 +1103,7 @@ window.SB = {
   loadTrip,
   updateTrip,
   searchTripCoverPhotos,
+  saveTripCover,
   saveDayCover,
   updateDayCoverCrop,
   updateDay,

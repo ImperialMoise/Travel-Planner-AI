@@ -9682,13 +9682,18 @@ button {
 .topbar-home-button {
   display: block;
   min-width: 0;
-  max-width: 240px;
+  max-width: 270px;
   overflow: hidden;
-  padding: 4px 8px;
+  padding: 6px 8px;
   border: 0;
   background: transparent;
-  color: inherit;
-  font: inherit;
+  color: #98690e;
+  font-family: Georgia, var(--font-serif);
+  font-size: 19px;
+  font-style: italic;
+  font-weight: 700;
+  line-height: 24px;
+  text-align: center;
   text-overflow: ellipsis;
   white-space: nowrap;
   cursor: pointer;

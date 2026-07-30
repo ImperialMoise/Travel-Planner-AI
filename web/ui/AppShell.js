@@ -1893,7 +1893,7 @@ function toggleToolboxCollapsed() {
                 )}
               </section>
 
-              {!isNarrowShell && window.Toolbox && (
+              {appMode !== 'travel' && !isNarrowShell && window.Toolbox && (
   <div style={{
     width: toolboxCollapsed ? 48 : toolWidth + 48,
     height: '100%',
@@ -1932,7 +1932,7 @@ function toggleToolboxCollapsed() {
   </div>
 )}
 
-              {isNarrowShell && toolboxOpen && window.Toolbox && (
+              {appMode !== 'travel' && isNarrowShell && toolboxOpen && window.Toolbox && (
                 <div
                   className="app-overlay right"
                   onClick={() => setToolboxOpen(false)}
@@ -1965,7 +1965,7 @@ function toggleToolboxCollapsed() {
           </button>
         )}
 
-        {isNarrowShell && user && activeTripId && trip && (
+        {appMode !== 'travel' && isNarrowShell && user && activeTripId && trip && (
           <button
             type="button"
             className="app-floating tools"

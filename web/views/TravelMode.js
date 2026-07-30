@@ -10,7 +10,7 @@
   }
 
   .travel-mode-shell{
-    width:min(980px, 100%);
+    width:min(1180px, 100%);
     margin:0 auto;
   }
 
@@ -104,6 +104,83 @@
     font-size:13px;
     font-weight:900;
   }
+
+  .travel-quick-tools{
+  margin-top:16px;
+}
+
+.travel-quick-tools-head{
+  margin-bottom:8px;
+  color:var(--muted);
+  font-family:var(--font-mono);
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+}
+
+.travel-quick-tools-row{
+  display:flex;
+  gap:8px;
+  overflow-x:auto;
+  padding-bottom:4px;
+  scrollbar-width:none;
+}
+
+.travel-quick-tools-row::-webkit-scrollbar{
+  display:none;
+}
+
+.travel-quick-tool{
+  min-width:138px;
+  min-height:42px;
+  padding:0 12px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+  border:1px solid var(--outline-variant);
+  border-radius:8px;
+  background:var(--card);
+  color:var(--text);
+  cursor:pointer;
+  font-family:inherit;
+  font-size:12px;
+  font-weight:900;
+  white-space:nowrap;
+  transition:transform .18s ease, background .18s ease, border-color .18s ease;
+}
+
+.travel-quick-tool:hover{
+  transform:translateY(-1px);
+  border-color:var(--accent);
+  background:var(--accent-soft);
+  color:var(--accent);
+}
+
+.travel-quick-tool.active{
+  border-color:var(--accent);
+  background:var(--accent);
+  color:var(--accent-ink);
+}
+
+.travel-quick-panel{
+  margin-top:12px;
+  padding:16px;
+  border:1px solid var(--outline-variant);
+  border-radius:12px;
+  background:var(--card);
+}
+
+.travel-quick-panel-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:14px;
+  color:var(--text);
+  font-size:13px;
+}
 
   .travel-mode-grid{
     display:grid;
@@ -246,6 +323,13 @@
     return step?.lieu || step?.arrivee || step?.depart || '';
   }
 
+  const QUICK_TOOLS = [
+  { id: 'checklist', label: 'Checklist', icon: 'check' },
+  { id: 'dayNote', label: 'Journal du jour', icon: 'sparkle' },
+  { id: 'globalNote', label: 'Notes du voyage', icon: 'file' },
+  { id: 'currency', label: 'Convertisseur', icon: 'arrow' }
+];
+
   function TravelModeView() {
     injectCss();
 
@@ -255,6 +339,7 @@
     }));
 
     const [now, setNow] = React.useState(Date.now());
+    const [quickTool, setQuickTool] = React.useState(null);
 
     React.useEffect(() => {
       const timer = window.setInterval(() => setNow(Date.now()), 60000);
@@ -301,6 +386,32 @@
       Store.set({ appMode: 'plan', view, selectedDayIndex: dayIndex });
     }
 
+    function renderQuickTool() {
+  if (quickTool === 'checklist' && window.ChecklistWidget) {
+    return <window.ChecklistWidget day={day} trip={trip} editMode={false} hideHeader />;
+  }
+
+  if (quickTool === 'dayNote' && window.DayNoteWidget) {
+    return <window.DayNoteWidget day={day} trip={trip} editMode={false} hideHeader />;
+  }
+
+  if (quickTool === 'globalNote' && window.GlobalNoteWidget) {
+    return <window.GlobalNoteWidget trip={trip} editMode={false} hideHeader />;
+  }
+
+  if (quickTool === 'currency' && window.CurrencyWidget) {
+    return <window.CurrencyWidget editMode={false} />;
+  }
+
+  return (
+    <div className="travel-mode-empty">
+      Cet outil n’est pas disponible pour le moment.
+    </div>
+  );
+}
+
+const currentQuickTool = QUICK_TOOLS.find(tool => tool.id === quickTool);
+
     return (
       <main className="travel-mode">
         <div className="travel-mode-shell">
@@ -342,7 +453,49 @@
             </div>
           </section>
 
-          <div className="travel-mode-grid">
+<section className="travel-quick-tools" aria-label="Outils rapides">
+  <div className="travel-quick-tools-head">Outils rapides</div>
+
+  <div className="travel-quick-tools-row">
+    {QUICK_TOOLS.map(tool => {
+      const active = quickTool === tool.id;
+
+      return (
+        <button
+          key={tool.id}
+          type="button"
+          className={'travel-quick-tool' + (active ? ' active' : '')}
+          onClick={() => setQuickTool(active ? null : tool.id)}
+        >
+          <Icon name={tool.icon} size={16} />
+          {tool.label}
+        </button>
+      );
+    })}
+  </div>
+</section>
+
+{quickTool && (
+  <section className="travel-quick-panel">
+    <div className="travel-quick-panel-head">
+      <strong>{currentQuickTool?.label}</strong>
+
+      <button
+        type="button"
+        className="travel-mode-icon-btn"
+        onClick={() => setQuickTool(null)}
+        title="Fermer cet outil"
+        aria-label="Fermer cet outil"
+      >
+        <Icon name="x" size={16} />
+      </button>
+    </div>
+
+    {renderQuickTool()}
+  </section>
+)}
+
+<div className="travel-mode-grid">
             <section className="travel-mode-panel">
               <div className="travel-mode-panel-kicker">Prochaine étape</div>
 
@@ -382,8 +535,16 @@
                 </>
               ) : (
                 <div className="travel-mode-empty">
-                  Aucun hébergement renseigné pour cette journée.
-                </div>
+  Aucun hébergement renseigné pour cette journée.
+</div>
+
+<button
+  type="button"
+  className="travel-mode-map-btn"
+  onClick={() => returnToPlanning('itinerary')}
+>
+  Préparer l’hébergement
+</button>
               )}
             </aside>
           </div>

@@ -10,6 +10,7 @@ let pendingMobileInviteInfo = null;
 let showAllTrips = false;
 let mobileSupabaseReady = false;
 let mobileSupabaseError = '';
+let mobileItineraryDayIndex = 0;
 
 function getMobileTheme() {
   return localStorage.getItem('mobileTheme') || 'light';
@@ -891,15 +892,30 @@ function getStepDisplayDescription(step) {
   return parts.filter(Boolean).join(' • ');
 }
 
-function getCurrentTimelineSteps() {
-  const firstDay = activeTrip?.days?.[0];
+function getActiveItineraryDay() {
+  const days = activeTrip?.days || [];
 
-  if (firstDay?.steps?.length) {
-    return firstDay.steps.map((step, stepIndex) => ({
+  if (!days.length) {
+    return null;
+  }
+
+  mobileItineraryDayIndex = Math.max(
+    0,
+    Math.min(mobileItineraryDayIndex, days.length - 1)
+  );
+
+  return days[mobileItineraryDayIndex];
+}
+
+function getCurrentTimelineSteps() {
+  const activeDay = getActiveItineraryDay();
+
+  if (activeDay?.steps?.length) {
+    return activeDay.steps.map((step, stepIndex) => ({
       id: step.id,
-      dayId: firstDay.id,
-      dayIndex: 0,
-      stepIndex,
+      dayId: activeDay.id,
+      dayIndex: mobileItineraryDayIndex,
+      stepIndex: step.stepIndex ?? stepIndex,
       rawStep: step,
       time: step.time || '09:00',
       type: getStepTypeLabel(step.type),
@@ -915,7 +931,7 @@ function getCurrentTimelineSteps() {
 }
 
 function getActiveTripDayForNewStep() {
-  return activeTrip?.days?.[0] || null;
+  return getActiveItineraryDay();
 }
 
 function topbar() {
@@ -3390,15 +3406,42 @@ function initCreateTripControls() {
 
 function renderItinerary() {
   const draft = getTripDraft();
+  const activeDay = getActiveItineraryDay();
+  const days = activeTrip?.days || [];
   const timelineSteps = getCurrentTimelineSteps();
+  const dayNumber = mobileItineraryDayIndex + 1;
 
-  const title = activeTrip?.name || draft.destination || 'Frontière du Nord';
+  const title = activeDay?.title || activeTrip?.name || draft.destination || 'Votre voyage';
 
-  const period = activeTrip?.startDate
-    ? formatDateLabel(activeTrip.startDate, '')
-    : draft.startDate
-      ? `${formatDateLabel(draft.startDate, '')}${draft.endDate ? ` – ${formatDateLabel(draft.endDate, '')}` : ''}`
-      : 'Jour 1';
+  const period = activeDay?.dateISO
+    ? formatDateLabel(activeDay.dateISO, '')
+    : activeDay?.dateLabel || `Jour ${dayNumber}`;
+
+  const dayPicker = days.length > 1 ? `
+    <section class="itinerary-day-picker" aria-label="Choisir une journée">
+      <span class="kicker">Programme</span>
+      <div class="itinerary-day-list">
+        ${days.map((day, index) => {
+          const label = day.dateISO
+            ? formatDateLabel(day.dateISO, '')
+            : day.dateLabel || `Jour ${index + 1}`;
+
+          return `
+            <button
+              type="button"
+              class="${mobileItineraryDayIndex === index ? 'active' : ''}"
+              data-action="itinerary-day"
+              data-day-index="${index}"
+              aria-pressed="${mobileItineraryDayIndex === index ? 'true' : 'false'}"
+            >
+              <strong>J${index + 1}</strong>
+              <span>${escapeHtml(label)}</span>
+            </button>
+          `;
+        }).join('')}
+      </div>
+    </section>
+  ` : '';
 
   app.innerHTML = `
     <div class="mobile-shell itinerary-shell">
@@ -3413,6 +3456,8 @@ function renderItinerary() {
             <h2>${escapeHtml(title)}</h2>
           </div>
         </section>
+
+        ${dayPicker}
 
         <section class="timeline" aria-label="Programme de la journée">
           ${timelineSteps.map((step, stepIndex) => `
@@ -5287,6 +5332,8 @@ async function handleOpenTrip(tripId) {
   if (!tripId || !window.SB) return;
 
   activeTrip = await window.SB.loadTrip(tripId);
+  mobileItineraryDayIndex = 0;
+
   navigate('itinerary');
 }
 
@@ -5649,6 +5696,23 @@ if (action === 'delete-trip') {
     return;
   }
 
+    if (action === 'itinerary-day') {
+    const dayIndex = Number(
+      event.target.closest('[data-day-index]')?.dataset.dayIndex
+    );
+
+    const totalDays = activeTrip?.days?.length || 0;
+
+    if (Number.isInteger(dayIndex) && dayIndex >= 0 && dayIndex < totalDays) {
+      mobileItineraryDayIndex = dayIndex;
+      editingStepDraft = null;
+      mapStepDraft = null;
+      renderItinerary();
+    }
+
+    return;
+  }
+  
   if (action === 'add-step-to-program') {
     handleAddStepToProgram();
     return;

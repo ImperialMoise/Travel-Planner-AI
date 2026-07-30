@@ -8552,7 +8552,9 @@ button {
   }
 
   .mobile-route-calculator.is-compact .mobile-route-result-actions {
-    justify-content:
+    justify-content: flex-end;
+  }
+}
 
 /* Modale suppression étape */
 .step-delete-backdrop {
@@ -8646,4 +8648,70 @@ button {
 .step-delete-actions .danger {
   background: #e7c47e;
   color: #173227;
+}
+
+/* Choix de journée dans l'itinéraire */
+.itinerary-day-picker {
+  margin: 18px 0 14px;
+}
+
+.itinerary-day-picker .kicker {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.itinerary-day-list {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 2px 2px 6px;
+  scrollbar-width: none;
+}
+
+.itinerary-day-list::-webkit-scrollbar {
+  display: none;
+}
+
+.itinerary-day-list button {
+  flex: 0 0 auto;
+  min-width: 88px;
+  min-height: 58px;
+  padding: 9px 12px;
+  border: 1px solid var(--faint-border);
+  border-radius: 12px;
+  background: var(--surface-container-lowest);
+  color: var(--on-surface-variant);
+  text-align: left;
+  box-shadow: var(--shadow-card);
+  transition: transform 160ms ease, background 160ms ease, color 160ms ease;
+}
+
+.itinerary-day-list button strong,
+.itinerary-day-list button span {
+  display: block;
+}
+
+.itinerary-day-list button strong {
+  color: var(--primary);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.itinerary-day-list button span {
+  margin-top: 3px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.itinerary-day-list button.active {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: var(--on-primary);
+  box-shadow: var(--shadow-action);
+  transform: translateY(-1px);
+}
+
+.itinerary-day-list button.active strong {
+  color: var(--primary-fixed);
 }

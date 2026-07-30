@@ -24,7 +24,12 @@ function applyMobileTheme(theme = getMobileTheme()) {
 function toggleMobileTheme() {
   const nextTheme = getMobileTheme() === 'dark' ? 'light' : 'dark';
   applyMobileTheme(nextTheme);
-  renderAccount();
+
+  if (window.location.hash === '#settings') {
+    renderSettings();
+  } else {
+    renderAccount();
+  }
 }
 
 async function handleUpdateMobileProfile() {
@@ -1108,15 +1113,102 @@ function getActiveTripDayForNewStep() {
 function topbar() {
   return `
     <header class="topbar">
-      <button class="icon-button" type="button" aria-label="Ouvrir le menu">
+      <button
+  class="icon-button"
+  type="button"
+  data-action="trip-menu"
+  aria-label="Choisir un voyage"
+>
         <span class="material-symbols-outlined" aria-hidden="true">menu</span>
       </button>
-      <h1 class="topbar-title" data-action="home" style="cursor:pointer">L'Atelier</h1>
+      <h1 class="topbar-title">
+  ${escapeHtml(activeTrip?.name || 'La Fabrique à Voyages')}
+</h1>
       <button class="icon-button" type="button" data-action="account" aria-label="Ouvrir le profil">
         <span class="material-symbols-outlined" aria-hidden="true">account_circle</span>
       </button>
     </header>
   `;
+}
+
+function openMobileTripMenu() {
+  document.querySelector('.mobile-trip-menu-backdrop')?.remove();
+
+  const menu = document.createElement('div');
+  menu.className = 'mobile-trip-menu-backdrop';
+
+  menu.innerHTML = `
+    <aside class="mobile-trip-menu" role="dialog" aria-modal="true">
+      <header>
+        <div>
+          <span>La Fabrique à Voyages</span>
+          <strong>Choisir un voyage</strong>
+        </div>
+
+        <button
+          type="button"
+          data-action="close-trip-menu"
+          aria-label="Fermer"
+        >
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </header>
+
+      <div class="mobile-trip-menu-list">
+        ${mobileTrips.length ? mobileTrips.map(trip => `
+          <button
+            type="button"
+            class="${trip.id === activeTrip?.id ? 'active' : ''}"
+            data-action="open-trip"
+            data-trip-id="${trip.id}"
+          >
+            <span class="material-symbols-outlined">
+              ${trip.id === activeTrip?.id ? 'check_circle' : 'location_on'}
+            </span>
+
+            <span>
+              <strong>${escapeHtml(trip.name || 'Voyage sans nom')}</strong>
+              <small>
+                ${trip.start_date
+                  ? formatDateLabel(trip.start_date, '')
+                  : 'Dates à définir'}
+              </small>
+            </span>
+
+            <span class="material-symbols-outlined">chevron_right</span>
+          </button>
+        `).join('') : `
+          <p class="mobile-trip-menu-empty">
+            Aucun voyage disponible.
+          </p>
+        `}
+      </div>
+
+      <footer>
+        <button type="button" data-action="create-trip">
+          <span class="material-symbols-outlined">add</span>
+          Nouveau voyage
+        </button>
+
+        <button type="button" data-action="account">
+          <span class="material-symbols-outlined">person</span>
+          Mon compte
+        </button>
+        <button type="button" data-action="settings">
+  <span class="material-symbols-outlined">settings</span>
+  Paramètres
+</button>
+      </footer>
+    </aside>
+  `;
+
+  document.body.appendChild(menu);
+
+  menu.addEventListener('click', event => {
+  if (event.target === menu) {
+    menu.remove();
+  }
+});
 }
 
 function bottomNav(active = 'plan') {
@@ -3377,87 +3469,221 @@ function renderAuth() {
 }
 
 function renderAccount() {
-  const name = mobileUser?.user_metadata?.display_name || mobileUser?.email?.split('@')[0] || 'Voyageur';
-  const theme = getMobileTheme();
-  const tripCount = mobileTrips.length;
+  const name =
+    mobileUser?.user_metadata?.display_name ||
+    mobileUser?.email?.split('@')[0] ||
+    'Voyageur';
+
+  const email = mobileUser?.email || '';
+  const initials = name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(part => part[0]?.toUpperCase())
+    .join('');
 
   app.innerHTML = `
-    <div class="mobile-shell">
+    <div class="mobile-shell account-shell">
       ${topbar()}
 
-      <main class="home-main account-main">
-        <section class="home-hero account-hero">
-          <p class="kicker">Mon compte</p>
-          <h2 class="hero-title">${escapeHtml(name)}</h2>
-          <p class="docs-subtitle">${escapeHtml(mobileUser?.email || '')}</p>
+      <main class="mobile-personal-main">
+        <header class="mobile-personal-heading">
+          <span>Espace personnel</span>
+          <h2>Mon compte</h2>
+          <p>Gérez votre identité et votre session.</p>
+        </header>
+
+        <nav class="mobile-personal-tabs">
+          <button type="button" class="active" data-action="account">
+            <span class="material-symbols-outlined">person</span>
+            Compte
+          </button>
+
+          <button type="button" data-action="settings">
+            <span class="material-symbols-outlined">settings</span>
+            Paramètres
+          </button>
+        </nav>
+
+        <section class="mobile-profile-summary">
+          <span class="mobile-profile-avatar">${escapeHtml(initials || 'V')}</span>
+
+          <div>
+            <strong>${escapeHtml(name)}</strong>
+            <small>${escapeHtml(email)}</small>
+          </div>
         </section>
 
-        <section class="account-card">
-          <div class="section-heading compact">
-            <h3>Profil</h3>
-          </div>
+        <section class="mobile-personal-card">
+          <header>
+            <span>Profil</span>
+            <h3>Informations personnelles</h3>
+          </header>
 
-          <label class="field-group" for="account-display-name">
-            <span class="kicker">Pseudo</span>
-            <div class="input-shell">
-              <span class="material-symbols-outlined form-icon" aria-hidden="true">person</span>
-              <input id="account-display-name" type="text" value="${escapeHtml(name)}" autocomplete="nickname">
+          <label class="mobile-account-field">
+            <span>Pseudo</span>
+
+            <div>
+              <span class="material-symbols-outlined">person</span>
+              <input
+                id="account-display-name"
+                type="text"
+                value="${escapeHtml(name)}"
+                autocomplete="nickname"
+              >
             </div>
           </label>
 
-          <button class="docs-action-primary full-width" type="button" data-action="save-profile">
+          <label class="mobile-account-field">
+            <span>Adresse email</span>
+
+            <div class="readonly">
+              <span class="material-symbols-outlined">mail</span>
+              <input
+                type="email"
+                value="${escapeHtml(email)}"
+                readonly
+              >
+            </div>
+          </label>
+
+          <button
+            class="mobile-personal-primary"
+            type="button"
+            data-action="save-profile"
+          >
             <span class="material-symbols-outlined">check</span>
-            <span>Enregistrer le profil</span>
+            Enregistrer les modifications
           </button>
         </section>
 
-        <section class="account-card">
-          <div class="section-heading compact">
-            <h3>Préférences</h3>
-          </div>
+        <section class="mobile-personal-card">
+          <header>
+            <span>Session</span>
+            <h3>Connexion</h3>
+          </header>
 
-          <button class="account-setting-row" type="button" data-action="toggle-theme">
-            <span class="material-symbols-outlined">${theme === 'dark' ? 'dark_mode' : 'light_mode'}</span>
+          <button
+            class="mobile-session-row danger"
+            type="button"
+            data-action="logout"
+          >
+            <span class="material-symbols-outlined">logout</span>
+
             <span>
-              <strong>Thème ${theme === 'dark' ? 'sombre' : 'clair'}</strong>
-              <small>Changer l’apparence de l’app mobile</small>
+              <strong>Se déconnecter</strong>
+              <small>Quitter votre compte sur cet appareil</small>
             </span>
+
             <span class="material-symbols-outlined">chevron_right</span>
           </button>
         </section>
+      </main>
+    </div>
+  `;
+}
 
-        <section>
-          <div class="section-heading">
-            <h3>Mes Voyages</h3>
-            <span>${tripCount}</span>
-          </div>
+function renderSettings() {
+  const theme = getMobileTheme();
+  const precise = mobilePlacesMode === 'google';
+  const { used, limit } = getMobilePlacesNumbers();
 
-          <div class="docs-grid">
-            ${mobileTrips.length ? mobileTrips.map(trip => `
-              <button class="docs-file-row" type="button" data-trip-id="${trip.id}" data-action="open-trip">
-                <span class="material-symbols-outlined docs-file-type-icon">flight_takeoff</span>
-                <div class="docs-file-info">
-                  <span class="docs-file-name">${escapeHtml(trip.name)}</span>
-                  <span class="docs-file-meta">${trip.start_date ? formatDateLabel(trip.start_date, '') : 'Sans date'}</span>
-                </div>
-                <span class="material-symbols-outlined docs-file-more">chevron_right</span>
-              </button>
-            `).join('') : '<span class="companion-empty">Aucun voyage pour le moment.</span>'}
+  app.innerHTML = `
+    <div class="mobile-shell settings-shell">
+      ${topbar()}
+
+      <main class="mobile-personal-main">
+        <header class="mobile-personal-heading">
+          <span>Espace personnel</span>
+          <h2>Paramètres</h2>
+          <p>Choisissez le fonctionnement de l’application.</p>
+        </header>
+
+        <nav class="mobile-personal-tabs">
+          <button type="button" data-action="account">
+            <span class="material-symbols-outlined">person</span>
+            Compte
+          </button>
+
+          <button type="button" class="active" data-action="settings">
+            <span class="material-symbols-outlined">settings</span>
+            Paramètres
+          </button>
+        </nav>
+
+        <section class="mobile-personal-card">
+          <header>
+            <span>Recherche de lieux</span>
+            <h3>Précision des résultats</h3>
+          </header>
+
+          <button
+            class="mobile-setting-switch ${precise ? 'enabled' : ''}"
+            type="button"
+            data-action="settings-places-mode"
+            aria-pressed="${precise ? 'true' : 'false'}"
+          >
+            <span class="mobile-setting-icon">
+              <span class="material-symbols-outlined">
+                ${precise ? 'travel_explore' : 'search'}
+              </span>
+            </span>
+
+            <span>
+              <strong>${precise ? 'Recherche précise' : 'Recherche standard'}</strong>
+              <small>
+                ${precise
+                  ? 'Google Places pour les lieux exacts'
+                  : 'Recherche gratuite pour les lieux simples'}
+              </small>
+            </span>
+
+            <span class="mobile-switch-track">
+              <span></span>
+            </span>
+          </button>
+
+          <div class="mobile-places-quota">
+            <div>
+              <span>Crédits Google Places</span>
+              <strong>${used} / ${limit}</strong>
+            </div>
+
+            <div class="mobile-places-quota-track">
+              <span style="width:${Math.min(100, limit ? (used / limit) * 100 : 0)}%"></span>
+            </div>
+
+            <p>
+              Chaque utilisateur dispose de 100 recherches précises par mois.
+              Le mode standard ne consomme aucun crédit Google.
+            </p>
           </div>
         </section>
 
-        <button class="create-adventure" type="button" data-action="create-trip">
-          <span class="plus">+</span>
-          <span>Créer une nouvelle aventure</span>
-        </button>
+        <section class="mobile-personal-card">
+          <header>
+            <span>Interface</span>
+            <h3>Apparence</h3>
+          </header>
 
-        <button class="create-adventure danger-action" type="button" data-action="logout">
-          <span class="material-symbols-outlined">logout</span>
-          <span>Déconnexion</span>
-        </button>
+          <button
+            class="mobile-session-row"
+            type="button"
+            data-action="toggle-theme"
+          >
+            <span class="material-symbols-outlined">
+              ${theme === 'dark' ? 'dark_mode' : 'light_mode'}
+            </span>
+
+            <span>
+              <strong>Thème ${theme === 'dark' ? 'sombre' : 'clair'}</strong>
+              <small>Changer l’apparence sur cet appareil</small>
+            </span>
+
+            <span class="material-symbols-outlined">chevron_right</span>
+          </button>
+        </section>
       </main>
-
-      ${bottomNav('plan')}
     </div>
   `;
 }
@@ -3574,124 +3800,10 @@ function initCreateTripControls() {
 }
 
 function renderItinerary() {
-  const draft = getTripDraft();
-  const activeDay = getActiveItineraryDay();
-  const days = activeTrip?.days || [];
-  const timelineSteps = getCurrentTimelineSteps();
-  const dayNumber = mobileItineraryDayIndex + 1;
-
-  const title = activeDay?.title || activeTrip?.name || draft.destination || 'Votre voyage';
-
-  const period = activeDay?.dateISO
-    ? formatDateLabel(activeDay.dateISO, '')
-    : activeDay?.dateLabel || `Jour ${dayNumber}`;
-
-  const dayPicker = days.length > 1 ? `
-    <section class="itinerary-day-picker" aria-label="Choisir une journée">
-      <span class="kicker">Programme</span>
-      <div class="itinerary-day-list">
-        ${days.map((day, index) => {
-          const label = day.dateISO
-            ? formatDateLabel(day.dateISO, '')
-            : day.dateLabel || `Jour ${index + 1}`;
-
-          return `
-            <button
-              type="button"
-              class="${mobileItineraryDayIndex === index ? 'active' : ''}"
-              data-action="itinerary-day"
-              data-day-index="${index}"
-              aria-pressed="${mobileItineraryDayIndex === index ? 'true' : 'false'}"
-            >
-              <strong>J${index + 1}</strong>
-              <span>${escapeHtml(label)}</span>
-            </button>
-          `;
-        }).join('')}
-      </div>
-    </section>
-  ` : '';
-
-  app.innerHTML = `
-    <div class="mobile-shell itinerary-shell">
-      ${topbar()}
-
-<nav class="mobile-mode-switch" aria-label="Mode de consultation">
-  <button type="button" class="active" data-action="itinerary">
-    <span class="material-symbols-outlined">edit_calendar</span>
-    Préparer
-  </button>
-
-  <button type="button" data-action="travel">
-    <span class="material-symbols-outlined">near_me</span>
-    Voyager
-  </button>
-</nav>
-
-<main class="itinerary-main">
-        <section class="itinerary-hero" aria-label="Itinéraire du jour 6">
-          <img src="https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1200&auto=format&fit=crop" alt="Paysage de montagnes verdoyantes" loading="lazy">
-          <div class="itinerary-hero-overlay"></div>
-          <div class="itinerary-hero-content">
-            <span class="kicker">${escapeHtml(period)}</span>
-            <h2>${escapeHtml(title)}</h2>
-          </div>
-        </section>
-
-        ${dayPicker}
-
-        <section class="timeline" aria-label="Programme de la journée">
-          ${timelineSteps.map((step, stepIndex) => `
-            <article class="timeline-item ${step.type === 'Activité' ? 'clickable' : ''}" ${step.type === 'Activité' ? `data-action="activity-detail" data-step-index="${stepIndex}" tabindex="0" role="button" aria-label="Ouvrir le détail de ${escapeHtml(step.title)}"` : ''}>
-              <span class="timeline-pin ${step.tone}">
-                <span class="material-symbols-outlined" aria-hidden="true">${step.icon}</span>
-              </span>
-              <div class="timeline-card">
-                <time>${step.time}</time>
-                <div>
-                  <span class="kicker">${step.type}</span>
-                  <h3>${step.title}</h3>
-                  <p>${step.description}</p>
-<div class="item-actions">
-  <button
-    class="icon-mini"
-    type="button"
-    data-action="show-step-on-map"
-    data-step-index="${stepIndex}"
-    aria-label="Voir l'étape sur la carte"
-  >
-    <span class="material-symbols-outlined">map</span>
-  </button>
-
-  <button class="icon-mini" type="button" data-action="edit-step" data-step-index="${stepIndex}" aria-label="Modifier l'étape">
-    <span class="material-symbols-outlined">edit</span>
-  </button>
-
-  <button class="icon-mini danger" type="button" data-action="delete-step" data-step-index="${stepIndex}" aria-label="Supprimer l'étape">
-    <span class="material-symbols-outlined">close</span>
-  </button>
-</div>
-                </div>
-              </div>
-            </article>
-          `).join('')}
-
-          <div class="timeline-add">
-            <span class="timeline-dot" aria-hidden="true"></span>
-            <button type="button" data-action="${activeTrip?.id ? 'new-step' : 'create-trip'}">
-  <span class="material-symbols-outlined" aria-hidden="true">add</span>
-  <span>${activeTrip?.id ? 'Ajouter une étape' : 'Créer un voyage d’abord'}</span>
-</button>
-          </div>
-        </section>
-      </main>
-
-      ${bottomNav('plan')}
-    </div>
-  `;
+  renderTripDayMode(true);
 }
 
-function renderTravelMode() {
+function renderTripDayMode(editable = false) {
   const days = activeTrip?.days || [];
   const activeDay = getActiveItineraryDay();
   const steps = getCurrentTimelineSteps();
@@ -3704,7 +3816,7 @@ function renderTravelMode() {
 
   let nextStepIndex = 0;
 
-  if (isToday && steps.length) {
+  if (!editable && isToday && steps.length) {
     const foundIndex = steps.findIndex(step => {
       const [hours, minutes] = String(step.time || '00:00')
         .split(':')
@@ -3744,15 +3856,23 @@ function renderTravelMode() {
       ${topbar()}
 
       <nav class="mobile-mode-switch" aria-label="Mode de consultation">
-        <button type="button" data-action="itinerary">
-          <span class="material-symbols-outlined">edit_calendar</span>
-          Préparer
-        </button>
+        <button
+  type="button"
+  class="${editable ? 'active' : ''}"
+  data-action="itinerary"
+>
+  <span class="material-symbols-outlined">edit_calendar</span>
+  Préparer
+</button>
 
-        <button type="button" class="active travel-active" data-action="travel">
-          <span class="material-symbols-outlined">near_me</span>
-          Voyager
-        </button>
+<button
+  type="button"
+  class="${editable ? '' : 'active travel-active'}"
+  data-action="travel"
+>
+  <span class="material-symbols-outlined">near_me</span>
+  Voyager
+</button>
       </nav>
 
       <main class="travel-mode-main">
@@ -3827,26 +3947,48 @@ function renderTravelMode() {
             </article>
 
             <div class="travel-next-actions">
-              <button
-                type="button"
-                class="primary"
-                data-action="show-step-on-map"
-                data-step-index="${nextStepIndex}"
-              >
-                <span class="material-symbols-outlined">map</span>
-                Voir sur la carte
-              </button>
+  <button
+    type="button"
+    class="primary"
+    data-action="show-step-on-map"
+    data-step-index="${nextStepIndex}"
+  >
+    <span class="material-symbols-outlined">map</span>
+    Voir sur la carte
+  </button>
 
-              ${nextStep.type === 'Activité' ? `
-                <button
-                  type="button"
-                  data-action="activity-detail"
-                  data-step-index="${nextStepIndex}"
-                >
-                  Détails
-                </button>
-              ` : ''}
-            </div>
+  ${nextStep.type === 'Activité' ? `
+    <button
+      type="button"
+      data-action="activity-detail"
+      data-step-index="${nextStepIndex}"
+      aria-label="Voir les détails"
+    >
+      <span class="material-symbols-outlined">visibility</span>
+    </button>
+  ` : ''}
+
+  ${editable ? `
+    <button
+      type="button"
+      data-action="edit-step"
+      data-step-index="${nextStepIndex}"
+      aria-label="Modifier l’étape"
+    >
+      <span class="material-symbols-outlined">edit</span>
+    </button>
+
+    <button
+      type="button"
+      class="danger"
+      data-action="delete-step"
+      data-step-index="${nextStepIndex}"
+      aria-label="Supprimer l’étape"
+    >
+      <span class="material-symbols-outlined">delete</span>
+    </button>
+  ` : ''}
+</div>
           </section>
         ` : `
           <section class="travel-empty-day">
@@ -3896,6 +4038,13 @@ function renderTravelMode() {
           </section>
         ` : ''}
 
+        ${editable ? `
+  <button type="button" class="travel-add-step" data-action="new-step">
+    <span class="material-symbols-outlined">add</span>
+    Ajouter une étape
+  </button>
+` : ''}
+
         <section class="travel-tools">
           <div class="travel-section-heading">
             <span>Outils utiles</span>
@@ -3927,6 +4076,10 @@ function renderTravelMode() {
       ${bottomNav('plan')}
     </div>
   `;
+}
+
+function renderTravelMode() {
+  renderTripDayMode(false);
 }
 
 function renderActivityDetail() {
@@ -5986,6 +6139,9 @@ function navigate(route) {
   } else if (route === 'account') {
     window.location.hash = 'account';
     renderAccount();
+  } else if (route === 'settings') {
+  window.location.hash = 'settings';
+  renderSettings();
   } else if (route === 'create-trip') {
     window.location.hash = 'create-trip';
     renderCreateTrip();
@@ -6036,6 +6192,16 @@ window.addEventListener('click', event => {
   const action = event.target.closest('[data-action]')?.dataset.action;
   if (!action) return;
 
+  if (action === 'trip-menu') {
+  openMobileTripMenu();
+  return;
+}
+
+if (action === 'close-trip-menu') {
+  document.querySelector('.mobile-trip-menu-backdrop')?.remove();
+  return;
+}
+
     if (action === 'doc-detail') {
     activeDocId = event.target.closest('[data-doc-id]')?.dataset.docId || null;
     navigate('doc-detail');
@@ -6083,6 +6249,17 @@ window.addEventListener('click', event => {
     return;
   }
 
+  if (action === 'settings-places-mode') {
+  mobilePlacesMode = mobilePlacesMode === 'google'
+    ? 'basic'
+    : 'google';
+
+  localStorage.setItem('places_search_mode', mobilePlacesMode);
+  updateMobilePlacesControl();
+  renderSettings();
+  return;
+}
+
   if (action === 'add-friend') {
     handleAddFriend();
     return;
@@ -6101,6 +6278,7 @@ window.addEventListener('click', event => {
 
   if (action === 'open-trip') {
   const tripId = event.target.closest('[data-trip-id]')?.dataset.tripId;
+  document.querySelector('.mobile-trip-menu-backdrop')?.remove();
   handleOpenTrip(tripId);
   return;
 }
@@ -6816,6 +6994,7 @@ function renderCurrentRoute() {
   if (window.location.hash === '#invite') renderInvite();
   else if (window.location.hash === '#auth') renderAuth();
   else if (window.location.hash === '#account') renderAccount();
+  else if (window.location.hash === '#settings') renderSettings();
   else if (window.location.hash === '#create-trip') renderCreateTrip();
   else if (window.location.hash === '#budget-overview') renderBudgetOverview();
   else if (window.location.hash === '#budget') renderBudget();

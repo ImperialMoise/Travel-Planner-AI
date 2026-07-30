@@ -534,17 +534,19 @@ const currentQuickTool = QUICK_TOOLS.find(tool => tool.id === quickTool);
                   )}
                 </>
               ) : (
-                <div className="travel-mode-empty">
-  Aucun hébergement renseigné pour cette journée.
-</div>
+                <>
+  <div className="travel-mode-empty">
+    Aucun hébergement renseigné pour cette journée.
+  </div>
 
-<button
-  type="button"
-  className="travel-mode-map-btn"
-  onClick={() => returnToPlanning('itinerary')}
->
-  Préparer l’hébergement
-</button>
+  <button
+    type="button"
+    className="travel-mode-map-btn"
+    onClick={() => returnToPlanning('itinerary')}
+  >
+    Préparer l’hébergement
+  </button>
+</>
               )}
             </aside>
           </div>

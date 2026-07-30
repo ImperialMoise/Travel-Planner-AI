@@ -548,6 +548,149 @@ let mobileMapSheetOpen = false;
 let mobileMapDaysOpen = false;
 let mobileMapRestoreCamera = null;
 
+let mobilePlacesMode = localStorage.getItem('places_search_mode') === 'google'
+  ? 'google'
+  : 'basic';
+
+let mobilePlacesUsage = null;
+
+function getMobilePlacesNumbers(usage = mobilePlacesUsage) {
+  return {
+    used: Number(
+      usage?.used ??
+      usage?.count ??
+      usage?.user_used ??
+      usage?.user?.used ??
+      0
+    ),
+    limit: Number(
+      usage?.limit ??
+      usage?.user_limit ??
+      usage?.user?.limit ??
+      100
+    )
+  };
+}
+
+function updateMobilePlacesControl() {
+  const control = document.querySelector('#mobile-places-control');
+  if (!control) return;
+
+  const precise = mobilePlacesMode === 'google';
+  const { used, limit } = getMobilePlacesNumbers();
+
+  control.classList.toggle('is-precise', precise);
+  control.querySelector('[data-mobile-places-label]').textContent = precise
+    ? `Google Places · ${used} / ${limit}`
+    : 'Recherche standard gratuite';
+
+  control.querySelector('[data-mobile-places-toggle]').setAttribute(
+    'aria-pressed',
+    precise ? 'true' : 'false'
+  );
+}
+
+async function refreshMobilePlacesUsage() {
+  if (!mobileUser || !window.SB?.getPlacesUsage) return;
+
+  try {
+    mobilePlacesUsage = await window.SB.getPlacesUsage();
+    updateMobilePlacesControl();
+  } catch (error) {
+    console.warn('Impossible de charger le quota Places mobile :', error);
+  }
+}
+
+function ensureMobilePlacesControl() {
+  let control = document.querySelector('#mobile-places-control');
+
+  if (!control) {
+    control = document.createElement('section');
+    control.id = 'mobile-places-control';
+    control.className = 'mobile-places-control';
+    control.innerHTML = `
+      <button
+        type="button"
+        class="mobile-places-toggle"
+        data-mobile-places-toggle
+        aria-pressed="false"
+      >
+        <span class="material-symbols-outlined">travel_explore</span>
+        <span data-mobile-places-label>Recherche standard gratuite</span>
+      </button>
+
+      <button
+        type="button"
+        class="mobile-places-help"
+        aria-label="Comprendre les recherches de lieux"
+      >
+        ?
+      </button>
+    `;
+
+    document.body.appendChild(control);
+
+    control.querySelector('[data-mobile-places-toggle]').addEventListener('click', () => {
+      mobilePlacesMode = mobilePlacesMode === 'google' ? 'basic' : 'google';
+      localStorage.setItem('places_search_mode', mobilePlacesMode);
+      updateMobilePlacesControl();
+    });
+
+    control.querySelector('.mobile-places-help').addEventListener('click', () => {
+      alert(
+        'Recherche standard : gratuite, idéale pour les villes, rues et lieux simples.\\n\\n' +
+        'Google Places : plus précis pour les musées, restaurants, hôtels et lieux exacts. ' +
+        'Chaque utilisateur dispose de 100 recherches Google Places par mois.'
+      );
+    });
+  }
+
+  updateMobilePlacesControl();
+
+  if (!mobilePlacesUsage) {
+    refreshMobilePlacesUsage();
+  }
+}
+
+function normalizeMobilePlace(place) {
+  const lng = Number(place?.lng ?? place?.longitude ?? place?.center?.[0]);
+  const lat = Number(place?.lat ?? place?.latitude ?? place?.center?.[1]);
+  const name = place?.name ?? place?.title ?? place?.label ?? '';
+  const address = place?.address ?? place?.formatted_address ?? place?.label ?? name;
+
+  if (!Number.isFinite(lng) || !Number.isFinite(lat)) return null;
+
+  return {
+    text: name || address,
+    place_name: address,
+    center: [lng, lat]
+  };
+}
+
+async function searchMobilePlaces(query, limit = 5, provider = mobilePlacesMode) {
+  const cleanQuery = String(query || '').trim();
+
+  if (cleanQuery.length < 2 || !window.SB?.searchPlaces) {
+    return [];
+  }
+
+  const response = await window.SB.searchPlaces({
+    query: cleanQuery,
+    language: 'fr',
+    limit,
+    provider
+  });
+
+  if (response?.usage) {
+    mobilePlacesUsage = response.usage;
+    updateMobilePlacesControl();
+  }
+
+  return (response?.results || [])
+    .map(normalizeMobilePlace)
+    .filter(Boolean);
+}
+
 function attachAutocomplete(input) {
   if (!input || input.dataset.acReady) return;
   input.dataset.acReady = 'true';
@@ -563,46 +706,60 @@ function attachAutocomplete(input) {
 
   input.addEventListener('input', () => {
     clearTimeout(timer);
+
     const q = input.value.trim();
-    if (q.length < 2) { dropdown.innerHTML = ''; dropdown.style.display = 'none'; return; }
+    if (q.length < 2) {
+      dropdown.innerHTML = '';
+      dropdown.style.display = 'none';
+      return;
+    }
 
     timer = setTimeout(async () => {
       try {
-        const url = 'https://api.maptiler.com/geocoding/' + encodeURIComponent(q) + '.json?key=' + MAPTILER_KEY + '&language=fr&limit=5';
-        const res = await fetch(url);
-        const data = await res.json();
-        if (!data.features || !data.features.length) { dropdown.style.display = 'none'; return; }
+        const features = await searchMobilePlaces(q, 5);
+
+        if (!features.length) {
+          dropdown.innerHTML = '';
+          dropdown.style.display = 'none';
+          return;
+        }
 
         dropdown.style.display = 'block';
-        dropdown.innerHTML = data.features.map((f, i) => 
-          '<button class="ac-item" type="button" data-idx="' + i + '">' +
-          '<span class="material-symbols-outlined">location_on</span>' +
-          '<span>' + escapeHtml(f.place_name) + '</span>' +
-          '</button>'
-        ).join('');
+        dropdown.innerHTML = features.map((feature, index) => `
+          <button class="ac-item" type="button" data-index="${index}">
+            <span class="material-symbols-outlined">location_on</span>
+            <span>${escapeHtml(feature.place_name)}</span>
+          </button>
+        `).join('');
 
-        dropdown.querySelectorAll('.ac-item').forEach((btn, i) => {
-          btn.addEventListener('mousedown', (e) => {
-            e.preventDefault();
-            const feat = data.features[i];
-            input.value = feat.place_name;
-            input.dataset.lat = feat.center[1];
-            input.dataset.lng = feat.center[0];
+        dropdown.querySelectorAll('.ac-item').forEach((button) => {
+          button.addEventListener('mousedown', (event) => {
+            event.preventDefault();
+
+            const feature = features[Number(button.dataset.index)];
+            input.value = feature.place_name;
+            input.dataset.lat = feature.center[1];
+            input.dataset.lng = feature.center[0];
             dropdown.style.display = 'none';
           });
         });
-      } catch (err) {
-        console.warn('Geocoding error:', err);
+      } catch (error) {
+        console.warn('Recherche de lieu mobile impossible :', error);
+        dropdown.innerHTML = '';
+        dropdown.style.display = 'none';
       }
     }, 350);
   });
 
   input.addEventListener('blur', () => {
-    setTimeout(() => { dropdown.style.display = 'none'; }, 200);
+    setTimeout(() => {
+      dropdown.style.display = 'none';
+    }, 200);
   });
 }
 
 function initAutocompleteOnPage() {
+  ensureMobilePlacesControl();
   setTimeout(() => {
     document.querySelectorAll('[data-autocomplete]').forEach(input => attachAutocomplete(input));
   }, 150);
@@ -1147,11 +1304,9 @@ async function geocodeMobileMapDestination() {
   } catch {}
 
   try {
-    const response = await fetch(
-      `https://api.maptiler.com/geocoding/${encodeURIComponent(label)}.json?key=${MAPTILER_KEY}&language=fr&limit=1`
-    );
-
-    const data = await response.json();
+    const data = {
+  features: await searchMobilePlaces(label, 1, 'basic')
+};
     const feature = data.features?.[0];
 
     if (!feature?.center) return null;
@@ -2329,11 +2484,9 @@ async function locateMobileMapStep(index) {
   if (input) input.value = query;
 
   try {
-    const response = await fetch(
-      `https://api.maptiler.com/geocoding/${encodeURIComponent(query)}.json?key=${MAPTILER_KEY}&language=fr&limit=1`
-    );
-
-    const data = await response.json();
+    const data = {
+  features: await searchMobilePlaces(query, 1)
+};
     const feature = data.features?.[0];
 
     if (!feature?.center || !mobileMapInstance) {
@@ -2536,11 +2689,13 @@ function getOsrmProfile(mode) {
 
 async function geocodeMobileRoutePoint(query) {
   const cleanQuery = query.trim();
-  if (!cleanQuery) throw new Error('Adresse manquante');
 
-  const response = await fetch(`https://api.maptiler.com/geocoding/${encodeURIComponent(cleanQuery)}.json?key=${MAPTILER_KEY}&language=fr&limit=1`);
-  const data = await response.json();
-  const feature = data.features?.[0];
+  if (!cleanQuery) {
+    throw new Error('Adresse manquante');
+  }
+
+  const features = await searchMobilePlaces(cleanQuery, 1);
+  const feature = features[0];
 
   if (!feature?.center) {
     throw new Error(`Lieu introuvable : ${cleanQuery}`);
@@ -3008,9 +3163,7 @@ function initMobileRouteAutocomplete() {
 
       timer = setTimeout(async () => {
         try {
-          const response = await fetch(`https://api.maptiler.com/geocoding/${encodeURIComponent(query)}.json?key=${MAPTILER_KEY}&language=fr&limit=5`);
-          const data = await response.json();
-          const features = data.features || [];
+          const features = await searchMobilePlaces(query, 5);
 
           dropdown.innerHTML = features.map((feature, index) => `
             <button type="button" data-route-suggestion="${index}">
@@ -3077,8 +3230,9 @@ function initMobileMapSearch() {
 
     mobileMapSearchTimer = setTimeout(async () => {
       try {
-        const response = await fetch(`https://api.maptiler.com/geocoding/${encodeURIComponent(query)}.json?key=${MAPTILER_KEY}&language=fr&limit=5`);
-        const data = await response.json();
+        const data = {
+  features: await searchMobilePlaces(query, 5)
+};
 
         results.innerHTML = (data.features || []).map((feature, index) => `
           <button type="button" data-map-result="${index}">

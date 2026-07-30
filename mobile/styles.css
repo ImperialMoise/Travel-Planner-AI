@@ -8715,3 +8715,90 @@ button {
 .itinerary-day-list button.active strong {
   color: var(--primary-fixed);
 }
+
+/* Sélecteur de journées : défilement tactile horizontal */
+.itinerary-day-picker {
+  width: 100%;
+  min-width: 0;
+  margin: 18px 0 14px;
+}
+
+.itinerary-day-list {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 8px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 2px 2px 10px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  touch-action: pan-x;
+}
+
+.itinerary-day-list::-webkit-scrollbar {
+  display: none;
+}
+
+.itinerary-day-list button {
+  flex: 0 0 88px;
+  width: 88px;
+  min-width: 88px;
+  margin: 0;
+  scroll-snap-align: start;
+}
+
+.mobile-places-control {
+  position: fixed;
+  top: 58px;
+  right: 12px;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: calc(100vw - 24px);
+}
+
+.mobile-places-toggle,
+.mobile-places-help {
+  border: 1px solid #e4d7c2;
+  background: #fffdf8;
+  color: #65481d;
+  box-shadow: 0 5px 16px rgba(65, 42, 15, 0.12);
+}
+
+.mobile-places-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 7px 10px;
+  border-radius: 18px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.mobile-places-toggle.is-precise {
+  background: #8b5a08;
+  border-color: #8b5a08;
+  color: #fff;
+}
+
+.mobile-places-toggle .material-symbols-outlined {
+  font-size: 16px;
+}
+
+.mobile-places-help {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 50%;
+  font-weight: 800;
+  font-size: 13px;
+}

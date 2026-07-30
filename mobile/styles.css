@@ -141,7 +141,7 @@ button {
   width: 100%;
   max-width: 430px;
   margin: 0 auto;
-  padding: 28px 20px calc(104px + env(safe-area-inset-bottom, 0px));
+  padding: 28px 20px calc(36px + env(safe-area-inset-bottom, 0px));
 }
 
 .kicker {
@@ -9655,15 +9655,25 @@ button {
 }
 
 .mobile-trip-menu-backdrop {
+  position: fixed;
+  top: 0;
+  right: auto;
+  bottom: 0;
+  left: 50%;
+  z-index: 200;
+  width: min(100vw, 430px);
+  overflow: hidden;
+  transform: translateX(-50%);
   background: #fffdf8;
   backdrop-filter: none;
 }
 
 .mobile-trip-menu {
-  width: 100vw;
+  width: 100%;
   max-width: none;
   height: 100dvh;
   padding-bottom: env(safe-area-inset-bottom);
+  background: #fffdf8;
   box-shadow: none;
 }
 
@@ -9682,15 +9692,27 @@ button {
   cursor: pointer;
 }
 
-@media (min-width: 600px) {
-  .mobile-trip-menu-backdrop {
-    background: rgba(30, 24, 18, 0.42);
-  }
+.mobile-trip-menu-backdrop {
+  position: fixed;
+  top: 0;
+  right: auto;
+  bottom: 0;
+  left: 50%;
+  z-index: 200;
+  width: min(100vw, 430px);
+  overflow: hidden;
+  transform: translateX(-50%);
+  background: #fffdf8;
+  backdrop-filter: none;
+}
 
-  .mobile-trip-menu {
-    width: min(88vw, 380px);
-    box-shadow: 18px 0 45px rgba(38, 27, 14, 0.2);
-  }
+.mobile-trip-menu {
+  width: 100%;
+  max-width: none;
+  height: 100dvh;
+  padding-bottom: env(safe-area-inset-bottom);
+  background: #fffdf8;
+  box-shadow: none;
 }
 
 .mobile-personal-tabs-three {

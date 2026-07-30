@@ -1137,7 +1137,7 @@ function topbar() {
         data-action="home"
         aria-label="Retourner à l’accueil"
       >
-        ${escapeHtml(activeTrip?.name || 'La Fabrique à Voyages')}
+        La Fabrique à Voyages
       </button>
 
       <button
@@ -1208,28 +1208,33 @@ function openMobileTripMenu() {
       </div>
 
       <footer>
-        <button type="button" data-action="create-trip">
-          <span class="material-symbols-outlined">add</span>
-          Nouveau voyage
-        </button>
+  <button type="button" data-action="home">
+    <span class="material-symbols-outlined">home</span>
+    Accueil
+  </button>
 
-        <button type="button" data-action="account">
-          <span class="material-symbols-outlined">person</span>
-          Mon compte
-        </button>
-        <button
-  type="button"
-  data-action="share"
-  ${activeTrip?.id ? '' : 'disabled'}
->
-  <span class="material-symbols-outlined">group</span>
-  Partage du voyage
-</button>
-        <button type="button" data-action="settings">
-  <span class="material-symbols-outlined">settings</span>
-  Paramètres
-</button>
-      </footer>
+  <button type="button" data-action="create-trip">
+    <span class="material-symbols-outlined">add</span>
+    Nouveau voyage
+  </button>
+
+  ${activeTrip?.id ? `
+    <button type="button" data-action="share">
+      <span class="material-symbols-outlined">group</span>
+      Partage du voyage
+    </button>
+  ` : ''}
+
+  <button type="button" data-action="account">
+    <span class="material-symbols-outlined">person</span>
+    Mon compte
+  </button>
+
+  <button type="button" data-action="settings">
+    <span class="material-symbols-outlined">settings</span>
+    Paramètres
+  </button>
+</footer>
     </aside>
   `;
 
@@ -1289,7 +1294,13 @@ function renderHome() {
           <p class="mobile-sync-status">${syncStatus}</p>
         </section>
 
-        <section class="next-trip-card" aria-label="Prochain départ" data-action="itinerary" style="cursor:pointer">
+        <section
+  class="next-trip-card"
+  aria-label="Prochain départ"
+  data-action="${nextTrip ? 'open-trip' : 'create-trip'}"
+  data-trip-id="${nextTrip?.id || ''}"
+  style="cursor:pointer"
+>
           <div class="next-trip-content">
             <span class="badge">Prochain départ</span>
             <h3 class="next-trip-title">${escapeHtml(nextTripName)}</h3>
@@ -1299,10 +1310,6 @@ function renderHome() {
                   <span class="countdown">${nextTrip ? 'Prêt' : '—'}</span>
                   <span class="mono">${nextTripDate ? formatDateLabel(nextTripDate, '') : 'Créez votre premier voyage'}</span>
                 </div>
-                <span class="mono percent">${nextTrip ? '80%' : '0%'}</span>
-              </div>
-              <div class="progress-track">
-                <div class="progress-fill" style="width:${nextTrip ? '80%' : '0%'}"></div>
               </div>
             </div>
           </div>
@@ -1345,7 +1352,6 @@ function renderHome() {
         </section>
       </main>
 
-      ${bottomNav('plan')}
     </div>
   `;
 }
@@ -3466,7 +3472,7 @@ function renderAuth() {
 
       <main class="create-main">
         <section class="create-hero">
-          <h2>Bienvenue dans<br>L'Atelier</h2>
+          <h2>Bienvenue dans<br>La Fabrique à Voyages</h2>
           <p>Connectez-vous pour retrouver vos voyages.</p>
         </section>
 
@@ -6398,8 +6404,6 @@ async function handleAddStepToProgram() {
         amount: 0,
         paidBy: '',
         lat: data.locationLat || data.arrivalLat || data.departureLat || null,
-        lng: data.locationLng || data.arrivalLng || data.departureLng || null,
-        lat: data.locationLat || data.arrivalLat || data.departureLat || null,
         lng: data.locationLng || data.arrivalLng || data.departureLng || null
       });
 
@@ -6442,6 +6446,9 @@ function navigate(route) {
   } else if (route === 'settings') {
   window.location.hash = 'settings';
   renderSettings();
+  } else if (route === 'share') {
+  window.location.hash = 'share';
+  renderShare();
   } else if (route === 'create-trip') {
     window.location.hash = 'create-trip';
     renderCreateTrip();
@@ -7411,6 +7418,7 @@ function renderCurrentRoute() {
   else if (window.location.hash === '#auth') renderAuth();
   else if (window.location.hash === '#account') renderAccount();
   else if (window.location.hash === '#settings') renderSettings();
+  else if (window.location.hash === '#share') renderShare();
   else if (window.location.hash === '#create-trip') renderCreateTrip();
   else if (window.location.hash === '#budget-overview') renderBudgetOverview();
   else if (window.location.hash === '#budget') renderBudget();
@@ -7460,7 +7468,24 @@ window.addEventListener('click', event => {
   }
 });
 
-window.addEventListener('change', event => {
+window.addEventListener('change', async event => {
+  if (event.target?.id === 'mobile-share-trip') {
+    const tripId = event.target.value;
+
+    if (!tripId || !window.SB) return;
+
+    try {
+      activeTrip = await window.SB.loadTrip(tripId);
+      mobileItineraryDayIndex = 0;
+      await renderShare();
+    } catch (error) {
+      console.error('Mobile share trip change error:', error);
+      alert('Impossible de charger ce voyage.');
+    }
+
+    return;
+  }
+
   if (event.target?.id === 'doc-file-input') {
     handleAddDocuments(event.target.files);
   }

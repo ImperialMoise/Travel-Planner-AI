@@ -307,12 +307,18 @@ const budgetSettlement = {
 };
 
 const docCategoryMeta = [
-  { id: 'flights', label: "Billets d'avion", icon: 'flight', tone: 'primary' },
-  { id: 'hotels', label: 'Hébergements', icon: 'hotel', tone: 'accent' },
-  { id: 'identity', label: 'Identité', icon: 'badge', tone: 'secondary' },
-  { id: 'insurance', label: 'Assurances', icon: 'health_and_safety', tone: 'tertiary' },
-  { id: 'other', label: 'Autres documents', icon: 'folder', tone: 'secondary' }
+  { id: 'flights', label: "Billets d'avion", icon: 'flight', tone: 'doc-flights' },
+  { id: 'hotels', label: 'Hébergements', icon: 'hotel', tone: 'doc-hotels' },
+  { id: 'identity', label: 'Identité', icon: 'badge', tone: 'doc-identity' },
+  { id: 'insurance', label: 'Assurances', icon: 'health_and_safety', tone: 'doc-insurance' },
+  { id: 'other', label: 'Autres documents', icon: 'folder', tone: 'doc-other' }
 ];
+
+let activeDocId = null;
+let mobileDocuments = [];
+let mobileDocumentsTripId = null;
+let mobileDocumentsLoadedAt = 0;
+const MOBILE_DOCUMENTS_CACHE_MS = 60_000;
 
 let activeDocId = null;
 let mobileDocuments = [];
@@ -321,18 +327,37 @@ function getTripDocuments() {
   return mobileDocuments;
 }
 
-async function refreshMobileDocuments() {
+async function refreshMobileDocuments({ force = false } = {}) {
   if (!activeTrip?.id || !window.SB?.listDocuments) {
     mobileDocuments = [];
+    mobileDocumentsTripId = null;
+    mobileDocumentsLoadedAt = 0;
     return;
   }
 
+  const isCurrentTripCached =
+    mobileDocumentsTripId === activeTrip.id &&
+    Date.now() - mobileDocumentsLoadedAt < MOBILE_DOCUMENTS_CACHE_MS;
+
+  if (!force && isCurrentTripCached) return;
+
   try {
     mobileDocuments = await window.SB.listDocuments(activeTrip.id);
+    mobileDocumentsTripId = activeTrip.id;
+    mobileDocumentsLoadedAt = Date.now();
   } catch (error) {
     console.error('Mobile documents refresh error:', error);
     mobileDocuments = [];
   }
+}
+
+function formatDocumentDate(value) {
+  if (!value) return 'Date inconnue';
+
+  return new Intl.DateTimeFormat('fr-FR', {
+    day: 'numeric',
+    month: 'short'
+  }).format(new Date(value));
 }
 
 function getDocCategories() {
@@ -365,8 +390,8 @@ function readFileAsDataUrl(file) {
   });
 }
 
-async function handleAddDocuments(files) {
-  const selectedFiles = [...files || []];
+async function handleAddDocuments(files, category = 'other') {
+  const selectedFiles = [...(files || [])];
   if (!selectedFiles.length) return;
 
   if (!activeTrip?.id) {
@@ -379,22 +404,19 @@ async function handleAddDocuments(files) {
     return;
   }
 
-  const category = prompt(
-    "Catégorie ? flights, hotels, identity, insurance ou other",
-    'other'
-  ) || 'other';
-
-  const safeCategory = docCategoryMeta.some(item => item.id === category) ? category : 'other';
+  const safeCategory = docCategoryMeta.some(item => item.id === category)
+    ? category
+    : 'other';
 
   try {
     for (const file of selectedFiles) {
       await window.SB.uploadDocument(activeTrip.id, file, safeCategory);
     }
 
-    await refreshMobileDocuments();
-    renderDocs();
+    await refreshMobileDocuments({ force: true });
+    navigate('docs');
   } catch (error) {
-    alert('Erreur upload document : ' + (error.message || error));
+    alert('Erreur lors de l’ajout : ' + (error.message || error));
   }
 }
 
@@ -403,7 +425,7 @@ async function handleDeleteDocument(docId) {
 
   try {
     await window.SB.deleteDocument(docId);
-    await refreshMobileDocuments();
+    await refreshMobileDocuments({ force: true });
     activeDocId = null;
     renderDocs();
   } catch (error) {
@@ -5939,16 +5961,24 @@ async function renderDocs() {
         </div>
 
         <div class="docs-actions">
-          <button class="docs-action-primary" type="button" data-action="doc-upload">
-            <span class="material-symbols-outlined">upload_file</span>
-            <span>Ajouter</span>
-          </button>
-          <button class="docs-action-secondary" type="button" data-action="doc-scanner">
-            <span class="material-symbols-outlined">photo_camera</span>
-            <span>Scanner</span>
-          </button>
-          <input id="doc-file-input" type="file" multiple accept="image/*,.pdf" hidden>
-        </div>
+  <select id="doc-category-select" class="docs-category-select" aria-label="Catégorie du document">
+    ${docCategoryMeta.map(category => `
+      <option value="${category.id}">${escapeHtml(category.label)}</option>
+    `).join('')}
+  </select>
+
+  <button class="docs-action-primary" type="button" data-action="doc-upload">
+    <span class="material-symbols-outlined">upload_file</span>
+    <span>Ajouter</span>
+  </button>
+
+  <button class="docs-action-secondary" type="button" data-action="doc-scanner">
+    <span class="material-symbols-outlined">photo_camera</span>
+    <span>Scanner</span>
+  </button>
+
+  <input id="doc-file-input" type="file" multiple accept="image/*,application/pdf" hidden>
+</div>
 
         <div class="docs-grid">
           ${categories.map(cat => `
@@ -5962,16 +5992,25 @@ async function renderDocs() {
               </div>
 
               <div class="docs-file-list">
-                ${cat.files.length ? cat.files.map(file => `
-                  <button class="docs-file-row" type="button" data-action="doc-detail" data-doc-id="${file.id}">
-                    <span class="material-symbols-outlined docs-file-type-icon ${file.type === 'pdf' ? 'pdf' : 'img'}">${file.type === 'pdf' ? 'picture_as_pdf' : file.type === 'image' ? 'image' : 'description'}</span>
-                    <div class="docs-file-info">
-                      <span class="docs-file-name">${escapeHtml(file.name)}</span>
-                      <span class="docs-file-meta">Ajouté le ${escapeHtml(file.date)} · ${formatDocSize(file.size)}</span>
-                    </div>
-                    <span class="material-symbols-outlined docs-file-more">chevron_right</span>
-                  </button>
-                `).join('') : `
+                ${cat.files.length ? cat.files.map(file => {
+  const fileType = getDocFileType(file);
+  const fileIcon = fileType === 'pdf'
+    ? 'picture_as_pdf'
+    : fileType === 'image'
+      ? 'image'
+      : 'description';
+
+  return `
+    <button class="docs-file-row ${cat.tone}" type="button" data-action="doc-detail" data-doc-id="${file.id}">
+      <span class="material-symbols-outlined docs-file-type-icon ${fileType}">${fileIcon}</span>
+      <div class="docs-file-info">
+        <span class="docs-file-name">${escapeHtml(file.name)}</span>
+        <span class="docs-file-meta">Ajouté le ${formatDocumentDate(file.createdAt)} · ${formatDocSize(file.size)}</span>
+      </div>
+      <span class="material-symbols-outlined docs-file-more">chevron_right</span>
+    </button>
+  `;
+}).join('') : `
                   <div class="docs-empty">
                     <p>Aucun document dans cette catégorie.</p>
                   </div>
@@ -5994,45 +6033,35 @@ function renderDocScanner() {
         <button class="scanner-btn" type="button" data-action="docs" aria-label="Annuler">
           <span class="material-symbols-outlined">close</span>
         </button>
-        <h1 class="topbar-title">L'Atelier</h1>
-        <button class="scanner-btn" type="button" aria-label="Aide">
-          <span class="material-symbols-outlined">help_outline</span>
-        </button>
+        <h1 class="topbar-title">Scanner un document</h1>
+        <span></span>
       </header>
 
-      <main class="scanner-viewport">
-        <div class="scanner-bg"></div>
-        <div class="scanner-mask"></div>
+      <main class="scanner-viewport scanner-real">
         <div class="scanner-frame">
-          <span class="corner tl"></span>
-          <span class="corner tr"></span>
-          <span class="corner bl"></span>
-          <span class="corner br"></span>
-          <div class="scanner-detected">
-            <span>DOCUMENT DÉTECTÉ</span>
-          </div>
+          <span class="material-symbols-outlined">document_scanner</span>
+          <strong>Numériser un document</strong>
+          <p>La caméra arrière du téléphone s’ouvrira pour photographier votre document.</p>
         </div>
 
         <div class="scanner-controls">
-          <div class="scanner-options">
-            <button type="button"><span class="material-symbols-outlined filled">flash_auto</span><span>Auto</span></button>
-            <button type="button" class="active"><span class="material-symbols-outlined filled">auto_awesome</span><span>Auto-Bords</span></button>
-            <button type="button"><span class="material-symbols-outlined">description</span><span>Type</span></button>
-          </div>
+          <select id="doc-camera-category-select" class="docs-category-select" aria-label="Catégorie du document">
+            ${docCategoryMeta.map(category => `
+              <option value="${category.id}">${escapeHtml(category.label)}</option>
+            `).join('')}
+          </select>
 
-          <div class="scanner-capture-row">
-            <button class="scanner-gallery" type="button">
-              <span class="material-symbols-outlined">photo_library</span>
-            </button>
-            <button class="scanner-shutter" type="button" aria-label="Capturer">
-              <span class="shutter-ring"></span>
-            </button>
-            <button class="scanner-done" type="button" data-action="docs">
-              <span class="material-symbols-outlined">check</span>
-            </button>
-          </div>
+          <button class="scanner-shutter" type="button" data-action="doc-camera" aria-label="Ouvrir la caméra">
+            <span class="material-symbols-outlined">photo_camera</span>
+          </button>
 
-          <p class="scanner-hint">Maintenez l'appareil stable au-dessus du document.</p>
+          <button class="docs-action-secondary full-width" type="button" data-action="doc-gallery">
+            <span class="material-symbols-outlined">photo_library</span>
+            <span>Choisir depuis le téléphone</span>
+          </button>
+
+          <input id="doc-camera-input" type="file" accept="image/*" capture="environment" hidden>
+          <input id="doc-gallery-input" type="file" accept="image/*,application/pdf" hidden>
         </div>
       </main>
     </div>
@@ -6076,23 +6105,40 @@ async function renderDocDetail() {
         </button>
       </header>
 
-      <main class="doc-detail-viewer">
-        ${isImage ? `
-          <img class="doc-preview-image" src="${documentUrl}" alt="${escapeHtml(documentItem.name)}">
-        ` : isPdf ? `
-          <iframe class="doc-preview-frame" src="${documentUrl}" title="${escapeHtml(documentItem.name)}"></iframe>
-        ` : `
-          <div class="docs-empty">
-            <div class="docs-empty-icon">
-              <span class="material-symbols-outlined">description</span>
-            </div>
-            <h2>Aperçu indisponible</h2>
-            <p>Ce type de fichier peut être téléchargé, mais pas prévisualisé ici.</p>
-          </div>
-        `}
+<main class="doc-detail-viewer">
+  ${isImage ? `
+    <img
+      class="doc-preview-image"
+      src="${documentUrl}"
+      alt="${escapeHtml(documentItem.name)}"
+      onerror="this.closest('.doc-detail-viewer').querySelector('.doc-preview-error').hidden = false"
+    >
+    <div class="doc-preview-error" hidden>
+      <span class="material-symbols-outlined">broken_image</span>
+      <p>Impossible d’afficher cette image dans l’application.</p>
+    </div>
+  ` : isPdf ? `
+    <div class="doc-pdf-preview">
+      <span class="material-symbols-outlined">picture_as_pdf</span>
+      <h2>Document PDF</h2>
+      <p>Pour une lecture fiable sur Android, ouvre-le avec le lecteur de documents du téléphone.</p>
+      <a class="primary-doc-action" href="${documentUrl}" target="_blank" rel="noopener">
+        <span class="material-symbols-outlined">open_in_new</span>
+        <span>Ouvrir le PDF</span>
+      </a>
+    </div>
+  ` : `
+    <div class="docs-empty">
+      <div class="docs-empty-icon">
+        <span class="material-symbols-outlined">description</span>
+      </div>
+      <h2>Aperçu indisponible</h2>
+      <p>Ce fichier peut être téléchargé, mais pas prévisualisé ici.</p>
+    </div>
+  `}
 
-        <div class="doc-page-indicator">${escapeHtml(documentItem.name)}</div>
-      </main>
+  <div class="doc-page-indicator">${escapeHtml(documentItem.name)}</div>
+</main>
 
       <footer class="doc-detail-actions">
         <a class="primary-doc-action" href="${documentUrl}" download="${escapeHtml(documentItem.name)}">
@@ -6690,6 +6736,16 @@ if ([
 
     if (action === 'doc-upload') {
     document.querySelector('#doc-file-input')?.click();
+    return;
+  }
+
+    if (action === 'doc-camera') {
+    document.querySelector('#doc-camera-input')?.click();
+    return;
+  }
+
+  if (action === 'doc-gallery') {
+    document.querySelector('#doc-gallery-input')?.click();
     return;
   }
 
@@ -7662,7 +7718,20 @@ window.addEventListener('change', async event => {
   }
 
   if (event.target?.id === 'doc-file-input') {
-    handleAddDocuments(event.target.files);
+    const category = document.querySelector('#doc-category-select')?.value || 'other';
+    handleAddDocuments(event.target.files, category);
+    return;
+  }
+
+  if (event.target?.id === 'doc-camera-input') {
+    const category = document.querySelector('#doc-camera-category-select')?.value || 'other';
+    handleAddDocuments(event.target.files, category);
+    return;
+  }
+
+  if (event.target?.id === 'doc-gallery-input') {
+    const category = document.querySelector('#doc-camera-category-select')?.value || 'other';
+    handleAddDocuments(event.target.files, category);
   }
 });
 

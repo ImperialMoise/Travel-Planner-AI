@@ -10218,3 +10218,78 @@ button {
 .budget-sort-control .material-symbols-outlined {
   font-size: 18px;
 }
+
+.docs-category-select {
+  width: 100%;
+  min-height: 46px;
+  padding: 0 14px;
+  border: 1px solid var(--faint-border);
+  border-radius: 12px;
+  background: var(--surface-container-lowest);
+  color: var(--on-surface);
+  font: inherit;
+  font-weight: 750;
+}
+
+.docs-category-icon.doc-flights,
+.docs-file-row.doc-flights .docs-file-type-icon {
+  background: rgba(155, 103, 25, 0.13);
+  color: #9b6719;
+}
+
+.docs-category-icon.doc-hotels,
+.docs-file-row.doc-hotels .docs-file-type-icon {
+  background: rgba(51, 127, 114, 0.13);
+  color: #337f72;
+}
+
+.docs-category-icon.doc-identity,
+.docs-file-row.doc-identity .docs-file-type-icon {
+  background: rgba(100, 86, 145, 0.13);
+  color: #645691;
+}
+
+.docs-category-icon.doc-insurance,
+.docs-file-row.doc-insurance .docs-file-type-icon {
+  background: rgba(50, 112, 142, 0.13);
+  color: #32708e;
+}
+
+.docs-category-icon.doc-other,
+.docs-file-row.doc-other .docs-file-type-icon {
+  background: rgba(104, 104, 92, 0.13);
+  color: #68685c;
+}
+
+.doc-pdf-preview,
+.doc-preview-error {
+  width: min(100%, 360px);
+  margin: auto;
+  padding: 28px 22px;
+  border: 1px solid var(--faint-border);
+  border-radius: 18px;
+  background: var(--surface-container-lowest);
+  text-align: center;
+  box-shadow: var(--shadow-card);
+}
+
+.doc-pdf-preview > .material-symbols-outlined,
+.doc-preview-error > .material-symbols-outlined {
+  display: block;
+  margin-bottom: 12px;
+  font-size: 46px;
+  color: var(--error-red);
+}
+
+.doc-pdf-preview h2 {
+  margin: 0;
+  font-family: var(--font-serif);
+  color: var(--on-surface);
+}
+
+.doc-pdf-preview p,
+.doc-preview-error p {
+  margin: 10px 0 20px;
+  color: var(--on-surface-variant);
+  line-height: 1.5;
+}

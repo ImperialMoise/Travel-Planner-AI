@@ -1275,6 +1275,327 @@
   }
 }
 
+.home-page.is-public .home-library{
+  display:none;
+}
+
+.home-public-inner{
+  width:min(1180px,calc(100% - 40px));
+  margin:0 auto;
+}
+
+.home-public-flow{
+  padding:96px 0;
+  background:var(--card);
+  color:var(--text);
+}
+
+.home-public-heading{
+  max-width:760px;
+  margin-bottom:68px;
+}
+
+.home-public-kicker{
+  margin-bottom:12px;
+  color:var(--accent);
+  font-family:var(--font-mono,ui-monospace);
+  font-size:11px;
+  font-weight:900;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+}
+
+.home-public-heading h2,
+.home-public-tools-heading h2,
+.home-public-cta h2{
+  margin:0;
+  font-family:var(--font-serif);
+  font-size:clamp(38px,5vw,62px);
+  font-weight:400;
+  line-height:1.02;
+  letter-spacing:0;
+}
+
+.home-public-heading p{
+  max-width:660px;
+  margin:20px 0 0;
+  color:var(--muted);
+  font-size:17px;
+  font-weight:700;
+  line-height:1.7;
+}
+
+.home-public-steps{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 70px minmax(0,1fr);
+  align-items:stretch;
+  border-top:1px solid var(--outline-variant);
+  border-bottom:1px solid var(--outline-variant);
+}
+
+.home-public-step{
+  display:grid;
+  grid-template-columns:54px minmax(0,1fr);
+  gap:22px;
+  padding:42px 24px 42px 0;
+}
+
+.home-public-step:last-child{
+  padding-left:24px;
+  padding-right:0;
+}
+
+.home-public-step-index{
+  width:46px;
+  height:46px;
+  display:grid;
+  place-items:center;
+  border:1px solid var(--outline-variant);
+  border-radius:50%;
+  color:var(--accent);
+  font-family:var(--font-mono,ui-monospace);
+  font-size:11px;
+  font-weight:900;
+}
+
+.home-public-step-label{
+  margin-bottom:7px;
+  color:var(--accent);
+  font-size:11px;
+  font-weight:900;
+  text-transform:uppercase;
+}
+
+.home-public-step h3{
+  margin:0;
+  font-family:var(--font-serif);
+  font-size:36px;
+  font-weight:400;
+  line-height:1.1;
+}
+
+.home-public-step p{
+  margin:14px 0 22px;
+  color:var(--muted);
+  font-size:14px;
+  font-weight:700;
+  line-height:1.65;
+}
+
+.home-public-step-details{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
+
+.home-public-step-details span{
+  padding:7px 10px;
+  border:1px solid var(--outline-variant);
+  border-radius:999px;
+  color:var(--muted);
+  font-size:11px;
+  font-weight:800;
+}
+
+.home-public-transition{
+  display:grid;
+  place-items:center;
+  border-left:1px solid var(--outline-variant);
+  border-right:1px solid var(--outline-variant);
+  color:var(--accent);
+  font-size:25px;
+}
+
+.home-public-tools{
+  padding:96px 0;
+  background:var(--soft);
+  color:var(--text);
+}
+
+.home-public-tools-heading{
+  display:grid;
+  grid-template-columns:minmax(0,1.2fr) minmax(280px,.8fr);
+  align-items:end;
+  gap:60px;
+  margin-bottom:54px;
+}
+
+.home-public-tools-heading p{
+  margin:0;
+  color:var(--muted);
+  font-size:15px;
+  font-weight:700;
+  line-height:1.7;
+}
+
+.home-public-tools-grid{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:28px;
+}
+
+.home-public-tool{
+  padding-top:22px;
+  border-top:2px solid var(--outline-variant);
+  color:var(--accent);
+}
+
+.home-public-tool h3{
+  margin:18px 0 7px;
+  color:var(--text);
+  font-family:var(--font-serif);
+  font-size:25px;
+  font-weight:400;
+}
+
+.home-public-tool p{
+  margin:0;
+  color:var(--muted);
+  font-size:13px;
+  font-weight:700;
+  line-height:1.55;
+}
+
+.home-public-cta{
+  padding:84px 20px;
+  background:var(--petrol);
+  color:#fff;
+}
+
+.home-public-cta-inner{
+  width:min(1180px,100%);
+  margin:0 auto;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:60px;
+}
+
+.home-public-cta .home-public-kicker{
+  color:var(--tan);
+}
+
+.home-public-cta h2{
+  max-width:700px;
+  color:#fff;
+}
+
+.home-public-cta p{
+  max-width:650px;
+  margin:18px 0 0;
+  color:rgba(255,255,255,.72);
+  font-size:15px;
+  font-weight:700;
+  line-height:1.7;
+}
+
+.home-public-cta-actions{
+  width:250px;
+  flex-shrink:0;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.home-public-start,
+.home-public-login{
+  min-height:48px;
+  border-radius:8px;
+  padding:0 16px;
+  cursor:pointer;
+  font-family:inherit;
+  font-size:13px;
+  font-weight:900;
+}
+
+.home-public-start{
+  border:1px solid var(--tan);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  background:var(--tan);
+  color:var(--petrol);
+}
+
+.home-public-login{
+  border:1px solid rgba(255,255,255,.3);
+  background:transparent;
+  color:#fff;
+}
+
+@media(max-width:900px){
+  .home-public-flow,
+  .home-public-tools{
+    padding:64px 0;
+  }
+
+  .home-public-steps{
+    grid-template-columns:1fr;
+  }
+
+  .home-public-step,
+  .home-public-step:last-child{
+    padding:32px 0;
+  }
+
+  .home-public-transition{
+    min-height:54px;
+    border:0;
+    border-top:1px solid var(--outline-variant);
+    border-bottom:1px solid var(--outline-variant);
+  }
+
+  .home-public-transition span{
+    transform:rotate(90deg);
+  }
+
+  .home-public-tools-heading{
+    grid-template-columns:1fr;
+    gap:20px;
+  }
+
+  .home-public-tools-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+
+  .home-public-cta-inner{
+    align-items:flex-start;
+    flex-direction:column;
+  }
+
+  .home-public-cta-actions{
+    width:100%;
+  }
+}
+
+@media(max-width:560px){
+  .home-public-inner{
+    width:min(100% - 28px,1180px);
+  }
+
+  .home-public-heading{
+    margin-bottom:42px;
+  }
+
+  .home-public-step{
+    grid-template-columns:42px minmax(0,1fr);
+    gap:14px;
+  }
+
+  .home-public-step-index{
+    width:38px;
+    height:38px;
+  }
+
+  .home-public-tools-grid{
+    grid-template-columns:1fr;
+  }
+
+  .home-public-cta{
+    padding:64px 16px;
+  }
+}
+  
   .modal-backdrop{
     position:fixed;
     inset:0;
@@ -2669,16 +2990,38 @@ function setAppMode(nextMode) {
     };
   }, [heroImages.length]);
 
-  function scrollToTrips() {
-    const target = document.getElementById('home-trips-section');
+function scrollToTrips() {
+  const target = document.getElementById(
+    loggedOut
+      ? 'home-public-section'
+      : 'home-trips-section'
+  );
 
-    if (target) {
-      target.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start'
-      });
-    }
+  if (target) {
+    target.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start'
+    });
   }
+}
+
+function startFromPublicSection() {
+  const page = document.querySelector('.home-page');
+  const destinationInput = document.querySelector('.home-trip-input');
+
+  if (page) {
+    page.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  }
+
+  window.setTimeout(function focusDestination() {
+    if (destinationInput) {
+      destinationInput.focus();
+    }
+  }, 450);
+}
 
   function daysBetweenInclusive(start, end) {
     if (!start || !end) return 7;
@@ -2763,7 +3106,7 @@ async function createTripFromHero() {
   }
 
   return (
-    <div className="home-page">
+    <div className={'home-page' + (loggedOut ? ' is-public' : '')}>
       <section className="home-hero">
         <div
           className="home-hero-bg"
@@ -2777,16 +3120,16 @@ async function createTripFromHero() {
         <div className="home-hero-inner">
           <div className="home-hero-kicker">
             <Icon name="map" size={14} />
-            Atelier du voyage
+            De l’idée au départ
           </div>
 
           <h1 className="home-hero-title">
-            Imagine ton prochain voyage.
+            La Fabrique à Voyages
           </h1>
 
           <p className="home-hero-text">
-            Crée un itinéraire clair, beau et partagé. Pose une destination, ajoute tes dates,
-            puis construis ton voyage jour après jour.
+            Prépare chaque journée sur ordinateur ou téléphone,
+            puis passe en mode Voyager pour suivre simplement ton programme pendant le séjour.
           </p>
 
           <div className="home-trip-bar">
@@ -2886,7 +3229,9 @@ async function createTripFromHero() {
           onClick={scrollToTrips}
         >
           <span>
-            Voir mes voyages déjà créés
+          {loggedOut
+           ? 'Découvrir comment ça marche'
+            : 'Voir mes voyages déjà créés'}
           </span>
 
           <span className="home-scroll-cue-arrow">
@@ -2894,6 +3239,192 @@ async function createTripFromHero() {
           </span>
         </button>
       </section>
+
+{loggedOut && (
+  <React.Fragment>
+    <section
+      id="home-public-section"
+      className="home-public-flow"
+    >
+      <div className="home-public-inner">
+        <div className="home-public-heading">
+          <div className="home-public-kicker">
+            Un seul voyage, deux moments
+          </div>
+
+          <h2>
+            Prépare tranquillement.<br />
+            Voyage simplement.
+          </h2>
+
+          <p>
+            La même application t’accompagne avant le départ
+            et pendant le voyage, sans recréer ton programme ailleurs.
+          </p>
+        </div>
+
+        <div className="home-public-steps">
+          <article className="home-public-step">
+            <div className="home-public-step-index">
+              01
+            </div>
+
+            <div className="home-public-step-content">
+              <div className="home-public-step-label">
+                Avant le départ
+              </div>
+
+              <h3>Préparer</h3>
+
+              <p>
+                Organise les journées, ajoute les transports,
+                hébergements et restaurants, construis ton budget
+                et rassemble tes documents.
+              </p>
+
+              <div className="home-public-step-details">
+                <span>Itinéraire jour par jour</span>
+                <span>Carte et lieux</span>
+                <span>Budget partagé</span>
+                <span>Documents du voyage</span>
+              </div>
+            </div>
+          </article>
+
+          <div
+            className="home-public-transition"
+            aria-hidden="true"
+          >
+            <span>→</span>
+          </div>
+
+          <article className="home-public-step">
+            <div className="home-public-step-index">
+              02
+            </div>
+
+            <div className="home-public-step-content">
+              <div className="home-public-step-label">
+                Pendant le séjour
+              </div>
+
+              <h3>Voyager</h3>
+
+              <p>
+                Ouvre ton voyage et retrouve immédiatement
+                la journée en cours, la prochaine étape,
+                les horaires, les lieux et les informations utiles.
+              </p>
+
+              <div className="home-public-step-details">
+                <span>Programme du jour</span>
+                <span>Prochaine étape</span>
+                <span>Accès rapide à la carte</span>
+                <span>Informations essentielles</span>
+              </div>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section className="home-public-tools">
+      <div className="home-public-inner">
+        <div className="home-public-tools-heading">
+          <div>
+            <div className="home-public-kicker">
+              Tout au même endroit
+            </div>
+
+            <h2>
+              Moins d’applications.<br />
+              Plus de voyage.
+            </h2>
+          </div>
+
+          <p>
+            Ton programme reste le même partout :
+            sur ordinateur pour préparer confortablement,
+            sur téléphone pour l’avoir avec toi.
+          </p>
+        </div>
+
+        <div className="home-public-tools-grid">
+          <div className="home-public-tool">
+            <Icon name="cal" size={22} />
+            <h3>Itinéraire</h3>
+            <p>
+              Chaque journée, chaque horaire et chaque étape.
+            </p>
+          </div>
+
+          <div className="home-public-tool">
+            <Icon name="map" size={22} />
+            <h3>Carte</h3>
+            <p>
+              Les lieux enregistrés et les trajets du voyage.
+            </p>
+          </div>
+
+          <div className="home-public-tool">
+            <Icon name="budget" size={22} />
+            <h3>Budget</h3>
+            <p>
+              Les dépenses, les catégories et les remboursements.
+            </p>
+          </div>
+
+          <div className="home-public-tool">
+            <Icon name="docs" size={22} />
+            <h3>Documents</h3>
+            <p>
+              Billets, réservations et fichiers importants.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section className="home-public-cta">
+      <div className="home-public-cta-inner">
+        <div>
+          <div className="home-public-kicker">
+            Commencer librement
+          </div>
+
+          <h2>
+            Ton prochain voyage peut commencer ici.
+          </h2>
+
+          <p>
+            Indique une destination et quelques dates.
+            Tu créeras ton compte uniquement lorsque tu voudras
+            conserver définitivement ton voyage.
+          </p>
+        </div>
+
+        <div className="home-public-cta-actions">
+          <button
+            type="button"
+            className="home-public-start"
+            onClick={startFromPublicSection}
+          >
+            Préparer un voyage
+            <span aria-hidden="true">↑</span>
+          </button>
+
+          <button
+            type="button"
+            className="home-public-login"
+            onClick={onAuthOpen}
+          >
+            J’ai déjà un compte
+          </button>
+        </div>
+      </div>
+    </section>
+  </React.Fragment>
+)}
 
       <section
         id="home-trips-section"

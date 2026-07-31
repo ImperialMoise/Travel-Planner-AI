@@ -3120,6 +3120,7 @@ function setAppMode(nextMode) {
     ];
   }, []);
 
+  const webCoverSearchStarted = React.useRef(false);
   const [imageIndex, setImageIndex] = React.useState(0);
   const [destination, setDestination] = React.useState('');
   const [startDate, setStartDate] = React.useState('');
@@ -3148,6 +3149,80 @@ function setAppMode(nextMode) {
       window.clearInterval(timer);
     };
   }, [heroImages.length]);
+
+  React.useEffect(function ensureWebTripCovers() {
+  if (
+    loggedOut ||
+    webCoverSearchStarted.current ||
+    !safeTrips.length ||
+    !window.SB?.searchTripCoverPhotos ||
+    !window.SB?.saveTripCover
+  ) {
+    return undefined;
+  }
+
+  const missingTrips = safeTrips
+    .filter(function withoutCover(item) {
+      return (
+        item?.id &&
+        item?.name &&
+        !item.cover_image_url &&
+        !item.coverImageUrl
+      );
+    })
+    .slice(0, 2);
+
+  if (!missingTrips.length) {
+    return undefined;
+  }
+
+  webCoverSearchStarted.current = true;
+  let cancelled = false;
+
+  async function loadCovers() {
+    for (const item of missingTrips) {
+      try {
+        const photos = await window.SB.searchTripCoverPhotos(
+          item.id,
+          item.name
+        );
+
+        const photo = photos?.[0];
+
+        if (cancelled || !photo?.imageUrl) continue;
+
+        await window.SB.saveTripCover(item.id, photo);
+
+        const currentTrips = Store.get().trips || [];
+
+        Store.set({
+          trips: currentTrips.map(function applyCover(currentTrip) {
+            if (currentTrip.id !== item.id) return currentTrip;
+
+            return {
+              ...currentTrip,
+              cover_image_url: photo.imageUrl,
+              cover_image_alt: photo.alt || '',
+              cover_photographer_name: photo.photographerName || '',
+              cover_photographer_url: photo.photographerUrl || ''
+            };
+          })
+        });
+      } catch (error) {
+        console.warn(
+          'Couverture indisponible pour ' + item.name,
+          error
+        );
+      }
+    }
+  }
+
+  loadCovers();
+
+  return function stopCoverLoading() {
+    cancelled = true;
+  };
+}, [loggedOut, safeTrips.length]);
 
 function scrollToTrips() {
   const target = document.getElementById(
@@ -3544,6 +3619,47 @@ async function createTripFromHero() {
       </div>
     </section>
 
+    <section className="home-public-cta">
+      <div className="home-public-cta-inner">
+        <div>
+          <div className="home-public-kicker">
+            Commencer librement
+          </div>
+
+          <h2>
+            Ton prochain voyage peut commencer ici.
+          </h2>
+
+          <p>
+            Indique une destination et quelques dates.
+            Tu créeras ton compte uniquement lorsque tu voudras
+            conserver définitivement ton voyage.
+          </p>
+        </div>
+
+        <div className="home-public-cta-actions">
+          <button
+            type="button"
+            className="home-public-start"
+            onClick={startFromPublicSection}
+          >
+            Préparer un voyage
+            <span aria-hidden="true">↑</span>
+          </button>
+
+          <button
+            type="button"
+            className="home-public-login"
+            onClick={onAuthOpen}
+          >
+            J’ai déjà un compte
+          </button>
+        </div>
+      </div>
+    </section>
+  </React.Fragment>
+)}
+
     <section className="home-public-install">
       <div className="home-public-install-inner">
         <div className="home-public-install-copy">
@@ -3604,47 +3720,6 @@ async function createTripFromHero() {
       </div>
     </section>
 
-    <section className="home-public-cta">
-      <div className="home-public-cta-inner">
-        <div>
-          <div className="home-public-kicker">
-            Commencer librement
-          </div>
-
-          <h2>
-            Ton prochain voyage peut commencer ici.
-          </h2>
-
-          <p>
-            Indique une destination et quelques dates.
-            Tu créeras ton compte uniquement lorsque tu voudras
-            conserver définitivement ton voyage.
-          </p>
-        </div>
-
-        <div className="home-public-cta-actions">
-          <button
-            type="button"
-            className="home-public-start"
-            onClick={startFromPublicSection}
-          >
-            Préparer un voyage
-            <span aria-hidden="true">↑</span>
-          </button>
-
-          <button
-            type="button"
-            className="home-public-login"
-            onClick={onAuthOpen}
-          >
-            J’ai déjà un compte
-          </button>
-        </div>
-      </div>
-    </section>
-  </React.Fragment>
-)}
-
       <section
         id="home-trips-section"
         className="home-library"
@@ -3686,7 +3761,7 @@ async function createTripFromHero() {
           ) : safeTrips.length ? (
             <div className="home-trip-grid">
               {safeTrips.map(function renderTripCard(trip, index) {
-                const image = tripImages[index % tripImages.length];
+                const image =  trip.cover_image_url ||  trip.coverImageUrl ||  tripImages[index % tripImages.length];
 
                 return (
                   <article

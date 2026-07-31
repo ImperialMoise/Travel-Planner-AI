@@ -139,6 +139,327 @@ button {
   text-align: center;
 }
 
+.mobile-welcome-shell {
+  background: var(--background);
+}
+
+.mobile-welcome-topbar {
+  position: relative;
+  z-index: 5;
+  min-height: calc(64px + env(safe-area-inset-top, 0px));
+  padding:
+    env(safe-area-inset-top, 0px)
+    18px
+    0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--background);
+}
+
+.mobile-welcome-brand {
+  color: var(--primary);
+  font-family: var(--font-serif);
+  font-size: 19px;
+  line-height: 22px;
+  font-weight: 400;
+}
+
+.mobile-welcome-login {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--outline-variant);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--on-surface);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.mobile-welcome-main {
+  width: 100%;
+  overflow: hidden;
+}
+
+.mobile-welcome-hero {
+  position: relative;
+  min-height: min(
+    640px,
+    calc(100dvh - 92px)
+  );
+  margin: 0 8px;
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-end;
+  background: var(--petrol-dark);
+  color: #ffffff;
+}
+
+.mobile-welcome-image {
+  position: absolute;
+  inset: 0;
+  background-image:
+    url("https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1100&q=88");
+  background-size: cover;
+  background-position: center;
+  transform: scale(1.02);
+}
+
+.mobile-welcome-overlay {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(15, 26, 22, 0.08) 10%,
+      rgba(15, 26, 22, 0.46) 48%,
+      rgba(15, 26, 22, 0.9) 100%
+    );
+}
+
+.mobile-welcome-content {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  padding: 28px 20px 24px;
+}
+
+.mobile-welcome-kicker {
+  margin: 0 0 9px;
+  color: var(--tan-accent);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 14px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.mobile-welcome-content h1 {
+  margin: 0;
+  color: #ffffff;
+  font-family: var(--font-serif);
+  font-size: clamp(44px, 13vw, 58px);
+  line-height: 0.98;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+.mobile-welcome-intro {
+  max-width: 340px;
+  margin: 16px 0 22px;
+  color: rgba(255, 255, 255, 0.84);
+  font-size: 14px;
+  line-height: 21px;
+  font-weight: 600;
+}
+
+.mobile-welcome-builder {
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  border-radius: 8px;
+  background: rgba(254, 249, 239, 0.94);
+  color: var(--on-surface);
+  box-shadow: 0 18px 44px rgba(13, 25, 20, 0.28);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.mobile-welcome-builder > label {
+  display: block;
+  margin-bottom: 7px;
+  color: var(--on-surface-variant);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.mobile-welcome-destination {
+  min-height: 48px;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--outline-variant);
+  border-radius: 7px;
+  background: var(--surface-container-lowest);
+  color: var(--primary);
+}
+
+.mobile-welcome-destination input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--on-surface);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.mobile-welcome-destination input::placeholder {
+  color: var(--on-surface-variant);
+  opacity: 0.68;
+}
+
+.mobile-welcome-start {
+  width: 100%;
+  min-height: 50px;
+  margin-top: 10px;
+  padding: 0 15px;
+  border: 0;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--primary);
+  color: var(--on-primary);
+  font-size: 14px;
+  font-weight: 800;
+  box-shadow: var(--shadow-action);
+}
+
+.mobile-welcome-reassurance {
+  margin: 9px 0 0;
+  color: var(--on-surface-variant);
+  font-size: 10px;
+  line-height: 14px;
+  text-align: center;
+}
+
+.mobile-welcome-flow {
+  padding: 68px 20px;
+  color: var(--on-surface);
+}
+
+.mobile-welcome-section-heading {
+  margin-bottom: 38px;
+}
+
+.mobile-welcome-section-heading h2 {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: 35px;
+  line-height: 39px;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+.mobile-welcome-step {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 15px;
+  padding: 28px 0;
+  border-top: 1px solid var(--outline-variant);
+  border-bottom: 1px solid var(--outline-variant);
+}
+
+.mobile-welcome-step-number {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--outline-variant);
+  border-radius: 50%;
+  color: var(--primary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.mobile-welcome-step-time {
+  color: var(--primary);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.mobile-welcome-step h3 {
+  margin: 4px 0 9px;
+  font-family: var(--font-serif);
+  font-size: 29px;
+  line-height: 34px;
+  font-weight: 400;
+}
+
+.mobile-welcome-step p {
+  margin: 0;
+  color: var(--on-surface-variant);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.mobile-welcome-tags {
+  margin-top: 15px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.mobile-welcome-tags span {
+  padding: 6px 9px;
+  border: 1px solid var(--outline-variant);
+  border-radius: 999px;
+  color: var(--on-surface-variant);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.mobile-welcome-flow-arrow {
+  min-height: 58px;
+  display: grid;
+  place-items: center;
+  color: var(--primary);
+}
+
+.mobile-welcome-step.travel {
+  border-top: 0;
+}
+
+.mobile-welcome-final {
+  margin: 0 8px 8px;
+  padding: 42px 22px;
+  border-radius: 8px;
+  background: var(--petrol-dark);
+  color: #ffffff;
+}
+
+.mobile-welcome-final > .material-symbols-outlined {
+  margin-bottom: 20px;
+  color: var(--tan-accent);
+  font-size: 30px;
+}
+
+.mobile-welcome-final h2 {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: 32px;
+  line-height: 37px;
+  font-weight: 400;
+}
+
+.mobile-welcome-final p {
+  margin: 13px 0 24px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.mobile-welcome-final button {
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid var(--tan-accent);
+  border-radius: 7px;
+  background: var(--tan-accent);
+  color: var(--petrol-dark);
+  font-size: 13px;
+  font-weight: 800;
+}
+
 .home-main {
   width: 100%;
   max-width: 430px;

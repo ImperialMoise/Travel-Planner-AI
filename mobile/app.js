@@ -1356,8 +1356,199 @@ async function ensureMobileHomeCovers(tripsToCheck = []) {
   }
 }
 
+function renderMobileWelcome() {
+  app.innerHTML = `
+    <div class="mobile-shell mobile-welcome-shell">
+      <header class="mobile-welcome-topbar">
+        <span class="mobile-welcome-brand">
+          La Fabrique à Voyages
+        </span>
+
+        <button
+          type="button"
+          class="mobile-welcome-login"
+          data-action="account"
+        >
+          Se connecter
+        </button>
+      </header>
+
+      <main class="mobile-welcome-main">
+        <section class="mobile-welcome-hero">
+          <div
+            class="mobile-welcome-image"
+            aria-hidden="true"
+          ></div>
+
+          <div
+            class="mobile-welcome-overlay"
+            aria-hidden="true"
+          ></div>
+
+          <div class="mobile-welcome-content">
+            <p class="mobile-welcome-kicker">
+              Préparer · Voyager
+            </p>
+
+            <h1>
+              La Fabrique<br />
+              à Voyages
+            </h1>
+
+            <p class="mobile-welcome-intro">
+              Prépare chaque journée avant le départ,
+              puis suis simplement ton programme pendant le voyage.
+            </p>
+
+            <div class="mobile-welcome-builder">
+              <label for="mobile-public-destination">
+                Où veux-tu partir ?
+              </label>
+
+              <div class="mobile-welcome-destination">
+                <span
+                  class="material-symbols-outlined"
+                  aria-hidden="true"
+                >
+                  location_on
+                </span>
+
+                <input
+                  id="mobile-public-destination"
+                  type="text"
+                  placeholder="Lisbonne, Kyoto, Corée du Sud…"
+                  autocomplete="off"
+                />
+              </div>
+
+              <button
+                type="button"
+                class="mobile-welcome-start"
+                data-action="public-create-trip"
+              >
+                <span>Commencer mon voyage</span>
+
+                <span
+                  class="material-symbols-outlined"
+                  aria-hidden="true"
+                >
+                  arrow_forward
+                </span>
+              </button>
+
+              <p class="mobile-welcome-reassurance">
+                Aucun compte nécessaire pour commencer.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section class="mobile-welcome-flow">
+          <div class="mobile-welcome-section-heading">
+            <p class="mobile-welcome-kicker">
+              Deux moments, une seule application
+            </p>
+
+            <h2>
+              Du premier plan<br />
+              au jour du départ.
+            </h2>
+          </div>
+
+          <article class="mobile-welcome-step">
+            <span class="mobile-welcome-step-number">
+              01
+            </span>
+
+            <div>
+              <span class="mobile-welcome-step-time">
+                Avant le départ
+              </span>
+
+              <h3>Préparer</h3>
+
+              <p>
+                Construis ton itinéraire, place tes étapes,
+                organise ton budget et rassemble tes documents.
+              </p>
+
+              <div class="mobile-welcome-tags">
+                <span>Programme</span>
+                <span>Carte</span>
+                <span>Budget</span>
+                <span>Documents</span>
+              </div>
+            </div>
+          </article>
+
+          <div
+            class="mobile-welcome-flow-arrow"
+            aria-hidden="true"
+          >
+            <span class="material-symbols-outlined">
+              south
+            </span>
+          </div>
+
+          <article class="mobile-welcome-step travel">
+            <span class="mobile-welcome-step-number">
+              02
+            </span>
+
+            <div>
+              <span class="mobile-welcome-step-time">
+                Pendant le séjour
+              </span>
+
+              <h3>Voyager</h3>
+
+              <p>
+                Retrouve la journée en cours, la prochaine étape,
+                les horaires et les lieux utiles en un coup d’œil.
+              </p>
+
+              <div class="mobile-welcome-tags">
+                <span>Aujourd’hui</span>
+                <span>Prochaine étape</span>
+                <span>Carte rapide</span>
+              </div>
+            </div>
+          </article>
+        </section>
+
+        <section class="mobile-welcome-final">
+          <span
+            class="material-symbols-outlined"
+            aria-hidden="true"
+          >
+            travel_explore
+          </span>
+
+          <h2>Une destination suffit pour commencer.</h2>
+
+          <p>
+            Tu ajouteras les dates, les journées et les détails
+            au rythme de ta préparation.
+          </p>
+
+          <button
+            type="button"
+            data-action="public-create-trip"
+          >
+            Créer mon premier voyage
+          </button>
+        </section>
+      </main>
+    </div>
+  `;
+}
+
 function renderHome() {
   const realTrips = mobileTrips || [];
+  if (!mobileUser && realTrips.length === 0) {
+  renderMobileWelcome();
+  return;
+}
   const visibleTrips = showAllTrips ? realTrips : realTrips.slice(0, 2);
   const nextTrip = activeTrip || realTrips[0] || null;
 
@@ -6745,6 +6936,23 @@ function navigate(route) {
 window.addEventListener('click', async event => {
   const action = event.target.closest('[data-action]')?.dataset.action;
   if (!action) return;
+
+  if (action === 'public-create-trip') {
+  const destinationInput = document.querySelector(
+    '#mobile-public-destination'
+  );
+
+  const destination = destinationInput?.value.trim() || '';
+  const draft = getTripDraft();
+
+  saveTripDraft({
+    ...draft,
+    destination
+  });
+
+  navigate('create-trip');
+  return;
+}
 
   if (action === 'trip-menu') {
   openMobileTripMenu();

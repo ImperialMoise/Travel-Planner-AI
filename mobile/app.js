@@ -6403,24 +6403,46 @@ async function handleCreateBoard() {
   const draft = getCreateTripFormData();
   saveTripDraft(draft);
 
-  if (!window.SB || !mobileUser) {
-    alert("Connectez-vous d'abord.");
-    navigate('auth');
+  const destination = String(
+    draft.destination || ''
+  ).trim();
+
+  if (!destination) {
+    alert('Indique une destination pour commencer.');
+    return;
+  }
+
+  if (!window.SB) {
+    alert(
+      "Le service de sauvegarde n'est pas disponible."
+    );
     return;
   }
 
   try {
+    if (!mobileUser) {
+      mobileUser = await window.SB.startGuestSession();
+    }
+
     const trip = await window.SB.createTrip({
-      name: draft.destination || 'Nouveau voyage',
+      name: destination,
       startDate: draft.startDate || null,
-      days: getTripDurationDays(draft.startDate, draft.endDate)
+      endDate: draft.endDate || null,
+      days: daysBetweenInclusive(
+        draft.startDate,
+        draft.endDate
+      )
     });
 
     await refreshMobileTrips(trip.id);
-
     navigate('itinerary');
   } catch (error) {
-    alert('Erreur création voyage : ' + (error.message || error));
+    console.error(error);
+
+    alert(
+      error.message ||
+      'Impossible de créer le voyage.'
+    );
   }
 }
 

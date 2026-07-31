@@ -2708,49 +2708,54 @@ function setAppMode(nextMode) {
     return 'Dates à préciser';
   }
 
-  async function createTripFromHero() {
-    if (loggedOut) {
-      if (onAuthOpen) onAuthOpen();
-      return;
-    }
+async function createTripFromHero() {
+  const cleanDestination = safeString(destination);
 
-    const cleanDestination = safeString(destination);
-
-    if (!cleanDestination) {
-      setError('Indique une destination pour créer ton itinéraire.');
-      return;
-    }
-
-    setError('');
-    setBusy(true);
-
-    try {
-      const created = await window.SB.createTrip({
-        name: cleanDestination,
-        startDate: startDate || null,
-        endDate: endDate || null,
-        days: daysBetweenInclusive(startDate, endDate)
-      });
-
-      const nextTrips = await window.SB.listMyTrips();
-      const fullTrip = await window.SB.loadTrip(created.id);
-
-      Store.set({
-        trips: nextTrips,
-        activeTripId: created.id,
-        trip: fullTrip,
-        selectedDayIndex: 0,
-        selectedStepId: null,
-        view: 'itinerary'
-      });
-
-      Store.showToast('Voyage « ' + created.name + ' » créé ✓');
-    } catch (err) {
-      setError(err.message || 'Impossible de créer le voyage.');
-    } finally {
-      setBusy(false);
-    }
+  if (!cleanDestination) {
+    setError(
+      'Indique une destination pour commencer ton voyage.'
+    );
+    return;
   }
+
+  setError('');
+  setBusy(true);
+
+  try {
+    if (loggedOut) {
+      await window.SB.startGuestSession();
+    }
+
+    const created = await window.SB.createTrip({
+      name: cleanDestination,
+      startDate: startDate || null,
+      endDate: endDate || null,
+      days: daysBetweenInclusive(startDate, endDate)
+    });
+
+    const nextTrips = await window.SB.listMyTrips();
+    const fullTrip = await window.SB.loadTrip(created.id);
+
+    Store.set({
+      trips: nextTrips,
+      activeTripId: created.id,
+      trip: fullTrip,
+      selectedDayIndex: 0,
+      selectedStepId: null,
+      view: 'itinerary'
+    });
+
+    Store.showToast(
+      'Voyage « ' + created.name + ' » créé ✓'
+    );
+  } catch (err) {
+    setError(
+      err.message || 'Impossible de créer le voyage.'
+    );
+  } finally {
+    setBusy(false);
+  }
+}
 
   function openTrip(tripId) {
     if (!tripId) return;
@@ -2854,9 +2859,9 @@ function setAppMode(nextMode) {
               className="home-trip-action"
               onClick={createTripFromHero}
               disabled={busy}
-              title={loggedOut ? 'Se connecter pour créer un itinéraire' : 'Créer l’itinéraire'}
+              title="Créer le voyage"
             >
-              {busy ? '…' : <Icon name={loggedOut ? 'user' : 'search'} size={20} />}
+              {busy ? '…' : {busy ? '…' : <Icon name="search" size={20} />} size={20} />}
             </button>
           </div>
 
@@ -2868,7 +2873,7 @@ function setAppMode(nextMode) {
 
           <div className="home-hero-caption">
             {loggedOut
-              ? 'Connecte-toi pour sauvegarder ton itinéraire'
+              ? 'Commence librement. Tu pourras rendre ce voyage permanent ensuite.'
               : safeTrips.length
                 ? 'Tu peux aussi retrouver tes voyages déjà créés plus bas'
                 : 'Ton premier itinéraire commence ici'}

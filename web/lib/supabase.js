@@ -46,6 +46,32 @@ export async function signIn(email, password) {
   return data.user;
 }
 
+export function isGuestUser(user) {
+  return user?.is_anonymous === true;
+}
+
+export async function startGuestSession() {
+  const currentUser = await getUser();
+
+  if (currentUser) {
+    return currentUser;
+  }
+
+  const { data, error } = await sb.auth.signInAnonymously();
+
+  if (error) {
+    throw error;
+  }
+
+  if (!data?.user) {
+    throw new Error(
+      "Impossible de démarrer le voyage sans inscription."
+    );
+  }
+
+  return data.user;
+}
+
 export async function signOut() {
   await sb.auth.signOut();
 }

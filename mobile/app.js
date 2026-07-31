@@ -1414,6 +1414,79 @@ async function ensureMobileHomeCovers(tripsToCheck = []) {
   }
 }
 
+const MOBILE_INSPIRATIONS = [
+  {
+    name: 'Kyoto',
+    country: 'Japon',
+    image:
+      'https://images.unsplash.com/photo-1528164344705-47542687000d?auto=format&fit=crop&w=800&q=86'
+  },
+  {
+    name: 'Côte amalfitaine',
+    country: 'Italie',
+    image:
+      'https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=800&q=86'
+  },
+  {
+    name: 'Paris',
+    country: 'France',
+    image:
+      'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=800&q=86'
+  },
+  {
+    name: 'Dubaï',
+    country: 'Émirats arabes unis',
+    image:
+      'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=800&q=86'
+  }
+];
+
+function mobileInspirationSection() {
+  return `
+    <section class="mobile-inspiration">
+      <header class="mobile-inspiration-heading">
+        <div>
+          <span>Idées de départ</span>
+          <h2>Une prochaine escale ?</h2>
+        </div>
+
+        <small>Glisse pour explorer</small>
+      </header>
+
+      <div class="mobile-inspiration-row">
+        ${MOBILE_INSPIRATIONS.map(item => `
+          <button
+            type="button"
+            class="mobile-inspiration-card"
+            data-action="mobile-inspiration"
+            data-destination="${escapeHtml(item.name)}"
+          >
+            <img
+              src="${escapeHtml(item.image)}"
+              alt="${escapeHtml(item.name + ', ' + item.country)}"
+              loading="lazy"
+            >
+
+            <span class="mobile-inspiration-shade"></span>
+
+            <span class="mobile-inspiration-copy">
+              <small>${escapeHtml(item.country)}</small>
+              <strong>${escapeHtml(item.name)}</strong>
+
+              <span>
+                Préparer
+                <span class="material-symbols-outlined">
+                  arrow_forward
+                </span>
+              </span>
+            </span>
+          </button>
+        `).join('')}
+      </div>
+    </section>
+  `;
+}
+
 function renderMobileWelcome() {
   app.innerHTML = `
     <div class="mobile-shell mobile-welcome-shell">
@@ -1692,6 +1765,8 @@ function renderMobileWelcome() {
           </div>
         </section>
 
+        ${mobileInspirationSection()}
+
         <section class="mobile-welcome-continuity">
           <div class="mobile-welcome-continuity-copy">
             <p class="mobile-welcome-kicker">
@@ -1747,6 +1822,80 @@ function renderMobileWelcome() {
   `;
 }
 
+function getMobileDashboardTripSummary(trip) {
+  if (!trip) {
+    return {
+      countdown: '',
+      progress: 0
+    };
+  }
+
+  const startDate = trip.startDate || trip.start_date || '';
+  const endDate = trip.endDate || trip.end_date || '';
+  const days = Array.isArray(trip.days) ? trip.days : [];
+
+  const today = new Date();
+  today.setHours(12, 0, 0, 0);
+
+  let countdown = 'Dates à préciser';
+
+  if (startDate) {
+    const start = new Date(startDate + 'T12:00:00');
+    const difference = Math.round(
+      (start.getTime() - today.getTime()) / 86400000
+    );
+
+    if (difference > 1) countdown = `Dans ${difference} jours`;
+    else if (difference === 1) countdown = 'Départ demain';
+    else if (difference === 0) countdown = "Départ aujourd’hui";
+    else countdown = 'Voyage en cours';
+
+    if (endDate) {
+      const end = new Date(endDate + 'T12:00:00');
+
+      if (today.getTime() > end.getTime()) {
+        countdown = 'Voyage terminé';
+      }
+    }
+  }
+
+  let completedChecks = 0;
+  const totalChecks = days.length * 3;
+
+  days.forEach(day => {
+    const steps = Array.isArray(day.steps) ? day.steps : [];
+
+    const normalSteps = steps.filter(step => {
+      const type = String(step.type || '').toLowerCase();
+      return !['logement', 'lodging', 'restaurant', 'repas', 'meal']
+        .includes(type);
+    });
+
+    const hasLodging = steps.some(step => {
+      const type = String(step.type || '').toLowerCase();
+      return type === 'logement' || type === 'lodging';
+    });
+
+    const hasMeal = steps.some(step => {
+      const type = String(step.type || '').toLowerCase();
+      return ['restaurant', 'repas', 'meal'].includes(type);
+    });
+
+    if (normalSteps.length) completedChecks += 1;
+    if (hasLodging) completedChecks += 1;
+    if (hasMeal) completedChecks += 1;
+  });
+
+  const progress = totalChecks
+    ? Math.round((completedChecks / totalChecks) * 100)
+    : 0;
+
+  return {
+    countdown,
+    progress: Math.max(0, Math.min(100, progress))
+  };
+}
+
 function renderHome() {
   const realTrips = mobileTrips || [];
   if (!mobileUser && realTrips.length === 0) {
@@ -1758,6 +1907,13 @@ function renderHome() {
 
   const nextTripName = nextTrip?.name || 'Aucun voyage';
   const nextTripDate = nextTrip?.startDate || nextTrip?.start_date || '';
+  const nextTripSummary =
+  getMobileDashboardTripSummary(nextTrip);
+
+const nextTripCover =
+  nextTrip
+    ? getMobileTripCoverUrl(nextTrip)
+    : '';
 
   const syncStatus = mobileSupabaseError
     ? 'Mode local · Supabase indisponible'
@@ -1779,25 +1935,70 @@ function renderHome() {
         </section>
 
         <section
-  class="next-trip-card"
-  aria-label="Prochain départ"
-  data-action="${nextTrip ? 'open-trip' : 'create-trip'}"
-  data-trip-id="${nextTrip?.id || ''}"
-  style="cursor:pointer"
->
-          <div class="next-trip-content">
-            <span class="badge">Prochain départ</span>
-            <h3 class="next-trip-title">${escapeHtml(nextTripName)}</h3>
-            <div>
-              <div class="next-trip-row">
-                <div class="date-row">
-                  <span class="countdown">${nextTrip ? 'Prêt' : '—'}</span>
-                  <span class="mono">${nextTripDate ? formatDateLabel(nextTripDate, '') : 'Créez votre premier voyage'}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
+${nextTrip ? `
+  <section
+    class="mobile-dashboard-trip"
+    aria-label="${escapeHtml(nextTripName)}"
+    style="background-image:url('${escapeHtml(nextTripCover)}')"
+  >
+    <div class="mobile-dashboard-trip-shade"></div>
+
+    <div class="mobile-dashboard-trip-content">
+      <div class="mobile-dashboard-trip-top">
+        <span>Prochain voyage</span>
+        <strong>${escapeHtml(nextTripSummary.countdown)}</strong>
+      </div>
+
+      <div class="mobile-dashboard-trip-title">
+        <h3>${escapeHtml(nextTripName)}</h3>
+
+        <p>
+          ${nextTripDate
+            ? escapeHtml(formatDateLabel(nextTripDate, ''))
+            : 'Dates à préciser'}
+        </p>
+      </div>
+
+      <div class="mobile-dashboard-progress">
+        <div>
+          <span>Préparation</span>
+          <strong>${nextTripSummary.progress}%</strong>
+        </div>
+
+        <span class="mobile-dashboard-progress-track">
+          <span
+            style="width:${nextTripSummary.progress}%"
+          ></span>
+        </span>
+      </div>
+
+      <div class="mobile-dashboard-trip-actions">
+        <button
+          type="button"
+          data-action="open-trip"
+          data-trip-id="${nextTrip.id}"
+        >
+          <span class="material-symbols-outlined">
+            edit_calendar
+          </span>
+          Préparer
+        </button>
+
+        <button
+          type="button"
+          class="travel"
+          data-action="open-trip-travel"
+          data-trip-id="${nextTrip.id}"
+        >
+          <span class="material-symbols-outlined">
+            near_me
+          </span>
+          Voyager
+        </button>
+      </div>
+    </div>
+  </section>
+` : ''}
 
         <button class="create-adventure" type="button" data-action="create-trip">
           <span class="plus">+</span>
@@ -1834,6 +2035,8 @@ function renderHome() {
             `}
           </div>
         </section>
+
+        ${mobileInspirationSection()}
       </main>
 
     </div>
@@ -7123,13 +7326,20 @@ async function handleCreateBoard() {
   }
 }
 
-async function handleOpenTrip(tripId) {
+async function handleOpenTrip(
+  tripId,
+  workspaceMode = 'prepare'
+) {
   if (!tripId || !window.SB) return;
 
   activeTrip = await window.SB.loadTrip(tripId);
   mobileItineraryDayIndex = 0;
 
-  navigate('itinerary');
+  navigate(
+    workspaceMode === 'travel'
+      ? 'travel'
+      : 'itinerary'
+  );
 }
 
 async function handleRenameTrip(tripId = activeTrip?.id) {
@@ -7407,6 +7617,25 @@ window.addEventListener('click', async event => {
   const action = event.target.closest('[data-action]')?.dataset.action;
   if (!action) return;
 
+  if (action === 'mobile-inspiration') {
+  const button = event.target.closest(
+    '[data-action="mobile-inspiration"]'
+  );
+
+  const destination =
+    button?.dataset.destination?.trim() || '';
+
+  const draft = getTripDraft();
+
+  saveTripDraft({
+    ...draft,
+    destination
+  });
+
+  navigate('create-trip');
+  return;
+}
+
   if (action === 'public-create-trip') {
   const destinationInput = document.querySelector(
     '#mobile-public-destination'
@@ -7651,6 +7880,15 @@ if (action === 'remove-trip-member') {
   if (action === 'toggle-all-trips') {
   showAllTrips = !showAllTrips;
   renderHome();
+  return;
+}
+
+if (action === 'open-trip-travel') {
+  const tripId = event.target
+    .closest('[data-trip-id]')
+    ?.dataset.tripId;
+
+  handleOpenTrip(tripId, 'travel');
   return;
 }
 

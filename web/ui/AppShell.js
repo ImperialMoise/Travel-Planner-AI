@@ -1456,6 +1456,137 @@
   line-height:1.55;
 }
 
+.home-dashboard{
+  padding:70px 20px 30px;
+  background:var(--bg);
+}
+
+.home-dashboard-cover{
+  position:relative;
+  width:min(1180px,100%);
+  min-height:390px;
+  margin:0 auto;
+  overflow:hidden;
+  border-radius:8px;
+  background-position:center;
+  background-size:cover;
+  color:#fff;
+  box-shadow:0 18px 45px rgba(45,33,18,.18);
+}
+
+.home-dashboard-overlay{
+  position:absolute;
+  inset:0;
+  background:linear-gradient(
+    90deg,
+    rgba(18,14,10,.9) 0%,
+    rgba(18,14,10,.57) 55%,
+    rgba(18,14,10,.18) 100%
+  );
+}
+
+.home-dashboard-content{
+  position:relative;
+  z-index:1;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  min-height:390px;
+  padding:34px;
+}
+
+.home-dashboard-top{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+
+.home-dashboard-top span,
+.home-dashboard-top strong{
+  padding:7px 10px;
+  border:1px solid rgba(255,255,255,.3);
+  border-radius:6px;
+  background:rgba(18,14,10,.3);
+  font-size:10px;
+  font-weight:900;
+  text-transform:uppercase;
+  backdrop-filter:blur(8px);
+}
+
+.home-dashboard-main{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 300px;
+  align-items:end;
+  gap:55px;
+}
+
+.home-dashboard-main h2{
+  margin:10px 0 8px;
+  font-family:var(--font-serif);
+  font-size:clamp(46px,6vw,76px);
+  font-weight:400;
+  line-height:.95;
+}
+
+.home-dashboard-main p{
+  margin:0;
+  color:rgba(255,255,255,.75);
+  font-size:13px;
+  font-weight:800;
+}
+
+.home-dashboard-preparation > div{
+  display:flex;
+  justify-content:space-between;
+  margin-bottom:9px;
+  font-size:11px;
+  font-weight:900;
+}
+
+.home-dashboard-progress{
+  display:block;
+  height:6px;
+  overflow:hidden;
+  border-radius:3px;
+  background:rgba(255,255,255,.25);
+}
+
+.home-dashboard-progress > span{
+  display:block;
+  height:100%;
+  border-radius:inherit;
+  background:var(--tan);
+}
+
+.home-dashboard-actions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:9px;
+  margin-top:25px;
+}
+
+.home-dashboard-actions button{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  min-height:45px;
+  padding:0 16px;
+  border:1px solid rgba(255,255,255,.4);
+  border-radius:7px;
+  background:rgba(255,255,255,.94);
+  color:var(--petrol);
+  cursor:pointer;
+  font-size:12px;
+  font-weight:900;
+}
+
+.home-dashboard-actions button.travel{
+  border-color:#76506f;
+  background:#76506f;
+  color:#fff;
+}
+
 .home-inspiration{
   padding:96px 20px;
   background:var(--bg);
@@ -1773,6 +1904,14 @@
 }
 
 @media(max-width:900px){
+  .home-dashboard-main{
+    grid-template-columns:1fr;
+    gap:25px;
+  }
+
+  .home-dashboard-preparation{
+    max-width:420px;
+  }
   .home-inspiration-heading{
     grid-template-columns:1fr;
     gap:18px;
@@ -1826,6 +1965,18 @@
 }
 
 @media(max-width:560px){
+  .home-dashboard{
+    padding:40px 14px 20px;
+  }
+
+  .home-dashboard-content{
+    padding:22px;
+  }
+
+  .home-dashboard-actions{
+    display:grid;
+    grid-template-columns:1fr;
+  }
   .home-inspiration{
     padding:64px 14px;
   }
@@ -3227,6 +3378,78 @@ function setAppMode(nextMode) {
     );
   }
 
+  function getHomeTripSummary(trip) {
+  const days = Array.isArray(trip?.days) ? trip.days : [];
+  const startDate = trip?.startDate || trip?.start_date || '';
+  const endDate = trip?.endDate || trip?.end_date || '';
+
+  const today = new Date();
+  today.setHours(12, 0, 0, 0);
+
+  let countdown = 'Dates à préciser';
+
+  if (startDate) {
+    const start = new Date(startDate + 'T12:00:00');
+    const difference = Math.round(
+      (start.getTime() - today.getTime()) / 86400000
+    );
+
+    if (difference > 1) countdown = `Dans ${difference} jours`;
+    else if (difference === 1) countdown = 'Départ demain';
+    else if (difference === 0) countdown = "Départ aujourd’hui";
+    else countdown = 'Voyage en cours';
+
+    if (
+      endDate &&
+      today.getTime() > new Date(endDate + 'T12:00:00').getTime()
+    ) {
+      countdown = 'Voyage terminé';
+    }
+  }
+
+  let completed = 0;
+  const total = days.length * 3;
+
+  days.forEach(function inspectDay(day) {
+    const steps = Array.isArray(day.steps) ? day.steps : [];
+
+    const types = steps.map(step =>
+      String(step.type || '').toLowerCase()
+    );
+
+    if (
+      steps.some(step => ![
+        'logement',
+        'lodging',
+        'restaurant',
+        'repas',
+        'meal'
+      ].includes(String(step.type || '').toLowerCase()))
+    ) {
+      completed += 1;
+    }
+
+    if (types.includes('logement') || types.includes('lodging')) {
+      completed += 1;
+    }
+
+    if (
+      types.includes('restaurant') ||
+      types.includes('repas') ||
+      types.includes('meal')
+    ) {
+      completed += 1;
+    }
+  });
+
+  return {
+    countdown,
+    progress: total
+      ? Math.round((completed / total) * 100)
+      : 0
+  };
+}
+
  function HomeHero({
   mode,
   trips,
@@ -3301,6 +3524,62 @@ function setAppMode(nextMode) {
 
   const loggedOut = mode === 'loggedOut';
   const safeTrips = Array.isArray(trips) ? trips : [];
+  const [featuredTrip, setFeaturedTrip] = React.useState(null);
+
+const featuredTripMeta = React.useMemo(function pickFeaturedTrip() {
+  if (!safeTrips.length) return null;
+
+  const todayISO = new Date().toISOString().slice(0, 10);
+
+  const upcomingTrips = safeTrips
+    .filter(item => {
+      const start = item.start_date || item.startDate;
+      return start && start >= todayISO;
+    })
+    .slice()
+    .sort((a, b) => {
+      const first = a.start_date || a.startDate || '';
+      const second = b.start_date || b.startDate || '';
+      return first.localeCompare(second);
+    });
+
+  return upcomingTrips[0] || safeTrips[0];
+}, [safeTrips]);
+
+React.useEffect(function loadFeaturedTrip() {
+  if (
+    loggedOut ||
+    !featuredTripMeta?.id ||
+    !window.SB?.loadTrip
+  ) {
+    setFeaturedTrip(null);
+    return undefined;
+  }
+
+  let alive = true;
+
+  window.SB.loadTrip(featuredTripMeta.id)
+    .then(function applyFeaturedTrip(fullTrip) {
+      if (alive) setFeaturedTrip(fullTrip);
+    })
+    .catch(function useTripSummary() {
+      if (alive) setFeaturedTrip(featuredTripMeta);
+    });
+
+  return function stopFeaturedTripLoading() {
+    alive = false;
+  };
+}, [loggedOut, featuredTripMeta?.id]);
+
+const featuredSummary =
+  getHomeTripSummary(featuredTrip || featuredTripMeta);
+
+const featuredCover =
+  featuredTrip?.coverImageUrl ||
+  featuredTrip?.cover_image_url ||
+  featuredTripMeta?.cover_image_url ||
+  featuredTripMeta?.coverImageUrl ||
+  heroImages[0].url;
   const activeImage = heroImages[imageIndex] || heroImages[0];
   const androidApkUrl =
   'https://github.com/ImperialMoise/Travel-Planner-AI/releases/download/android-latest/la-fabrique-a-voyages.apk';
@@ -3509,6 +3788,21 @@ async function createTripFromHero() {
     if (!tripId) return;
     selectTrip(tripId);
   }
+  
+  function openTripInMode(tripId, nextMode) {
+  if (!tripId) return;
+
+  const safeMode = nextMode === 'travel' ? 'travel' : 'plan';
+
+  localStorage.setItem('atelier_app_mode', safeMode);
+
+  Store.set({
+    appMode: safeMode,
+    view: 'itinerary'
+  });
+
+  openTrip(tripId);
+}
 
   return (
     <div className={'home-page' + (loggedOut ? ' is-public' : '')}>
@@ -3829,6 +4123,80 @@ async function createTripFromHero() {
       </div>
     </section>
   </React.Fragment>
+)}
+
+{!loggedOut && featuredTripMeta && (
+  <section className="home-dashboard">
+    <div
+      className="home-dashboard-cover"
+      style={{
+        backgroundImage: 'url("' + featuredCover + '")'
+      }}
+    >
+      <div className="home-dashboard-overlay" />
+
+      <div className="home-dashboard-content">
+        <div className="home-dashboard-top">
+          <span>Prochain voyage</span>
+          <strong>{featuredSummary.countdown}</strong>
+        </div>
+
+        <div className="home-dashboard-main">
+          <div>
+            <div className="home-public-kicker">
+              Ton carnet en cours
+            </div>
+
+            <h2>
+              {featuredTripMeta.name || 'Voyage sans titre'}
+            </h2>
+
+            <p>
+              {tripDateRange(featuredTripMeta)}
+            </p>
+          </div>
+
+          <div className="home-dashboard-preparation">
+            <div>
+              <span>Préparation du voyage</span>
+              <strong>{featuredSummary.progress}%</strong>
+            </div>
+
+            <span className="home-dashboard-progress">
+              <span
+                style={{
+                  width: featuredSummary.progress + '%'
+                }}
+              />
+            </span>
+          </div>
+        </div>
+
+        <div className="home-dashboard-actions">
+          <button
+            type="button"
+            onClick={() =>
+              openTripInMode(featuredTripMeta.id, 'plan')
+            }
+          >
+            <Icon name="cal" size={16} />
+            Continuer à préparer
+          </button>
+
+          <button
+            type="button"
+            className="travel"
+            onClick={() =>
+              openTripInMode(featuredTripMeta.id, 'travel')
+            }
+          >
+            <Icon name="pin" size={16} />
+            Ouvrir en mode Voyager
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
 )}
 
 <section className="home-inspiration">

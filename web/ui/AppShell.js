@@ -2861,7 +2861,7 @@ async function createTripFromHero() {
               disabled={busy}
               title="Créer le voyage"
             >
-              {busy ? '…' : {busy ? '…' : <Icon name="search" size={20} />} size={20} />}
+              {busy ? '…' : <Icon name="search" size={20} />}
             </button>
           </div>
 

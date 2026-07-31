@@ -1595,7 +1595,7 @@
     padding:64px 16px;
   }
 }
-  
+
   .modal-backdrop{
     position:fixed;
     inset:0;
@@ -2412,9 +2412,13 @@ function toggleToolboxCollapsed() {
 
     const initials = safeString(pseudo || 'VP').slice(0, 2).toUpperCase();
     const displayName = safeString(pseudo);
-    const compactDisplayName = displayName.length > 14
-      ? displayName.slice(0, 13) + '…'
-      : displayName;
+    const isGuestUser = user?.is_anonymous === true;
+
+    const compactDisplayName = isGuestUser
+  ? 'Enregistrer'
+  : displayName.length > 14
+    ? displayName.slice(0, 13) + '…'
+    : displayName;
 
 const navItems = [
   {

@@ -72,6 +72,152 @@ export async function startGuestSession() {
   return data.user;
 }
 
+const GUEST_UPGRADE_STORAGE_KEY = 'pending_guest_account_upgrade';
+
+export function getPendingGuestAccountUpgrade() {
+  try {
+    return JSON.parse(
+      localStorage.getItem(GUEST_UPGRADE_STORAGE_KEY) || 'null'
+    );
+  } catch {
+    return null;
+  }
+}
+
+export function clearPendingGuestAccountUpgrade() {
+  localStorage.removeItem(GUEST_UPGRADE_STORAGE_KEY);
+}
+
+export async function beginGuestAccountUpgrade(email, pseudo) {
+  const currentUser = await getUser();
+
+  if (!currentUser) {
+    throw new Error("Aucune session temporaire n'est ouverte.");
+  }
+
+  if (!currentUser.is_anonymous) {
+    throw new Error('Ce compte est déjà enregistré.');
+  }
+
+  const cleanEmail = String(email || '').trim().toLowerCase();
+  const cleanPseudo = String(pseudo || '').trim();
+
+  if (!cleanEmail) {
+    throw new Error('Indique ton adresse e-mail.');
+  }
+
+  const pendingUpgrade = {
+    email: cleanEmail,
+    pseudo: cleanPseudo,
+    userId: currentUser.id,
+    requestedAt: Date.now()
+  };
+
+  const { error } = await sb.auth.updateUser({
+    email: cleanEmail,
+    data: {
+      display_name: cleanPseudo || 'Voyageur'
+    }
+  });
+
+  if (error) throw error;
+
+  localStorage.setItem(
+    GUEST_UPGRADE_STORAGE_KEY,
+    JSON.stringify(pendingUpgrade)
+  );
+
+  return pendingUpgrade;
+}
+
+export async function completeGuestAccountUpgrade({
+  email,
+  token,
+  password,
+  pseudo
+}) {
+  const cleanEmail = String(email || '').trim().toLowerCase();
+  const cleanToken = String(token || '').replace(/\s/g, '');
+  const cleanPassword = String(password || '');
+  const cleanPseudo = String(pseudo || '').trim();
+
+  if (!cleanEmail) {
+    throw new Error("L'adresse e-mail est manquante.");
+  }
+
+  if (!/^\d{6}$/.test(cleanToken)) {
+    throw new Error('Le code doit contenir exactement 6 chiffres.');
+  }
+
+  if (cleanPassword.length < 8) {
+    throw new Error('Le mot de passe doit contenir au moins 8 caractères.');
+  }
+
+  const { data: verification, error: verificationError } =
+    await sb.auth.verifyOtp({
+      email: cleanEmail,
+      token: cleanToken,
+      type: 'email_change'
+    });
+
+  if (verificationError) throw verificationError;
+
+  const displayName =
+    cleanPseudo || cleanEmail.split('@')[0] || 'Voyageur';
+
+  const { data: updatedAccount, error: passwordError } =
+    await sb.auth.updateUser({
+      password: cleanPassword,
+      data: {
+        display_name: displayName
+      }
+    });
+
+  if (passwordError) throw passwordError;
+
+  const user = updatedAccount?.user || verification?.user;
+
+  if (!user) {
+    throw new Error("Le compte n'a pas pu être finalisé.");
+  }
+
+  const { error: profileError } = await sb
+    .from('profiles')
+    .upsert(
+      {
+        id: user.id,
+        email: cleanEmail,
+        display_name: displayName
+      },
+      {
+        onConflict: 'id'
+      }
+    );
+
+  if (profileError) {
+    console.warn('Profil non actualisé :', profileError);
+  }
+
+  clearPendingGuestAccountUpgrade();
+
+  return user;
+}
+
+export async function resendGuestAccountUpgradeCode(email) {
+  const cleanEmail = String(email || '').trim().toLowerCase();
+
+  if (!cleanEmail) {
+    throw new Error("L'adresse e-mail est manquante.");
+  }
+
+  const { error } = await sb.auth.resend({
+    type: 'email_change',
+    email: cleanEmail
+  });
+
+  if (error) throw error;
+}
+
 export async function signOut() {
   await sb.auth.signOut();
 }

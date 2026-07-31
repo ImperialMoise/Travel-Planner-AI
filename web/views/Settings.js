@@ -215,7 +215,11 @@ function SettingsModal() {
             overflowY: 'auto',
             padding: compact ? 18 : 30
           }}>
-            {section === 'account' && <AccountSection user={user} />}
+            {section === 'account' && (
+  user?.is_anonymous
+    ? <GuestAccountSection user={user} />
+    : <AccountSection user={user} />
+)}
             {section === 'preferences' && <PreferencesSection user={user} />}
             {section === 'trips' && (
               <TripsSection
@@ -274,6 +278,259 @@ function SettingsNavItem({ icon, active, onClick, children, compact }) {
       <Icon name={icon} size={16} />
       {!compact && children}
     </button>
+  );
+}
+
+function GuestAccountSection({ user }) {
+  const savedUpgrade = SB.getPendingGuestAccountUpgrade?.();
+
+  const [step, setStep] = React.useState(
+    savedUpgrade ? 'verification' : 'identity'
+  );
+
+  const [pseudo, setPseudo] = React.useState(
+    user?.user_metadata?.display_name === 'Voyageur'
+      ? ''
+      : user?.user_metadata?.display_name || ''
+  );
+
+  const [email, setEmail] = React.useState(savedUpgrade?.email || '');
+  const [token, setToken] = React.useState('');
+  const [password, setPassword] = React.useState('');
+  const [passwordConfirmation, setPasswordConfirmation] = React.useState('');
+  const [busy, setBusy] = React.useState(false);
+  const [error, setError] = React.useState('');
+
+  async function sendCode() {
+    setError('');
+
+    if (!pseudo.trim()) {
+      setError('Indique ton prénom ou ton pseudo.');
+      return;
+    }
+
+    if (!email.trim()) {
+      setError('Indique ton adresse e-mail.');
+      return;
+    }
+
+    setBusy(true);
+
+    try {
+      const pending = await SB.beginGuestAccountUpgrade(
+        email.trim(),
+        pseudo.trim()
+      );
+
+      setEmail(pending.email);
+      setStep('verification');
+      Store.showToast('Code de confirmation envoyé');
+    } catch (err) {
+      setError(err.message || "Impossible d'envoyer le code.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function finishAccount() {
+    setError('');
+
+    if (password !== passwordConfirmation) {
+      setError('Les deux mots de passe sont différents.');
+      return;
+    }
+
+    setBusy(true);
+
+    try {
+      const permanentUser = await SB.completeGuestAccountUpgrade({
+        email,
+        token,
+        password,
+        pseudo
+      });
+
+      Store.set({ user: permanentUser });
+      Store.showToast('Ton voyage est maintenant enregistré');
+    } catch (err) {
+      setError(err.message || "Impossible d'enregistrer le compte.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function resendCode() {
+    setBusy(true);
+    setError('');
+
+    try {
+      await SB.resendGuestAccountUpgradeCode(email);
+      Store.showToast('Nouveau code envoyé');
+    } catch (err) {
+      setError(err.message || "Impossible de renvoyer le code.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function changeEmail() {
+    SB.clearPendingGuestAccountUpgrade?.();
+    setStep('identity');
+    setToken('');
+    setPassword('');
+    setPasswordConfirmation('');
+    setError('');
+  }
+
+  return (
+    <div style={{
+      maxWidth: 740,
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 20
+    }}>
+      <SettingsCard
+        eyebrow="Voyage temporaire"
+        title="Enregistre ton voyage"
+      >
+        <p style={{
+          margin: 0,
+          color: 'var(--muted)',
+          fontSize: 14,
+          lineHeight: 1.6
+        }}>
+          Ton voyage est disponible sur cet appareil. Crée ton accès pour le
+          conserver, le retrouver ailleurs et inviter tes compagnons.
+        </p>
+      </SettingsCard>
+
+      {step === 'identity' ? (
+        <SettingsCard
+          eyebrow="Première étape"
+          title="Tes informations"
+        >
+          <SettingsField
+            label="Pseudo"
+            description="Le nom visible par tes compagnons."
+          >
+            <input
+              value={pseudo}
+              onChange={event => setPseudo(event.target.value)}
+              placeholder="Ton prénom ou pseudo"
+              autoComplete="nickname"
+              style={settingsInputStyle}
+            />
+          </SettingsField>
+
+          <SettingsField
+            label="Adresse e-mail"
+            description="Un code de confirmation sera envoyé à cette adresse."
+          >
+            <input
+              type="email"
+              value={email}
+              onChange={event => setEmail(event.target.value)}
+              placeholder="vous@email.com"
+              autoComplete="email"
+              style={settingsInputStyle}
+            />
+          </SettingsField>
+
+          <SettingsButton
+            variant="primary"
+            icon="mail"
+            onClick={sendCode}
+            disabled={busy}
+          >
+            {busy ? 'Envoi en cours' : 'Recevoir mon code'}
+          </SettingsButton>
+        </SettingsCard>
+      ) : (
+        <SettingsCard
+          eyebrow="Dernière étape"
+          title="Confirme ton compte"
+        >
+          <SettingsField
+            label="Adresse e-mail"
+            description="Le code a été envoyé à cette adresse."
+          >
+            <div style={{ fontWeight: 800, wordBreak: 'break-word' }}>
+              {email}
+            </div>
+          </SettingsField>
+
+          <SettingsField
+            label="Code de confirmation"
+            description="Saisis les six chiffres reçus par e-mail."
+          >
+            <input
+              value={token}
+              onChange={event => setToken(
+                event.target.value.replace(/\D/g, '').slice(0, 6)
+              )}
+              placeholder="000000"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              style={settingsInputStyle}
+            />
+          </SettingsField>
+
+          <SettingsField label="Mot de passe">
+            <input
+              type="password"
+              value={password}
+              onChange={event => setPassword(event.target.value)}
+              placeholder="8 caractères minimum"
+              autoComplete="new-password"
+              style={settingsInputStyle}
+            />
+          </SettingsField>
+
+          <SettingsField label="Confirmer le mot de passe">
+            <input
+              type="password"
+              value={passwordConfirmation}
+              onChange={event => setPasswordConfirmation(event.target.value)}
+              placeholder="Répète ton mot de passe"
+              autoComplete="new-password"
+              style={settingsInputStyle}
+            />
+          </SettingsField>
+
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            <SettingsButton
+              variant="primary"
+              icon="check"
+              onClick={finishAccount}
+              disabled={busy}
+            >
+              {busy ? 'Enregistrement' : 'Enregistrer mon voyage'}
+            </SettingsButton>
+
+            <SettingsButton onClick={resendCode} disabled={busy}>
+              Renvoyer le code
+            </SettingsButton>
+
+            <SettingsButton onClick={changeEmail} disabled={busy}>
+              Modifier l’e-mail
+            </SettingsButton>
+          </div>
+        </SettingsCard>
+      )}
+
+      {error && (
+        <div style={{
+          padding: '11px 13px',
+          borderRadius: 8,
+          background: 'rgba(192, 86, 63, .10)',
+          color: '#b64f38',
+          fontSize: 13,
+          fontWeight: 700
+        }}>
+          {error}
+        </div>
+      )}
+    </div>
   );
 }
 

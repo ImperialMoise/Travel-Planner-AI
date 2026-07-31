@@ -6399,6 +6399,22 @@ function handleAddFriend() {
   initCreateTripControls();
 }
 
+function daysBetweenInclusive(startDate, endDate) {
+  if (!startDate || !endDate) {
+    return 1;
+  }
+
+  const start = new Date(startDate + 'T00:00:00');
+  const end = new Date(endDate + 'T00:00:00');
+  const difference = end.getTime() - start.getTime();
+
+  if (Number.isNaN(difference) || difference < 0) {
+    return 1;
+  }
+
+  return Math.floor(difference / 86400000) + 1;
+}
+
 async function handleCreateBoard() {
   const draft = getCreateTripFormData();
   saveTripDraft(draft);

@@ -10,7 +10,7 @@ on:
       - "web/lib/supabase.js"
       - ".github/workflows/android-apk.yml"
 
-      permissions:
+permissions:
   contents: write
 
 jobs:

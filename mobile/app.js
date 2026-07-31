@@ -320,9 +320,6 @@ let mobileDocumentsTripId = null;
 let mobileDocumentsLoadedAt = 0;
 const MOBILE_DOCUMENTS_CACHE_MS = 60_000;
 
-let activeDocId = null;
-let mobileDocuments = [];
-
 function getTripDocuments() {
   return mobileDocuments;
 }
@@ -376,8 +373,11 @@ function formatDocSize(bytes) {
 }
 
 function getDocFileType(file) {
-  if (file.type?.includes('pdf')) return 'pdf';
-  if (file.type?.includes('image')) return 'image';
+  const mime = file.mime || file.type || '';
+
+  if (mime.includes('pdf')) return 'pdf';
+  if (mime.includes('image')) return 'image';
+
   return 'file';
 }
 

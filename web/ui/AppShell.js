@@ -1456,6 +1456,129 @@
   line-height:1.55;
 }
 
+.home-inspiration{
+  padding:96px 20px;
+  background:var(--bg);
+  color:var(--text);
+}
+
+.home-inspiration-inner{
+  width:min(1180px,100%);
+  margin:0 auto;
+}
+
+.home-inspiration-heading{
+  display:grid;
+  grid-template-columns:minmax(0,1.2fr) minmax(280px,.8fr);
+  align-items:end;
+  gap:60px;
+  margin-bottom:42px;
+}
+
+.home-inspiration-heading h2{
+  max-width:750px;
+  margin:12px 0 0;
+  font-family:var(--font-serif);
+  font-size:clamp(38px,5vw,62px);
+  font-weight:400;
+  line-height:1;
+}
+
+.home-inspiration-heading p{
+  margin:0;
+  color:var(--muted);
+  font-size:14px;
+  font-weight:700;
+  line-height:1.7;
+}
+
+.home-inspiration-grid{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:16px;
+}
+
+.home-inspiration-item{
+  position:relative;
+  min-width:0;
+  aspect-ratio:4 / 5;
+  overflow:hidden;
+  padding:0;
+  border:0;
+  border-radius:8px;
+  background:#252018;
+  color:#fff;
+  cursor:pointer;
+  text-align:left;
+  box-shadow:0 8px 22px rgba(46,34,17,.12);
+}
+
+.home-inspiration-item img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  transition:transform .45s ease;
+}
+
+.home-inspiration-item:hover img{
+  transform:scale(1.045);
+}
+
+.home-inspiration-item:hover{
+  transform:translateY(-4px);
+  box-shadow:0 16px 32px rgba(46,34,17,.2);
+}
+
+.home-inspiration-overlay{
+  position:absolute;
+  inset:0;
+  background:linear-gradient(
+    to bottom,
+    rgba(15,12,8,.05) 25%,
+    rgba(15,12,8,.86) 100%
+  );
+}
+
+.home-inspiration-content{
+  position:absolute;
+  inset:auto 0 0;
+  z-index:1;
+  display:flex;
+  flex-direction:column;
+  padding:22px;
+}
+
+.home-inspiration-country{
+  margin-bottom:7px;
+  color:var(--tan);
+  font-size:10px;
+  font-weight:900;
+  text-transform:uppercase;
+}
+
+.home-inspiration-content strong{
+  font-family:var(--font-serif);
+  font-size:29px;
+  font-weight:400;
+}
+
+.home-inspiration-content small{
+  margin-top:5px;
+  color:rgba(255,255,255,.75);
+  font-size:11px;
+  line-height:1.45;
+}
+
+.home-inspiration-action{
+  display:flex;
+  justify-content:space-between;
+  margin-top:18px;
+  padding-top:13px;
+  border-top:1px solid rgba(255,255,255,.28);
+  font-size:11px;
+  font-weight:900;
+}
+
 .home-public-install{
   padding:96px 20px;
   background:var(--card);
@@ -1650,6 +1773,14 @@
 }
 
 @media(max-width:900px){
+  .home-inspiration-heading{
+    grid-template-columns:1fr;
+    gap:18px;
+  }
+
+  .home-inspiration-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
   .home-public-flow,
   .home-public-tools{
     padding:64px 0;
@@ -1695,6 +1826,22 @@
 }
 
 @media(max-width:560px){
+  .home-inspiration{
+    padding:64px 14px;
+  }
+
+  .home-inspiration-grid{
+    grid-template-columns:none;
+    grid-auto-flow:column;
+    grid-auto-columns:minmax(235px,82vw);
+    overflow-x:auto;
+    scroll-snap-type:x mandatory;
+    padding-bottom:10px;
+  }
+
+  .home-inspiration-item{
+    scroll-snap-align:start;
+  }
   .home-public-install{
     padding:64px 16px;
   }
@@ -3120,6 +3267,30 @@ function setAppMode(nextMode) {
     ];
   }, []);
 
+  function startFromInspiration(destinationName) {
+  setDestination(destinationName);
+  setError('');
+
+  const page = document.querySelector('.home-page');
+
+  if (page) {
+    page.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  }
+
+  window.setTimeout(function focusInspiredDestination() {
+    const destinationInput =
+      document.querySelector('.home-trip-input');
+
+    if (destinationInput) {
+      destinationInput.focus();
+      destinationInput.select();
+    }
+  }, 500);
+}
+
   const webCoverSearchStarted = React.useRef(false);
   const [imageIndex, setImageIndex] = React.useState(0);
   const [destination, setDestination] = React.useState('');
@@ -3659,6 +3830,62 @@ async function createTripFromHero() {
     </section>
   </React.Fragment>
 )}
+
+<section className="home-inspiration">
+  <div className="home-inspiration-inner">
+    <div className="home-inspiration-heading">
+      <div>
+        <div className="home-public-kicker">
+          Quelques idées pour partir
+        </div>
+
+        <h2>Où commencera le prochain voyage ?</h2>
+      </div>
+
+      <p>
+        Choisis une destination pour préparer immédiatement
+        ton propre itinéraire. Rien n’est ajouté tant que tu
+        ne crées pas le voyage.
+      </p>
+    </div>
+
+    <div className="home-inspiration-grid">
+      {inspirationTrips.map(function renderInspiration(item) {
+        return (
+          <button
+            key={item.name}
+            type="button"
+            className="home-inspiration-item"
+            onClick={() => startFromInspiration(item.name)}
+            aria-label={'Préparer un voyage à ' + item.name}
+          >
+            <img
+              src={item.image}
+              alt={item.name + ', ' + item.country}
+              loading="lazy"
+            />
+
+            <span className="home-inspiration-overlay" />
+
+            <span className="home-inspiration-content">
+              <span className="home-inspiration-country">
+                {item.country}
+              </span>
+
+              <strong>{item.name}</strong>
+              <small>{item.promise}</small>
+
+              <span className="home-inspiration-action">
+                Préparer ce voyage
+                <span aria-hidden="true">→</span>
+              </span>
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  </div>
+</section>
 
     <section className="home-public-install">
       <div className="home-public-install-inner">

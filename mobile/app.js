@@ -1387,7 +1387,7 @@ function renderMobileWelcome() {
 
           <div class="mobile-welcome-content">
             <p class="mobile-welcome-kicker">
-              Préparer · Voyager
+              Un voyage · Deux temps
             </p>
 
             <h1>
@@ -1396,13 +1396,13 @@ function renderMobileWelcome() {
             </h1>
 
             <p class="mobile-welcome-intro">
-              Prépare chaque journée avant le départ,
-              puis suis simplement ton programme pendant le voyage.
+              Prépare avec précision.
+              Voyage avec l’essentiel.
             </p>
 
             <div class="mobile-welcome-builder">
               <label for="mobile-public-destination">
-                Où veux-tu partir ?
+                Ta prochaine destination
               </label>
 
               <div class="mobile-welcome-destination">
@@ -1416,7 +1416,7 @@ function renderMobileWelcome() {
                 <input
                   id="mobile-public-destination"
                   type="text"
-                  placeholder="Lisbonne, Kyoto, Corée du Sud…"
+                  placeholder="Où veux-tu partir ?"
                   autocomplete="off"
                 />
               </div>
@@ -1426,7 +1426,7 @@ function renderMobileWelcome() {
                 class="mobile-welcome-start"
                 data-action="public-create-trip"
               >
-                <span>Commencer mon voyage</span>
+                <span>Créer mon voyage</span>
 
                 <span
                   class="material-symbols-outlined"
@@ -1437,107 +1437,253 @@ function renderMobileWelcome() {
               </button>
 
               <p class="mobile-welcome-reassurance">
-                Aucun compte nécessaire pour commencer.
+                Commence librement, sans créer de compte.
               </p>
             </div>
           </div>
         </section>
 
-        <section class="mobile-welcome-flow">
-          <div class="mobile-welcome-section-heading">
+        <section class="mobile-welcome-experience">
+          <header class="mobile-welcome-section-heading">
             <p class="mobile-welcome-kicker">
-              Deux moments, une seule application
+              La même aventure
             </p>
 
             <h2>
-              Du premier plan<br />
-              au jour du départ.
+              Le bon niveau de détail,
+              au bon moment.
             </h2>
-          </div>
 
-          <article class="mobile-welcome-step">
-            <span class="mobile-welcome-step-number">
-              01
-            </span>
+            <p>
+              Ton voyage change de visage lorsque tu pars,
+              mais toutes tes informations restent à leur place.
+            </p>
+          </header>
 
-            <div>
-              <span class="mobile-welcome-step-time">
-                Avant le départ
-              </span>
+          <div class="mobile-welcome-modes">
+            <article class="mobile-welcome-mode prepare">
+              <header class="mobile-welcome-mode-header">
+                <div>
+                  <span class="mobile-welcome-mode-time">
+                    Avant le départ
+                  </span>
 
-              <h3>Préparer</h3>
+                  <h3>Préparer</h3>
+                </div>
 
-              <p>
-                Construis ton itinéraire, place tes étapes,
-                organise ton budget et rassemble tes documents.
-              </p>
+                <span class="mobile-welcome-mode-icon">
+                  <span class="material-symbols-outlined">
+                    edit_calendar
+                  </span>
+                </span>
+              </header>
 
-              <div class="mobile-welcome-tags">
-                <span>Programme</span>
-                <span>Carte</span>
-                <span>Budget</span>
-                <span>Documents</span>
+              <div class="welcome-mini-days">
+                <span class="active">
+                  <small>J1</small>
+                  <strong>12 mai</strong>
+                </span>
+
+                <span>
+                  <small>J2</small>
+                  <strong>13 mai</strong>
+                </span>
+
+                <span>
+                  <small>J3</small>
+                  <strong>14 mai</strong>
+                </span>
               </div>
-            </div>
-          </article>
 
-          <div
-            class="mobile-welcome-flow-arrow"
-            aria-hidden="true"
-          >
-            <span class="material-symbols-outlined">
-              south
-            </span>
-          </div>
+              <div class="welcome-mini-program">
+                <div class="welcome-mini-line">
+                  <time>09:30</time>
 
-          <article class="mobile-welcome-step travel">
-            <span class="mobile-welcome-step-number">
-              02
-            </span>
+                  <span class="welcome-mini-symbol">
+                    <span class="material-symbols-outlined">
+                      train
+                    </span>
+                  </span>
 
-            <div>
-              <span class="mobile-welcome-step-time">
-                Pendant le séjour
-              </span>
+                  <span>
+                    <strong>Arrivée à Kyoto</strong>
+                    <small>Gare centrale · Voie 8</small>
+                  </span>
+                </div>
 
-              <h3>Voyager</h3>
+                <div class="welcome-mini-line">
+                  <time>11:00</time>
 
-              <p>
-                Retrouve la journée en cours, la prochaine étape,
-                les horaires et les lieux utiles en un coup d’œil.
-              </p>
+                  <span class="welcome-mini-symbol">
+                    <span class="material-symbols-outlined">
+                      hotel
+                    </span>
+                  </span>
 
-              <div class="mobile-welcome-tags">
+                  <span>
+                    <strong>Déposer les bagages</strong>
+                    <small>Hôtel Gion · Réservation ajoutée</small>
+                  </span>
+                </div>
+
+                <div class="welcome-mini-line">
+                  <time>14:30</time>
+
+                  <span class="welcome-mini-symbol">
+                    <span class="material-symbols-outlined">
+                      temple_buddhist
+                    </span>
+                  </span>
+
+                  <span>
+                    <strong>Temple Kiyomizu-dera</strong>
+                    <small>Lieu enregistré sur la carte</small>
+                  </span>
+                </div>
+              </div>
+
+              <footer class="mobile-welcome-mode-footer">
+                <span>
+                  <span class="material-symbols-outlined">map</span>
+                  Carte
+                </span>
+
+                <span>
+                  <span class="material-symbols-outlined">payments</span>
+                  Budget
+                </span>
+
+                <span>
+                  <span class="material-symbols-outlined">folder</span>
+                  Documents
+                </span>
+              </footer>
+            </article>
+
+            <article class="mobile-welcome-mode travel">
+              <header class="mobile-welcome-mode-header">
+                <div>
+                  <span class="mobile-welcome-mode-time">
+                    Pendant le séjour
+                  </span>
+
+                  <h3>Voyager</h3>
+                </div>
+
+                <span class="mobile-welcome-mode-icon">
+                  <span class="material-symbols-outlined">
+                    near_me
+                  </span>
+                </span>
+              </header>
+
+              <div class="welcome-travel-day">
                 <span>Aujourd’hui</span>
-                <span>Prochaine étape</span>
-                <span>Carte rapide</span>
+                <strong>Kyoto · Jour 3</strong>
+                <small>3 étapes au programme</small>
               </div>
+
+              <div class="welcome-next-step">
+                <div class="welcome-next-step-top">
+                  <span>Prochaine étape</span>
+                  <time>14:30</time>
+                </div>
+
+                <span class="welcome-next-step-icon">
+                  <span class="material-symbols-outlined">
+                    temple_buddhist
+                  </span>
+                </span>
+
+                <h4>Temple Kiyomizu-dera</h4>
+
+                <p>
+                  1 Chome-294 Kiyomizu<br />
+                  Higashiyama, Kyoto
+                </p>
+
+                <button
+                  type="button"
+                  tabindex="-1"
+                >
+                  <span class="material-symbols-outlined">
+                    map
+                  </span>
+                  Voir sur la carte
+                </button>
+              </div>
+
+              <div class="welcome-after-step">
+                <time>18:30</time>
+
+                <span>
+                  <strong>Dîner à Gion</strong>
+                  <small>Restaurant enregistré</small>
+                </span>
+
+                <span class="material-symbols-outlined">
+                  chevron_right
+                </span>
+              </div>
+            </article>
+          </div>
+
+          <div class="mobile-welcome-mode-dots" aria-hidden="true">
+            <span class="active"></span>
+            <span></span>
+          </div>
+        </section>
+
+        <section class="mobile-welcome-continuity">
+          <div class="mobile-welcome-continuity-copy">
+            <p class="mobile-welcome-kicker">
+              Toujours avec toi
+            </p>
+
+            <h2>Un seul voyage, partout.</h2>
+
+            <p>
+              Commence sur ordinateur, continue sur téléphone,
+              puis ouvre le même programme pendant ton séjour.
+            </p>
+          </div>
+
+          <div class="mobile-welcome-devices">
+            <div>
+              <span class="material-symbols-outlined">
+                laptop_mac
+              </span>
+
+              <span>
+                <strong>Préparer confortablement</strong>
+                <small>Ordinateur ou téléphone</small>
+              </span>
             </div>
-          </article>
+
+            <span
+              class="material-symbols-outlined"
+              aria-hidden="true"
+            >
+              sync_alt
+            </span>
+
+            <div>
+              <span class="material-symbols-outlined">
+                smartphone
+              </span>
+
+              <span>
+                <strong>Voyager simplement</strong>
+                <small>Téléphone ou ordinateur</small>
+              </span>
+            </div>
+          </div>
         </section>
 
-        <section class="mobile-welcome-final">
-          <span
-            class="material-symbols-outlined"
-            aria-hidden="true"
-          >
-            travel_explore
-          </span>
-
-          <h2>Une destination suffit pour commencer.</h2>
-
-          <p>
-            Tu ajouteras les dates, les journées et les détails
-            au rythme de ta préparation.
-          </p>
-
-          <button
-            type="button"
-            data-action="public-create-trip"
-          >
-            Créer mon premier voyage
-          </button>
-        </section>
+        <footer class="mobile-welcome-footer">
+          <span>La Fabrique à Voyages</span>
+          <small>Préparer · Voyager</small>
+        </footer>
       </main>
     </div>
   `;

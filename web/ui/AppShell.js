@@ -1710,6 +1710,57 @@
   font-weight:900;
 }
 
+.home-info-footer{
+  padding:24px 20px;
+  border-top:1px solid var(--outline-variant);
+  background:var(--card);
+}
+
+.home-info-footer-inner{
+  width:min(1180px,100%);
+  margin:0 auto;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:24px;
+}
+
+.home-info-footer strong{
+  color:var(--accent);
+  font-family:var(--font-serif);
+  font-size:18px;
+}
+
+.home-info-footer nav{
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+  gap:8px 20px;
+}
+
+.home-info-footer a{
+  color:var(--muted);
+  font-size:12px;
+  font-weight:800;
+  text-decoration:none;
+}
+
+.home-info-footer a:hover{
+  color:var(--accent);
+  text-decoration:underline;
+}
+
+@media(max-width:640px){
+  .home-info-footer-inner{
+    align-items:flex-start;
+    flex-direction:column;
+  }
+
+  .home-info-footer nav{
+    justify-content:flex-start;
+  }
+}
+
 .home-public-install{
   padding:96px 20px;
   background:var(--card);
@@ -4453,6 +4504,30 @@ async function createTripFromHero() {
           )}
         </div>
       </section>
+
+      <footer className="home-info-footer">
+        <div className="home-info-footer-inner">
+          <strong>La Fabrique à Voyages</strong>
+
+          <nav aria-label="Informations légales">
+            <a href="./informations.html#confidentialite">
+              Confidentialité
+            </a>
+
+            <a href="./informations.html#conditions">
+              Conditions d’utilisation
+            </a>
+
+            <a href="./informations.html#assistance">
+              Assistance
+            </a>
+
+            <a href="./informations.html#mentions-legales">
+              Mentions légales
+            </a>
+          </nav>
+        </div>
+      </footer>
     </div>
   );
 }

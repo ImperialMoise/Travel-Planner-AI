@@ -11265,3 +11265,45 @@ button {
   color: var(--on-surface-variant);
   line-height: 1.5;
 }
+
+.mobile-information-links {
+  display: grid;
+  gap: 0;
+  margin-top: 14px;
+  border: 1px solid var(--faint-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.mobile-information-links a {
+  min-height: 54px;
+  padding: 0 14px;
+  display: grid;
+  grid-template-columns: 28px 1fr 22px;
+  align-items: center;
+  gap: 10px;
+  color: var(--on-surface);
+  background: var(--surface-container-lowest);
+  border-bottom: 1px solid var(--faint-border);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.mobile-information-links a:last-child {
+  border-bottom: 0;
+}
+
+.mobile-information-links a:active {
+  background: var(--surface-container);
+}
+
+.mobile-information-links .material-symbols-outlined {
+  color: var(--primary);
+  font-size: 20px;
+}
+
+.mobile-information-links a .material-symbols-outlined:last-child {
+  color: var(--outline);
+  font-size: 17px;
+}

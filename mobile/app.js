@@ -4593,8 +4593,57 @@ function renderSettings() {
               <small>Changer l’apparence sur cet appareil</small>
             </span>
 
-            <span class="material-symbols-outlined">chevron_right</span>
+                       <span class="material-symbols-outlined">chevron_right</span>
           </button>
+        </section>
+
+        <section class="mobile-personal-card mobile-information-card">
+          <header>
+            <span>À propos</span>
+            <h3>Informations et assistance</h3>
+          </header>
+
+          <nav class="mobile-information-links">
+            <a
+              href="https://travel-planner-ai-chi.vercel.app/informations.html#confidentialite"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <span class="material-symbols-outlined">shield_lock</span>
+              <span>Confidentialité</span>
+              <span class="material-symbols-outlined">open_in_new</span>
+            </a>
+
+            <a
+              href="https://travel-planner-ai-chi.vercel.app/informations.html#conditions"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <span class="material-symbols-outlined">description</span>
+              <span>Conditions d’utilisation</span>
+              <span class="material-symbols-outlined">open_in_new</span>
+            </a>
+
+            <a
+              href="https://travel-planner-ai-chi.vercel.app/informations.html#assistance"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <span class="material-symbols-outlined">help</span>
+              <span>Assistance</span>
+              <span class="material-symbols-outlined">open_in_new</span>
+            </a>
+
+            <a
+              href="https://travel-planner-ai-chi.vercel.app/informations.html#mentions-legales"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <span class="material-symbols-outlined">gavel</span>
+              <span>Mentions légales</span>
+              <span class="material-symbols-outlined">open_in_new</span>
+            </a>
+          </nav>
         </section>
       </main>
     </div>

@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Informations légales, confidentialité et assistance de La Fabrique à Voyages.">
+  <title>Informations - La Fabrique à Voyages</title>
+
+  <style>
+    :root {
+      --paper: #fbf7ef;
+      --surface: #ffffff;
+      --ink: #211a14;
+      --muted: #74695f;
+      --gold: #936105;
+      --green: #123d34;
+      --line: #dfd2c1;
+      --soft: #f1eadf;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--paper);
+      font-family: Arial, sans-serif;
+      line-height: 1.65;
+    }
+
+    a { color: var(--gold); }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 66px;
+      padding: 12px clamp(18px, 4vw, 58px);
+      background: rgba(251, 247, 239, 0.96);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(14px);
+    }
+
+    .brand {
+      color: var(--gold);
+      font-family: Georgia, serif;
+      font-size: clamp(18px, 3vw, 25px);
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .back {
+      padding: 9px 14px;
+      color: var(--ink);
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      font-size: 13px;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .hero {
+      padding: 72px 20px 54px;
+      color: white;
+      background: var(--green);
+    }
+
+    .hero-inner, .layout {
+      width: min(1080px, 100%);
+      margin: 0 auto;
+    }
+
+    .eyebrow {
+      margin: 0 0 10px;
+      color: #dfbc78;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 1.8px;
+      text-transform: uppercase;
+    }
+
+    h1, h2 {
+      margin-top: 0;
+      font-family: Georgia, serif;
+      line-height: 1.1;
+    }
+
+    h1 {
+      max-width: 720px;
+      margin-bottom: 16px;
+      font-size: clamp(38px, 7vw, 68px);
+    }
+
+    .hero p {
+      max-width: 680px;
+      margin: 0;
+      color: #e8e0d3;
+      font-size: 17px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 240px minmax(0, 1fr);
+      gap: 42px;
+      padding: 44px 20px 80px;
+    }
+
+    .navigation {
+      position: sticky;
+      top: 92px;
+      align-self: start;
+      display: grid;
+      gap: 7px;
+    }
+
+    .navigation a {
+      padding: 11px 13px;
+      color: var(--muted);
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .navigation a:hover {
+      color: var(--gold);
+      background: var(--soft);
+    }
+
+    .content {
+      display: grid;
+      gap: 24px;
+    }
+
+    section {
+      scroll-margin-top: 90px;
+      padding: clamp(24px, 4vw, 38px);
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+
+    h2 {
+      margin-bottom: 20px;
+      font-size: clamp(27px, 4vw, 38px);
+    }
+
+    h3 {
+      margin: 28px 0 8px;
+      font-size: 17px;
+    }
+
+    p, li {
+      color: #4e443b;
+      font-size: 15px;
+    }
+
+    ul {
+      padding-left: 21px;
+    }
+
+    .notice {
+      padding: 16px;
+      background: var(--soft);
+      border-left: 3px solid var(--gold);
+      border-radius: 4px;
+    }
+
+    .contact {
+      display: inline-flex;
+      padding: 12px 16px;
+      color: white;
+      background: var(--gold);
+      border-radius: 6px;
+      font-weight: 800;
+      text-decoration: none;
+    }
+
+    footer {
+      padding: 28px 20px;
+      color: var(--muted);
+      border-top: 1px solid var(--line);
+      text-align: center;
+      font-size: 13px;
+    }
+
+    @media (max-width: 760px) {
+      .layout { grid-template-columns: 1fr; }
+      .navigation {
+        position: static;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .navigation a {
+        background: var(--soft);
+        text-align: center;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header class="topbar">
+    <a class="brand" href="/">La Fabrique à Voyages</a>
+    <a class="back" href="/">Retour à l’application</a>
+  </header>
+
+  <main>
+    <div class="hero">
+      <div class="hero-inner">
+        <p class="eyebrow">Informations</p>
+        <h1>Une application claire, jusque dans ses règles.</h1>
+        <p>
+          Retrouve ici les informations concernant tes données, les conditions
+          d’utilisation, l’assistance et l’édition du service.
+        </p>
+      </div>
+    </div>
+
+    <div class="layout">
+      <nav class="navigation" aria-label="Sommaire">
+        <a href="#confidentialite">Confidentialité</a>
+        <a href="#conditions">Conditions</a>
+        <a href="#assistance">Assistance</a>
+        <a href="#mentions-legales">Mentions légales</a>
+      </nav>
+
+      <div class="content">
+        <section id="confidentialite">
+          <p class="eyebrow">Données personnelles</p>
+          <h2>Politique de confidentialité</h2>
+
+          <p>
+            La Fabrique à Voyages permet de préparer un voyage puis de suivre
+            son programme pendant le séjour. Le responsable du traitement est
+            l’éditeur personnel du service, joignable à
+            <a href="mailto:mathis.michaud2001@gmail.com">
+              mathis.michaud2001@gmail.com
+            </a>.
+          </p>
+
+          <h3>Données susceptibles d’être traitées</h3>
+          <ul>
+            <li>adresse email, pseudo et identifiant de compte ;</li>
+            <li>destinations, dates, journées, étapes et lieux sélectionnés ;</li>
+            <li>budgets, participants, notes et documents ajoutés ;</li>
+            <li>invitations, rôles et historique de collaboration ;</li>
+            <li>compteurs de recherches et informations techniques de sécurité ;</li>
+            <li>préférences conservées localement sur l’appareil.</li>
+          </ul>
+
+          <p>
+            L’application ne réalise pas de suivi permanent de la position de
+            l’utilisateur. Les coordonnées géographiques enregistrées
+            correspondent aux lieux volontairement sélectionnés.
+          </p>
+
+          <h3>Finalités et bases légales</h3>
+          <ul>
+            <li>créer, enregistrer et synchroniser les voyages demandés ;</li>
+            <li>permettre le partage et la collaboration entre participants ;</li>
+            <li>afficher les cartes, lieux, images et informations météo ;</li>
+            <li>protéger le service et limiter les abus des API externes ;</li>
+            <li>répondre aux demandes d’assistance et de suppression.</li>
+          </ul>
+
+          <p>
+            Ces traitements sont nécessaires à la fourniture du service demandé
+            ou reposent sur l’intérêt légitime à sécuriser son fonctionnement.
+            Les fonctions optionnelles ne sont utilisées qu’à la demande de
+            l’utilisateur.
+          </p>
+
+          <h3>Prestataires techniques</h3>
+          <p>
+            Le service s’appuie notamment sur Supabase pour l’authentification,
+            la base de données, le stockage et les fonctions serveur, ainsi que
+            sur Vercel pour l’hébergement web. Selon les fonctions utilisées,
+            des requêtes peuvent également être envoyées à Google Places,
+            Geoapify, MapTiler, Open-Meteo, Pexels, Unsplash ou GitHub.
+          </p>
+
+          <p>
+            Certains de ces prestataires peuvent traiter des données techniques
+            hors de l’Espace économique européen selon leurs propres garanties
+            contractuelles et politiques de confidentialité.
+          </p>
+
+          <h3>Durée de conservation</h3>
+          <p>
+            Les données du compte sont conservées tant que celui-ci reste actif.
+            Les données d’un voyage sont conservées jusqu’à sa suppression.
+            Les journaux techniques et compteurs sont conservés pendant la durée
+            nécessaire à la sécurité, au calcul des quotas et à la résolution
+            des incidents. Les sauvegardes suivent ensuite les cycles techniques
+            des prestataires d’hébergement.
+          </p>
+
+          <h3>Stockage local et traceurs</h3>
+          <p>
+            L’application utilise le stockage local du navigateur ou de
+            l’appareil pour la session, le mode d’affichage et certaines
+            préférences indispensables. Aucun traceur publicitaire n’est
+            volontairement intégré.
+          </p>
+
+          <h3>Vos droits</h3>
+          <p>
+            Tu peux demander l’accès, la rectification, l’effacement, la
+            limitation, l’opposition ou, lorsque cela s’applique, la portabilité
+            de tes données. Écris à
+            <a href="mailto:mathis.michaud2001@gmail.com">
+              mathis.michaud2001@gmail.com
+            </a>. Tu peux également introduire une réclamation auprès de la CNIL.
+          </p>
+
+          <div class="notice">
+            Les documents de voyage peuvent contenir des informations sensibles.
+            N’ajoute que les documents nécessaires et supprime-les lorsque tu
+            n’en as plus besoin.
+          </div>
+        </section>
+
+        <section id="conditions">
+          <p class="eyebrow">Utilisation</p>
+          <h2>Conditions d’utilisation</h2>
+
+          <p>
+            La Fabrique à Voyages est un service personnel proposé gratuitement
+            pour organiser des voyages. Il peut être utilisé en mode temporaire,
+            puis associé à un compte pour conserver les données.
+          </p>
+
+          <h3>Responsabilité de l’utilisateur</h3>
+          <ul>
+            <li>fournir des informations licites et ne pas usurper d’identité ;</li>
+            <li>protéger ses identifiants et contrôler les personnes invitées ;</li>
+            <li>ne pas détourner les API, quotas ou fonctions du service ;</li>
+            <li>respecter les droits des personnes figurant dans les documents.</li>
+          </ul>
+
+          <h3>Informations de voyage</h3>
+          <p>
+            Les cartes, lieux, horaires, conversions, images et prévisions
+            peuvent être incomplets ou inexacts. L’utilisateur doit vérifier
+            auprès des sources officielles les réservations, visas, règles
+            sanitaires, conditions de sécurité, horaires et transports.
+          </p>
+
+          <h3>Disponibilité et sauvegarde</h3>
+          <p>
+            Le service est fourni sans garantie de disponibilité permanente.
+            Des interruptions ou modifications peuvent survenir. L’utilisateur
+            reste responsable de conserver une copie des documents indispensables
+            à son voyage.
+          </p>
+
+          <h3>Collaboration</h3>
+          <p>
+            Une personne invitée peut consulter ou modifier certaines données
+            selon le rôle qui lui est attribué. Le propriétaire du voyage reste
+            responsable de la gestion des accès et peut les retirer.
+          </p>
+
+          <h3>Contenus et services tiers</h3>
+          <p>
+            Les photographies, cartes, données et marques de tiers restent
+            soumises aux droits et conditions de leurs propriétaires respectifs.
+            L’application peut évoluer ou supprimer une intégration devenue
+            indisponible ou payante.
+          </p>
+
+          <h3>Application Android</h3>
+          <p>
+            La version Android distribuée directement sous forme d’APK doit être
+            téléchargée uniquement depuis le lien officiel de La Fabrique à
+            Voyages. L’installation hors Play Store peut déclencher un
+            avertissement de sécurité Android.
+          </p>
+        </section>
+
+        <section id="assistance">
+          <p class="eyebrow">Besoin d’aide</p>
+          <h2>Assistance</h2>
+
+          <p>
+            Pour signaler un problème, demander la suppression d’un compte ou
+            poser une question sur les données personnelles, indique dans ton
+            message l’appareil utilisé, la page concernée et une description du
+            problème. Ne transmets jamais ton mot de passe ni une clé API.
+          </p>
+
+          <a class="contact" href="mailto:mathis.michaud2001@gmail.com">
+            Contacter l’assistance
+          </a>
+        </section>
+
+        <section id="mentions-legales">
+          <p class="eyebrow">Édition</p>
+          <h2>Mentions légales</h2>
+
+          <h3>Éditeur</h3>
+          <p>
+            La Fabrique à Voyages est éditée à titre personnel et non
+            professionnel. Contact :
+            <a href="mailto:mathis.michaud2001@gmail.com">
+              mathis.michaud2001@gmail.com
+            </a>.
+          </p>
+
+          <p>
+            Conformément au régime applicable aux éditeurs non professionnels,
+            l’identité personnelle de l’éditeur n’est pas publiée sur cette page
+            et doit être communiquée à l’hébergeur.
+          </p>
+
+          <h3>Hébergement</h3>
+          <p>
+            Vercel Inc.<br>
+            440 N Barranca Avenue #4133<br>
+            Covina, CA 91723, États-Unis<br>
+            <a href="https://vercel.com" target="_blank" rel="noopener noreferrer">
+              vercel.com
+            </a>
+          </p>
+
+          <h3>Propriété intellectuelle</h3>
+          <p>
+            Le nom, l’interface et les contenus propres à La Fabrique à Voyages
+            ne peuvent pas être reproduits sans autorisation. Les photographies,
+            cartes, icônes et données provenant de services tiers restent la
+            propriété de leurs auteurs et fournisseurs respectifs.
+          </p>
+
+          <p>Dernière mise à jour : 31 juillet 2026.</p>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    La Fabrique à Voyages · Service personnel et non professionnel
+  </footer>
+</body>
+</html>

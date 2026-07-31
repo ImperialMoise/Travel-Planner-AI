@@ -3490,6 +3490,39 @@ function setAppMode(nextMode) {
     ];
   }, []);
 
+  const inspirationTrips = React.useMemo(function buildInspirations() {
+  return [
+    {
+      name: 'Kyoto',
+      country: 'Japon',
+      promise: 'Temples, ruelles et jardins',
+      image:
+        'https://images.unsplash.com/photo-1528164344705-47542687000d?auto=format&fit=crop&w=1200&q=88'
+    },
+    {
+      name: 'Côte amalfitaine',
+      country: 'Italie',
+      promise: 'Villages suspendus et Méditerranée',
+      image:
+        'https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=1200&q=88'
+    },
+    {
+      name: 'Paris',
+      country: 'France',
+      promise: 'Musées, quartiers et bonnes tables',
+      image:
+        'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=1200&q=88'
+    },
+    {
+      name: 'Dubaï',
+      country: 'Émirats arabes unis',
+      promise: 'Architecture, désert et démesure',
+      image:
+        'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=1200&q=88'
+    }
+  ];
+}, []);
+
   function startFromInspiration(destinationName) {
   setDestination(destinationName);
   setError('');

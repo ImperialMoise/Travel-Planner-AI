@@ -1456,6 +1456,132 @@
   line-height:1.55;
 }
 
+.home-public-install{
+  padding:96px 20px;
+  background:var(--card);
+  color:var(--text);
+}
+
+.home-public-install-inner{
+  width:min(1040px,100%);
+  margin:0 auto;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 280px;
+  align-items:center;
+  gap:80px;
+}
+
+.home-public-install-copy h2{
+  margin:14px 0 18px;
+  font-family:var(--font-serif);
+  font-size:clamp(38px,5vw,66px);
+  font-weight:400;
+  line-height:1;
+}
+
+.home-public-install-copy p{
+  max-width:650px;
+  margin:0 0 25px;
+  color:var(--muted);
+  font-size:15px;
+  font-weight:700;
+  line-height:1.7;
+}
+
+.home-public-apk-button{
+  display:inline-flex;
+  align-items:center;
+  gap:10px;
+  min-height:48px;
+  padding:0 18px;
+  border-radius:8px;
+  background:var(--accent);
+  color:var(--accent-ink);
+  font-size:13px;
+  font-weight:900;
+  text-decoration:none;
+  box-shadow:0 8px 20px rgba(80,53,12,.15);
+}
+
+.home-public-apk-button:hover{
+  transform:translateY(-2px);
+  box-shadow:0 12px 26px rgba(80,53,12,.22);
+}
+
+.home-public-store-list{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  margin-top:18px;
+}
+
+.home-public-store-badge{
+  min-width:150px;
+  padding:10px 13px;
+  border:1px solid var(--outline-variant);
+  border-radius:8px;
+  background:var(--soft);
+}
+
+.home-public-store-badge strong,
+.home-public-store-badge span{
+  display:block;
+}
+
+.home-public-store-badge strong{
+  font-size:12px;
+}
+
+.home-public-store-badge span{
+  margin-top:2px;
+  color:var(--muted);
+  font-size:10px;
+  font-weight:800;
+}
+
+.home-public-install-warning{
+  display:block;
+  max-width:620px;
+  margin-top:18px;
+  color:var(--muted);
+  font-size:10px;
+  line-height:1.5;
+}
+
+.home-public-qr{
+  text-align:center;
+}
+
+.home-public-qr-frame{
+  padding:14px;
+  border:1px solid var(--outline-variant);
+  border-radius:8px;
+  background:#fff;
+  box-shadow:var(--shadow-lg);
+}
+
+.home-public-qr-frame img{
+  display:block;
+  width:100%;
+  aspect-ratio:1;
+}
+
+.home-public-qr strong,
+.home-public-qr span{
+  display:block;
+}
+
+.home-public-qr strong{
+  margin-top:16px;
+  font-size:13px;
+}
+
+.home-public-qr span{
+  margin-top:3px;
+  color:var(--muted);
+  font-size:11px;
+}
+
 .home-public-cta{
   padding:84px 20px;
   background:var(--petrol);
@@ -1569,6 +1695,29 @@
 }
 
 @media(max-width:560px){
+  .home-public-install{
+    padding:64px 16px;
+  }
+
+  .home-public-install-inner{
+    grid-template-columns:1fr;
+    gap:42px;
+  }
+
+  .home-public-qr{
+    width:min(240px,100%);
+    margin:0 auto;
+  }
+
+  .home-public-apk-button{
+    width:100%;
+    justify-content:center;
+  }
+
+  .home-public-store-list{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+  }
   .home-public-inner{
     width:min(100% - 28px,1180px);
   }
@@ -2981,6 +3130,12 @@ function setAppMode(nextMode) {
   const loggedOut = mode === 'loggedOut';
   const safeTrips = Array.isArray(trips) ? trips : [];
   const activeImage = heroImages[imageIndex] || heroImages[0];
+  const androidApkUrl =
+  'https://github.com/ImperialMoise/Travel-Planner-AI/releases/download/android-latest/la-fabrique-a-voyages.apk';
+
+  const androidQrUrl =
+  'https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=10&data=' +
+  encodeURIComponent(androidApkUrl);
 
   React.useEffect(function rotateHeroImage() {
     const timer = window.setInterval(function nextImage() {
@@ -3385,6 +3540,66 @@ async function createTripFromHero() {
               Billets, réservations et fichiers importants.
             </p>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <section className="home-public-install">
+      <div className="home-public-install-inner">
+        <div className="home-public-install-copy">
+          <div className="home-public-kicker">
+            L’application avec toi
+          </div>
+
+          <h2>
+            Ton voyage directement<br />
+            sur ton téléphone.
+          </h2>
+
+          <p>
+            Scanne le QR code avec ton téléphone Android pour télécharger
+            la version de test de La Fabrique à Voyages.
+          </p>
+
+          <a
+            className="home-public-apk-button"
+            href={androidApkUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <span aria-hidden="true">↓</span>
+            Télécharger l’APK Android
+          </a>
+
+          <div className="home-public-store-list">
+            <div className="home-public-store-badge">
+              <strong>Google Play</strong>
+              <span>Bientôt disponible</span>
+            </div>
+
+            <div className="home-public-store-badge">
+              <strong>App Store</strong>
+              <span>Bientôt disponible</span>
+            </div>
+          </div>
+
+          <small className="home-public-install-warning">
+            Version Android de test. Ton téléphone pourra demander
+            l’autorisation d’installer une application provenant du navigateur.
+          </small>
+        </div>
+
+        <div className="home-public-qr">
+          <div className="home-public-qr-frame">
+            <img
+              src={androidQrUrl}
+              alt="QR code pour télécharger l’application Android"
+              loading="lazy"
+            />
+          </div>
+
+          <strong>Scanner pour installer</strong>
+          <span>Android uniquement pour le moment</span>
         </div>
       </div>
     </section>

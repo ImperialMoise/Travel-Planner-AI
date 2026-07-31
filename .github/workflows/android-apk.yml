@@ -10,6 +10,9 @@ on:
       - "web/lib/supabase.js"
       - ".github/workflows/android-apk.yml"
 
+      permissions:
+  contents: write
+
 jobs:
   build-android:
     runs-on: ubuntu-latest
@@ -63,3 +66,24 @@ jobs:
           path: mobile/android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
+
+      - name: Préparer le téléchargement public
+        run: |
+          cp mobile/android/app/build/outputs/apk/debug/app-debug.apk \
+             la-fabrique-a-voyages.apk
+
+      - name: Publier la version Android de test
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view android-latest >/dev/null 2>&1; then
+            gh release upload android-latest \
+              la-fabrique-a-voyages.apk \
+              --clobber
+          else
+            gh release create android-latest \
+              la-fabrique-a-voyages.apk \
+              --target "$GITHUB_SHA" \
+              --title "La Fabrique à Voyages - Android" \
+              --notes "Version Android de test à installer manuellement."
+          fi

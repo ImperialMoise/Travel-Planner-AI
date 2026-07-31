@@ -14,6 +14,19 @@ let mobileItineraryDayIndex = 0;
 let mobileShareMembers = [];
 let mobileShareActivity = [];
 let mobileShareLoading = false;
+let mobileWorkspaceMode =
+  localStorage.getItem('mobile_workspace_mode') === 'travel'
+    ? 'travel'
+    : 'prepare';
+
+function setMobileWorkspaceMode(mode) {
+  mobileWorkspaceMode = mode === 'travel' ? 'travel' : 'prepare';
+
+  localStorage.setItem(
+    'mobile_workspace_mode',
+    mobileWorkspaceMode
+  );
+}
 
 function getMobileTheme() {
   return localStorage.getItem('mobileTheme') || 'light';
@@ -1273,18 +1286,63 @@ function openMobileTripMenu() {
 }
 
 function bottomNav(active = 'plan') {
+  const planRoute =
+    mobileWorkspaceMode === 'travel'
+      ? 'travel'
+      : 'itinerary';
+
+  const planLabel =
+    mobileWorkspaceMode === 'travel'
+      ? 'Voyager'
+      : 'Préparer';
+
+  const planIcon =
+    mobileWorkspaceMode === 'travel'
+      ? 'near_me'
+      : 'event_note';
+
   const items = [
-    { route: 'itinerary', id: 'plan', icon: 'event_note', label: 'Plan' },
-    { route: 'map', id: 'map', icon: 'map', label: 'Carte' },
-    { route: 'budget', id: 'budget', icon: 'payments', label: 'Budget' },
-    { route: 'docs', id: 'docs', icon: 'description', label: 'Documents' }
+    {
+      route: planRoute,
+      id: 'plan',
+      icon: planIcon,
+      label: planLabel
+    },
+    {
+      route: 'map',
+      id: 'map',
+      icon: 'map',
+      label: 'Carte'
+    },
+    {
+      route: 'budget',
+      id: 'budget',
+      icon: 'payments',
+      label: 'Budget'
+    },
+    {
+      route: 'docs',
+      id: 'docs',
+      icon: 'description',
+      label: 'Documents'
+    }
   ];
 
   return `
     <nav class="bottom-nav" aria-label="Navigation mobile">
       ${items.map(item => `
-        <button class="nav-item ${active === item.id ? 'active' : ''}" type="button" data-action="${item.route}">
-          <span class="material-symbols-outlined" aria-hidden="true">${item.icon}</span>
+        <button
+          class="nav-item ${active === item.id ? 'active' : ''}"
+          type="button"
+          data-action="${item.route}"
+        >
+          <span
+            class="material-symbols-outlined"
+            aria-hidden="true"
+          >
+            ${item.icon}
+          </span>
+
           <span>${item.label}</span>
         </button>
       `).join('')}
@@ -3942,7 +4000,185 @@ function renderAuth() {
   `;
 }
 
+function renderGuestAccountUpgrade() {
+  const pending =
+    window.SB?.getPendingGuestAccountUpgrade?.() || null;
+
+  const pseudo =
+    pending?.pseudo ||
+    (
+      mobileUser?.user_metadata?.display_name === 'Voyageur'
+        ? ''
+        : mobileUser?.user_metadata?.display_name || ''
+    );
+
+  app.innerHTML = `
+    <div class="mobile-shell account-shell">
+      ${topbar()}
+
+      <main class="mobile-personal-main">
+        <header class="mobile-personal-heading">
+          <span>Voyage temporaire</span>
+          <h2>Enregistrer mon voyage</h2>
+          <p>
+            Crée ton accès pour conserver ce voyage et le retrouver
+            sur tous tes appareils.
+          </p>
+        </header>
+
+        <section class="mobile-guest-summary">
+          <span class="material-symbols-outlined">luggage</span>
+
+          <div>
+            <strong>Ton voyage est déjà prêt</strong>
+            <small>
+              Tes journées, étapes, dépenses et documents seront conservés.
+            </small>
+          </div>
+        </section>
+
+        ${pending ? `
+          <section class="mobile-personal-card">
+            <header>
+              <span>Confirmation</span>
+              <h3>Consulte tes e-mails</h3>
+            </header>
+
+            <p class="mobile-guest-explanation">
+              Saisis le code envoyé à
+              <strong>${escapeHtml(pending.email)}</strong>.
+            </p>
+
+            <label class="mobile-account-field">
+              <span>Code à six chiffres</span>
+
+              <div>
+                <span class="material-symbols-outlined">password</span>
+                <input
+                  id="guest-upgrade-token"
+                  type="text"
+                  inputmode="numeric"
+                  autocomplete="one-time-code"
+                  maxlength="6"
+                  placeholder="000000"
+                >
+              </div>
+            </label>
+
+            <label class="mobile-account-field">
+              <span>Mot de passe</span>
+
+              <div>
+                <span class="material-symbols-outlined">lock</span>
+                <input
+                  id="guest-upgrade-password"
+                  type="password"
+                  autocomplete="new-password"
+                  placeholder="8 caractères minimum"
+                >
+              </div>
+            </label>
+
+            <label class="mobile-account-field">
+              <span>Confirmer le mot de passe</span>
+
+              <div>
+                <span class="material-symbols-outlined">lock_reset</span>
+                <input
+                  id="guest-upgrade-password-confirmation"
+                  type="password"
+                  autocomplete="new-password"
+                  placeholder="Répète ton mot de passe"
+                >
+              </div>
+            </label>
+
+            <button
+              class="mobile-personal-primary"
+              type="button"
+              data-action="guest-upgrade-complete"
+            >
+              <span class="material-symbols-outlined">check</span>
+              Enregistrer mon voyage
+            </button>
+
+            <div class="mobile-guest-actions">
+              <button
+                type="button"
+                data-action="guest-upgrade-resend"
+              >
+                Renvoyer le code
+              </button>
+
+              <button
+                type="button"
+                data-action="guest-upgrade-change-email"
+              >
+                Modifier l’e-mail
+              </button>
+            </div>
+          </section>
+        ` : `
+          <section class="mobile-personal-card">
+            <header>
+              <span>Création du compte</span>
+              <h3>Tes informations</h3>
+            </header>
+
+            <label class="mobile-account-field">
+              <span>Prénom ou pseudo</span>
+
+              <div>
+                <span class="material-symbols-outlined">person</span>
+                <input
+                  id="guest-upgrade-pseudo"
+                  type="text"
+                  value="${escapeHtml(pseudo)}"
+                  autocomplete="nickname"
+                  placeholder="Ton prénom ou pseudo"
+                >
+              </div>
+            </label>
+
+            <label class="mobile-account-field">
+              <span>Adresse e-mail</span>
+
+              <div>
+                <span class="material-symbols-outlined">mail</span>
+                <input
+                  id="guest-upgrade-email"
+                  type="email"
+                  autocomplete="email"
+                  placeholder="vous@email.com"
+                >
+              </div>
+            </label>
+
+            <button
+              class="mobile-personal-primary"
+              type="button"
+              data-action="guest-upgrade-send"
+            >
+              <span class="material-symbols-outlined">mail</span>
+              Recevoir mon code
+            </button>
+
+            <p class="mobile-guest-privacy">
+              Aucun nouveau voyage ne sera créé : ton voyage actuel
+              sera simplement associé à ton compte.
+            </p>
+          </section>
+        `}
+      </main>
+    </div>
+  `;
+}
+
 function renderAccount() {
+    if (mobileUser?.is_anonymous) {
+    renderGuestAccountUpgrade();
+    return;
+  }
   const name =
     mobileUser?.user_metadata?.display_name ||
     mobileUser?.email?.split('@')[0] ||
@@ -4543,6 +4779,7 @@ function initCreateTripControls() {
 }
 
 function renderItinerary() {
+  setMobileWorkspaceMode('prepare');
   renderTripDayMode(true);
 }
 
@@ -4822,6 +5059,7 @@ function renderTripDayMode(editable = false) {
 }
 
 function renderTravelMode() {
+  setMobileWorkspaceMode('travel');
   renderTripDayMode(false);
 }
 
@@ -6693,6 +6931,92 @@ const activeCategory = categories.find(function(category) {
   navigate('budget');
 }
 
+async function handleGuestUpgradeSend() {
+  const pseudo =
+    document.querySelector('#guest-upgrade-pseudo')?.value.trim();
+
+  const email =
+    document.querySelector('#guest-upgrade-email')?.value.trim();
+
+  if (!pseudo || !email) {
+    alert('Indique ton pseudo et ton adresse e-mail.');
+    return;
+  }
+
+  try {
+    await window.SB.beginGuestAccountUpgrade(email, pseudo);
+    renderAccount();
+    alert('Le code de confirmation vient de partir.');
+  } catch (error) {
+    alert('Erreur : ' + (error.message || error));
+  }
+}
+
+async function handleGuestUpgradeComplete() {
+  const pending =
+    window.SB.getPendingGuestAccountUpgrade?.();
+
+  const token =
+    document.querySelector('#guest-upgrade-token')?.value.trim();
+
+  const password =
+    document.querySelector('#guest-upgrade-password')?.value || '';
+
+  const confirmation =
+    document.querySelector(
+      '#guest-upgrade-password-confirmation'
+    )?.value || '';
+
+  if (!pending) {
+    alert('La demande de confirmation est introuvable.');
+    renderAccount();
+    return;
+  }
+
+  if (password !== confirmation) {
+    alert('Les deux mots de passe sont différents.');
+    return;
+  }
+
+  try {
+    mobileUser = await window.SB.completeGuestAccountUpgrade({
+      email: pending.email,
+      pseudo: pending.pseudo,
+      token,
+      password
+    });
+
+    await refreshMobileTrips();
+    renderAccount();
+
+    alert('Ton voyage est maintenant enregistré.');
+  } catch (error) {
+    alert('Erreur : ' + (error.message || error));
+  }
+}
+
+async function handleGuestUpgradeResend() {
+  const pending =
+    window.SB.getPendingGuestAccountUpgrade?.();
+
+  if (!pending?.email) {
+    renderAccount();
+    return;
+  }
+
+  try {
+    await window.SB.resendGuestAccountUpgradeCode(pending.email);
+    alert('Un nouveau code vient de partir.');
+  } catch (error) {
+    alert('Erreur : ' + (error.message || error));
+  }
+}
+
+function handleGuestUpgradeChangeEmail() {
+  window.SB.clearPendingGuestAccountUpgrade?.();
+  renderAccount();
+}
+
 async function handleLogin() {
   const email = document.querySelector('#auth-email')?.value.trim();
   const password = document.querySelector('#auth-password')?.value;
@@ -7154,6 +7478,26 @@ if ([
 
     if (action === 'account') {
     navigate(mobileUser ? 'account' : 'auth');
+    return;
+  }
+
+    if (action === 'guest-upgrade-send') {
+    handleGuestUpgradeSend();
+    return;
+  }
+
+  if (action === 'guest-upgrade-complete') {
+    handleGuestUpgradeComplete();
+    return;
+  }
+
+  if (action === 'guest-upgrade-resend') {
+    handleGuestUpgradeResend();
+    return;
+  }
+
+  if (action === 'guest-upgrade-change-email') {
+    handleGuestUpgradeChangeEmail();
     return;
   }
 

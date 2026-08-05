@@ -1934,7 +1934,6 @@ const nextTripCover =
           <p class="mobile-sync-status">${syncStatus}</p>
         </section>
 
-        <section
 ${nextTrip ? `
   <section
     class="mobile-dashboard-trip"

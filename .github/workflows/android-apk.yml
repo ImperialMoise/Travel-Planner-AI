@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build Signed Android APK
 
 on:
   workflow_dispatch:
@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Recuperer le projet
+      - name: Récupérer le projet
         uses: actions/checkout@v4
 
       - name: Installer Node.js
@@ -41,11 +41,11 @@ jobs:
       - name: Installer Android SDK 36
         run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
 
-      - name: Installer les dependances
+      - name: Installer les dépendances
         working-directory: mobile
         run: npm ci
 
-      - name: Construire l'application web mobile
+      - name: Construire l’application mobile
         working-directory: mobile
         run: npm run build
 
@@ -53,37 +53,82 @@ jobs:
         working-directory: mobile
         run: npx cap sync android
 
-      - name: Construire l'APK
+      - name: Préparer la clé de signature
+        shell: bash
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -z "$ANDROID_KEYSTORE_BASE64" ] || \
+             [ -z "$ANDROID_STORE_PASSWORD" ] || \
+             [ -z "$ANDROID_KEY_ALIAS" ] || \
+             [ -z "$ANDROID_KEY_PASSWORD" ]; then
+            echo "Un ou plusieurs secrets Android sont manquants."
+            exit 1
+          fi
+
+          echo "$ANDROID_KEYSTORE_BASE64" |
+            base64 --decode > "$RUNNER_TEMP/la-fabrique-release.jks"
+
+          test -s "$RUNNER_TEMP/la-fabrique-release.jks"
+
+      - name: Construire l’APK release signé
         working-directory: mobile/android
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/la-fabrique-release.jks
+          ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew assembleRelease
 
-      - name: Publier l'APK
+      - name: Vérifier la signature de l’APK
+        run: |
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" \
+            verify \
+            --verbose \
+            --print-certs \
+            mobile/android/app/build/outputs/apk/release/app-release.apk
+
+      - name: Publier l’artefact signé
         uses: actions/upload-artifact@v4
         with:
-          name: la-fabrique-a-voyages-debug
-          path: mobile/android/app/build/outputs/apk/debug/app-debug.apk
+          name: la-fabrique-a-voyages-release
+          path: mobile/android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
           retention-days: 30
 
       - name: Préparer le téléchargement public
         run: |
-          cp mobile/android/app/build/outputs/apk/debug/app-debug.apk \
+          cp mobile/android/app/build/outputs/apk/release/app-release.apk \
              la-fabrique-a-voyages.apk
 
-      - name: Publier la version Android de test
+          sha256sum la-fabrique-a-voyages.apk \
+            > la-fabrique-a-voyages.apk.sha256
+
+      - name: Publier la version Android signée
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          RELEASE_NOTES="APK Android release signé automatiquement depuis le commit $GITHUB_SHA."
+
           if gh release view android-latest >/dev/null 2>&1; then
+            gh release edit android-latest \
+              --title "La Fabrique à Voyages - Android" \
+              --notes "$RELEASE_NOTES"
+
             gh release upload android-latest \
               la-fabrique-a-voyages.apk \
+              la-fabrique-a-voyages.apk.sha256 \
               --clobber
           else
             gh release create android-latest \
               la-fabrique-a-voyages.apk \
+              la-fabrique-a-voyages.apk.sha256 \
               --target "$GITHUB_SHA" \
               --title "La Fabrique à Voyages - Android" \
-              --notes "Version Android de test à installer manuellement."
+              --notes "$RELEASE_NOTES"
           fi

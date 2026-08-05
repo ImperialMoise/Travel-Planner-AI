@@ -1,8 +1,0 @@
-{
-  "appId": "com.imperialmoise.lafabriqueavoyages",
-  "appName": "La Fabrique à Voyages",
-  "webDir": "dist",
-  "server": {
-    "androidScheme": "https"
-  }
-}

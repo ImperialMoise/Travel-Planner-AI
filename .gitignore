@@ -1,0 +1,20 @@
+# Dépendances installées localement
+**/node_modules/
+
+# Fichiers générés par les builds
+**/dist/
+**/.vercel/
+
+# Fichiers de configuration secrets
+.env
+.env.*
+!.env.example
+
+# Résultats de builds Android
+mobile/android/.gradle/
+mobile/android/build/
+mobile/android/app/build/
+
+# Fichiers système
+.DS_Store
+Thumbs.db

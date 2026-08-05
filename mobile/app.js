@@ -1,3 +1,77 @@
+import { Capacitor } from '@capacitor/core';
+import { Geolocation } from '@capacitor/geolocation';
+
+function hasMobileLocationPermission(status) {
+  return (
+    status?.location === 'granted' ||
+    status?.coarseLocation === 'granted'
+  );
+}
+
+function getMobileLocationErrorMessage(error) {
+  const code = String(error?.code || '');
+
+  if (code === '1' || code === 'OS-PLUG-GLOC-0003') {
+    return 'Autorisation de localisation refusée.';
+  }
+
+  if (
+    code === 'OS-PLUG-GLOC-0007' ||
+    code === 'OS-PLUG-GLOC-0009' ||
+    code === 'OS-PLUG-GLOC-0017'
+  ) {
+    return 'Active la localisation de ton téléphone pour utiliser cette fonction.';
+  }
+
+  if (code === '3' || code === 'OS-PLUG-GLOC-0010') {
+    return 'La localisation prend trop de temps. Réessaie dans quelques instants.';
+  }
+
+  if (code === '2') {
+    return 'Ta position est momentanément indisponible.';
+  }
+
+  return error?.message || 'Impossible de récupérer ta position.';
+}
+
+async function getMobileCurrentPosition(options = {}) {
+  const positionOptions = {
+    enableHighAccuracy: options.enableHighAccuracy !== false,
+    timeout: Number.isFinite(options.timeout) ? options.timeout : 10000,
+    maximumAge: Number.isFinite(options.maximumAge) ? options.maximumAge : 0
+  };
+
+  if (Capacitor.isNativePlatform()) {
+    let permissions = await Geolocation.checkPermissions();
+
+    if (!hasMobileLocationPermission(permissions)) {
+      permissions = await Geolocation.requestPermissions({
+        permissions: ['location']
+      });
+    }
+
+    if (!hasMobileLocationPermission(permissions)) {
+      const error = new Error('Autorisation de localisation refusée.');
+      error.code = 'OS-PLUG-GLOC-0003';
+      throw error;
+    }
+
+    return Geolocation.getCurrentPosition(positionOptions);
+  }
+
+  if (!navigator.geolocation) {
+    throw new Error('Géolocalisation indisponible sur cet appareil.');
+  }
+
+  return new Promise((resolve, reject) => {
+    navigator.geolocation.getCurrentPosition(
+      resolve,
+      reject,
+      positionOptions
+    );
+  });
+}
+
 const app = document.getElementById('app');
 
 let mobileSB = null;
@@ -3731,13 +3805,13 @@ function setMobileRouteEndpointFromPlace(kind, place) {
   maybeAutoCalculateMobileRoute();
 }
 
-function setMobileRouteFromCurrentPosition() {
-  if (!navigator.geolocation) {
-    alert('Géolocalisation indisponible sur cet appareil.');
-    return;
-  }
+async function setMobileRouteFromCurrentPosition() {
+  try {
+    const position = await getMobileCurrentPosition({
+      enableHighAccuracy: true,
+      timeout: 10000
+    });
 
-  navigator.geolocation.getCurrentPosition(position => {
     mobileRouteCalculatorDraft = {
       ...mobileRouteCalculatorDraft,
       from: 'Ma position',
@@ -3756,12 +3830,9 @@ function setMobileRouteFromCurrentPosition() {
         duration: 600
       });
     }
-  }, () => {
-    alert('Impossible de récupérer votre position.');
-  }, {
-    enableHighAccuracy: true,
-    timeout: 8000
-  });
+  } catch (error) {
+    alert(getMobileLocationErrorMessage(error));
+  }
 }
 
 async function calculateMobileRoute(options = {}) {
@@ -8494,24 +8565,29 @@ if (action === 'step-delete-confirm') {
     return;
   }
 
-  if (action === 'map-geolocate') {
+if (action === 'map-geolocate') {
     mobileMapToolsOpen = false;
-    if (!navigator.geolocation || !mobileMapInstance) {
-      alert('Géolocalisation non disponible.');
+
+    if (!mobileMapInstance) {
+      alert('La carte n’est pas encore disponible.');
       return;
     }
 
-    navigator.geolocation.getCurrentPosition(
-      position => {
-        mobileMapInstance.flyTo({
-          center: [position.coords.longitude, position.coords.latitude],
-          zoom: 15,
-          duration: 900
-        });
-      },
-      () => alert('Impossible de vous localiser.'),
-      { enableHighAccuracy: true, timeout: 8000 }
-    );
+    try {
+      const position = await getMobileCurrentPosition({
+        enableHighAccuracy: true,
+        timeout: 10000
+      });
+
+      mobileMapInstance.flyTo({
+        center: [position.coords.longitude, position.coords.latitude],
+        zoom: 15,
+        duration: 900
+      });
+    } catch (error) {
+      alert(getMobileLocationErrorMessage(error));
+    }
+
     return;
   }
 

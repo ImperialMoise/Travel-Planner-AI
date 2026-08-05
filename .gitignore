@@ -10,6 +10,10 @@
 .env.*
 !.env.example
 
+# Clés de signature Android — ne jamais versionner
+*.jks
+*.keystore
+
 # Résultats de builds Android
 mobile/android/.gradle/
 mobile/android/build/

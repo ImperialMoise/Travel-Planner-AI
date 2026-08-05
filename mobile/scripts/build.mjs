@@ -1,6 +1,7 @@
 import { cp, mkdir, readdir, rm } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { build as buildJavaScript } from 'esbuild';
 
 const scriptsDir = path.dirname(fileURLToPath(import.meta.url));
 const mobileDir = path.resolve(scriptsDir, '..');
@@ -23,7 +24,8 @@ for (const entry of entries) {
     'package-lock.json',
     'scripts',
     'README.md',
-    'capacitor.config.ts'
+    'capacitor.config.ts',
+    'app.js'
   ].includes(entry.name)) {
     continue;
   }
@@ -33,6 +35,18 @@ for (const entry of entries) {
 
   await cp(sourcePath, outputPath, { recursive: entry.isDirectory() });
 }
+
+await buildJavaScript({
+  entryPoints: [path.join(mobileDir, 'app.js')],
+  outfile: path.join(outputDir, 'app.js'),
+  bundle: true,
+  format: 'iife',
+  platform: 'browser',
+  target: ['chrome120'],
+  minify: false,
+  sourcemap: false,
+  logLevel: 'info'
+});
 
 // La version finale mobile reçoit toujours la même couche Supabase que le web.
 await cp(

@@ -4323,19 +4323,19 @@ function renderGuestAccountUpgrade() {
             </p>
 
             <label class="mobile-account-field">
-              <span>Code à six chiffres</span>
+              <span>Code à huit chiffres</span>
 
-              <div>
-                <span class="material-symbols-outlined">password</span>
-                <input
-                  id="guest-upgrade-token"
-                  type="text"
-                  inputmode="numeric"
-                  autocomplete="one-time-code"
-                  maxlength="6"
-                  placeholder="000000"
-                >
-              </div>
+<div>
+  <span class="material-symbols-outlined">password</span>
+  <input
+    id="guest-upgrade-token"
+    type="text"
+    inputmode="numeric"
+    autocomplete="one-time-code"
+    maxlength="8"
+    placeholder="00000000"
+  >
+</div>
             </label>
 
             <label class="mobile-account-field">

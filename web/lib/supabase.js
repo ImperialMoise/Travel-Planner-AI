@@ -145,9 +145,9 @@ export async function completeGuestAccountUpgrade({
     throw new Error("L'adresse e-mail est manquante.");
   }
 
-  if (!/^\d{6}$/.test(cleanToken)) {
-    throw new Error('Le code doit contenir exactement 6 chiffres.');
-  }
+if (!/^\d{8}$/.test(cleanToken)) {
+  throw new Error('Le code doit contenir exactement 8 chiffres.');
+}
 
   if (cleanPassword.length < 8) {
     throw new Error('Le mot de passe doit contenir au moins 8 caractères.');

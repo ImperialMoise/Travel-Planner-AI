@@ -111,7 +111,7 @@ function SettingsModal() {
                 fontSize: 25,
                 color: 'var(--text)'
               }}>
-                L&apos;Atelier
+                La Fabrique à Voyages
               </div>
               <div style={{ marginTop: 5, fontSize: 12, color: 'var(--muted)' }}>
                 Espace personnel
@@ -461,14 +461,15 @@ function GuestAccountSection({ user }) {
 
           <SettingsField
             label="Code de confirmation"
-            description="Saisis les six chiffres reçus par e-mail."
+            description="Saisis les huit chiffres reçus par e-mail."
           >
             <input
               value={token}
               onChange={event => setToken(
-                event.target.value.replace(/\D/g, '').slice(0, 6)
+                event.target.value.replace(/\D/g, '').slice(0, 8)
               )}
-              placeholder="000000"
+              placeholder="00000000"
+              maxLength={8}
               inputMode="numeric"
               autoComplete="one-time-code"
               style={settingsInputStyle}
@@ -539,6 +540,11 @@ function AccountSection({ user }) {
   const [pseudo, setPseudo] = React.useState(initialPseudo);
   const [editing, setEditing] = React.useState(false);
   const [busy, setBusy] = React.useState(false);
+  const [passwordStep, setPasswordStep] = React.useState('idle');
+  const [passwordCode, setPasswordCode] = React.useState('');
+  const [newPassword, setNewPassword] = React.useState('');
+  const [newPasswordConfirmation, setNewPasswordConfirmation] = React.useState('');
+  const [passwordError, setPasswordError] = React.useState('');
 
   async function savePseudo() {
     const next = pseudo.trim();
@@ -571,6 +577,69 @@ function AccountSection({ user }) {
     } finally {
       setBusy(false);
     }
+  }
+
+   async function sendPasswordCode() {
+    setPasswordError('');
+    setBusy(true);
+
+    try {
+      await SB.requestPasswordReset(user.email);
+      setPasswordStep('code');
+      Store.showToast('Code de sécurité envoyé par e-mail');
+    } catch (error) {
+      setPasswordError(
+        error.message || "Impossible d'envoyer le code."
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function saveNewPassword() {
+    setPasswordError('');
+
+    if (newPassword !== newPasswordConfirmation) {
+      setPasswordError('Les deux mots de passe sont différents.');
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      setPasswordError(
+        'Le nouveau mot de passe doit contenir au moins 8 caractères.'
+      );
+      return;
+    }
+
+    setBusy(true);
+
+    try {
+      await SB.completePasswordReset({
+        email: user.email,
+        token: passwordCode,
+        password: newPassword
+      });
+
+      setPasswordStep('idle');
+      setPasswordCode('');
+      setNewPassword('');
+      setNewPasswordConfirmation('');
+      Store.showToast('Ton mot de passe a été modifié');
+    } catch (error) {
+      setPasswordError(
+        error.message || 'Impossible de modifier le mot de passe.'
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function cancelPasswordChange() {
+    setPasswordStep('idle');
+    setPasswordCode('');
+    setNewPassword('');
+    setNewPasswordConfirmation('');
+    setPasswordError('');
   }
 
   async function signOut() {
@@ -633,7 +702,7 @@ function AccountSection({ user }) {
       </div>
 
       <SettingsCard eyebrow="Identité" title="Tes informations">
-        <SettingsField label="Pseudo" description="Le nom affiché dans L’Atelier.">
+        <SettingsField label="Pseudo" description="Le nom affiché dans La Fabrique à Voyages.">
           <div style={{ display: 'flex', gap: 8, width: '100%', alignItems: 'center' }}>
             <input
               value={pseudo}
@@ -667,6 +736,137 @@ function AccountSection({ user }) {
             {user?.email || 'Non renseigné'}
           </div>
         </SettingsField>
+      </SettingsCard>
+
+            <SettingsCard eyebrow="Sécurité" title="Mot de passe">
+        {passwordStep === 'idle' ? (
+          <SettingsField
+            label="Modifier le mot de passe"
+            description="Un code de sécurité sera envoyé à ton adresse e-mail."
+          >
+            <SettingsButton
+              variant="primary"
+              icon="mail"
+              onClick={sendPasswordCode}
+              disabled={busy}
+            >
+              {busy ? 'Envoi en cours' : 'Recevoir un code'}
+            </SettingsButton>
+          </SettingsField>
+        ) : (
+          <React.Fragment>
+            <div style={{
+              marginBottom: 16,
+              padding: '11px 13px',
+              borderRadius: 8,
+              background: 'var(--accent-soft)',
+              color: 'var(--text)',
+              fontSize: 13,
+              lineHeight: 1.5
+            }}>
+              Un code à 8 chiffres a été envoyé à{' '}
+              <strong>{user.email}</strong>.
+            </div>
+
+            <SettingsField
+              label="Code de sécurité"
+              description="Saisis les huit chiffres reçus par e-mail."
+            >
+              <input
+                value={passwordCode}
+                onChange={event => setPasswordCode(
+                  event.target.value.replace(/\D/g, '').slice(0, 8)
+                )}
+                placeholder="00000000"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                maxLength={8}
+                autoFocus
+                style={settingsInputStyle}
+              />
+            </SettingsField>
+
+            <SettingsField label="Nouveau mot de passe">
+              <input
+                type="password"
+                value={newPassword}
+                onChange={event => setNewPassword(event.target.value)}
+                placeholder="8 caractères minimum"
+                autoComplete="new-password"
+                style={settingsInputStyle}
+              />
+            </SettingsField>
+
+            <SettingsField label="Confirmer le nouveau mot de passe">
+              <input
+                type="password"
+                value={newPasswordConfirmation}
+                onChange={event => setNewPasswordConfirmation(event.target.value)}
+                placeholder="Répète ton nouveau mot de passe"
+                autoComplete="new-password"
+                style={settingsInputStyle}
+              />
+            </SettingsField>
+
+            {passwordError && (
+              <div style={{
+                marginBottom: 14,
+                padding: '11px 13px',
+                borderRadius: 8,
+                background: 'rgba(192, 86, 63, .10)',
+                color: '#b64f38',
+                fontSize: 13,
+                fontWeight: 700
+              }}>
+                {passwordError}
+              </div>
+            )}
+
+            <div style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 8
+            }}>
+              <SettingsButton
+                variant="primary"
+                icon="check"
+                onClick={saveNewPassword}
+                disabled={busy}
+              >
+                {busy ? 'Modification' : 'Modifier le mot de passe'}
+              </SettingsButton>
+
+              <SettingsButton
+                onClick={sendPasswordCode}
+                disabled={busy}
+              >
+                Renvoyer le code
+              </SettingsButton>
+
+              <SettingsButton
+                icon="x"
+                onClick={cancelPasswordChange}
+                disabled={busy}
+              >
+                Annuler
+              </SettingsButton>
+            </div>
+          </React.Fragment>
+        )}
+
+        {passwordStep === 'idle' && passwordError && (
+          <div style={{
+            marginTop: 12,
+            padding: '11px 13px',
+            borderRadius: 8,
+            background: 'rgba(192, 86, 63, .10)',
+            color: '#b64f38',
+            fontSize: 13,
+            fontWeight: 700
+          }}>
+            {passwordError}
+          </div>
+        )}
       </SettingsCard>
 
       <SettingsCard eyebrow="Session" title="Connexion">

@@ -85,6 +85,7 @@ let showAllTrips = false;
 let mobileSupabaseReady = false;
 let mobileSupabaseError = '';
 let mobilePasswordResetEmail = '';
+let mobilePasswordResetReturnRoute = 'auth';
 let mobileItineraryDayIndex = 0;
 let mobileShareMembers = [];
 let mobileShareActivity = [];
@@ -124,11 +125,27 @@ function toggleMobileTheme() {
 }
 
 async function handleUpdateMobileProfile() {
-  const input = document.querySelector('#account-display-name');
-  const displayName = input?.value.trim();
+  const nameInput = document.querySelector(
+    '#account-display-name'
+  );
+
+  const emailInput = document.querySelector(
+    '#account-email'
+  );
+
+  const displayName = nameInput?.value.trim();
+  const nextEmail = emailInput?.value.trim().toLowerCase();
+  const currentEmail = String(
+    mobileUser?.email || ''
+  ).trim().toLowerCase();
 
   if (!displayName) {
     alert('Le pseudo ne peut pas être vide.');
+    return;
+  }
+
+  if (!nextEmail || !nextEmail.includes('@')) {
+    alert('Indique une adresse e-mail valide.');
     return;
   }
 
@@ -144,6 +161,18 @@ async function handleUpdateMobileProfile() {
         .eq('id', mobileUser.id);
     }
 
+    let emailChangeRequested = false;
+
+    if (nextEmail !== currentEmail) {
+      const { error } = await window.SB.sb.auth.updateUser({
+        email: nextEmail
+      });
+
+      if (error) throw error;
+
+      emailChangeRequested = true;
+    }
+
     mobileUser = {
       ...mobileUser,
       user_metadata: {
@@ -153,8 +182,20 @@ async function handleUpdateMobileProfile() {
     };
 
     renderAccount();
+
+    if (emailChangeRequested) {
+      alert(
+        'Les confirmations ont été envoyées. Consulte ton ancienne ' +
+        'et ta nouvelle adresse e-mail pour terminer la modification.'
+      );
+    } else {
+      alert('Ton profil a été mis à jour.');
+    }
   } catch (error) {
-    alert('Erreur mise à jour profil : ' + (error.message || error));
+    alert(
+      'Erreur lors de la mise à jour : ' +
+      (error.message || error)
+    );
   }
 }
 
@@ -4716,12 +4757,13 @@ function renderAccount() {
           <label class="mobile-account-field">
             <span>Adresse email</span>
 
-            <div class="readonly">
+            <div>
               <span class="material-symbols-outlined">mail</span>
               <input
+                id="account-email"
                 type="email"
                 value="${escapeHtml(email)}"
-                readonly
+                autocomplete="email"
               >
             </div>
           </label>
@@ -4733,6 +4775,28 @@ function renderAccount() {
           >
             <span class="material-symbols-outlined">check</span>
             Enregistrer les modifications
+          </button>
+        </section>
+
+        <section class="mobile-personal-card">
+          <header>
+            <span>Sécurité</span>
+            <h3>Mot de passe</h3>
+          </header>
+
+          <button
+            class="mobile-session-row"
+            type="button"
+            data-action="account-password-change"
+          >
+            <span class="material-symbols-outlined">lock_reset</span>
+
+            <span>
+              <strong>Modifier le mot de passe</strong>
+              <small>Recevoir un code de sécurité par e-mail</small>
+            </span>
+
+            <span class="material-symbols-outlined">chevron_right</span>
           </button>
         </section>
 
@@ -4756,6 +4820,96 @@ function renderAccount() {
 
             <span class="material-symbols-outlined">chevron_right</span>
           </button>
+        </section>
+
+        <section class="mobile-personal-card">
+          <header>
+            <span>Zone dangereuse</span>
+            <h3>Supprimer le compte</h3>
+          </header>
+
+          <p style="
+            margin: 0 0 16px;
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.55;
+          ">
+            La suppression effacera définitivement ton compte, tes voyages
+            personnels et leurs fichiers.
+          </p>
+
+          <button
+            class="mobile-session-row danger"
+            type="button"
+            data-action="account-delete-open"
+          >
+            <span class="material-symbols-outlined">delete_forever</span>
+
+            <span>
+              <strong>Supprimer mon compte</strong>
+              <small>Afficher les confirmations de sécurité</small>
+            </span>
+
+            <span class="material-symbols-outlined">chevron_right</span>
+          </button>
+
+          <div id="mobile-delete-account-form" hidden>
+            <label class="mobile-account-field">
+              <span>Mot de passe actuel</span>
+
+              <div>
+                <span class="material-symbols-outlined">lock</span>
+                <input
+                  id="mobile-delete-password"
+                  type="password"
+                  autocomplete="current-password"
+                  placeholder="Ton mot de passe actuel"
+                >
+              </div>
+            </label>
+
+            <label class="mobile-account-field">
+              <span>Écris SUPPRIMER pour confirmer</span>
+
+              <div>
+                <span class="material-symbols-outlined">warning</span>
+                <input
+                  id="mobile-delete-confirmation"
+                  type="text"
+                  autocomplete="off"
+                  placeholder="SUPPRIMER"
+                >
+              </div>
+            </label>
+
+            <button
+              class="mobile-session-row danger"
+              type="button"
+              data-action="account-delete-confirm"
+            >
+              <span class="material-symbols-outlined">delete_forever</span>
+
+              <span>
+                <strong>Supprimer définitivement</strong>
+                <small>Cette action est irréversible</small>
+              </span>
+
+              <span class="material-symbols-outlined">chevron_right</span>
+            </button>
+
+            <button
+              class="mobile-session-row"
+              type="button"
+              data-action="account-delete-cancel"
+            >
+              <span class="material-symbols-outlined">close</span>
+
+              <span>
+                <strong>Annuler</strong>
+                <small>Conserver mon compte</small>
+              </span>
+            </button>
+          </div>
         </section>
       </main>
     </div>
@@ -7537,12 +7691,44 @@ function handleGuestUpgradeChangeEmail() {
 
 function handlePasswordResetStart() {
   mobilePasswordResetEmail = '';
+  mobilePasswordResetReturnRoute = 'auth';
   renderPasswordResetEmail();
 }
 
 function handlePasswordResetBack() {
+  const returnRoute = mobilePasswordResetReturnRoute;
+
   mobilePasswordResetEmail = '';
-  renderAuth();
+  mobilePasswordResetReturnRoute = 'auth';
+
+  if (returnRoute === 'account') {
+    navigate('account');
+  } else {
+    renderAuth();
+  }
+}
+
+async function handleMobileAccountPasswordChange() {
+  if (!mobileUser?.email) {
+    alert('Adresse e-mail introuvable.');
+    return;
+  }
+
+  try {
+    await window.SB.requestPasswordReset(mobileUser.email);
+
+    mobilePasswordResetEmail = mobileUser.email;
+    mobilePasswordResetReturnRoute = 'account';
+
+    renderPasswordResetCode();
+
+    alert('Le code de sécurité vient d’être envoyé.');
+  } catch (error) {
+    alert(
+      'Erreur lors de l’envoi : ' +
+      (error.message || error)
+    );
+  }
 }
 
 async function handlePasswordResetSend() {
@@ -7636,6 +7822,150 @@ async function handleLogin() {
     }
   } catch (error) {
     alert('Erreur connexion : ' + (error.message || error));
+  }
+}
+
+function openMobileDeleteAccount() {
+  const form = document.querySelector('#mobile-delete-account-form');
+  const openButton = document.querySelector(
+    '[data-action="account-delete-open"]'
+  );
+
+  if (form) form.hidden = false;
+  if (openButton) openButton.hidden = true;
+}
+
+function cancelMobileDeleteAccount() {
+  const form = document.querySelector('#mobile-delete-account-form');
+  const openButton = document.querySelector(
+    '[data-action="account-delete-open"]'
+  );
+
+  const passwordInput = document.querySelector(
+    '#mobile-delete-password'
+  );
+
+  const confirmationInput = document.querySelector(
+    '#mobile-delete-confirmation'
+  );
+
+  if (passwordInput) passwordInput.value = '';
+  if (confirmationInput) confirmationInput.value = '';
+  if (form) form.hidden = true;
+  if (openButton) openButton.hidden = false;
+}
+
+async function handleMobileDeleteAccount() {
+  const password = document.querySelector(
+    '#mobile-delete-password'
+  )?.value || '';
+
+  const confirmation = document.querySelector(
+    '#mobile-delete-confirmation'
+  )?.value.trim() || '';
+
+  const button = document.querySelector(
+    '[data-action="account-delete-confirm"]'
+  );
+
+  if (!password) {
+    alert('Indique ton mot de passe actuel.');
+    return;
+  }
+
+  if (confirmation !== 'SUPPRIMER') {
+    alert('Écris exactement SUPPRIMER pour confirmer.');
+    return;
+  }
+
+  const finalConfirmation = confirm(
+    'Cette action est irréversible. Supprimer définitivement ce compte ?'
+  );
+
+  if (!finalConfirmation) return;
+
+  if (button) {
+    button.disabled = true;
+    button.innerHTML = `
+      <span class="material-symbols-outlined">progress_activity</span>
+
+      <span>
+        <strong>Suppression en cours</strong>
+        <small>Veuillez patienter</small>
+      </span>
+    `;
+  }
+
+  try {
+    const { data, error } = await window.SB.sb.functions.invoke(
+      'delete-account',
+      {
+        body: {
+          password,
+          confirmation
+        }
+      }
+    );
+
+    if (error) {
+      let detailedMessage = '';
+
+      try {
+        if (
+          error.context &&
+          typeof error.context.json === 'function'
+        ) {
+          const errorBody = await error.context.json();
+          detailedMessage = errorBody?.error || '';
+        }
+      } catch (_) {
+        // Le message générique sera utilisé.
+      }
+
+      throw new Error(
+        detailedMessage ||
+        error.message ||
+        'Impossible de supprimer le compte.'
+      );
+    }
+
+    if (!data?.success) {
+      throw new Error(
+        data?.error || 'Impossible de supprimer le compte.'
+      );
+    }
+
+    try {
+      await window.SB.signOut();
+    } catch (_) {
+      // Les sessions ont déjà été supprimées avec le compte.
+    }
+
+    mobileUser = null;
+    mobileTrips = [];
+    activeTrip = null;
+
+    navigate('home');
+    alert('Ton compte a été supprimé définitivement.');
+  } catch (error) {
+    alert(
+      'Erreur lors de la suppression : ' +
+      (error.message || error)
+    );
+
+    if (button) {
+      button.disabled = false;
+      button.innerHTML = `
+        <span class="material-symbols-outlined">delete_forever</span>
+
+        <span>
+          <strong>Supprimer définitivement</strong>
+          <small>Cette action est irréversible</small>
+        </span>
+
+        <span class="material-symbols-outlined">chevron_right</span>
+      `;
+    }
   }
 }
 
@@ -8156,8 +8486,28 @@ if ([
     return;
   }
 
+  if (action === 'account-delete-open') {
+    openMobileDeleteAccount();
+    return;
+  }
+
+  if (action === 'account-delete-cancel') {
+    cancelMobileDeleteAccount();
+    return;
+  }
+
+  if (action === 'account-delete-confirm') {
+    handleMobileDeleteAccount();
+    return;
+  }
+
   if (action === 'save-profile') {
     handleUpdateMobileProfile();
+    return;
+  }
+
+  if (action === 'account-password-change') {
+    handleMobileAccountPasswordChange();
     return;
   }
 

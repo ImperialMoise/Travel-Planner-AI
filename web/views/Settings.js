@@ -545,6 +545,32 @@ function AccountSection({ user }) {
   const [newPassword, setNewPassword] = React.useState('');
   const [newPasswordConfirmation, setNewPasswordConfirmation] = React.useState('');
   const [passwordError, setPasswordError] = React.useState('');
+  const [emailStep, setEmailStep] = React.useState('idle');
+  const [newEmail, setNewEmail] = React.useState('');
+  const [emailBusy, setEmailBusy] = React.useState(false);
+  const [emailError, setEmailError] = React.useState('');
+  const [deleteStep, setDeleteStep] = React.useState('idle');
+  const [deletePassword, setDeletePassword] = React.useState('');
+  const [deleteConfirmation, setDeleteConfirmation] = React.useState('');
+  const [deleteBusy, setDeleteBusy] = React.useState(false);
+  const [deleteError, setDeleteError] = React.useState('');
+
+    React.useEffect(() => {
+    if (!user?.id || !user?.email) return;
+
+    SB.sb
+      .from('profiles')
+      .update({ email: user.email })
+      .eq('id', user.id)
+      .then(({ error }) => {
+        if (error) {
+          console.warn(
+            "Impossible de synchroniser l'adresse e-mail du profil :",
+            error.message
+          );
+        }
+      });
+  }, [user?.id, user?.email]);
 
   async function savePseudo() {
     const next = pseudo.trim();
@@ -579,7 +605,50 @@ function AccountSection({ user }) {
     }
   }
 
-   async function sendPasswordCode() {
+  async function requestEmailChange() {
+    const cleanEmail = newEmail.trim().toLowerCase();
+
+    setEmailError('');
+
+    if (!cleanEmail || !cleanEmail.includes('@')) {
+      setEmailError('Indique une adresse e-mail valide.');
+      return;
+    }
+
+    if (cleanEmail === String(user.email || '').toLowerCase()) {
+      setEmailError(
+        'Cette adresse est déjà associée à ton compte.'
+      );
+      return;
+    }
+
+    setEmailBusy(true);
+
+    try {
+      const { error } = await SB.sb.auth.updateUser({
+        email: cleanEmail
+      });
+
+      if (error) throw error;
+
+      setEmailStep('sent');
+      Store.showToast('Demande de changement envoyée');
+    } catch (error) {
+      setEmailError(
+        error.message || "Impossible de modifier l'adresse e-mail."
+      );
+    } finally {
+      setEmailBusy(false);
+    }
+  }
+
+  function cancelEmailChange() {
+    setEmailStep('idle');
+    setNewEmail('');
+    setEmailError('');
+  }
+
+  async function sendPasswordCode() {
     setPasswordError('');
     setBusy(true);
 
@@ -640,6 +709,84 @@ function AccountSection({ user }) {
     setNewPassword('');
     setNewPasswordConfirmation('');
     setPasswordError('');
+  }
+
+  async function deleteAccount() {
+    setDeleteError('');
+
+    if (!deletePassword) {
+      setDeleteError('Indique ton mot de passe actuel.');
+      return;
+    }
+
+    if (deleteConfirmation.trim() !== 'SUPPRIMER') {
+      setDeleteError('Écris exactement SUPPRIMER pour confirmer.');
+      return;
+    }
+
+    setDeleteBusy(true);
+
+    try {
+      const { data, error } = await SB.sb.functions.invoke(
+        'delete-account',
+        {
+          body: {
+            password: deletePassword,
+            confirmation: deleteConfirmation.trim()
+          }
+        }
+      );
+
+      if (error) {
+        let detailedMessage = '';
+
+        try {
+          if (
+            error.context &&
+            typeof error.context.json === 'function'
+          ) {
+            const errorBody = await error.context.json();
+            detailedMessage = errorBody?.error || '';
+          }
+        } catch (_) {
+          // Le message générique sera utilisé.
+        }
+
+        throw new Error(
+          detailedMessage ||
+          error.message ||
+          'Impossible de supprimer le compte.'
+        );
+      }
+
+      if (!data?.success) {
+        throw new Error(
+          data?.error || 'Impossible de supprimer le compte.'
+        );
+      }
+
+      try {
+        await SB.signOut();
+      } catch (_) {
+        // Le compte et ses sessions ont déjà été supprimés.
+      }
+
+      Store.set({
+        user: null,
+        trips: [],
+        activeTripId: null,
+        trip: null,
+        settingsOpen: false
+      });
+
+      Store.showToast('Ton compte a été supprimé');
+    } catch (error) {
+      setDeleteError(
+        error.message || 'Impossible de supprimer le compte.'
+      );
+    } finally {
+      setDeleteBusy(false);
+    }
   }
 
   async function signOut() {
@@ -731,10 +878,140 @@ function AccountSection({ user }) {
           </div>
         </SettingsField>
 
-        <SettingsField label="E-mail" description="Géré par ton compte de connexion.">
-          <div style={{ color: 'var(--text)', fontSize: 13, wordBreak: 'break-word' }}>
-            {user?.email || 'Non renseigné'}
-          </div>
+        <SettingsField
+          label="Adresse e-mail"
+          description="L'adresse utilisée pour te connecter et recevoir les messages de sécurité."
+        >
+          {emailStep === 'idle' && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: 10,
+              width: '100%'
+            }}>
+              <div style={{
+                flex: 1,
+                minWidth: 180,
+                color: 'var(--text)',
+                fontSize: 13,
+                wordBreak: 'break-word'
+              }}>
+                {user?.email || 'Non renseigné'}
+              </div>
+
+              <SettingsButton
+                icon="gear"
+                onClick={() => {
+                  setNewEmail('');
+                  setEmailError('');
+                  setEmailStep('editing');
+                }}
+              >
+                Modifier
+              </SettingsButton>
+            </div>
+          )}
+
+          {emailStep === 'editing' && (
+            <div style={{ width: '100%' }}>
+              <input
+                type="email"
+                value={newEmail}
+                onChange={event => setNewEmail(event.target.value)}
+                placeholder="nouvelle@adresse.com"
+                autoComplete="email"
+                style={settingsInputStyle}
+              />
+
+              {emailError && (
+                <div style={{
+                  marginTop: 10,
+                  color: '#b64f38',
+                  fontSize: 13,
+                  fontWeight: 700
+                }}>
+                  {emailError}
+                </div>
+              )}
+
+              <div style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: 8,
+                marginTop: 12
+              }}>
+                <SettingsButton
+                  variant="primary"
+                  icon="check"
+                  onClick={requestEmailChange}
+                  disabled={emailBusy}
+                >
+                  {emailBusy ? 'Envoi en cours' : 'Confirmer la modification'}
+                </SettingsButton>
+
+                <SettingsButton
+                  icon="x"
+                  onClick={cancelEmailChange}
+                  disabled={emailBusy}
+                >
+                  Annuler
+                </SettingsButton>
+              </div>
+            </div>
+          )}
+
+          {emailStep === 'sent' && (
+            <div style={{ width: '100%' }}>
+              <div style={{
+                padding: '11px 13px',
+                borderRadius: 8,
+                background: 'var(--accent-soft)',
+                color: 'var(--text)',
+                fontSize: 13,
+                lineHeight: 1.55
+              }}>
+                La modification a été demandée pour{' '}
+                <strong>{newEmail}</strong>.
+                <br />
+                Consulte l’ancienne et la nouvelle boîte de réception pour
+                confirmer le changement.
+              </div>
+
+              <div style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: 8,
+                marginTop: 12
+              }}>
+                <SettingsButton
+                  onClick={requestEmailChange}
+                  disabled={emailBusy}
+                >
+                  {emailBusy ? 'Envoi en cours' : 'Renvoyer les confirmations'}
+                </SettingsButton>
+
+                <SettingsButton
+                  icon="x"
+                  onClick={cancelEmailChange}
+                  disabled={emailBusy}
+                >
+                  Fermer
+                </SettingsButton>
+              </div>
+
+              {emailError && (
+                <div style={{
+                  marginTop: 10,
+                  color: '#b64f38',
+                  fontSize: 13,
+                  fontWeight: 700
+                }}>
+                  {emailError}
+                </div>
+              )}
+            </div>
+          )}
         </SettingsField>
       </SettingsCard>
 
@@ -746,7 +1023,7 @@ function AccountSection({ user }) {
           >
             <SettingsButton
               variant="primary"
-              icon="mail"
+              icon="gear"
               onClick={sendPasswordCode}
               disabled={busy}
             >
@@ -870,11 +1147,134 @@ function AccountSection({ user }) {
       </SettingsCard>
 
       <SettingsCard eyebrow="Session" title="Connexion">
-        <SettingsField label="Déconnexion" description="Ferme la session sur cet appareil.">
-          <SettingsButton variant="danger" icon="x" onClick={signOut}>
+        <SettingsField
+          label="Déconnexion"
+          description="Ferme la session sur cet appareil."
+        >
+          <SettingsButton
+            variant="danger"
+            icon="x"
+            onClick={signOut}
+          >
             Se déconnecter
           </SettingsButton>
         </SettingsField>
+      </SettingsCard>
+
+      <SettingsCard
+        eyebrow="Zone dangereuse"
+        title="Supprimer le compte"
+      >
+        {deleteStep === 'idle' ? (
+          <SettingsField
+            label="Suppression définitive"
+            description="Supprime ton compte, tes voyages personnels et tes fichiers. Cette action est irréversible."
+          >
+            <SettingsButton
+              variant="danger"
+              icon="x"
+              onClick={() => {
+                setDeleteStep('confirmation');
+                setDeletePassword('');
+                setDeleteConfirmation('');
+                setDeleteError('');
+              }}
+            >
+              Supprimer mon compte
+            </SettingsButton>
+          </SettingsField>
+        ) : (
+          <React.Fragment>
+            <div style={{
+              marginBottom: 16,
+              padding: '12px 14px',
+              borderRadius: 8,
+              border: '1px solid rgba(192, 86, 63, .28)',
+              background: 'rgba(192, 86, 63, .10)',
+              color: '#a94632',
+              fontSize: 13,
+              lineHeight: 1.55
+            }}>
+              <strong>Cette action est irréversible.</strong>
+              <br />
+              Tes voyages personnels et leurs fichiers seront supprimés.
+              Les voyages appartenant à d’autres personnes seront conservés,
+              mais tu n’en seras plus membre.
+            </div>
+
+            <SettingsField
+              label="Mot de passe actuel"
+              description="Confirme ton identité avant la suppression."
+            >
+              <input
+                type="password"
+                value={deletePassword}
+                onChange={event => setDeletePassword(event.target.value)}
+                placeholder="Ton mot de passe actuel"
+                autoComplete="current-password"
+                style={settingsInputStyle}
+              />
+            </SettingsField>
+
+            <SettingsField
+              label="Confirmation"
+              description="Écris exactement SUPPRIMER en lettres majuscules."
+            >
+              <input
+                value={deleteConfirmation}
+                onChange={event => setDeleteConfirmation(
+                  event.target.value.toUpperCase()
+                )}
+                placeholder="SUPPRIMER"
+                autoComplete="off"
+                style={settingsInputStyle}
+              />
+            </SettingsField>
+
+            {deleteError && (
+              <div style={{
+                marginBottom: 14,
+                padding: '11px 13px',
+                borderRadius: 8,
+                background: 'rgba(192, 86, 63, .10)',
+                color: '#b64f38',
+                fontSize: 13,
+                fontWeight: 700
+              }}>
+                {deleteError}
+              </div>
+            )}
+
+            <div style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 8
+            }}>
+              <SettingsButton
+                variant="danger"
+                icon="x"
+                onClick={deleteAccount}
+                disabled={deleteBusy}
+              >
+                {deleteBusy
+                  ? 'Suppression en cours'
+                  : 'Supprimer définitivement'}
+              </SettingsButton>
+
+              <SettingsButton
+                onClick={() => {
+                  setDeleteStep('idle');
+                  setDeletePassword('');
+                  setDeleteConfirmation('');
+                  setDeleteError('');
+                }}
+                disabled={deleteBusy}
+              >
+                Annuler
+              </SettingsButton>
+            </div>
+          </React.Fragment>
+        )}
       </SettingsCard>
     </div>
   );

@@ -63,6 +63,58 @@ export async function confirmSignUp(email, token) {
   return data.user;
 }
 
+export async function requestPasswordReset(email) {
+  const cleanEmail = String(email || '').trim().toLowerCase();
+
+  if (!cleanEmail) {
+    throw new Error("Indique ton adresse e-mail.");
+  }
+
+  const { error } = await sb.auth.resetPasswordForEmail(cleanEmail);
+
+  if (error) throw error;
+}
+
+export async function completePasswordReset({
+  email,
+  token,
+  password
+}) {
+  const cleanEmail = String(email || '').trim().toLowerCase();
+  const cleanToken = String(token || '').replace(/\s/g, '');
+  const cleanPassword = String(password || '');
+
+  if (!cleanEmail) {
+    throw new Error("L'adresse e-mail est manquante.");
+  }
+
+  if (!/^\d{8}$/.test(cleanToken)) {
+    throw new Error('Le code doit contenir exactement 8 chiffres.');
+  }
+
+  if (cleanPassword.length < 8) {
+    throw new Error(
+      'Le nouveau mot de passe doit contenir au moins 8 caractères.'
+    );
+  }
+
+  const { error: verificationError } = await sb.auth.verifyOtp({
+    email: cleanEmail,
+    token: cleanToken,
+    type: 'recovery'
+  });
+
+  if (verificationError) throw verificationError;
+
+  const { data, error: passwordError } = await sb.auth.updateUser({
+    password: cleanPassword
+  });
+
+  if (passwordError) throw passwordError;
+
+  return data.user;
+}
+
 export async function signIn(email, password) {
   const { data, error } = await sb.auth.signInWithPassword({ email, password });
   if (error) throw error;
@@ -1292,6 +1344,8 @@ window.SB = {
   onAuthChange,
   signUp,
   confirmSignUp,
+  requestPasswordReset,
+  completePasswordReset,
   signIn,
   signOut,
 

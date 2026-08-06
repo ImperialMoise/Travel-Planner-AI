@@ -4587,14 +4587,40 @@ function NoTripHome() {
     const [pseudo, setPseudo] = React.useState('');
     const [confirmationSent, setConfirmationSent] = React.useState(false);
     const [confirmationCode, setConfirmationCode] = React.useState('');
+    const [recoveryStep, setRecoveryStep] = React.useState('email');
+    const [recoveryCode, setRecoveryCode] = React.useState('');
+    const [newPassword, setNewPassword] = React.useState('');
+    const [newPasswordConfirmation, setNewPasswordConfirmation] = React.useState('');
     const [error, setError] = React.useState('');
     const [busy, setBusy] = React.useState(false);
 
-    async function submit() {
+       async function submit() {
       setError('');
       setBusy(true);
 
       try {
+        if (mode === 'recovery') {
+          if (recoveryStep === 'email') {
+            await window.SB.requestPasswordReset(email.trim());
+            setRecoveryStep('code');
+            return;
+          }
+
+          if (newPassword !== newPasswordConfirmation) {
+            throw new Error('Les deux mots de passe sont différents.');
+          }
+
+          await window.SB.completePasswordReset({
+            email: email.trim(),
+            token: recoveryCode,
+            password: newPassword
+          });
+
+          Store.showToast('Ton mot de passe a été modifié.');
+          onClose();
+          return;
+        }
+
         if (mode === 'login') {
           await window.SB.signIn(email.trim(), password);
           onClose();
@@ -4628,16 +4654,18 @@ function NoTripHome() {
 
     return (
       <ModalShell
-                title={
+        title={
           confirmationSent
             ? 'Confirme ton adresse'
-            : mode === 'login'
-              ? 'Connexion'
-              : 'Créer un compte'
+            : mode === 'recovery'
+              ? 'Nouveau mot de passe'
+              : mode === 'login'
+                ? 'Connexion'
+                : 'Créer un compte'
         }
         onClose={onClose}
       >
-                {!confirmationSent && (
+        {!confirmationSent && mode !== 'recovery' && (
           <div className="mode-tabs">
             <button
               type="button"
@@ -4663,6 +4691,30 @@ function NoTripHome() {
           </div>
         )}
 
+        {mode === 'recovery' && (
+          <button
+            type="button"
+            onClick={() => {
+              setMode('login');
+              setRecoveryStep('email');
+              setRecoveryCode('');
+              setNewPassword('');
+              setNewPasswordConfirmation('');
+              setError('');
+            }}
+            style={{
+              border: 'none',
+              background: 'transparent',
+              color: 'var(--accent)',
+              padding: '0 0 12px',
+              cursor: 'pointer',
+              fontWeight: 700
+            }}
+          >
+            ← Retour à la connexion
+          </button>
+        )}
+
         {mode === 'signup' && !confirmationSent && (
           <Field label="Pseudo">
             <input
@@ -4681,11 +4733,14 @@ function NoTripHome() {
             onChange={event => setEmail(event.target.value)}
             placeholder="votre@email.com"
             autoComplete="email"
-            readOnly={confirmationSent}
+                        readOnly={
+              confirmationSent ||
+              (mode === 'recovery' && recoveryStep === 'code')
+            }
           />
         </Field>
 
-        {!confirmationSent && (
+        {!confirmationSent && mode !== 'recovery' && (
           <Field label="Mot de passe">
             <input
               type="password"
@@ -4695,6 +4750,29 @@ function NoTripHome() {
               autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
             />
           </Field>
+)}
+        {mode === 'login' && !confirmationSent && (
+          <button
+            type="button"
+            onClick={() => {
+              setMode('recovery');
+              setRecoveryStep('email');
+              setError('');
+            }}
+            style={{
+              display: 'block',
+              marginLeft: 'auto',
+              marginTop: 8,
+              border: 'none',
+              background: 'transparent',
+              color: 'var(--accent)',
+              cursor: 'pointer',
+              fontSize: 13,
+              fontWeight: 700
+            }}
+          >
+            Mot de passe oublié ?
+          </button>
         )}
 
         {confirmationSent && (
@@ -4728,6 +4806,72 @@ function NoTripHome() {
           </React.Fragment>
         )}
 
+        {mode === 'recovery' && recoveryStep === 'email' && (
+          <div
+            style={{
+              fontSize: 13,
+              lineHeight: 1.5,
+              color: 'var(--muted)',
+              marginTop: 8
+            }}
+          >
+            Indique l’adresse associée à ton compte. Nous t’enverrons un
+            code de réinitialisation à 8 chiffres.
+          </div>
+        )}
+
+        {mode === 'recovery' && recoveryStep === 'code' && (
+          <React.Fragment>
+            <div
+              style={{
+                fontSize: 13,
+                lineHeight: 1.5,
+                color: 'var(--muted)',
+                marginBottom: 12
+              }}
+            >
+              Un code a été envoyé à <strong>{email}</strong>.
+            </div>
+
+            <Field label="Code de réinitialisation">
+              <input
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                value={recoveryCode}
+                onChange={event => setRecoveryCode(
+                  event.target.value.replace(/\D/g, '').slice(0, 8)
+                )}
+                placeholder="00000000"
+                maxLength={8}
+                autoFocus
+              />
+            </Field>
+
+            <Field label="Nouveau mot de passe">
+              <input
+                type="password"
+                value={newPassword}
+                onChange={event => setNewPassword(event.target.value)}
+                placeholder="8 caractères minimum"
+                autoComplete="new-password"
+              />
+            </Field>
+
+            <Field label="Confirmer le mot de passe">
+              <input
+                type="password"
+                value={newPasswordConfirmation}
+                onChange={event => setNewPasswordConfirmation(
+                  event.target.value
+                )}
+                placeholder="Répète ton mot de passe"
+                autoComplete="new-password"
+              />
+            </Field>
+          </React.Fragment>
+        )}
+
         {error && (
           <div
             style={{
@@ -4751,14 +4895,18 @@ function NoTripHome() {
               padding: '11px'
             }}
           >
-                        {
+            {
               busy
                 ? '...'
-                : confirmationSent
-                  ? 'Confirmer mon compte'
-                  : mode === 'login'
-                    ? 'Se connecter'
-                    : 'Créer mon compte'
+                : mode === 'recovery'
+                  ? recoveryStep === 'email'
+                    ? 'Envoyer le code'
+                    : 'Enregistrer le nouveau mot de passe'
+                  : confirmationSent
+                    ? 'Confirmer mon compte'
+                    : mode === 'login'
+                      ? 'Se connecter'
+                      : 'Créer mon compte'
             }
           </AppButton>
         </div>
@@ -4823,36 +4971,59 @@ function NoTripHome() {
       }
     }
 
-    async function submit() {
-      if (!name.trim() || busy) return;
-
+        async function submit() {
       setError('');
       setBusy(true);
 
       try {
-        const created = await window.SB.createTrip({
-          name: name.trim(),
-          startDate: startDate || null,
-          endDate: endDate || null,
-          days: Math.max(1, Number(days) || 1)
-        });
+        if (mode === 'recovery') {
+          if (recoveryStep === 'email') {
+            await window.SB.requestPasswordReset(email.trim());
+            setRecoveryStep('code');
+            return;
+          }
 
-        const trips = await window.SB.listMyTrips();
-        const fullTrip = await window.SB.loadTrip(created.id);
+          if (newPassword !== newPasswordConfirmation) {
+            throw new Error('Les deux mots de passe sont différents.');
+          }
 
-        Store.set({
-          trips,
-          activeTripId: created.id,
-          trip: fullTrip,
-          selectedDayIndex: 0,
-          selectedStepId: null,
-          view: 'itinerary'
-        });
+          await window.SB.completePasswordReset({
+            email: email.trim(),
+            token: recoveryCode,
+            password: newPassword
+          });
 
-        Store.showToast('Voyage « ' + created.name + ' » créé ✓');
-        onClose();
+          Store.showToast('Ton mot de passe a été modifié.');
+          onClose();
+          return;
+        }
+
+        if (mode === 'login') {
+          await window.SB.signIn(email.trim(), password);
+          onClose();
+          return;
+        }
+
+        if (confirmationSent) {
+          await window.SB.confirmSignUp(
+            email.trim(),
+            confirmationCode
+          );
+
+          Store.showToast('Adresse confirmée, bienvenue !');
+          onClose();
+          return;
+        }
+
+        await window.SB.signUp(
+          email.trim(),
+          password,
+          pseudo.trim() || null
+        );
+
+        setConfirmationSent(true);
       } catch (err) {
-        setError(err.message || 'Erreur de création');
+        setError(err.message || 'Erreur');
       } finally {
         setBusy(false);
       }

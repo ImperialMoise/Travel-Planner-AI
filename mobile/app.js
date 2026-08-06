@@ -84,6 +84,7 @@ let pendingMobileInviteInfo = null;
 let showAllTrips = false;
 let mobileSupabaseReady = false;
 let mobileSupabaseError = '';
+let mobilePasswordResetEmail = '';
 let mobileItineraryDayIndex = 0;
 let mobileShareMembers = [];
 let mobileShareActivity = [];
@@ -4260,6 +4261,24 @@ function renderAuth() {
               <input id="auth-password" type="password" placeholder="••••••••" autocomplete="current-password">
             </div>
           </div>
+
+          <button
+            type="button"
+            data-action="password-reset-start"
+            style="
+              display:block;
+              margin-left:auto;
+              padding:4px 0;
+              border:0;
+              background:transparent;
+              color:var(--primary);
+              font:inherit;
+              font-size:14px;
+              font-weight:800;
+            "
+          >
+            Mot de passe oublié ?
+          </button>
         </form>
       </main>
 
@@ -4267,6 +4286,183 @@ function renderAuth() {
         <button class="primary-action" type="button" data-action="login">
           Se connecter
           <span aria-hidden="true">→</span>
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function renderPasswordResetEmail() {
+  app.innerHTML = `
+    <div class="mobile-shell create-shell">
+      <header class="topbar bordered create-topbar">
+        <button
+          class="icon-button"
+          type="button"
+          data-action="password-reset-back"
+          aria-label="Retour"
+        >
+          ←
+        </button>
+
+        <h1 class="topbar-title">Mot de passe oublié</h1>
+        <span></span>
+      </header>
+
+      <main class="create-main">
+        <section class="create-hero">
+          <h2>Retrouve l’accès<br>à tes voyages</h2>
+          <p>
+            Indique l’adresse e-mail associée à ton compte.
+            Nous t’enverrons un code à 8 chiffres.
+          </p>
+        </section>
+
+        <form class="create-form" data-password-reset-email-form>
+          <div class="field-group">
+            <label class="kicker" for="password-reset-email">
+              Adresse e-mail
+            </label>
+
+            <div class="input-shell">
+              <span
+                class="material-symbols-outlined form-icon"
+                aria-hidden="true"
+              >
+                mail
+              </span>
+
+              <input
+                id="password-reset-email"
+                type="email"
+                placeholder="vous@email.com"
+                autocomplete="email"
+              >
+            </div>
+          </div>
+        </form>
+      </main>
+
+      <div class="create-bottom">
+        <button
+          class="primary-action"
+          type="button"
+          data-action="password-reset-send"
+        >
+          Envoyer le code
+          <span aria-hidden="true">→</span>
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function renderPasswordResetCode() {
+  app.innerHTML = `
+    <div class="mobile-shell create-shell">
+      <header class="topbar bordered create-topbar">
+        <button
+          class="icon-button"
+          type="button"
+          data-action="password-reset-back"
+          aria-label="Retour"
+        >
+          ←
+        </button>
+
+        <h1 class="topbar-title">Nouveau mot de passe</h1>
+        <span></span>
+      </header>
+
+      <main class="create-main">
+        <section class="create-hero">
+          <h2>Consulte<br>tes e-mails</h2>
+
+          <p>
+            Saisis le code envoyé à
+            <strong>${escapeHtml(mobilePasswordResetEmail)}</strong>.
+          </p>
+        </section>
+
+        <form class="create-form" data-password-reset-code-form>
+          <div class="field-group">
+            <label class="kicker" for="password-reset-code">
+              Code à 8 chiffres
+            </label>
+
+            <div class="input-shell">
+              <span
+                class="material-symbols-outlined form-icon"
+                aria-hidden="true"
+              >
+                password
+              </span>
+
+              <input
+                id="password-reset-code"
+                type="text"
+                inputmode="numeric"
+                autocomplete="one-time-code"
+                maxlength="8"
+                placeholder="00000000"
+              >
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label class="kicker" for="password-reset-new-password">
+              Nouveau mot de passe
+            </label>
+
+            <div class="input-shell">
+              <span
+                class="material-symbols-outlined form-icon"
+                aria-hidden="true"
+              >
+                lock
+              </span>
+
+              <input
+                id="password-reset-new-password"
+                type="password"
+                autocomplete="new-password"
+                placeholder="8 caractères minimum"
+              >
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label class="kicker" for="password-reset-confirmation">
+              Confirmer le mot de passe
+            </label>
+
+            <div class="input-shell">
+              <span
+                class="material-symbols-outlined form-icon"
+                aria-hidden="true"
+              >
+                lock_reset
+              </span>
+
+              <input
+                id="password-reset-confirmation"
+                type="password"
+                autocomplete="new-password"
+                placeholder="Répète ton mot de passe"
+              >
+            </div>
+          </div>
+        </form>
+      </main>
+
+      <div class="create-bottom">
+        <button
+          class="primary-action"
+          type="button"
+          data-action="password-reset-complete"
+        >
+          Enregistrer le mot de passe
+          <span aria-hidden="true">✓</span>
         </button>
       </div>
     </div>
@@ -7339,6 +7535,87 @@ function handleGuestUpgradeChangeEmail() {
   renderAccount();
 }
 
+function handlePasswordResetStart() {
+  mobilePasswordResetEmail = '';
+  renderPasswordResetEmail();
+}
+
+function handlePasswordResetBack() {
+  mobilePasswordResetEmail = '';
+  renderAuth();
+}
+
+async function handlePasswordResetSend() {
+  const email =
+    document.querySelector('#password-reset-email')?.value.trim();
+
+  if (!email) {
+    alert('Indique ton adresse e-mail.');
+    return;
+  }
+
+  try {
+    await window.SB.requestPasswordReset(email);
+
+    mobilePasswordResetEmail = email;
+    renderPasswordResetCode();
+
+    alert('Le code de réinitialisation vient de partir.');
+  } catch (error) {
+    alert(
+      'Erreur lors de l’envoi : ' +
+      (error.message || error)
+    );
+  }
+}
+
+async function handlePasswordResetComplete() {
+  const token =
+    document.querySelector('#password-reset-code')?.value.trim();
+
+  const password =
+    document.querySelector('#password-reset-new-password')?.value || '';
+
+  const confirmation =
+    document.querySelector('#password-reset-confirmation')?.value || '';
+
+  if (!mobilePasswordResetEmail) {
+    alert('L’adresse e-mail est introuvable.');
+    renderPasswordResetEmail();
+    return;
+  }
+
+  if (!token || !password || !confirmation) {
+    alert('Complète le code et les deux mots de passe.');
+    return;
+  }
+
+  if (password !== confirmation) {
+    alert('Les deux mots de passe sont différents.');
+    return;
+  }
+
+  try {
+    mobileUser = await window.SB.completePasswordReset({
+      email: mobilePasswordResetEmail,
+      token,
+      password
+    });
+
+    await refreshMobileTrips();
+
+    mobilePasswordResetEmail = '';
+    navigate('account');
+
+    alert('Ton mot de passe a été modifié.');
+  } catch (error) {
+    alert(
+      'Erreur de réinitialisation : ' +
+      (error.message || error)
+    );
+  }
+}
+
 async function handleLogin() {
   const email = document.querySelector('#auth-email')?.value.trim();
   const password = document.querySelector('#auth-password')?.value;
@@ -7846,6 +8123,26 @@ if ([
 
   if (action === 'guest-upgrade-change-email') {
     handleGuestUpgradeChangeEmail();
+    return;
+  }
+
+  if (action === 'password-reset-start') {
+    handlePasswordResetStart();
+    return;
+  }
+
+  if (action === 'password-reset-back') {
+    handlePasswordResetBack();
+    return;
+  }
+
+  if (action === 'password-reset-send') {
+    handlePasswordResetSend();
+    return;
+  }
+
+  if (action === 'password-reset-complete') {
+    handlePasswordResetComplete();
     return;
   }
 

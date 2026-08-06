@@ -4585,6 +4585,8 @@ function NoTripHome() {
     const [email, setEmail] = React.useState('');
     const [password, setPassword] = React.useState('');
     const [pseudo, setPseudo] = React.useState('');
+    const [confirmationSent, setConfirmationSent] = React.useState(false);
+    const [confirmationCode, setConfirmationCode] = React.useState('');
     const [error, setError] = React.useState('');
     const [busy, setBusy] = React.useState(false);
 
@@ -4595,11 +4597,28 @@ function NoTripHome() {
       try {
         if (mode === 'login') {
           await window.SB.signIn(email.trim(), password);
-        } else {
-          await window.SB.signUp(email.trim(), password, pseudo.trim() || null);
+          onClose();
+          return;
         }
 
-        onClose();
+        if (confirmationSent) {
+          await window.SB.confirmSignUp(
+            email.trim(),
+            confirmationCode
+          );
+
+          Store.showToast('Adresse confirmée, bienvenue !');
+          onClose();
+          return;
+        }
+
+        await window.SB.signUp(
+          email.trim(),
+          password,
+          pseudo.trim() || null
+        );
+
+        setConfirmationSent(true);
       } catch (err) {
         setError(err.message || 'Erreur');
       } finally {
@@ -4609,28 +4628,42 @@ function NoTripHome() {
 
     return (
       <ModalShell
-        title={mode === 'login' ? 'Connexion' : 'Créer un compte'}
+                title={
+          confirmationSent
+            ? 'Confirme ton adresse'
+            : mode === 'login'
+              ? 'Connexion'
+              : 'Créer un compte'
+        }
         onClose={onClose}
       >
-        <div className="mode-tabs">
-          <button
-            type="button"
-            className={'mode-tab' + (mode === 'login' ? ' active' : '')}
-            onClick={() => setMode('login')}
-          >
-            Se connecter
-          </button>
+                {!confirmationSent && (
+          <div className="mode-tabs">
+            <button
+              type="button"
+              className={'mode-tab' + (mode === 'login' ? ' active' : '')}
+              onClick={() => {
+                setMode('login');
+                setError('');
+              }}
+            >
+              Se connecter
+            </button>
 
-          <button
-            type="button"
-            className={'mode-tab' + (mode === 'signup' ? ' active' : '')}
-            onClick={() => setMode('signup')}
-          >
-            Créer un compte
-          </button>
-        </div>
+            <button
+              type="button"
+              className={'mode-tab' + (mode === 'signup' ? ' active' : '')}
+              onClick={() => {
+                setMode('signup');
+                setError('');
+              }}
+            >
+              Créer un compte
+            </button>
+          </div>
+        )}
 
-        {mode === 'signup' && (
+        {mode === 'signup' && !confirmationSent && (
           <Field label="Pseudo">
             <input
               value={pseudo}
@@ -4648,18 +4681,52 @@ function NoTripHome() {
             onChange={event => setEmail(event.target.value)}
             placeholder="votre@email.com"
             autoComplete="email"
+            readOnly={confirmationSent}
           />
         </Field>
 
-        <Field label="Mot de passe">
-          <input
-            type="password"
-            value={password}
-            onChange={event => setPassword(event.target.value)}
-            placeholder="••••••••"
-            autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-          />
-        </Field>
+        {!confirmationSent && (
+          <Field label="Mot de passe">
+            <input
+              type="password"
+              value={password}
+              onChange={event => setPassword(event.target.value)}
+              placeholder="••••••••"
+              autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+            />
+          </Field>
+        )}
+
+        {confirmationSent && (
+          <React.Fragment>
+            <div
+              style={{
+                fontSize: 13,
+                lineHeight: 1.5,
+                color: 'var(--muted)',
+                marginBottom: 12
+              }}
+            >
+              Un code de confirmation a été envoyé à <strong>{email}</strong>.
+              Saisis-le ci-dessous pour activer ton compte.
+            </div>
+
+            <Field label="Code de confirmation">
+              <input
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                value={confirmationCode}
+                onChange={event => setConfirmationCode(
+                  event.target.value.replace(/\D/g, '').slice(0, 8)
+                )}
+                placeholder="00000000"
+                maxLength={8}
+                autoFocus
+              />
+            </Field>
+          </React.Fragment>
+        )}
 
         {error && (
           <div
@@ -4684,7 +4751,15 @@ function NoTripHome() {
               padding: '11px'
             }}
           >
-            {busy ? '...' : mode === 'login' ? 'Se connecter' : 'Créer mon compte'}
+                        {
+              busy
+                ? '...'
+                : confirmationSent
+                  ? 'Confirmer mon compte'
+                  : mode === 'login'
+                    ? 'Se connecter'
+                    : 'Créer mon compte'
+            }
           </AppButton>
         </div>
       </ModalShell>

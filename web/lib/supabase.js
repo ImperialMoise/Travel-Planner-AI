@@ -40,6 +40,29 @@ export async function signUp(email, password, pseudo) {
   return data.user;
 }
 
+export async function confirmSignUp(email, token) {
+  const cleanEmail = String(email || '').trim().toLowerCase();
+  const cleanToken = String(token || '').replace(/\s/g, '');
+
+  if (!cleanEmail) {
+    throw new Error("L'adresse e-mail est manquante.");
+  }
+
+  if (!/^\d{8}$/.test(cleanToken)) {
+    throw new Error('Le code doit contenir exactement 8 chiffres.');
+  }
+
+  const { data, error } = await sb.auth.verifyOtp({
+    email: cleanEmail,
+    token: cleanToken,
+    type: 'email'
+  });
+
+  if (error) throw error;
+
+  return data.user;
+}
+
 export async function signIn(email, password) {
   const { data, error } = await sb.auth.signInWithPassword({ email, password });
   if (error) throw error;
@@ -1268,6 +1291,7 @@ window.SB = {
   getSession,
   onAuthChange,
   signUp,
+  confirmSignUp,
   signIn,
   signOut,
 

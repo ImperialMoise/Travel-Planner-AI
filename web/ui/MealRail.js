@@ -471,7 +471,9 @@ function InlineButton({
               )}
             </div>
 
-            <div style={{
+            <div
+              className="web-meal-card-title"
+              style={{
               fontSize: 14,
               fontWeight: 900,
               color: 'var(--text)',
@@ -485,7 +487,9 @@ function InlineButton({
             </div>
 
             {subtitle && (
-              <div style={{
+              <div
+                className="web-meal-card-subtitle"
+                style={{
                 fontSize: 12,
                 lineHeight: '17px',
                 color: 'var(--muted)',
@@ -1001,6 +1005,7 @@ function InlineButton({
 
     return (
       <aside
+        className="web-meal-rail"
         style={{
           width: 320,
           flexShrink: 0,
@@ -1014,6 +1019,7 @@ function InlineButton({
         }}
       >
         <div
+          className="web-meal-rail-scroll"
           style={{
             flex: '1 1 0',
             minHeight: 0,

@@ -242,6 +242,7 @@
   }) {
     return (
       <button
+        className="web-step-icon-button"
         type="button"
         title={title}
         onClick={onClick}
@@ -292,6 +293,7 @@
   }) {
     return (
       <button
+        className="web-step-action-button"
         type="button"
         title={title}
         onClick={onClick}
@@ -451,6 +453,7 @@
 
     return (
       <article
+        className="web-step-card"
         onClick={selectStep}
         style={{
           borderRadius: 12,
@@ -500,7 +503,9 @@
           ✎
         </IconButton>
 
-        <div style={{
+        <div
+          className="web-step-time-column"
+          style={{
           display: 'grid',
           gridTemplateRows: 'auto 1fr auto',
           justifyItems: 'center',
@@ -561,7 +566,9 @@
           </div>
         </div>
 
-        <div style={{
+        <div
+          className="web-step-card-content"
+          style={{
           flex: 1,
           minWidth: 0,
           paddingRight: 38
@@ -590,7 +597,9 @@
             )}
           </div>
 
-          <div style={{
+          <div
+            className="web-step-card-title"
+            style={{
             fontFamily: 'var(--font-serif)',
             fontSize: 20,
             lineHeight: '28px',

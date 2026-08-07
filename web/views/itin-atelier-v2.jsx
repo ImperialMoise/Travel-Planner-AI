@@ -789,23 +789,174 @@
   }
 
   @media(max-width:760px){
-    .atelier-v2-body{
-      padding:0 18px 90px;
+    .atelier-v2-main{
+      width:100%;
+      scrollbar-gutter:auto;
+      overscroll-behavior:contain;
+      -webkit-overflow-scrolling:touch;
     }
 
-    .atelier-v2-hero-title{
-      font-size:30px;
-      line-height:36px;
+    .atelier-v2-hero{
+      min-height:0;
+      margin:10px 10px 8px;
+      border-radius:14px;
     }
 
     .atelier-v2-hero-inner{
-      padding:20px 18px;
-      min-height:200px;
+      max-width:none;
+      min-height:220px;
+      padding:18px 14px 16px;
+    }
+
+    .atelier-v2-hero-overlay{
+      background:linear-gradient(
+        90deg,
+        var(--card) 0%,
+        rgba(254,249,239,.94) 58%,
+        rgba(254,249,239,.38) 100%
+      );
+    }
+
+    .atelier-v2-hero-title{
+      max-width:100%;
+      margin-bottom:7px;
+      font-size:clamp(28px,9vw,36px);
+      line-height:1.08;
+      overflow-wrap:anywhere;
+    }
+
+    .atelier-v2-hero-note{
+      max-width:100%;
+      font-size:13px;
+      line-height:19px;
+    }
+
+    .atelier-v2-hero-badges{
+      gap:6px;
+      margin-bottom:10px;
+    }
+
+    .atelier-v2-hero-badge,
+    .atelier-v2-hero-date{
+      min-height:26px;
+      padding:0 9px;
+      font-size:10px;
     }
 
     .atelier-v2-hero-actions{
-      top:12px;
-      right:14px;
+      position:relative;
+      top:auto;
+      right:auto;
+      gap:6px;
+      margin-top:16px;
+    }
+
+    .atelier-v2-hero-btn{
+      min-height:44px;
+      padding:0 11px;
+      touch-action:manipulation;
+    }
+
+    .atelier-v2-hero-icon-btn{
+      width:44px;
+      min-width:44px;
+      height:44px;
+      touch-action:manipulation;
+    }
+
+    .atelier-v2-body{
+      width:100%;
+      gap:12px;
+      padding:
+        0
+        10px
+        calc(96px + env(safe-area-inset-bottom));
+    }
+
+    .atelier-v2-plan-card{
+      min-height:0;
+      border-radius:14px;
+    }
+
+    .atelier-v2-plan-head{
+      min-height:0;
+      align-items:flex-start;
+      flex-direction:column;
+      padding:12px;
+    }
+
+    .atelier-v2-plan-actions{
+      width:100%;
+    }
+
+    .atelier-v2-plan-actions .atelier-v2-btn.primary{
+      flex:1;
+      min-height:42px !important;
+    }
+
+    .atelier-v2-plan-icon-btn{
+      width:42px;
+      min-width:42px;
+      height:42px;
+    }
+
+    .atelier-v2-timeline{
+      gap:10px;
+      padding:8px 6px 24px;
+    }
+
+    .atelier-v2-reminder{
+      align-items:flex-start;
+      gap:9px;
+      padding:12px 10px;
+      border-radius:12px;
+    }
+
+    .atelier-v2-reminder > span:last-child{
+      max-width:42%;
+      white-space:normal !important;
+      text-align:center;
+    }
+
+    .atelier-v2-sidebar{
+      padding-top:16px;
+      margin-top:4px;
+    }
+
+    .atelier-v2-modal-backdrop{
+      align-items:flex-end;
+      padding:0;
+    }
+
+    .atelier-v2-modal{
+      max-width:none;
+      max-height:92dvh;
+      border-radius:18px 18px 0 0;
+      padding-bottom:env(safe-area-inset-bottom);
+    }
+
+    .atelier-v2-modal-head{
+      padding:15px 14px;
+    }
+
+    .atelier-v2-modal-body{
+      max-height:calc(92dvh - 74px);
+      overflow-y:auto;
+      padding:16px 14px;
+      -webkit-overflow-scrolling:touch;
+    }
+
+    .atelier-v2-cover-modal{
+      max-width:none;
+    }
+
+    .atelier-v2-cover-search,
+    .atelier-v2-cover-grid{
+      grid-template-columns:1fr;
+    }
+
+    .atelier-v2-cover-search{
+      flex-direction:column;
     }
   }
   `;

@@ -170,6 +170,10 @@
     filter:brightness(.92);
   }
 
+  .topbar-brand-short{
+  display:none;
+}
+
 .topbar-brand-suffix{
   font-family:inherit;
   font-size:inherit;
@@ -2331,23 +2335,165 @@
 }
 
   @media(max-width:760px){
-    .topbar{
-      overflow-x:auto;
-      scrollbar-width:none;
+    .topbar,
+    .topbar.compact{
+      height:auto;
+      min-height:54px;
+      display:grid;
+      grid-template-columns:minmax(0,1fr) auto;
+      grid-template-areas:
+        "left right"
+        "center center";
+      align-items:center;
+      gap:8px;
+      padding-top:8px;
+      padding-bottom:8px;
+      padding-left:max(10px,env(safe-area-inset-left));
+      padding-right:max(10px,env(safe-area-inset-right));
+      overflow:visible;
     }
 
-    .topbar::-webkit-scrollbar{
+    .topbar-left{
+      grid-area:left;
+      width:100%;
+      min-width:0;
+      gap:8px;
+    }
+
+    .topbar-right{
+      grid-area:right;
+      gap:6px;
+    }
+
+    .topbar-center{
+      grid-area:center;
+      width:100%;
+      min-width:0;
+      display:grid;
+      grid-template-columns:minmax(0,1fr);
+      gap:6px;
+    }
+
+    .topbar-brand,
+    .topbar.compact .topbar-brand{
+      flex-shrink:0;
+      font-size:18px;
+    }
+
+    .topbar-brand-long,
+    .topbar-brand-suffix{
       display:none;
+    }
+
+    .topbar-brand-short{
+      display:inline;
+    }
+
+    .trip-switcher{
+      flex:1;
+      min-width:0;
+    }
+
+    .trip-switcher-btn{
+      width:100%;
+      max-width:none;
+      min-width:0;
+      padding:6px 8px;
+    }
+
+    .trip-switcher-label,
+    .topbar.compact .trip-switcher-label{
+      flex:1;
+      max-width:none;
+      min-width:0;
+    }
+
+    .trip-menu{
+      min-width:0;
+      width:min(285px,calc(100vw - 70px));
+      max-width:calc(100vw - 70px);
+    }
+
+    .workspace-mode{
+      order:1;
+      width:100%;
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+    }
+
+    .workspace-mode-btn,
+    .topbar.compact .workspace-mode-btn{
+      width:100%;
+      min-width:0;
+      height:34px;
+      padding:0 7px;
+    }
+
+    .topbar-center .topbar-nav{
+      order:2;
+      width:100%;
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:4px;
+    }
+
+    .topbar-nav-btn,
+    .topbar.compact .topbar-nav-btn{
+      width:100%;
+      min-width:0;
+      min-height:34px;
+      padding:7px 3px;
+      font-size:11px;
+    }
+
+    .places-control{
+      display:none;
+    }
+
+    .topbar-settings-btn{
+      display:none;
+    }
+
+    .topbar-account{
+      padding-left:0;
+    }
+
+    .user-pill{
+      min-width:36px;
+      padding:4px;
+      justify-content:center;
     }
 
     .topbar-right .user-name{
       display:none;
     }
 
+        .app-floating{
+      bottom:max(12px,env(safe-area-inset-bottom));
+      height:48px;
+      min-width:48px;
+      box-shadow:0 10px 28px rgba(21,48,42,.22);
+      touch-action:manipulation;
+    }
+
+    .app-floating.days{
+      left:max(12px,env(safe-area-inset-left));
+      padding:0 14px;
+    }
+
+    .app-floating.tools{
+      right:max(12px,env(safe-area-inset-right));
+      width:48px;
+    }
+
+    .app-overlay > div{
+      max-width:min(92vw,360px) !important;
+    }
+
     .home-hero-title{
-    font-size:42px;
-    line-height:44px;
-}
+      font-size:42px;
+      line-height:44px;
+    }
   }
   `;
 
@@ -2994,8 +3140,9 @@ function setAppMode(nextMode) {
               selectedStepId: null
             })}
           >
-            <span>La Fabrique</span>
+            <span className="topbar-brand-long">La Fabrique</span>
             <span className="topbar-brand-suffix">à Voyages</span>
+            <span className="topbar-brand-short">LFV</span>
           </div>
 
           {user && (

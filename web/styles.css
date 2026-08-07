@@ -793,3 +793,94 @@ body.is-dragging-day * {
 [data-toolbox-scroll="true"]::-webkit-scrollbar-thumb:hover {
   background: var(--muted);
 }
+
+/* === VERSION WEB SUR TÉLÉPHONE : ITINÉRAIRE === */
+
+@media (max-width: 760px) {
+  .web-step-card {
+    min-height: 0 !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+    padding: 12px !important;
+    border-radius: 12px !important;
+    touch-action: manipulation;
+  }
+
+  .web-step-card > .web-step-icon-button {
+    width: 38px !important;
+    height: 38px !important;
+    top: 10px !important;
+  }
+
+  .web-step-card > .web-step-icon-button:nth-of-type(1) {
+    right: 10px !important;
+  }
+
+  .web-step-card > .web-step-icon-button:nth-of-type(2) {
+    right: 52px !important;
+  }
+
+  .web-step-time-column {
+    width: 100% !important;
+    min-width: 0 !important;
+    grid-template-columns: auto minmax(24px, 1fr) auto !important;
+    grid-template-rows: auto !important;
+    align-items: center !important;
+    padding: 2px 88px 2px 2px !important;
+  }
+
+  .web-step-time-column > div:nth-child(2) {
+    width: auto !important;
+    height: 1px !important;
+    min-height: 1px !important;
+    margin: 0 9px !important;
+  }
+
+  .web-step-card-content {
+    width: 100% !important;
+    min-width: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  .web-step-card-title {
+    font-size: 18px !important;
+    line-height: 23px !important;
+    overflow-wrap: anywhere;
+  }
+
+  .web-step-action-button {
+    min-height: 40px !important;
+    padding: 8px 11px !important;
+    touch-action: manipulation;
+  }
+
+  .web-meal-rail {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    border-left: none !important;
+    background: transparent !important;
+  }
+
+  .web-meal-rail-scroll {
+    min-height: 0 !important;
+    overflow: visible !important;
+    scrollbar-gutter: auto !important;
+    padding: 0 !important;
+    gap: 14px !important;
+  }
+
+  .web-meal-rail button {
+    min-height: 40px;
+    touch-action: manipulation;
+  }
+
+  .web-meal-card-title,
+  .web-meal-card-subtitle {
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    overflow-wrap: anywhere;
+  }
+}

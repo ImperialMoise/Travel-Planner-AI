@@ -456,23 +456,26 @@
         className="web-step-card"
         onClick={selectStep}
         style={{
-          borderRadius: 12,
-          padding: '18px 20px',
+                   borderRadius: 18,
+          padding: '18px 18px',
           boxShadow: selected
-            ? '0 0 0 4px rgba(180,132,62,.22), 0 10px 28px rgba(31,46,40,.14)'
-            : 'var(--shadow)',
+            ? '0 0 0 3px rgba(150,100,13,.16), 0 16px 34px rgba(54,42,27,.13)'
+            : '0 7px 22px rgba(54,42,27,.075)',
           border: selected
             ? '1px solid var(--accent)'
-            : '1px solid var(--outline-variant)',
-          background: selected ? 'var(--accent-soft)' : 'var(--surface-container-lowest,#fff)',
+            : '1px solid var(--line)',
+          background: selected
+            ? 'linear-gradient(135deg, var(--card), var(--accent-soft))'
+            : 'var(--card)',
           display: 'flex',
           gap: 16,
           position: 'relative',
           overflow: 'hidden',
           cursor: 'pointer',
-          transition: 'box-shadow .2s, border-color .2s, background .2s',
+          transition:
+            'box-shadow .2s ease, border-color .2s ease, background .2s ease, transform .2s ease',
           flexShrink: 0,
-          minHeight: 124
+          minHeight: 128
         }}
       >
         <div style={{

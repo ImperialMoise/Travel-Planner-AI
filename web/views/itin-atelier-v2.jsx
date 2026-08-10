@@ -58,13 +58,13 @@
   /* ── Hero : encadré 3/3 pleine largeur ── */
   .atelier-v2-hero{
     position:relative;
-    min-height:250px;
-    border-radius:18px;
+    min-height:270px;
+    border-radius:24px;
     overflow:hidden;
-    margin:24px 34px 14px;
+    margin:22px 28px 16px;
     background:var(--card);
-    border:1px solid var(--outline-variant);
-    box-shadow:0 2px 12px rgba(82,98,91,.08);
+    border:1px solid var(--line);
+    box-shadow:0 14px 38px rgba(54,42,27,.10);
     animation:atelier-day-enter .28s ease both;
   }
 
@@ -95,9 +95,9 @@
     display:flex;
     flex-direction:column;
     justify-content:center;
-    min-height:250px;
-    padding:28px 32px;
-    max-width:680px;
+    min-height:270px;
+    padding:32px 36px;
+    max-width:720px;
   }
 
   .atelier-v2-hero-badges{
@@ -138,13 +138,13 @@
   }
 
   .atelier-v2-hero-title{
-    font-family:var(--font-sans);
-    font-size:36px;
-    line-height:43px;
+    font-family:var(--font-serif);
+    font-size:42px;
+    line-height:46px;
     color:var(--text);
-    font-weight:900;
+    font-weight:400;
     letter-spacing:-.035em;
-    margin-bottom:8px;
+    margin-bottom:10px;
   }
 
   .atelier-v2-hero-note{
@@ -165,12 +165,12 @@
   }
 
   .atelier-v2-hero-btn{
-    border:1px solid var(--outline-variant);
+    border:1px solid var(--line);
     background:var(--card);
     color:var(--text);
-    border-radius:8px;
-    min-height:40px;
-    padding:0 14px;
+    border-radius:11px;
+    min-height:44px;
+    padding:0 16px;
     display:inline-flex;
     align-items:center;
     justify-content:center;
@@ -179,13 +179,24 @@
     font-family:inherit;
     font-size:12.5px;
     font-weight:900;
-    box-shadow:0 2px 8px rgba(82,98,91,.06);
+    box-shadow:0 5px 14px rgba(54,42,27,.07);
+    transition:
+      transform .18s var(--ease-out),
+      border-color .18s ease,
+      background .18s ease,
+      color .18s ease;
   }
 
   .atelier-v2-hero-btn:hover{
+    transform:translateY(-1px);
     border-color:var(--accent);
     color:var(--accent);
     background:var(--accent-soft);
+  }
+
+  .atelier-v2-hero-btn:focus-visible{
+    outline:3px solid var(--accent-soft);
+    outline-offset:2px;
   }
 
   .atelier-v2-hero-btn.primary{
@@ -233,18 +244,23 @@
 
   .atelier-v2-plan-card{
     min-height:372px;
-    background:var(--surface-container-lowest,#fff);
-    border:1px solid var(--outline-variant);
-    border-radius:18px;
-    box-shadow:0 2px 12px rgba(82,98,91,.06);
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:20px;
+    box-shadow:0 10px 30px rgba(54,42,27,.075);
     overflow:hidden;
   }
 
   .atelier-v2-plan-head{
-    min-height:54px;
-    padding:12px 14px;
-    border-bottom:1px solid var(--outline-variant);
-    background:rgba(248,243,233,.55);
+    min-height:60px;
+    padding:13px 16px;
+    border-bottom:1px solid var(--line);
+    background:
+      linear-gradient(
+        90deg,
+        rgba(243,238,228,.78),
+        rgba(255,253,249,.94)
+      );
     display:flex;
     align-items:center;
     justify-content:space-between;
@@ -394,9 +410,9 @@
   .atelier-v2-timeline{
     display:flex;
     flex-direction:column;
-    gap:8px;
-    padding:8px 8px 28px;
-    background:var(--surface-container-lowest,#fff);
+    gap:10px;
+    padding:12px 12px 30px;
+    background:var(--card);
   }
 
   .atelier-v2-drop{
@@ -441,14 +457,23 @@
   }
 
   .atelier-v2-empty{
-    border:1px dashed var(--outline-variant);
-    background:var(--inset);
-    border-radius:18px;
-    padding:28px;
+    min-height:150px;
+    border:1px dashed rgba(150,100,13,.28);
+    background:
+      linear-gradient(
+        135deg,
+        var(--inset),
+        rgba(255,253,249,.96)
+      );
+    border-radius:16px;
+    padding:30px 24px;
     color:var(--muted);
     text-align:center;
     line-height:21px;
     margin-bottom:14px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
   }
 
   .atelier-v2-reminder{

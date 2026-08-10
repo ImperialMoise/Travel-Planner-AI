@@ -23,7 +23,8 @@ const TIMELINE_SECTIONS = [
 
 function formatDocSize(bytes) {
   if (!bytes) return '';
-  if (bytes < 1024 * 1024) return Math.round(bytes / 1024) + ' Ko';
+  if (bytes < 1024) return bytes + ' o';
+  if (bytes < 1024 * 1024) return Math.max(1, Math.round(bytes / 1024)) + ' Ko';
   return (bytes / 1024 / 1024).toFixed(1) + ' Mo';
 }
 
@@ -471,6 +472,30 @@ const renderDetail = () => (
                   </a>
                 </>
               )}
+
+              <button
+                type="button"
+                className="web-docs-delete-action"
+                onClick={() => deleteDoc(selected.id)}
+                disabled={busy}
+                style={{
+                  minHeight: 38,
+                  padding: '0 12px',
+                  borderRadius: 999,
+                  border: '1px solid rgba(192,86,63,.35)',
+                  background: 'var(--card)',
+                  color: '#c0563f',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  cursor: busy ? 'default' : 'pointer',
+                  fontFamily: 'inherit',
+                  fontWeight: 700
+                }}
+              >
+                <Icon name="x" size={14} />
+                Supprimer
+              </button>
             </div>
 
             {/* Zone de prévisualisation */}
@@ -514,15 +539,7 @@ const renderDetail = () => (
                     fontSize: 11, color: 'var(--faint)', letterSpacing: '.08em', textTransform: 'uppercase'
                   }}>
                     <span>{selected.name}</span>
-                    <button onClick={() => deleteDoc(selected.id)} disabled={busy}
-                      style={{
-                        border: 'none', background: 'transparent', cursor: 'pointer',
-                        color: '#c0563f', fontSize: 11, fontWeight: 700, fontFamily: 'inherit',
-                        display: 'inline-flex', alignItems: 'center', gap: 5
-                      }}>
-                      <Icon name="x" size={13} />
-                      Supprimer
-                    </button>
+                    <span>{formatDocSize(selected.size)}</span>
                   </div>
                 </div>
               ) : (

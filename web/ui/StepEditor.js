@@ -212,13 +212,14 @@
   function inputBaseStyle() {
     return {
       width: '100%',
+      minHeight: 44,
       padding: '10px 12px',
       border: '1px solid var(--outline-variant)',
       borderRadius: 11,
       background: 'var(--inset)',
       color: 'var(--text)',
       fontFamily: 'inherit',
-      fontSize: 14,
+      fontSize: 16,
       outline: 'none'
     };
   }
@@ -237,6 +238,7 @@
 
   function ghostButtonStyle() {
     return {
+      minHeight: 44,
       border: '1px solid var(--outline-variant)',
       background: 'var(--inset)',
       color: 'var(--text)',
@@ -251,6 +253,7 @@
 
   function primaryButtonStyle() {
     return {
+      minHeight: 44,
       border: 'none',
       background: 'var(--accent)',
       color: 'var(--accent-ink)',
@@ -282,7 +285,7 @@
 
   function TwoColumns({ children }) {
     return (
-      <div style={{
+      <div className="web-step-editor-grid" style={{
         display: 'grid',
         gridTemplateColumns: '1fr 1fr',
         gap: 12
@@ -681,7 +684,7 @@
       }
 
       return (
-        <div style={{
+        <div className="web-step-editor-types" style={{
           display: 'flex',
           gap: 6,
           marginBottom: 18
@@ -1161,6 +1164,7 @@
 
     return ReactDOM.createPortal(
       <div
+        className="web-step-editor-overlay"
         onClick={busy ? undefined : onClose}
         style={{
           position: 'fixed',
@@ -1176,6 +1180,7 @@
         }}
       >
         <div
+          className="web-step-editor-panel"
           onClick={event => event.stopPropagation()}
           style={{
             width: '100%',
@@ -1192,7 +1197,7 @@
             position: 'relative'
           }}
         >
-          <div style={{
+          <div className="web-step-editor-header" style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -1225,6 +1230,7 @@
             </div>
 
             <button
+              className="web-step-editor-close"
               type="button"
               onClick={busy ? undefined : onClose}
               disabled={busy}
@@ -1241,7 +1247,7 @@
             </button>
           </div>
 
-          <div style={{
+          <div className="web-step-editor-body" style={{
             padding: 20,
             overflowY: 'auto',
             minHeight: 0
@@ -1297,7 +1303,7 @@
             </Field>
           </div>
 
-          <div style={{
+          <div className="web-step-editor-footer" style={{
             display: 'flex',
             alignItems: 'center',
             gap: 10,

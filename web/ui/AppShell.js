@@ -35,6 +35,8 @@
 
 (function initAppShell() {
   const U = window.ItineraryUtils || {};
+  const ANDROID_APK_URL =
+    'https://github.com/ImperialMoise/Travel-Planner-AI/releases/download/android-latest/la-fabrique-a-voyages.apk';
     const TRIP_ACCENTS = {
     ochre: { accent: '#9d680c', soft: '#f4ead7', ink: '#fffaf1', shadow: 'rgba(157,104,12,.26)' },
     forest: { accent: '#2f6a55', soft: '#e2f0e8', ink: '#f7fffb', shadow: 'rgba(47,106,85,.25)' },
@@ -67,6 +69,10 @@
     min-width:0;
     display:flex;
     overflow:hidden;
+  }
+
+  .web-mobile-banner{
+    display:none;
   }
 
   .app-view{
@@ -2165,10 +2171,11 @@
     background:var(--inset);
     border:1px solid var(--outline-variant);
     border-radius:10px;
+    min-height:44px;
     padding:10px 12px;
     color:var(--text);
     font-family:inherit;
-    font-size:14px;
+    font-size:16px;
     outline:none;
   }
 
@@ -2188,7 +2195,8 @@
     background:transparent;
     color:var(--muted);
     border-radius:999px;
-    padding:7px 12px;
+    min-height:44px;
+    padding:9px 12px;
     font-size:13px;
     font-weight:900;
     font-family:inherit;
@@ -2204,7 +2212,7 @@
     background:var(--card);
     color:var(--text);
     border-radius:999px;
-    min-height:38px;
+    min-height:44px;
     padding:0 14px;
     cursor:pointer;
     display:inline-flex;
@@ -2425,7 +2433,7 @@
     .topbar.compact .workspace-mode-btn{
       width:100%;
       min-width:0;
-      height:34px;
+      height:44px;
       padding:0 7px;
     }
 
@@ -2441,9 +2449,9 @@
     .topbar.compact .topbar-nav-btn{
       width:100%;
       min-width:0;
-      min-height:34px;
+      min-height:44px;
       padding:7px 3px;
-      font-size:11px;
+      font-size:12px;
     }
 
     .places-control{
@@ -2459,9 +2467,66 @@
     }
 
     .user-pill{
-      min-width:36px;
+      min-width:44px;
+      min-height:44px;
       padding:4px;
       justify-content:center;
+    }
+
+    .trip-switcher-btn{
+      min-height:44px;
+    }
+
+    .web-mobile-banner{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      flex-shrink:0;
+      padding:9px max(12px,env(safe-area-inset-right)) 9px max(12px,env(safe-area-inset-left));
+      border-bottom:1px solid var(--outline-variant);
+      background:var(--accent-soft);
+      color:var(--text);
+      font-size:12px;
+      line-height:1.35;
+    }
+
+    .web-mobile-banner-copy{
+      flex:1;
+      min-width:0;
+    }
+
+    .web-mobile-banner-copy strong{
+      display:block;
+      color:var(--accent);
+      font-size:12px;
+    }
+
+    .web-mobile-banner-link{
+      min-height:40px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      flex-shrink:0;
+      padding:0 12px;
+      border-radius:999px;
+      background:var(--accent);
+      color:var(--accent-ink);
+      text-decoration:none;
+      font-weight:900;
+      white-space:nowrap;
+    }
+
+    .web-mobile-banner-close{
+      width:40px;
+      height:40px;
+      flex-shrink:0;
+      display:grid;
+      place-items:center;
+      border:0;
+      border-radius:50%;
+      background:transparent;
+      color:var(--muted);
+      cursor:pointer;
     }
 
     .topbar-right .user-name{
@@ -2493,6 +2558,11 @@
     .home-hero-title{
       font-size:42px;
       line-height:44px;
+    }
+
+    .home-trip-input{
+      min-height:24px;
+      font-size:16px;
     }
   }
   `;
@@ -2808,6 +2878,7 @@ function toggleToolboxCollapsed() {
   }}
 >
         <Topbar compact={isTopbarCompact} />
+        <WebMobileBanner />
 
         <main className="app-main">
           {!user ? (
@@ -2951,6 +3022,44 @@ function toggleToolboxCollapsed() {
           </div>
         )}
       </div>
+    );
+  }
+
+  function WebMobileBanner() {
+    const [hidden, setHidden] = React.useState(function initialBannerState() {
+      return sessionStorage.getItem('web_mobile_banner_hidden') === 'true';
+    });
+
+    if (hidden) return null;
+
+    return (
+      <aside className="web-mobile-banner" aria-label="Versions disponibles">
+        <div className="web-mobile-banner-copy">
+          <strong>Tu utilises la version web mobile.</strong>
+          Toutes les fonctions restent disponibles ici ; l’application Android existe aussi en APK.
+        </div>
+
+        <a
+          className="web-mobile-banner-link"
+          href={ANDROID_APK_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          APK Android
+        </a>
+
+        <button
+          type="button"
+          className="web-mobile-banner-close"
+          aria-label="Masquer ce message"
+          onClick={() => {
+            sessionStorage.setItem('web_mobile_banner_hidden', 'true');
+            setHidden(true);
+          }}
+        >
+          <Icon name="x" size={16} />
+        </button>
+      </aside>
     );
   }
 
@@ -3750,6 +3859,9 @@ function setAppMode(nextMode) {
   const [destination, setDestination] = React.useState('');
   const [startDate, setStartDate] = React.useState('');
   const [endDate, setEndDate] = React.useState('');
+  const destinationRef = React.useRef(null);
+  const startDateRef = React.useRef(null);
+  const endDateRef = React.useRef(null);
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState('');
 
@@ -3812,8 +3924,7 @@ const featuredCover =
   featuredTripMeta?.coverImageUrl ||
   heroImages[0].url;
   const activeImage = heroImages[imageIndex] || heroImages[0];
-  const androidApkUrl =
-  'https://github.com/ImperialMoise/Travel-Planner-AI/releases/download/android-latest/la-fabrique-a-voyages.apk';
+  const androidApkUrl = ANDROID_APK_URL;
 
   const androidQrUrl =
   'https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=10&data=' +
@@ -3967,12 +4078,30 @@ function startFromPublicSection() {
   }
 
 async function createTripFromHero() {
-  const cleanDestination = safeString(destination);
+  const requestedDestination = destinationRef.current
+    ? destinationRef.current.value
+    : destination;
+  const requestedStartDate = startDateRef.current
+    ? startDateRef.current.value
+    : startDate;
+  const requestedEndDate = endDateRef.current
+    ? endDateRef.current.value
+    : endDate;
+  const cleanDestination = safeString(requestedDestination);
 
   if (!cleanDestination) {
     setError(
       'Indique une destination pour commencer ton voyage.'
     );
+    return;
+  }
+
+  if (
+    requestedStartDate &&
+    requestedEndDate &&
+    requestedEndDate < requestedStartDate
+  ) {
+    setError('La date de retour doit être postérieure à la date de départ.');
     return;
   }
 
@@ -3986,9 +4115,9 @@ async function createTripFromHero() {
 
     const created = await window.SB.createTrip({
       name: cleanDestination,
-      startDate: startDate || null,
-      endDate: endDate || null,
-      days: daysBetweenInclusive(startDate, endDate)
+      startDate: requestedStartDate || null,
+      endDate: requestedEndDate || null,
+      days: daysBetweenInclusive(requestedStartDate, requestedEndDate)
     });
 
     const nextTrips = await window.SB.listMyTrips();
@@ -4074,6 +4203,7 @@ async function createTripFromHero() {
                 </span>
 
                 <input
+                  ref={destinationRef}
                   className="home-trip-input"
                   value={destination}
                   onChange={event => setDestination(event.target.value)}
@@ -4093,6 +4223,7 @@ async function createTripFromHero() {
                 </span>
 
                 <input
+                  ref={startDateRef}
                   className="home-trip-input"
                   type="date"
                   value={startDate}
@@ -4118,6 +4249,7 @@ async function createTripFromHero() {
                 </span>
 
                 <input
+                  ref={endDateRef}
                   className="home-trip-input"
                   type="date"
                   value={endDate}

@@ -1663,7 +1663,7 @@ Store.set({
       <div id="mv-map" ref={mapEl}/>
       {/* Bannière mode pick */}
       {pickMode && (
-        <div className="mv-glass" style={{
+        <div className="mv-glass web-map-pick-banner" style={{
           position:'absolute', top:66, left:'50%', transform:'translateX(-50%)', zIndex:20,
           padding:'10px 20px', borderRadius:999, display:'flex', alignItems:'center', gap:10,
           fontSize:13, fontWeight:700, color:'var(--accent)',
@@ -1678,9 +1678,9 @@ Store.set({
       )}
 
       {/* ═══ RECHERCHE (centre haut) ═══ */}
-      <div style={{position:'absolute',top:14,left:'50%',transform:'translateX(-50%)',zIndex:22,width:380,maxWidth:'calc(100% - 200px)'}}>
+      <div className="web-map-search" style={{position:'absolute',top:14,left:'50%',transform:'translateX(-50%)',zIndex:22,width:380,maxWidth:'calc(100% - 200px)'}}>
         <div style={{position:'relative'}}>
-          <input value={query} onChange={e=>doSearch(e.target.value)} placeholder="Rechercher un lieu\u2026" className="mv-glass" style={{width:'100%',padding:'10px 14px 10px 38px',borderRadius:999,color:'var(--text)',fontFamily:'inherit',fontSize:13.5,outline:'none'}}/>
+          <input value={query} onChange={e=>doSearch(e.target.value)} placeholder="Rechercher un lieu…" className="mv-glass" style={{width:'100%',padding:'10px 14px 10px 38px',borderRadius:999,color:'var(--text)',fontFamily:'inherit',fontSize:13.5,outline:'none'}}/>
           <Icon name="pin" size={14} style={{position:'absolute',left:13,top:12,color:'var(--accent)'}}/>
           {results.length>0&&(
             <div className="mv-glass" style={{position:'absolute',top:'calc(100% + 4px)',left:0,right:0,borderRadius:14,overflow:'hidden',maxHeight:280,overflowY:'auto',zIndex:200}}>
@@ -1703,7 +1703,7 @@ Store.set({
       </div>
 
       {/* ═══ CONTRÔLES (droite) ═══ */}
-<div style={{position:'absolute',top:14,right:14,zIndex:5,display:'flex',flexDirection:'column',gap:10,alignItems:'stretch',width:148}}>
+<div className="web-map-controls" style={{position:'absolute',top:14,right:14,zIndex:5,display:'flex',flexDirection:'column',gap:10,alignItems:'stretch',width:148}}>
 
   {/* Recentrer / Vue globale */}
   <button
@@ -1727,7 +1727,7 @@ Store.set({
     }}
   >
     <Icon name="expand" size={14}/>
-    {sel!=null?'Vue globale':'Recentrer'}
+    <span className="web-map-control-label">{sel!=null?'Vue globale':'Recentrer'}</span>
   </button>
 
   {/* Bloc principal */}
@@ -1793,7 +1793,7 @@ Store.set({
       title="Fond de carte"
     >
       <Icon name="map" size={16}/>
-      Affichage
+      <span className="web-map-control-label">Affichage</span>
     </button>
 
     {layersOpen&&(
@@ -1824,7 +1824,7 @@ Store.set({
     }}
   >
     <Icon name="route" size={14}/>
-    {touring?'Stop':'Survoler'}
+    <span className="web-map-control-label">{touring?'Stop':'Survoler'}</span>
   </button>
 
   {/* Ma position */}
@@ -1846,12 +1846,12 @@ Store.set({
     title="Ma position"
   >
     <Icon name="pin" size={16}/>
-    Position
+    <span className="web-map-control-label">Position</span>
   </button>
 
   {/* Readout */}
   <div
-    className="mv-glass"
+    className="mv-glass web-map-readout"
     style={{
       minHeight:44,
       width:'100%',
@@ -1872,7 +1872,7 @@ Store.set({
       {/* ═══ LIEU TROUVÉ (au-dessus de la carte du jour) ═══ */}
 {foundPlace && !editorOpen && (
   <div
-    className="mv-glass"
+    className="mv-glass web-map-found-place"
     style={{
       position:'absolute',
       left:16,
@@ -2008,6 +2008,7 @@ Store.set({
 
 {/* ═══ CARTE DU JOUR (toujours visible) ═══ */}
 <div
+  className="web-map-day-card"
   ref={cardRef}
   style={{
     position:'absolute',

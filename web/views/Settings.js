@@ -2199,7 +2199,7 @@ function SettingsButton({ variant = 'secondary', icon, children, style, ...props
       type="button"
       {...props}
       style={{
-        minHeight: 34,
+        minHeight: 44,
         display: 'inline-flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -2209,7 +2209,7 @@ function SettingsButton({ variant = 'secondary', icon, children, style, ...props
         cursor: props.disabled ? 'default' : 'pointer',
         opacity: props.disabled ? .6 : 1,
         fontFamily: 'inherit',
-        fontSize: 12,
+        fontSize: 13,
         fontWeight: 900,
         whiteSpace: 'nowrap',
         ...colors[variant],
@@ -2236,8 +2236,8 @@ function initials(user) {
 }
 
 const settingsIconButtonStyle = {
-  width: 34,
-  height: 34,
+  width: 44,
+  height: 44,
   display: 'grid',
   placeItems: 'center',
   flexShrink: 0,
@@ -2251,14 +2251,15 @@ const settingsIconButtonStyle = {
 const settingsInputStyle = {
   width: '100%',
   minWidth: 0,
-  padding: '9px 10px',
+  minHeight: 44,
+  padding: '10px 12px',
   border: '1px solid var(--line)',
   borderRadius: 8,
   outline: 'none',
   background: 'var(--inset)',
   color: 'var(--text)',
   fontFamily: 'inherit',
-  fontSize: 13
+  fontSize: 16
 };
 
 window.SettingsModal = SettingsModal;

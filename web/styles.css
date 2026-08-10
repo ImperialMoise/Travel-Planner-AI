@@ -1,42 +1,48 @@
 :root {
-  /* ═══ Palette Stitch — L'Atelier v2 ═══ */
-
-  /* Surfaces (du plus clair au plus sombre) */
-  --bg: #fef9ef;
-  --card: #ffffff;
-  --inset: #f8f3e9;
-  --soft: #f2ede3;
-  --surface-high: #ede8de;
-  --surface-variant: #e7e2d8;
+  /* Surfaces */
+  --bg: #f8f5ee;
+  --card: #fffdf9;
+  --inset: #f3eee4;
+  --soft: #ece5d8;
+  --surface-high: #e7dfd1;
+  --surface-variant: #ded4c3;
 
   /* Texte */
-  --text: #1d1c16;
-  --muted: #504538;
-  --faint: #827567;
+  --text: #211b14;
+  --muted: #655a4d;
+  --faint: #8b7d6e;
 
-  /* Accent principal (brun doré) */
-  --accent: #7c5410;
-  --accent-soft: rgba(124, 84, 16, 0.12);
-  --accent-ink: #ffffff;
+  /* Accent principal */
+  --accent: #96640d;
+  --accent-soft: rgba(150, 100, 13, 0.12);
+  --accent-ink: #fffaf0;
 
   /* Accents secondaires */
-  --tan: #d9b67e;
-  --petrol: #15302a;
-  --tertiary: #40625a;
-  --tertiary-soft: #597b72;
-  --success: #5c8a6f;
-  --danger: #c0563f;
+  --tan: #d3ad73;
+  --petrol: #17362f;
+  --tertiary: #42685e;
+  --tertiary-soft: #63847b;
+  --success: #367356;
+  --danger: #b54b38;
 
   /* Bordures */
-  --line: rgba(212, 196, 179, 0.5);
-  --line2: rgba(212, 196, 179, 0.3);
-  --outline: #827567;
-  --outline-variant: #d4c4b3;
+  --line: rgba(80, 64, 44, 0.14);
+  --line2: rgba(80, 64, 44, 0.08);
+  --outline: #8b7d6e;
+  --outline-variant: #d8cdbd;
 
-  /* Topbar & ombres */
-  --topbar: #ede8de;
-  --shadow: 0 3px 14px rgba(82, 98, 91, 0.06);
-  --shadow-lg: 0 8px 24px rgba(82, 98, 91, 0.10);
+  /* Navigation et ombres */
+  --topbar: rgba(255, 253, 248, 0.94);
+  --shadow: 0 7px 22px rgba(54, 42, 27, 0.08);
+  --shadow-lg: 0 20px 55px rgba(54, 42, 27, 0.15);
+
+  /* Arrondis */
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+
+  /* Animations */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 
   /* Typographies */
   --font-sans: "DM Sans", system-ui, sans-serif;

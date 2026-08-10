@@ -138,37 +138,56 @@
   }
 
   .topbar{
-    height:62px;
+    height:68px;
     flex-shrink:0;
     display:flex;
     align-items:center;
     justify-content:space-between;
-    gap:18px;
-    padding:0 18px;
+    gap:16px;
+    padding:0 22px;
     background:var(--topbar);
-    border-bottom:1px solid var(--outline-variant);
+    border-bottom:1px solid var(--line);
+    box-shadow:0 4px 18px rgba(54,42,27,.055);
+    backdrop-filter:blur(18px) saturate(135%);
+    -webkit-backdrop-filter:blur(18px) saturate(135%);
     position:relative;
     z-index:100;
   }
 
   .topbar.compact{
-    height:56px;
-    padding:0 10px;
+    height:58px;
+    padding:0 12px;
     gap:10px;
   }
 
   .topbar-brand{
     display:flex;
-    align-items:baseline;
+    align-items:center;
     gap:7px;
+    border:0;
+    background:transparent;
     font-family:var(--font-serif);
     font-style:italic;
-    font-size:25px;
+    font-size:26px;
     line-height:1;
-    color:var(--accent);
+    letter-spacing:-.025em;
+    color:var(--text);
     white-space:nowrap;
     cursor:pointer;
-    transition:transform .18s ease, filter .18s ease;
+    transition:
+      transform .2s var(--ease-out),
+      color .2s ease;
+  }
+
+  .topbar-brand:hover{
+    transform:translateY(-1px);
+    color:var(--accent);
+  }
+
+  .topbar-brand:focus-visible{
+    outline:3px solid var(--accent-soft);
+    outline-offset:5px;
+    border-radius:6px;
   }
 
   .topbar-brand:hover{
@@ -220,12 +239,16 @@
   }
 
   .topbar-nav{
-    gap:5px;
+    gap:4px;
     flex-shrink:0;
+    padding:4px;
+    border:1px solid var(--line);
+    border-radius:13px;
+    background:rgba(243,238,228,.74);
   }
 
   .topbar-nav-btn{
-    min-height:34px;
+    min-height:40px;
     border:1px solid transparent;
     background:transparent;
     color:var(--muted);
@@ -233,30 +256,39 @@
     font-size:13px;
     font-weight:800;
     font-family:inherit;
-    padding:7px 15px;
-    border-radius:8px;
-    transition:transform .18s ease, box-shadow .18s ease, background .18s ease, color .18s ease;
+    padding:8px 15px;
+    border-radius:9px;
+    transition:
+      transform .18s var(--ease-out),
+      box-shadow .18s ease,
+      background .18s ease,
+      color .18s ease;
   }
 
   .topbar-nav-btn:hover{
-    transform:translateY(-2px);
-    background:var(--card);
+    transform:translateY(-1px);
+    background:rgba(255,253,249,.84);
     color:var(--text);
-    box-shadow:0 5px 12px rgba(66, 48, 18, .10);
+  }
+
+  .topbar-nav-btn:focus-visible{
+    outline:3px solid var(--accent-soft);
+    outline-offset:2px;
   }
 
   .topbar-nav-btn.active{
     background:var(--accent);
     color:var(--accent-ink);
-    box-shadow:0 4px 10px var(--accent-shadow);
+    box-shadow:0 5px 14px var(--accent-shadow);
   }
 
   .topbar-nav-btn.active:hover{
     transform:translateY(-1px);
-    box-shadow:0 6px 14px var(--accent-shadow);
+    box-shadow:0 7px 18px var(--accent-shadow);
   }
 
   .topbar.compact .topbar-nav-btn{
+    min-height:40px;
     font-size:12px;
     padding:7px 10px;
   }
@@ -268,19 +300,34 @@
   .trip-switcher-btn{
     display:flex;
     align-items:center;
-    gap:8px;
-    min-height:34px;
-    padding:6px 11px;
-    background:var(--inset);
-    border:1px solid var(--outline-variant);
-    border-radius:8px;
+    gap:9px;
+    min-height:40px;
+    padding:7px 12px;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:12px;
     cursor:pointer;
     font-size:13px;
     font-weight:800;
     font-family:inherit;
     color:var(--text);
     max-width:250px;
-    transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+    box-shadow:0 3px 12px rgba(54,42,27,.045);
+    transition:
+      transform .18s var(--ease-out),
+      box-shadow .18s ease,
+      border-color .18s ease;
+  }
+
+  .trip-switcher-btn:hover{
+    transform:translateY(-1px);
+    border-color:rgba(150,100,13,.34);
+    box-shadow:0 8px 20px rgba(54,42,27,.09);
+  }
+
+  .trip-switcher-btn:focus-visible{
+    outline:3px solid var(--accent-soft);
+    outline-offset:2px;
   }
 
   .trip-switcher-btn:hover{

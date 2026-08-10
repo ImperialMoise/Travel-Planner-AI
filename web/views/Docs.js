@@ -285,23 +285,29 @@ function DocsView() {
   // ══════════════════════════════════════════════════════════
   // ONGLET DÉTAIL — Vue explorateur (liste + prévisualisation)
   // ══════════════════════════════════════════════════════════
-  const renderDetail = () => (
-    <div style={{
-      display: 'grid',
-      gridTemplateColumns: window.innerWidth < 700 ? '1fr' : '380px 1fr',
-      gap: 0, minHeight: 'calc(100vh - 240px)',
-      ...card, overflow: 'hidden', marginTop: 8
-    }}>
+const renderDetail = () => (
+    <div
+      className={'web-docs-detail' + (selected ? ' has-selection' : '')}
+      style={{
+        display: 'grid',
+        gridTemplateColumns: window.innerWidth < 700 ? '1fr' : '380px 1fr',
+        gap: 0,
+        minHeight: 'calc(100vh - 240px)',
+        ...card,
+        overflow: 'hidden',
+        marginTop: 8
+      }}
+    >
 
       {/* ── Panneau gauche : recherche + filtres + liste ── */}
-      <div style={{
+<div className="web-docs-list-panel" style={{
         display: 'flex', flexDirection: 'column',
         borderRight: window.innerWidth >= 700 ? '1px solid var(--line)' : 'none',
         background: 'var(--card)'
       }}>
 
         {/* Barre de recherche */}
-        <div style={{ padding: '18px 18px 0' }}>
+<div className="web-docs-search-area" style={{ padding: '18px 18px 0' }}>
           <div style={{ position: 'relative', marginBottom: 14 }}>
             <Icon name="search" size={16} style={{
               position: 'absolute', left: 11, top: '50%',
@@ -316,7 +322,7 @@ function DocsView() {
           </div>
 
           {/* Chips filtre */}
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', paddingBottom: 14, borderBottom: '1px solid var(--line)' }}>
+         <div className="web-docs-filters" style={{ display: 'flex', gap: 6, flexWrap: 'wrap', paddingBottom: 14, borderBottom: '1px solid var(--line)' }}>
             <button onClick={() => setFilter('__all__')} style={chipStyle(filter === '__all__')}>Tous</button>
             {DOC_CATEGORIES.map(cat => (
               <button key={cat.id} onClick={() => setFilter(cat.id)} style={chipStyle(filter === cat.id)}>
@@ -327,7 +333,7 @@ function DocsView() {
         </div>
 
         {/* Liste scrollable */}
-        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '12px 14px' }}>
+        <div className="web-docs-list" style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '12px 14px' }}>
           {filteredDocs.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '36px 12px', color: 'var(--faint)', fontSize: 13, fontStyle: 'italic' }}>
               {total === 0 ? 'Aucun document ajouté.' : 'Aucun résultat.'}
@@ -339,7 +345,9 @@ function DocsView() {
                 const isSelected = doc.id === selectedId;
                 const isImage = doc.mime?.includes('image');
                 return (
-                  <button key={doc.id}
+                  <button
+                    className="web-docs-list-item"
+                    key={doc.id}
                     onClick={() => setSelectedId(doc.id)}
                     style={{
                       width: '100%', textAlign: 'left', cursor: 'pointer',
@@ -402,7 +410,7 @@ function DocsView() {
       </div>
 
       {/* ── Panneau droit : prévisualisation ── */}
-      <div style={{
+      <div className="web-docs-preview-panel" style={{
         display: window.innerWidth < 700 && !selected ? 'none' : 'flex',
         flexDirection: 'column', background: 'var(--inset)', position: 'relative',
         minHeight: window.innerWidth < 700 ? 300 : 'auto'
@@ -410,10 +418,33 @@ function DocsView() {
         {selected ? (
           <>
             {/* Boutons d'action flottants */}
-            <div style={{
+           <div className="web-docs-preview-actions" style={{
               position: 'absolute', top: 18, right: 20, zIndex: 5,
               display: 'flex', gap: 8, alignItems: 'center'
             }}>
+              <button
+                type="button"
+                className="web-docs-mobile-back"
+                onClick={() => setSelectedId(null)}
+                style={{
+                  minHeight: 38,
+                  padding: '0 12px',
+                  borderRadius: 999,
+                  background: 'var(--card)',
+                  border: '1px solid var(--line)',
+                  boxShadow: 'var(--shadow)',
+                  alignItems: 'center',
+                  gap: 6,
+                  cursor: 'pointer',
+                  color: 'var(--text)',
+                  fontFamily: 'inherit',
+                  fontWeight: 700
+                }}
+              >
+                <Icon name="x" size={15} />
+                Retour
+              </button>
+
               {selectedUrl && (
                 <>
                   <button onClick={() => { if (selectedUrl) window.open(selectedUrl, '_blank'); }}
@@ -443,7 +474,7 @@ function DocsView() {
             </div>
 
             {/* Zone de prévisualisation */}
-            <div style={{
+            <div className="web-docs-preview-zone" style={{
               flex: 1, padding: '24px 32px', overflow: 'auto',
               display: 'grid', placeItems: 'center'
             }}>
@@ -469,7 +500,7 @@ function DocsView() {
                 </div>
               ) : selectedType === 'pdf' ? (
                 /* Aperçu PDF dans un cadre "papier" */
-                <div style={{
+                <div className="web-docs-pdf-preview" style={{
                   width: '100%', maxWidth: 720,
                   background: 'var(--card)', borderRadius: 16,
                   boxShadow: '0 8px 30px rgba(0,0,0,.06)', border: '1px solid var(--line)',
@@ -526,11 +557,17 @@ function DocsView() {
   // RENDU PRINCIPAL
   // ══════════════════════════════════════════════════════════
   return (
-    <div style={{ flex: 1, minHeight: 'calc(100vh - 60px)', overflowY: 'auto' }}>
-      <div style={{ maxWidth: tab === 'detail' ? 1200 : 860, margin: '0 auto', padding: '24px 22px 40px', transition: 'max-width .3s' }}>
+   <div
+      className="web-docs-page"
+      style={{ flex: 1, minHeight: 'calc(100vh - 60px)', overflowY: 'auto' }}
+    >
+      <div
+        className="web-docs-container"
+        style={{ maxWidth: tab === 'detail' ? 1200 : 860, margin: '0 auto', padding: '24px 22px 40px', transition: 'max-width .3s' }}
+      >
 
         {/* ── En-tête ── */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12, marginBottom: 18 }}>
+        <div className="web-docs-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12, marginBottom: 18 }}>
           <div>
             <div style={kicker}>Coffre-fort</div>
             <div style={{ fontFamily: serif, fontStyle: 'italic', fontSize: 26, color: 'var(--text)', marginTop: 3 }}>
@@ -541,8 +578,8 @@ function DocsView() {
             </p>
           </div>
 
-          {/* Bouton upload */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+         {/* Bouton upload */}
+          <div className="web-docs-upload-controls" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
             <select value={uploadCat} onChange={e => setUploadCat(e.target.value)}
               style={{
                 border: '1px solid var(--line)', background: 'var(--inset)', color: 'var(--text)',
@@ -568,7 +605,7 @@ function DocsView() {
         </div>
 
         {/* ── Onglets Résumé / Détail ── */}
-        <div style={{
+        <div className="web-docs-tabs" style={{
           display: 'flex', gap: 2, background: 'var(--inset)',
           border: '1px solid var(--line)', borderRadius: 999,
           padding: 3, marginBottom: 20

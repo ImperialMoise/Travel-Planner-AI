@@ -884,3 +884,327 @@ body.is-dragging-day * {
     overflow-wrap: anywhere;
   }
 }
+
+/* =========================================================
+   Budget — téléphone
+   ========================================================= */
+
+@media (max-width: 760px) {
+  .web-budget-page {
+    min-height: 0 !important;
+    overflow-x: hidden;
+  }
+
+  .web-budget-container {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 18px 12px calc(32px + env(safe-area-inset-bottom)) !important;
+  }
+
+  .web-budget-page input,
+  .web-budget-page select,
+  .web-budget-page textarea {
+    box-sizing: border-box;
+    max-width: 100%;
+    min-height: 46px;
+    font-size: 16px !important;
+  }
+
+  .web-budget-page button {
+    min-height: 40px;
+  }
+
+  .web-budget-total {
+    padding: 17px 16px !important;
+  }
+
+  .web-budget-total > div > div:nth-child(2) {
+    font-size: clamp(32px, 11vw, 40px) !important;
+    overflow-wrap: anywhere;
+  }
+
+  .web-budget-travelers-row > input {
+    width: 100% !important;
+    flex: 1 0 100%;
+  }
+
+  .web-budget-tabs {
+    position: sticky;
+    top: 0;
+    z-index: 4;
+    border-radius: 14px !important;
+    box-shadow: 0 5px 14px rgba(31, 46, 40, 0.08);
+  }
+
+  .web-budget-tabs button {
+    min-width: 0;
+    min-height: 44px;
+    padding-right: 5px !important;
+    padding-left: 5px !important;
+  }
+
+  .web-budget-expense-form {
+    padding: 14px !important;
+  }
+
+  .web-budget-expense-fields {
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+
+  .web-budget-expense-fields > input {
+    width: 100% !important;
+    flex: none !important;
+  }
+
+  .web-budget-form-actions {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .web-budget-form-actions button {
+    width: 100%;
+    min-height: 46px;
+  }
+
+  .web-budget-expense-row {
+    display: grid !important;
+    grid-template-columns: 38px minmax(0, 1fr) auto 40px;
+    gap: 10px !important;
+    padding: 12px !important;
+  }
+
+  .web-budget-expense-row > div:nth-child(3) {
+    white-space: nowrap;
+  }
+
+  .web-budget-expense-row > button:last-child {
+    width: 40px;
+    height: 40px;
+    padding: 0 !important;
+    display: grid;
+    place-items: center;
+  }
+
+  .web-budget-first-traveler {
+    flex-direction: column;
+  }
+
+  .web-budget-first-traveler input,
+  .web-budget-first-traveler button {
+    width: 100%;
+    min-height: 46px;
+    box-sizing: border-box;
+  }
+}
+
+@media (max-width: 400px) {
+  .web-budget-expense-row {
+    grid-template-columns: 38px minmax(0, 1fr) 40px;
+    align-items: center !important;
+  }
+
+  .web-budget-expense-row > div:nth-child(2) {
+    grid-column: 2;
+  }
+
+  .web-budget-expense-row > div:nth-child(3) {
+    grid-column: 2;
+    grid-row: 2;
+    justify-self: start;
+  }
+
+  .web-budget-expense-row > button:last-child {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+  }
+}
+
+/* =========================================================
+   Documents — téléphone
+   ========================================================= */
+
+.web-docs-mobile-back {
+  display: none !important;
+}
+
+@media (max-width: 760px) {
+  .web-docs-page {
+    min-height: 0 !important;
+    overflow-x: hidden;
+  }
+
+  .web-docs-container {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 18px 12px calc(32px + env(safe-area-inset-bottom)) !important;
+  }
+
+  .web-docs-header {
+    flex-direction: column;
+    align-items: stretch !important;
+  }
+
+  .web-docs-upload-controls {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto;
+    width: 100%;
+  }
+
+  .web-docs-upload-controls select {
+    width: 100%;
+    min-width: 0;
+    min-height: 46px;
+    box-sizing: border-box;
+    font-size: 16px !important;
+  }
+
+  .web-docs-upload-controls button {
+    min-height: 46px;
+    white-space: nowrap;
+  }
+
+  .web-docs-tabs {
+    position: sticky;
+    top: 0;
+    z-index: 4;
+    border-radius: 14px !important;
+    box-shadow: 0 5px 14px rgba(31, 46, 40, 0.08);
+  }
+
+  .web-docs-tabs button {
+    min-height: 44px;
+  }
+
+  .web-docs-detail {
+    display: block !important;
+    min-height: 0 !important;
+    border-radius: 16px !important;
+  }
+
+  .web-docs-list-panel {
+    width: 100%;
+    min-height: 0;
+    border-right: 0 !important;
+  }
+
+  .web-docs-detail.has-selection .web-docs-list-panel {
+    display: none !important;
+  }
+
+  .web-docs-search-area {
+    padding: 14px 12px 0 !important;
+  }
+
+  .web-docs-search-area input {
+    box-sizing: border-box;
+    width: 100% !important;
+    min-height: 46px;
+    font-size: 16px !important;
+  }
+
+  .web-docs-filters {
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+    padding-bottom: 12px !important;
+    overscroll-behavior-x: contain;
+    scrollbar-width: thin;
+  }
+
+  .web-docs-filters button {
+    min-height: 40px;
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  .web-docs-list {
+    padding: 10px !important;
+    overflow: visible !important;
+  }
+
+  .web-docs-list-item {
+    min-height: 76px;
+    padding: 12px !important;
+  }
+
+  .web-docs-preview-panel {
+    width: 100%;
+    min-height: 65dvh !important;
+  }
+
+  .web-docs-detail.has-selection .web-docs-preview-panel {
+    display: flex !important;
+  }
+
+  .web-docs-preview-actions {
+    top: 10px !important;
+    right: 10px !important;
+    left: 10px !important;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+
+  .web-docs-mobile-back {
+    display: inline-flex !important;
+    margin-right: auto;
+    min-height: 44px !important;
+  }
+
+  .web-docs-preview-actions > button,
+  .web-docs-preview-actions > a {
+    min-height: 44px;
+    box-sizing: border-box;
+  }
+
+  .web-docs-preview-zone {
+    min-width: 0;
+    padding: 68px 10px 14px !important;
+    overflow: auto !important;
+  }
+
+  .web-docs-preview-zone img {
+    width: auto;
+    height: auto;
+    max-width: 100% !important;
+    max-height: 62dvh !important;
+    object-fit: contain;
+  }
+
+  .web-docs-pdf-preview {
+    width: 100% !important;
+    min-width: 0;
+  }
+
+  .web-docs-pdf-preview iframe {
+    width: 100% !important;
+    height: 62dvh !important;
+    min-height: 420px;
+  }
+
+  .web-docs-preview-zone span {
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (max-width: 400px) {
+  .web-docs-upload-controls {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .web-docs-upload-controls button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .web-docs-preview-actions > a {
+    width: 44px;
+    padding: 0 !important;
+    justify-content: center;
+    font-size: 0 !important;
+  }
+
+  .web-docs-preview-actions > a svg {
+    width: 17px;
+    height: 17px;
+  }
+}

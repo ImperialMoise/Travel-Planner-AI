@@ -104,7 +104,7 @@ function BudgetView() {
           <p style={{ color: 'var(--muted)', fontSize: 13.5, lineHeight: 1.55, margin: '8px 0 16px' }}>
             Ajoute les voyageurs pour pouvoir partager les dépenses et calculer qui doit quoi à qui.
           </p>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div className="web-budget-first-traveler" style={{ display: 'flex', gap: 8 }}>
             <input style={inp} value={newName} onChange={e => setNewName(e.target.value)} onKeyDown={e => e.key === 'Enter' && addPerson()} placeholder="Prénom…" autoFocus />
             <button onClick={addPerson} style={{ border: 'none', background: 'var(--accent)', color: 'var(--accent-ink)', borderRadius: 11, padding: '0 16px', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>Ajouter</button>
           </div>
@@ -164,14 +164,14 @@ function BudgetView() {
 
   const expenses = () => <>
     {form ? (
-      <div style={{ ...card, padding: 16, marginBottom: 16 }}>
+<div className="web-budget-expense-form" style={{ ...card, padding: 16, marginBottom: 16 }}>
         <div style={{ display: 'flex', gap: 6, marginBottom: 12, flexWrap: 'wrap' }}>
           {BUDGET_CATS.map(c => {
             const on = form.cat === c.id;
             return <button key={c.id} onClick={() => setForm({ ...form, cat: c.id })} style={chip(on, c.color)}><Icon name={c.icon} size={13} />{c.id}</button>;
           })}
         </div>
-        <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
+       <div className="web-budget-expense-fields" style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
           <input style={{ ...inp, flex: 2 }} value={form.desc} onChange={e => setForm({ ...form, desc: e.target.value })} placeholder="Description…" autoFocus />
           <input style={{ ...inp, flex: 1 }} type="number" step="0.01" min="0" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} placeholder="0.00 €" />
         </div>
@@ -184,7 +184,7 @@ function BudgetView() {
           <button onClick={toggleAll} style={chip(form.forAll, '#9aa89f')}>Tout le monde</button>
           {names.map(n => <button key={n} onClick={() => toggleName(n)} style={chip(isFor(n), colorOf(n))}>{n}</button>)}
         </div>
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+       <div className="web-budget-form-actions" style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
           <button onClick={() => setForm(null)} disabled={busy} style={{ border: '1px solid var(--line)', background: 'var(--inset)', color: 'var(--text)', borderRadius: 11, padding: '9px 16px', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>Annuler</button>
           <button onClick={saveExpense} disabled={busy} style={{ border: 'none', background: 'var(--accent)', color: 'var(--accent-ink)', borderRadius: 11, padding: '9px 18px', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>{busy ? '…' : (form.id ? 'Enregistrer' : 'Ajouter')}</button>
         </div>
@@ -201,7 +201,7 @@ function BudgetView() {
           const m = catMeta(b.cat);
           const tl = (b.forParticipants || ['__all__']).includes('__all__') ? 'tout le monde' : targetsOf(b).join(', ');
           return (
-            <div key={b.id} onClick={() => openEdit(b)} style={{ ...card, display: 'flex', alignItems: 'center', gap: 13, padding: '12px 14px', cursor: 'pointer' }}>
+           <div className="web-budget-expense-row" key={b.id} onClick={() => openEdit(b)} style={{ ...card, display: 'flex', alignItems: 'center', gap: 13, padding: '12px 14px', cursor: 'pointer' }}>
               <div style={{ width: 38, height: 38, borderRadius: 11, background: m.color + '22', color: m.color, display: 'grid', placeItems: 'center', flexShrink: 0 }}><Icon name={m.icon} size={18} /></div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--text)' }}>{b.desc || m.id}</div>
@@ -268,14 +268,20 @@ function BudgetView() {
 
   // ── Rendu ───────────────────────────────────────────────
   return (
-    <div style={{ flex: 1, minHeight: 'calc(100vh - 60px)', overflowY: 'auto' }}>
-      <div style={{ maxWidth: 860, margin: '0 auto', padding: '24px 22px 40px' }}>
+<div
+      className="web-budget-page"
+      style={{ flex: 1, minHeight: 'calc(100vh - 60px)', overflowY: 'auto' }}
+    >
+      <div
+        className="web-budget-container"
+        style={{ maxWidth: 860, margin: '0 auto', padding: '24px 22px 40px' }}
+      >
 
         <div style={kicker}>Budget</div>
         <div style={{ fontFamily: serif, fontStyle: 'italic', fontSize: 26, color: 'var(--text)', marginTop: 3, marginBottom: 16 }}>{trip.name}</div>
 
         {/* Total */}
-        <div style={{ ...card, padding: '20px 22px', marginBottom: 14, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+       <div className="web-budget-total" style={{ ...card, padding: '20px 22px', marginBottom: 14, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
           <div>
             <div style={{ fontSize: 12, color: 'var(--muted)' }}>Total du voyage</div>
             <div style={{ fontFamily: serif, fontSize: 40, lineHeight: 1, color: 'var(--text)' }}>{eur(total).replace(' €', '')}<span style={{ fontSize: 22, color: 'var(--accent)' }}> €</span></div>
@@ -286,7 +292,7 @@ function BudgetView() {
         {/* Voyageurs */}
         <div style={{ ...card, padding: 14, marginBottom: 18 }}>
           <div style={{ ...kicker, color: 'var(--faint)', marginBottom: 9 }}>Voyageurs</div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+<div className="web-budget-travelers-row" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
             {participants.map(p => (
               <span key={p.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '6px 8px 6px 12px', borderRadius: 999, background: 'var(--inset)', border: '1px solid var(--line)', fontSize: 13, fontWeight: 600 }}>
                 {dot(colorOf(p.name))}{p.name}
@@ -298,7 +304,7 @@ function BudgetView() {
         </div>
 
         {/* Onglets */}
-        <div style={{ display: 'flex', gap: 2, background: 'var(--inset)', border: '1px solid var(--line)', borderRadius: 999, padding: 3, marginBottom: 18 }}>
+       <div className="web-budget-tabs" style={{ display: 'flex', gap: 2, background: 'var(--inset)', border: '1px solid var(--line)', borderRadius: 999, padding: 3, marginBottom: 18 }}>
           <button style={tabBtn(tab === 'overview')} onClick={() => setTab('overview')}>Aperçu</button>
           <button style={tabBtn(tab === 'expenses')} onClick={() => setTab('expenses')}>Dépenses</button>
           <button style={tabBtn(tab === 'balance')} onClick={() => setTab('balance')}>Équilibre</button>

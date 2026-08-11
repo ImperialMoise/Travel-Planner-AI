@@ -419,6 +419,10 @@
     transition:transform .15s,border-color .15s;
   }
 
+  .atelier-v2-touch-order{
+    display:none;
+  }
+
   .atelier-v2-drop.over{
     transform:translateY(5px);
   }
@@ -819,6 +823,40 @@
       scrollbar-gutter:auto;
       overscroll-behavior:contain;
       -webkit-overflow-scrolling:touch;
+    }
+
+        .atelier-v2-drop{
+      touch-action:pan-y pinch-zoom;
+    }
+
+    .atelier-v2-touch-order{
+      display:flex;
+      align-items:center;
+      justify-content:flex-end;
+      gap:6px;
+      margin:0 2px 6px;
+    }
+
+    .atelier-v2-touch-order button{
+      width:38px;
+      height:34px;
+      display:grid;
+      place-items:center;
+      padding:0;
+      border:1px solid var(--outline-variant);
+      border-radius:10px;
+      background:var(--card);
+      color:var(--accent);
+      font:inherit;
+      font-size:17px;
+      font-weight:900;
+      cursor:pointer;
+      touch-action:manipulation;
+    }
+
+    .atelier-v2-touch-order button:disabled{
+      opacity:.3;
+      cursor:not-allowed;
     }
 
     .atelier-v2-hero{
@@ -1621,6 +1659,12 @@ return {
     const cropDragRef = React.useRef(null);
     const [dragIndex, setDragIndex] = React.useState(null);
     const [dragOverIndex, setDragOverIndex] = React.useState(null);
+    const [reorderingSteps, setReorderingSteps] = React.useState(false);
+    const canUseNativeDrag =
+      typeof window.matchMedia !== 'function' ||
+      window.matchMedia(
+        '(pointer: fine)'
+      ).matches;
 
     const days = Array.isArray(trip && trip.days) ? trip.days : [];
     const safeDayIndex = Math.min(
@@ -1715,9 +1759,28 @@ return {
     }
 
     const allSteps = Array.isArray(day && day.steps) ? day.steps : [];
-    const timelineSteps = sortStepsByTime(
-      allSteps.filter(isVisibleTimelineStep)
-    );
+    const timelineSteps = allSteps
+      .filter(isVisibleTimelineStep)
+      .slice()
+      .sort(function compareStepOrder(a, b) {
+        const aIndex = Number(a?.stepIndex);
+        const bIndex = Number(b?.stepIndex);
+
+        const aHasIndex =
+          Number.isFinite(aIndex);
+
+        const bHasIndex =
+          Number.isFinite(bIndex);
+
+        if (aHasIndex && bHasIndex) {
+          return aIndex - bIndex;
+        }
+
+        if (aHasIndex) return -1;
+        if (bHasIndex) return 1;
+
+        return 0;
+      });
     const reminders = getLodgingTimelineReminders(days, safeDayIndex);
     const counts = countStepTypes(day);
 
@@ -1802,31 +1865,72 @@ return {
       await reloadTrip();
     }
 
-    async function reorderTimelineSteps(fromVisibleIndex, toVisibleIndex) {
-      if (!trip || !trip.id || !day) return;
-      if (fromVisibleIndex === toVisibleIndex) return;
+    async function reorderTimelineSteps(
+      fromVisibleIndex,
+      toVisibleIndex
+    ) {
+      if (
+        !trip ||
+        !trip.id ||
+        !day ||
+        reorderingSteps
+      ) {
+        return;
+      }
+
+      if (
+        fromVisibleIndex === toVisibleIndex
+      ) {
+        return;
+      }
 
       const visible = timelineSteps.slice();
-      const moved = visible.splice(fromVisibleIndex, 1)[0];
 
-      visible.splice(toVisibleIndex, 0, moved);
+      const moved = visible.splice(
+        fromVisibleIndex,
+        1
+      )[0];
 
-      const hidden = allSteps.filter(function keepHidden(step) {
-        return !isVisibleTimelineStep(step);
-      });
+      if (!moved) return;
 
-      const nextSteps = visible.concat(hidden).map(function assignIndex(step, index) {
-        return {
-          ...step,
-          stepIndex: index
-        };
-      });
+      visible.splice(
+        toVisibleIndex,
+        0,
+        moved
+      );
+
+      const hidden = allSteps.filter(
+        function keepHidden(step) {
+          return !isVisibleTimelineStep(step);
+        }
+      );
+
+      const nextSteps = visible
+        .concat(hidden)
+        .map(function assignIndex(
+          step,
+          index
+        ) {
+          return {
+            ...step,
+            stepIndex: index
+          };
+        });
+
+      setDragIndex(null);
+      setDragOverIndex(null);
+      setReorderingSteps(true);
 
       Store.set({
         trip: {
           ...trip,
-          days: days.map(function mapDay(item, index) {
-            if (index !== safeDayIndex) return item;
+          days: days.map(function mapDay(
+            item,
+            index
+          ) {
+            if (index !== safeDayIndex) {
+              return item;
+            }
 
             return {
               ...item,
@@ -1836,22 +1940,70 @@ return {
         }
       });
 
-      setDragIndex(null);
-      setDragOverIndex(null);
-
       try {
-        if (window.SB.reorderSteps) {
-          await window.SB.reorderSteps(nextSteps);
-        } else {
-          await Promise.all(nextSteps.map(function saveStepOrder(step) {
-            return window.SB.saveStep(trip.id, day.id, step);
-          }));
+        if (!window.SB?.reorderSteps) {
+          throw new Error(
+            'Réorganisation indisponible.'
+          );
         }
 
-        Store.showToast('Étapes réordonnées');
+        await window.SB.reorderSteps(
+          nextSteps
+        );
+
+        const refreshed =
+          await reloadTrip();
+
+        const refreshedDay = (
+          refreshed?.days || []
+        ).find(function findDay(item) {
+          return String(item.id) ===
+            String(day.id);
+        });
+
+        const persistedOrder = (
+          refreshedDay?.steps || []
+        )
+          .filter(isVisibleTimelineStep)
+          .slice()
+          .sort(function compareOrder(a, b) {
+            return (
+              Number(a.stepIndex) -
+              Number(b.stepIndex)
+            );
+          })
+          .map(step => String(step.id));
+
+        const expectedOrder = visible.map(
+          step => String(step.id)
+        );
+
+        if (
+          persistedOrder.join('|') !==
+          expectedOrder.join('|')
+        ) {
+          throw new Error(
+            'Le nouvel ordre n’a pas été conservé.'
+          );
+        }
+
+        Store.showToast(
+          'Nouvel ordre enregistré.'
+        );
       } catch (error) {
-        Store.showToast('Erreur ordre : ' + (error.message || error));
+        console.error(
+          'Step reorder failed:',
+          error
+        );
+
         await reloadTrip();
+
+        Store.showToast(
+          error.message ||
+          'Le nouvel ordre n’a pas pu être enregistré.'
+        );
+      } finally {
+        setReorderingSteps(false);
       }
     }
 
@@ -2058,12 +2210,26 @@ return {
                   </div>
                 )}
 
+                {reorderingSteps && (
+                  <div
+                    className="atelier-v2-empty"
+                    role="status"
+                    aria-live="polite"
+                  >
+                    Enregistrement du nouvel ordre…
+                  </div>
+                )}
+
                 {timelineSteps.map(function renderStep(step, index) {
                   return (
                     <div
                       key={step.id || index}
                       className={'atelier-v2-drop' + (dragOverIndex === index && dragIndex !== null && dragIndex !== index ? ' over' : '')}
-                      draggable={!!step.id}
+                      draggable={
+                        !!step.id &&
+                        !reorderingSteps &&
+                        canUseNativeDrag
+                      }
                       onDragStart={function onDragStart(event) {
                         setDragIndex(index);
                         setDragOverIndex(null);
@@ -2099,9 +2265,67 @@ return {
                       }}
                       style={{
                         opacity: dragIndex === index ? 0.55 : 1,
-                        cursor: step.id ? 'grab' : 'default'
+                        cursor: reorderingSteps
+                          ? 'wait'
+                          : step.id
+                            ? 'grab'
+                            : 'default'
                       }}
                     >
+                      <div
+                        className="atelier-v2-touch-order"
+                        aria-label="Modifier l’ordre de cette étape"
+                      >
+                        <button
+                          type="button"
+                          disabled={
+                            index === 0 ||
+                            reorderingSteps
+                          }
+                          aria-label="Déplacer l’étape vers le haut"
+                          title="Déplacer vers le haut"
+                          onPointerDown={event =>
+                            event.stopPropagation()
+                          }
+                          onClick={event => {
+                            event.preventDefault();
+                            event.stopPropagation();
+
+                            reorderTimelineSteps(
+                              index,
+                              index - 1
+                            );
+                          }}
+                        >
+                          ↑
+                        </button>
+
+                        <button
+                          type="button"
+                          disabled={
+                            index ===
+                              timelineSteps.length - 1 ||
+                            reorderingSteps
+                          }
+                          aria-label="Déplacer l’étape vers le bas"
+                          title="Déplacer vers le bas"
+                          onPointerDown={event =>
+                            event.stopPropagation()
+                          }
+                          onClick={event => {
+                            event.preventDefault();
+                            event.stopPropagation();
+
+                            reorderTimelineSteps(
+                              index,
+                              index + 1
+                            );
+                          }}
+                        >
+                          ↓
+                        </button>
+                      </div>
+
                       <window.StepCard
                         step={step}
                         day={day}
@@ -2155,6 +2379,7 @@ return {
           open={editor.open}
           tripId={trip && trip.id}
           dayId={editor.dayId}
+          days={days}
           step={editor.step}
           stepCount={getDayById(trip, editor.dayId)?.steps?.length || 0}
           onClose={closeEditor}

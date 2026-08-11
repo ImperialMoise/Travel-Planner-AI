@@ -1,10 +1,14 @@
 {
   "private": true,
   "scripts": {
-    "build": "node scripts/build.mjs"
+    "build": "node scripts/build.mjs",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:report": "playwright show-report"
   },
   "devDependencies": {
     "@babel/core": "^8.0.1",
-    "@babel/preset-react": "^8.0.1"
+    "@babel/preset-react": "^8.0.1",
+    "@playwright/test": "^1.62.1"
   }
 }

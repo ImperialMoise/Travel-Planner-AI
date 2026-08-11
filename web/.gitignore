@@ -1,2 +1,7 @@
 node_modules/
 dist/
+
+# Rapports des tests Playwright
+playwright-report/
+test-results/
+blob-report/

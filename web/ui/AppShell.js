@@ -1688,6 +1688,102 @@
   line-height:1;
 }
 
+.home-dashboard-cover,
+.home-trip-card,
+.home-trip-cover {
+  touch-action: pan-y pinch-zoom;
+}
+
+.home-dashboard-trip-strip {
+  width: min(1180px, 100%);
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(220px, 280px);
+  gap: 12px;
+  margin: 18px auto 0;
+  padding: 2px 0 10px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x proximity;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x pan-y pinch-zoom;
+  scrollbar-width: thin;
+}
+
+.home-dashboard-trip-card {
+  position: relative;
+  min-height: 120px;
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid var(--outline-variant);
+  border-radius: 10px;
+  background: #252018;
+  color: #fff;
+  cursor: pointer;
+  text-align: left;
+  scroll-snap-align: start;
+  touch-action: pan-x pan-y pinch-zoom;
+}
+
+.home-dashboard-trip-thumb {
+  position: absolute;
+  inset: 0;
+  background-position: center;
+  background-size: cover;
+  pointer-events: none;
+  user-select: none;
+}
+
+.home-dashboard-trip-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(18, 14, 10, 0.08),
+      rgba(18, 14, 10, 0.82)
+    );
+  pointer-events: none;
+}
+
+.home-dashboard-trip-copy {
+  position: relative;
+  z-index: 1;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 4px;
+  padding: 16px;
+  pointer-events: none;
+}
+
+.home-dashboard-trip-copy strong {
+  font-family: var(--font-serif);
+  font-size: 21px;
+  font-weight: 500;
+  line-height: 1.05;
+}
+
+.home-dashboard-trip-copy small {
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.home-inspiration-grid,
+.home-inspiration-item,
+.home-inspiration-item img {
+  touch-action: pan-x pan-y pinch-zoom;
+}
+
+.home-inspiration-item img {
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
 .home-inspiration-heading p{
   margin:0;
   color:var(--muted);
@@ -4384,7 +4480,14 @@ function DaySpine({
   );
 
   function selectDay(index) {
+    localStorage.setItem(
+      'atelier_app_mode',
+      'plan'
+    );
+
     Store.set({
+      appMode: 'plan',
+      view: 'itinerary',
       selectedDayIndex: index,
       selectedStepId: null
     });
@@ -4856,12 +4959,28 @@ function DaySpine({
                     ' vers le jour précédent'
                   }
                   title="Jour précédent"
-                  onClick={() =>
+                  onPointerDown={event =>
+                    event.stopPropagation()
+                  }
+                  onClick={event => {
+                    event.preventDefault();
+                    event.stopPropagation();
+
+                    localStorage.setItem(
+                      'atelier_app_mode',
+                      'plan'
+                    );
+
+                    Store.set({
+                      appMode: 'plan',
+                      view: 'itinerary'
+                    });
+
                     moveDay(
                       index,
                       index - 1
-                    )
-                  }
+                    );
+                  }}
                 >
                   ↑
                 </button>
@@ -4880,12 +4999,28 @@ function DaySpine({
                     ' vers le jour suivant'
                   }
                   title="Jour suivant"
-                  onClick={() =>
+                  onPointerDown={event =>
+                    event.stopPropagation()
+                  }
+                  onClick={event => {
+                    event.preventDefault();
+                    event.stopPropagation();
+
+                    localStorage.setItem(
+                      'atelier_app_mode',
+                      'plan'
+                    );
+
+                    Store.set({
+                      appMode: 'plan',
+                      view: 'itinerary'
+                    });
+
                     moveDay(
                       index,
                       index + 1
-                    )
-                  }
+                    );
+                  }}
                 >
                   ↓
                 </button>
@@ -5792,6 +5927,59 @@ async function createTripFromHero() {
         </div>
       </div>
     </div>
+
+    <div
+      className="home-dashboard-trip-strip"
+      role="list"
+      aria-label="Tous mes voyages"
+    >
+      {safeTrips.map(function renderDashboardTrip(
+        tripItem,
+        index
+      ) {
+        const image =
+          tripItem.cover_image_url ||
+          tripItem.coverImageUrl ||
+          tripImages[
+            index % tripImages.length
+          ];
+
+        return (
+          <button
+            key={tripItem.id || index}
+            type="button"
+            className="home-dashboard-trip-card"
+            role="listitem"
+            onClick={() =>
+              openTripInMode(
+                tripItem.id,
+                'plan'
+              )
+            }
+          >
+            <span
+              className="home-dashboard-trip-thumb"
+              aria-hidden="true"
+              style={{
+                backgroundImage:
+                  'url("' + image + '")'
+              }}
+            />
+
+            <span className="home-dashboard-trip-copy">
+              <strong>
+                {tripItem.name ||
+                  'Voyage sans titre'}
+              </strong>
+
+              <small>
+                {tripDateRange(tripItem)}
+              </small>
+            </span>
+          </button>
+        );
+      })}
+    </div>
   </section>
 )}
 
@@ -5826,7 +6014,8 @@ async function createTripFromHero() {
             <img
               src={item.image}
               alt={item.name + ', ' + item.country}
-              loading="lazy"
+                            loading="lazy"
+              draggable="false"
             />
 
             <span className="home-inspiration-overlay" />
@@ -5902,6 +6091,7 @@ async function createTripFromHero() {
               src={androidQrUrl}
               alt="QR code pour télécharger l’application Android"
               loading="lazy"
+              draggable="false"
             />
           </div>
 
@@ -6806,13 +6996,13 @@ async function submit() {
 
   function Field({ label, children }) {
     return (
-      <div className="field">
-        <div className="field-label">
+      <label className="field">
+        <span className="field-label">
           {label}
-        </div>
+        </span>
 
         {children}
-      </div>
+      </label>
     );
   }
 

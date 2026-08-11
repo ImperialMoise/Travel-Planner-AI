@@ -335,6 +335,7 @@
     open,
     tripId,
     dayId,
+    days = [],
     step,
     stepCount,
     onClose,
@@ -343,19 +344,55 @@
     const [form, setForm] = React.useState(() => buildInitialStep(step));
     const [busy, setBusy] = React.useState(false);
     const [deleteAsk, setDeleteAsk] = React.useState(false);
+    const [targetDayId, setTargetDayId] = React.useState(
+      dayId || ''
+    );
+
+    const safeDays = Array.isArray(days)
+      ? days
+      : [];
 
     React.useEffect(function syncStepWhenOpened() {
       if (!open) return;
 
       setForm(buildInitialStep(step));
+      setTargetDayId(dayId || '');
       setDeleteAsk(false);
       setBusy(false);
-    }, [open, step && step.id]);
+    }, [open, step && step.id, dayId]);
 
     if (!open) return null;
 
     const inputStyle = inputBaseStyle();
     const isEditing = !!(step && step.id);
+
+    const effectiveDayId =
+      targetDayId || dayId || '';
+
+    const changingDay =
+      String(effectiveDayId) !==
+      String(dayId || '');
+
+    const targetDayIndex =
+      safeDays.findIndex(function findTargetDay(
+        item
+      ) {
+        return String(item.id) ===
+          String(effectiveDayId);
+      });
+
+    const targetDay =
+      targetDayIndex >= 0
+        ? safeDays[targetDayIndex]
+        : null;
+
+    const targetStepCount = (
+      targetDay?.steps || []
+    ).filter(function excludeCurrentStep(item) {
+      return String(item.id) !==
+        String(step?.id || '');
+    }).length;
+
     const lockedType = form.lockedType || null;
     const isLodgingLocked = lockedType === 'logement';
 
@@ -535,9 +572,11 @@
 
       const payload = {
         id: step && step.id ? step.id : undefined,
-        stepIndex: step && step.stepIndex != null
-          ? step.stepIndex
-          : (stepCount || 0),
+        stepIndex: changingDay
+          ? targetStepCount
+          : step && step.stepIndex != null
+            ? step.stepIndex
+            : (stepCount || 0),
         type,
         label: form.label || '',
         note: form.note || '',
@@ -604,8 +643,14 @@
     }
 
     async function handleSave() {
-      if (!tripId || !dayId) {
-        Store.showToast('Voyage ou journée introuvable');
+      const saveDayId =
+        targetDayId || dayId;
+
+      if (!tripId || !saveDayId) {
+        Store.showToast(
+          'Voyage ou journée introuvable'
+        );
+
         return;
       }
 
@@ -614,14 +659,42 @@
       setBusy(true);
 
       try {
-        await window.SB.saveStep(tripId, dayId, payload);
+        await window.SB.saveStep(
+          tripId,
+          saveDayId,
+          payload
+        );
 
-        if (onSaved) onSaved();
-        if (onClose) onClose();
+        if (onSaved) {
+          await onSaved();
+        }
 
-        Store.showToast(isEditing ? 'Étape mise à jour' : 'Étape ajoutée');
+        if (onClose) {
+          onClose();
+        }
+
+        if (changingDay) {
+          Store.showToast(
+            isEditing
+              ? 'Étape déplacée vers J' +
+                (targetDayIndex + 1) +
+                '.'
+              : 'Étape ajoutée à J' +
+                (targetDayIndex + 1) +
+                '.'
+          );
+        } else {
+          Store.showToast(
+            isEditing
+              ? 'Étape mise à jour'
+              : 'Étape ajoutée'
+          );
+        }
       } catch (error) {
-        Store.showToast('Erreur : ' + (error.message || error));
+        Store.showToast(
+          'Erreur : ' +
+          (error.message || error)
+        );
       } finally {
         setBusy(false);
       }
@@ -1252,6 +1325,67 @@
             overflowY: 'auto',
             minHeight: 0
           }}>
+            {safeDays.length > 1 && (
+              <Field label="Journée">
+                <select
+                  style={inputStyle}
+                  value={effectiveDayId}
+                  disabled={busy}
+                  onChange={event =>
+                    setTargetDayId(
+                      event.target.value
+                    )
+                  }
+                >
+                  {safeDays.map(function renderDayOption(
+                    item,
+                    index
+                  ) {
+                    const title =
+                      item.title ||
+                      item.label ||
+                      item.name ||
+                      '';
+
+                    const date =
+                      item.dateLabel ||
+                      item.dateISO ||
+                      '';
+
+                    return (
+                      <option
+                        key={item.id || index}
+                        value={item.id}
+                      >
+                        {'J' + (index + 1)}
+                        {title
+                          ? ' — ' + title
+                          : ''}
+                        {date
+                          ? ' · ' + date
+                          : ''}
+                      </option>
+                    );
+                  })}
+                </select>
+
+                {changingDay && (
+                  <div
+                    role="status"
+                    style={{
+                      marginTop: 7,
+                      color: 'var(--accent)',
+                      fontSize: 12,
+                      fontWeight: 800
+                    }}
+                  >
+                    L’étape sera déplacée vers
+                    {' J' + (targetDayIndex + 1)}.
+                  </div>
+                )}
+              </Field>
+            )}
+
             {renderTypeSelector()}
 
             <label style={{
@@ -1343,7 +1477,13 @@
               disabled={busy}
               style={primaryButtonStyle()}
             >
-              {busy ? '…' : isEditing ? 'Enregistrer' : 'Ajouter'}
+              {busy
+                ? changingDay
+                  ? 'Déplacement…'
+                  : 'Enregistrement…'
+                : isEditing
+                  ? 'Enregistrer'
+                  : 'Ajouter'}
             </button>
           </div>
 

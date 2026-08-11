@@ -95,8 +95,16 @@
       if (trips.length && !inviteAccepted) {
         await window.selectTrip(trips[0].id);
       }
-    } catch (e) {
-      console.error('Chargement voyages échoué :', e);
+    } catch (error) {
+      console.error(
+        'Chargement voyages échoué :',
+        error
+      );
+
+      Store.showToast(
+        'Impossible de charger tes voyages. ' +
+        'Vérifie ta connexion puis recharge la page.'
+      );
     }
   }
 

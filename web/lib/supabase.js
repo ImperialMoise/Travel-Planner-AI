@@ -1001,12 +1001,125 @@ export async function deleteTrip(tripId) {
 
 // ─── Réordonnement des étapes (drag & drop / tri horaire) ──
 export async function reorderSteps(steps) {
-  const promises = steps.map(s =>
-    sb.from('trip_steps').update({ step_index: s.stepIndex }).eq('id', s.id)
+  const orderedSteps = (
+    Array.isArray(steps) ? steps : []
+  ).filter(step => step && step.id);
+
+  if (!orderedSteps.length) {
+    return true;
+  }
+
+  const stepIds = orderedSteps.map(step => step.id);
+
+  const {
+    data: currentRows,
+    error: readError
+  } = await sb
+    .from('trip_steps')
+    .select('id, day_id, step_index')
+    .in('id', stepIds);
+
+  if (readError) throw readError;
+
+  if (
+    !Array.isArray(currentRows) ||
+    currentRows.length !== orderedSteps.length
+  ) {
+    throw new Error(
+      'Certaines étapes sont introuvables.'
+    );
+  }
+
+  const dayIds = new Set(
+    currentRows.map(row => row.day_id)
   );
-  const results = await Promise.all(promises);
-  const err = results.find(r => r.error);
-  if (err && err.error) throw err.error;
+
+  if (dayIds.size !== 1) {
+    throw new Error(
+      'Les étapes déplacées doivent appartenir à la même journée.'
+    );
+  }
+
+  const dayId = currentRows[0].day_id;
+
+  async function updateStepIndex(
+    stepId,
+    stepIndex
+  ) {
+    const { data, error } = await sb
+      .from('trip_steps')
+      .update({
+        step_index: stepIndex
+      })
+      .eq('id', stepId)
+      .eq('day_id', dayId)
+      .select('id')
+      .single();
+
+    if (error) throw error;
+
+    if (!data?.id) {
+      throw new Error(
+        'Une étape n’a pas pu être déplacée.'
+      );
+    }
+  }
+
+  try {
+    await Promise.all(
+      orderedSteps.map(function setTemporaryIndex(
+        step,
+        index
+      ) {
+        return updateStepIndex(
+          step.id,
+          10000 + index
+        );
+      })
+    );
+
+    await Promise.all(
+      orderedSteps.map(function setFinalIndex(
+        step,
+        index
+      ) {
+        const requestedIndex =
+          Number(step.stepIndex);
+
+        return updateStepIndex(
+          step.id,
+          Number.isInteger(requestedIndex)
+            ? requestedIndex
+            : index
+        );
+      })
+    );
+  } catch (error) {
+    await Promise.allSettled(
+      orderedSteps.map(function prepareRollback(
+        step,
+        index
+      ) {
+        return updateStepIndex(
+          step.id,
+          20000 + index
+        );
+      })
+    );
+
+    await Promise.allSettled(
+      currentRows.map(function restoreStep(row) {
+        return updateStepIndex(
+          row.id,
+          row.step_index
+        );
+      })
+    );
+
+    throw error;
+  }
+
+  return true;
 }
 
 // ─── Étapes (créer / modifier / supprimer) ─────────────────
@@ -1451,6 +1564,7 @@ window.SB = {
   saveDayCover,
   updateDayCoverCrop,
   updateDay,
+  moveTripDayInsideFixedRange,
   deleteTrip,
 
   reorderSteps,

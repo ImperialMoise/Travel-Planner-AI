@@ -451,7 +451,15 @@ test(
 
 test(
   'le clavier permet d’aller directement au contenu',
-  async function runTest({ page }) {
+  async function runTest(
+    { page },
+    testInfo
+  ) {
+    test.skip(
+      testInfo.project.name ===
+        'mobile-chromium',
+      'La navigation clavier est vérifiée sur ordinateur.'
+    );
     await page.goto('/', {
       waitUntil: 'domcontentloaded'
     });
@@ -461,9 +469,21 @@ test(
         name: 'Aller au contenu principal'
       });
 
+    await skipLink.waitFor({
+      state: 'attached'
+    });
+
+    await expect(
+      page.locator(
+        '.home-page.is-public'
+      )
+    ).toBeVisible();
+
     await page.keyboard.press('Tab');
 
-    await expect(skipLink).toBeFocused();
+    await expect(
+      skipLink
+    ).toBeFocused();
     await expect(skipLink).toBeVisible();
 
     await page.keyboard.press('Enter');
@@ -480,6 +500,12 @@ test(
     await page.goto('/', {
       waitUntil: 'domcontentloaded'
     });
+
+    await expect(
+      page.locator(
+        '.home-page.is-public'
+      )
+    ).toBeVisible();
 
     const lazyImages =
       page.locator(
@@ -562,5 +588,134 @@ test(
       );
 
     expect(rawJsx.status()).toBe(404);
+  }
+);
+
+test(
+  'la version web est installable et distincte de l’APK',
+  async function runTest({
+    page,
+    request
+  }) {
+    await page.goto('/', {
+      waitUntil: 'domcontentloaded'
+    });
+
+    await expect(
+      page.locator(
+        'link[rel="manifest"]'
+      )
+    ).toHaveAttribute(
+      'href',
+      '/manifest.webmanifest'
+    );
+
+    const manifestResponse =
+      await request.get(
+        '/manifest.webmanifest'
+      );
+
+    expect(
+      manifestResponse.status()
+    ).toBe(200);
+
+    const manifest =
+      await manifestResponse.json();
+
+    expect(manifest).toMatchObject({
+      id: '/',
+      start_url: '/',
+      display: 'standalone',
+      prefer_related_applications:
+        false
+    });
+
+    expect(
+      manifest.icons
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          sizes: '192x192'
+        }),
+        expect.objectContaining({
+          sizes: '512x512'
+        })
+      ])
+    );
+
+    for (
+      const icon
+      of manifest.icons
+    ) {
+      const iconResponse =
+        await request.get(icon.src);
+
+      expect(
+        iconResponse.status(),
+        icon.src
+      ).toBe(200);
+    }
+
+    const workerResponse =
+      await request.get(
+        '/service-worker.js'
+      );
+
+    expect(
+      workerResponse.status()
+    ).toBe(200);
+
+    expect(
+      workerResponse.headers()[
+        'content-type'
+      ] || ''
+    ).toMatch(/javascript/i);
+
+    const offlineResponse =
+      await request.get(
+        '/offline.html'
+      );
+
+    expect(
+      offlineResponse.status()
+    ).toBe(200);
+
+    await expect
+      .poll(
+        async function workerRegistered() {
+          return page.evaluate(
+            async function checkWorker() {
+              const registration =
+                await navigator
+                  .serviceWorker
+                  .getRegistration('/');
+
+              return Boolean(
+                registration
+              );
+            }
+          );
+        },
+        {
+          timeout: 10_000
+        }
+      )
+      .toBe(true);
+
+    await expect(
+      page.locator(
+        '.web-mobile-banner'
+      )
+    ).toContainText(
+      'Version web complète'
+    );
+
+    await expect(
+      page.locator(
+        '.web-mobile-banner'
+      )
+    ).toContainText(
+      'APK Android'
+    );
   }
 );

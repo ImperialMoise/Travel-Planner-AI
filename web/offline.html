@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+  <meta name="theme-color" content="#15302a">
+
+  <title>Hors connexion — La Fabrique à Voyages</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background:
+        radial-gradient(
+          circle at top,
+          #284c43,
+          #15302a 62%
+        );
+      color: #211a14;
+      font-family: Arial, sans-serif;
+    }
+
+    main {
+      width: min(460px, 100%);
+      padding: 34px;
+      border-radius: 24px;
+      background: #fbf7ef;
+      box-shadow:
+        0 30px 80px
+        rgba(0, 0, 0, 0.28);
+      text-align: center;
+    }
+
+    .mark {
+      width: 72px;
+      height: 72px;
+      margin: 0 auto 22px;
+      display: grid;
+      place-items: center;
+      border-radius: 22px;
+      background: #15302a;
+      color: #dfbc78;
+      font-family: Georgia, serif;
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    h1 {
+      margin: 0 0 14px;
+      font-family: Georgia, serif;
+      font-size: 34px;
+      line-height: 1.05;
+    }
+
+    p {
+      margin: 0 0 24px;
+      color: #74695f;
+      line-height: 1.6;
+    }
+
+    a {
+      min-height: 48px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 20px;
+      border-radius: 12px;
+      background: #96640d;
+      color: white;
+      font-weight: 800;
+      text-decoration: none;
+    }
+  </style>
+</head>
+
+<body>
+  <main>
+    <div class="mark" aria-hidden="true">FV</div>
+
+    <h1>Connexion indisponible</h1>
+
+    <p>
+      Tes voyages synchronisés nécessitent une connexion.
+      Vérifie ton réseau puis réessaie.
+    </p>
+
+    <a href="/">Réessayer</a>
+  </main>
+</body>
+</html>

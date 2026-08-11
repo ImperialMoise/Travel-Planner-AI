@@ -42,6 +42,8 @@ const textExtensions = new Set([
   '.jsx',
   '.mjs',
   '.json',
+  '.svg',
+  '.webmanifest',
   '.txt',
   '.map',
   '.md'

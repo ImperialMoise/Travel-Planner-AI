@@ -2710,6 +2710,13 @@
       font-size:12px;
     }
 
+    .web-mobile-banner-actions{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      flex-shrink:0;
+    }
+
     .web-mobile-banner-link{
       min-height:42px;
       display:inline-flex;
@@ -2722,10 +2729,21 @@
       background:var(--accent);
       color:var(--accent-ink);
       box-shadow:0 6px 16px var(--accent-shadow);
-      text-decoration:none;
+      font:inherit;
       font-weight:900;
+      text-decoration:none;
       white-space:nowrap;
-      transition:transform .18s var(--ease-out), box-shadow .18s ease;
+      cursor:pointer;
+      transition:
+        transform .18s var(--ease-out),
+        box-shadow .18s ease;
+    }
+
+    .web-mobile-banner-install{
+      border-color:rgba(150,100,13,.3);
+      background:var(--card);
+      color:var(--accent);
+      box-shadow:none;
     }
 
     .web-mobile-banner-link:hover{
@@ -3349,10 +3367,13 @@
   }
 
   .web-mobile-banner {
-    grid-template-columns: minmax(0, 1fr) auto;
+    display: grid;
+    grid-template-columns:
+      minmax(0, 1fr)
+      auto;
     grid-template-areas:
       "copy close"
-      "link link";
+      "actions actions";
     gap: 8px 10px;
   }
 
@@ -3360,8 +3381,18 @@
     grid-area: copy;
   }
 
+  .web-mobile-banner-actions {
+    grid-area: actions;
+    display: grid;
+    grid-template-columns:
+      repeat(
+        auto-fit,
+        minmax(130px, 1fr)
+      );
+    width: 100%;
+  }
+
   .web-mobile-banner-link {
-    grid-area: link;
     width: 100%;
   }
 
@@ -3983,43 +4014,167 @@ function toggleToolboxCollapsed() {
   }
 
   function WebMobileBanner() {
-    const [hidden, setHidden] = React.useState(function initialBannerState() {
-      return sessionStorage.getItem('web_mobile_banner_hidden') === 'true';
-    });
+    const [
+      hidden,
+      setHidden
+    ] = React.useState(
+      function initialBannerState() {
+        return (
+          sessionStorage.getItem(
+            'web_mobile_banner_hidden'
+          ) === 'true'
+        );
+      }
+    );
 
-    if (hidden) return null;
+    const [
+      installPrompt,
+      setInstallPrompt
+    ] = React.useState(null);
+
+    const isStandalone =
+      window.matchMedia(
+        '(display-mode: standalone)'
+      ).matches ||
+      window.navigator.standalone ===
+        true;
+
+    React.useEffect(
+      function watchInstallation() {
+        function captureInstallPrompt(
+          event
+        ) {
+          event.preventDefault();
+          setInstallPrompt(event);
+        }
+
+        function hideAfterInstallation() {
+          setInstallPrompt(null);
+
+          sessionStorage.setItem(
+            'web_mobile_banner_hidden',
+            'true'
+          );
+
+          setHidden(true);
+        }
+
+        window.addEventListener(
+          'beforeinstallprompt',
+          captureInstallPrompt
+        );
+
+        window.addEventListener(
+          'appinstalled',
+          hideAfterInstallation
+        );
+
+        return function stopWatching() {
+          window.removeEventListener(
+            'beforeinstallprompt',
+            captureInstallPrompt
+          );
+
+          window.removeEventListener(
+            'appinstalled',
+            hideAfterInstallation
+          );
+        };
+      },
+      []
+    );
+
+    async function installWebApp() {
+      if (!installPrompt) {
+        return;
+      }
+
+      await installPrompt.prompt();
+
+      const choice =
+        await installPrompt.userChoice;
+
+      setInstallPrompt(null);
+
+      if (
+        choice.outcome === 'accepted'
+      ) {
+        sessionStorage.setItem(
+          'web_mobile_banner_hidden',
+          'true'
+        );
+
+        setHidden(true);
+      }
+    }
+
+    if (
+      hidden ||
+      isStandalone
+    ) {
+      return null;
+    }
 
     return (
-      <aside className="web-mobile-banner" aria-label="Versions disponibles">
+      <aside
+        className="web-mobile-banner"
+        aria-label="Versions disponibles"
+      >
         <div className="web-mobile-banner-copy">
-          <strong>Tu utilises la version web mobile.</strong>
-          Toutes les fonctions restent disponibles ici ; l’application Android existe aussi en APK.
+          <strong>
+            Version web complète.
+          </strong>
+
+          Installe-la sur ton écran
+          d’accueil ou télécharge
+          séparément l’application Android.
         </div>
 
-        <a
-          className="web-mobile-banner-link"
-          href={ANDROID_APK_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          APK Android
-        </a>
+        <div className="web-mobile-banner-actions">
+          {installPrompt && (
+            <button
+              type="button"
+              className="
+                web-mobile-banner-link
+                web-mobile-banner-install
+              "
+              onClick={installWebApp}
+            >
+              Installer le web
+            </button>
+          )}
+
+          <a
+            className="web-mobile-banner-link"
+            href={ANDROID_APK_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            APK Android
+          </a>
+        </div>
 
         <button
           type="button"
           className="web-mobile-banner-close"
           aria-label="Masquer ce message"
           onClick={() => {
-            sessionStorage.setItem('web_mobile_banner_hidden', 'true');
+            sessionStorage.setItem(
+              'web_mobile_banner_hidden',
+              'true'
+            );
+
             setHidden(true);
           }}
         >
-          <Icon name="x" size={16} />
+          <Icon
+            name="x"
+            size={16}
+          />
         </button>
       </aside>
     );
   }
-
   function getCurrentView(view) {
     if (view === 'itinerary') return window.ItineraryView;
     if (view === 'map') return window.MapView;

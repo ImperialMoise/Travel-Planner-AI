@@ -132,6 +132,52 @@
   // 4. Monter React
   const root = document.getElementById('root');
   root.innerHTML = '';
-  const reactRoot = ReactDOM.createRoot(root);
-  reactRoot.render(React.createElement(window.ErrorBoundary, null, React.createElement(window.AppShell)));
+  const reactRoot =
+    ReactDOM.createRoot(root);
+
+  reactRoot.render(
+    React.createElement(
+      window.ErrorBoundary,
+      null,
+      React.createElement(
+        window.AppShell
+      )
+    )
+  );
+
+  if (
+    'serviceWorker' in navigator
+  ) {
+    function registerServiceWorker() {
+      navigator.serviceWorker
+        .register(
+          '/service-worker.js'
+        )
+        .catch(
+          function reportWorkerError(
+            error
+          ) {
+            console.warn(
+              'Service worker non enregistré :',
+              error
+            );
+          }
+        );
+    }
+
+    if (
+      document.readyState ===
+      'complete'
+    ) {
+      registerServiceWorker();
+    } else {
+      window.addEventListener(
+        'load',
+        registerServiceWorker,
+        {
+          once: true
+        }
+      );
+    }
+  }
 })();

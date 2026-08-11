@@ -1,0 +1,60 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="192"
+  height="192"
+  viewBox="0 0 192 192"
+>
+  <title>La Fabrique à Voyages</title>
+
+  <rect
+    width="192"
+    height="192"
+    rx="44"
+    fill="#15302a"
+  />
+
+  <circle
+    cx="96"
+    cy="96"
+    r="66"
+    fill="#fbf7ef"
+  />
+
+  <path
+    d="M51 61 82 49l28 13 31-12v81l-31 12-28-13-31 12Z"
+    fill="#f4ead7"
+    stroke="#96640d"
+    stroke-width="5"
+    stroke-linejoin="round"
+  />
+
+  <path
+    d="M82 49v81M110 62v81"
+    fill="none"
+    stroke="#96640d"
+    stroke-width="4"
+  />
+
+  <path
+    d="M63 101c14-20 29-23 39-9 9 13 21 9 29-8"
+    fill="none"
+    stroke="#15302a"
+    stroke-width="6"
+    stroke-linecap="round"
+  />
+
+  <circle
+    cx="63"
+    cy="101"
+    r="5"
+    fill="#15302a"
+  />
+
+  <path
+    d="m126 76 10-10m-2 10-8-8"
+    fill="none"
+    stroke="#96640d"
+    stroke-width="5"
+    stroke-linecap="round"
+  />
+</svg>

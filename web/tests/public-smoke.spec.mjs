@@ -519,3 +519,48 @@ test(
     }
   }
 );
+
+test(
+  'les scripts JSX sont publiés comme JavaScript',
+  async function runTest({ request }) {
+    const indexResponse =
+      await request.get('/');
+
+    expect(indexResponse.status()).toBe(200);
+
+    const html =
+      await indexResponse.text();
+
+    expect(html).toContain(
+      'views/itin-atelier-v2.js'
+    );
+
+    expect(html).not.toContain(
+      '.jsx'
+    );
+
+    const compiledScript =
+      await request.get(
+        '/views/itin-atelier-v2.js'
+      );
+
+    expect(
+      compiledScript.status()
+    ).toBe(200);
+
+    expect(
+      compiledScript.headers()[
+        'content-type'
+      ] || ''
+    ).toMatch(
+      /javascript/i
+    );
+
+    const rawJsx =
+      await request.get(
+        '/views/itin-atelier-v2.jsx'
+      );
+
+    expect(rawJsx.status()).toBe(404);
+  }
+);

@@ -47,6 +47,14 @@ async function copyDirectory(source, destination) {
 
   for (const entry of entries) {
     if (
+      entry.isFile() &&
+      path.extname(entry.name)
+        .toLowerCase() === '.jsx'
+    ) {
+      continue;
+    }
+
+    if (
       entry.isDirectory() &&
       excludedDirectories.has(entry.name)
     ) {
@@ -77,8 +85,22 @@ async function copyDirectory(source, destination) {
 await copyDirectory(sourceDir, outputDir);
 
 for (const relativePath of babelSources) {
-  const sourceFile = path.join(sourceDir, relativePath);
-  const outputFile = path.join(outputDir, relativePath);
+  const sourceFile =
+    path.join(
+      sourceDir,
+      relativePath
+    );
+
+  const outputRelativePath =
+    relativePath.endsWith('.jsx')
+      ? relativePath.slice(0, -4) + '.js'
+      : relativePath;
+
+  const outputFile =
+    path.join(
+      outputDir,
+      outputRelativePath
+    );
 
   const result = await transformFileAsync(sourceFile, {
     presets: [['@babel/preset-react', { runtime: 'classic' }]],
@@ -89,8 +111,18 @@ for (const relativePath of babelSources) {
 }
 
 const outputHtml = sourceHtml
-  .replace(/\s*<script\s+src="https:\/\/unpkg\.com\/@babel\/standalone[^>]*><\/script>/, '')
-  .replace(/type="text\/babel"\s+/g, '');
+  .replace(
+    /\s*<script\s+src="https:\/\/unpkg\.com\/@babel\/standalone[^>]*><\/script>/,
+    ''
+  )
+  .replace(
+    /type="text\/babel"\s+/g,
+    ''
+  )
+  .replace(
+    /src="([^"]+)\.jsx"/g,
+    'src="$1.js"'
+  );
 
 await writeFile(path.join(outputDir, 'index.html'), outputHtml, 'utf8');
 

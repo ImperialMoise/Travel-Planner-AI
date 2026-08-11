@@ -163,6 +163,19 @@ for (const absolutePath of files) {
     continue;
   }
 
+  if (
+    relativePath
+      .toLowerCase()
+      .endsWith('.jsx')
+  ) {
+    violations.push(
+      relativePath +
+      ' est un fichier JSX brut et ne doit pas être publié.'
+    );
+
+    continue;
+  }
+
   const extension =
     path.extname(relativePath)
       .toLowerCase();
@@ -204,6 +217,17 @@ const publicIndexHtml =
     ),
     'utf8'
   );
+
+  if (
+  /src="[^"]+\.jsx"/i.test(
+    publicIndexHtml
+  )
+) {
+  violations.push(
+    'index.html référence encore un fichier .jsx.'
+  );
+}
+
 
 const forbiddenDevelopmentRuntimes = [
   'react.development.js',

@@ -2644,6 +2644,373 @@
       font-size:16px;
     }
   }
+
+  /* =========================================================
+   Accueil, authentification et petits téléphones
+   ========================================================= */
+
+.home-hero-inner {
+  width: min(1040px, calc(100% - 36px));
+}
+
+.home-trip-bar {
+  border-radius: 22px;
+  border-color: rgba(255, 255, 255, 0.38);
+  background: rgba(255, 253, 249, 0.92);
+  box-shadow:
+    0 24px 75px rgba(24, 18, 12, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.74);
+}
+
+.home-trip-field {
+  min-height: 60px;
+}
+
+.home-trip-field .icon {
+  border: 1px solid rgba(150, 100, 13, 0.12);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.home-trip-input:focus-visible {
+  outline: none;
+}
+
+.home-trip-field:focus-within {
+  background: rgba(150, 100, 13, 0.045);
+  border-radius: 13px;
+}
+
+.home-trip-action {
+  box-shadow: 0 10px 26px rgba(91, 59, 10, 0.25);
+}
+
+.home-trip-action:focus-visible,
+.home-scroll-cue:focus-visible {
+  outline: 3px solid rgba(255, 255, 255, 0.66);
+  outline-offset: 3px;
+}
+
+.home-public-apk-button,
+.home-public-start,
+.home-public-login {
+  border-radius: 13px;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    background 0.18s ease;
+}
+
+/* Fenêtres de connexion, inscription et création */
+
+.modal-backdrop {
+  background: rgba(27, 21, 15, 0.62);
+  backdrop-filter: blur(9px);
+  -webkit-backdrop-filter: blur(9px);
+}
+
+.modal-card {
+  border-radius: 22px;
+  border-color: rgba(150, 100, 13, 0.18);
+  box-shadow: 0 30px 90px rgba(27, 21, 15, 0.3);
+}
+
+.modal-head {
+  padding: 18px 20px;
+  background:
+    linear-gradient(
+      135deg,
+      var(--card),
+      var(--accent-soft)
+    );
+}
+
+.modal-title {
+  font-size: 26px;
+  letter-spacing: -0.025em;
+}
+
+.modal-body {
+  padding: 22px;
+}
+
+.field {
+  margin-bottom: 15px;
+}
+
+.field-label {
+  margin-bottom: 7px;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+}
+
+.field input {
+  min-height: 48px;
+  border-radius: 12px;
+  border-color: var(--line);
+  background: var(--card);
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    background 0.18s ease;
+}
+
+.field input:hover {
+  border-color: rgba(150, 100, 13, 0.28);
+}
+
+.field input:focus {
+  border-color: var(--accent);
+  background: var(--card);
+  box-shadow: 0 0 0 4px rgba(150, 100, 13, 0.12);
+}
+
+.field input[readonly] {
+  color: var(--muted);
+  background: var(--inset);
+  cursor: default;
+}
+
+.mode-tabs {
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+
+.mode-tab {
+  border-radius: 11px;
+  transition:
+    color 0.18s ease,
+    background 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.mode-tab.active {
+  box-shadow: 0 6px 16px var(--accent-shadow);
+}
+
+.modal-body .simple-btn {
+  min-height: 48px;
+  border-radius: 12px;
+}
+
+.modal-body .simple-btn.primary {
+  box-shadow: 0 8px 20px var(--accent-shadow);
+}
+
+.modal-card button:focus-visible,
+.modal-card input:focus-visible {
+  outline: 3px solid rgba(150, 100, 13, 0.22);
+  outline-offset: 2px;
+}
+
+/* Survols réservés aux appareils avec souris */
+
+@media (hover: hover) and (pointer: fine) {
+  .home-public-apk-button:hover,
+  .home-public-start:hover,
+  .home-public-login:hover {
+    transform: translateY(-2px);
+  }
+
+  .modal-body .simple-btn:hover {
+    transform: translateY(-1px);
+  }
+}
+
+/* Accueil et modales sur téléphone */
+
+@media (max-width: 560px) {
+  .home-hero {
+    min-height: auto;
+    padding: 46px 0 64px;
+  }
+
+  .home-hero-inner {
+    width: calc(100% - 24px);
+    text-align: left;
+  }
+
+  .home-hero-kicker {
+    margin-bottom: 16px;
+  }
+
+  .home-hero-title {
+    max-width: 340px;
+    font-size: clamp(38px, 12vw, 54px);
+    line-height: 0.98;
+  }
+
+  .home-hero-text {
+    margin: 18px 0 24px;
+    font-size: 15px;
+    line-height: 1.55;
+  }
+
+  .home-trip-bar {
+    gap: 0;
+    padding: 10px;
+    border-radius: 18px;
+  }
+
+  .home-trip-field {
+    min-height: 62px;
+    padding: 10px 8px 13px;
+  }
+
+  .home-trip-field .icon {
+    width: 34px;
+    height: 34px;
+  }
+
+  .home-trip-action {
+    height: 50px;
+    border-radius: 14px;
+  }
+
+  .home-hero-caption {
+    margin-top: 16px;
+    text-align: center;
+    line-height: 1.45;
+  }
+
+  .home-scroll-cue {
+    display: none;
+  }
+
+  .modal-backdrop {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .modal-card {
+    max-width: none;
+    max-height: min(92dvh, 760px);
+    border-right: none;
+    border-bottom: none;
+    border-left: none;
+    border-radius: 22px 22px 0 0;
+  }
+
+  .modal-head {
+    padding:
+      16px
+      max(18px, env(safe-area-inset-right))
+      16px
+      max(18px, env(safe-area-inset-left));
+  }
+
+  .modal-title {
+    font-size: 24px;
+  }
+
+  .modal-body {
+    padding:
+      18px
+      max(16px, env(safe-area-inset-right))
+      calc(20px + env(safe-area-inset-bottom))
+      max(16px, env(safe-area-inset-left));
+  }
+
+  .field input {
+    min-height: 50px;
+    font-size: 16px;
+  }
+}
+
+/* Navigation et bandeau sur les très petits téléphones */
+
+@media (max-width: 430px) {
+  .topbar-center .topbar-nav {
+    display: flex;
+    gap: 5px;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+
+  .topbar-center .topbar-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .topbar-nav-btn,
+  .topbar.compact .topbar-nav-btn {
+    flex: 0 0 84px;
+    width: 84px;
+    scroll-snap-align: start;
+    white-space: nowrap;
+  }
+
+  .web-mobile-banner {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "copy close"
+      "link link";
+    gap: 8px 10px;
+  }
+
+  .web-mobile-banner-copy {
+    grid-area: copy;
+  }
+
+  .web-mobile-banner-link {
+    grid-area: link;
+    width: 100%;
+  }
+
+  .web-mobile-banner-close {
+    grid-area: close;
+  }
+
+  .mode-tab {
+    padding-right: 7px;
+    padding-left: 7px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 360px) {
+  .home-hero-inner {
+    width: calc(100% - 18px);
+  }
+
+  .home-trip-bar {
+    padding: 8px;
+  }
+
+  .modal-body {
+    padding-right: 13px;
+    padding-left: 13px;
+  }
+}
+
+.modal-form {
+  margin: 0;
+}
+
+.auth-form-error,
+.new-trip-form-error {
+  padding: 10px 12px;
+  border: 1px solid rgba(192, 86, 63, 0.24);
+  border-radius: 11px;
+  background: rgba(192, 86, 63, 0.08);
+  line-height: 1.45;
+  animation: modal-error-arrival 0.2s ease-out;
+}
+
+@keyframes modal-error-arrival {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
   `;
 
   function injectCss() {
@@ -4341,6 +4708,8 @@ async function createTripFromHero() {
             <button
               type="button"
               className="home-trip-action"
+              aria-label={busy ? 'Création du voyage en cours' : 'Créer le voyage'}
+              aria-busy={busy}
               onClick={createTripFromHero}
               disabled={busy}
               title="Créer le voyage"
@@ -4938,10 +5307,91 @@ function NoTripHome() {
     );
   }
 
+  function isValidEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+    String(value || '').trim()
+  );
+}
+
+function friendlyAuthError(error) {
+  const message = safeString(
+    error && error.message ? error.message : error
+  );
+
+  const normalized = message.toLowerCase();
+
+  if (!message) {
+    return 'Une erreur est survenue. Réessaie dans quelques instants.';
+  }
+
+  if (
+    normalized.includes('invalid login credentials') ||
+    normalized.includes('invalid credentials')
+  ) {
+    return 'Adresse e-mail ou mot de passe incorrect.';
+  }
+
+  if (normalized.includes('email not confirmed')) {
+    return 'Confirme d’abord ton adresse e-mail avec le code reçu.';
+  }
+
+  if (
+    normalized.includes('user already registered') ||
+    normalized.includes('user already exists')
+  ) {
+    return 'Impossible de créer ce compte. Essaie de te connecter ou utilise “Mot de passe oublié”.';
+  }
+
+  if (
+    normalized.includes('rate limit') ||
+    normalized.includes('over_email_send_rate_limit')
+  ) {
+    return 'Trop de demandes ont été envoyées. Attends quelques minutes avant de réessayer.';
+  }
+
+  if (
+    normalized.includes('otp expired') ||
+    normalized.includes('token has expired') ||
+    normalized.includes('invalid token') ||
+    normalized.includes('token is invalid')
+  ) {
+    return 'Ce code est incorrect ou a expiré. Demande un nouveau code.';
+  }
+
+  if (
+    normalized.includes('weak password') ||
+    normalized.includes('password should be at least') ||
+    normalized.includes('password must be at least')
+  ) {
+    return 'Le mot de passe doit contenir au moins 8 caractères.';
+  }
+
+  if (
+    normalized.includes('email address is invalid') ||
+    normalized.includes('invalid email')
+  ) {
+    return 'L’adresse e-mail indiquée n’est pas valide.';
+  }
+
+  if (
+    normalized.includes('failed to fetch') ||
+    normalized.includes('network request failed')
+  ) {
+    return 'Connexion impossible. Vérifie ton accès à Internet puis réessaie.';
+  }
+
+  if (normalized.includes('signup is disabled')) {
+    return 'La création de compte est temporairement indisponible.';
+  }
+
+  return message;
+}
+
   function AuthModal({ onClose }) {
     const [mode, setMode] = React.useState('login');
     const [email, setEmail] = React.useState('');
     const [password, setPassword] = React.useState('');
+    const [passwordConfirmation, setPasswordConfirmation] = React.useState('');
     const [pseudo, setPseudo] = React.useState('');
     const [confirmationSent, setConfirmationSent] = React.useState(false);
     const [confirmationCode, setConfirmationCode] = React.useState('');
@@ -4952,63 +5402,107 @@ function NoTripHome() {
     const [error, setError] = React.useState('');
     const [busy, setBusy] = React.useState(false);
 
-       async function submit() {
-      setError('');
-      setBusy(true);
+async function submit() {
+  if (busy) return;
 
-      try {
-        if (mode === 'recovery') {
-          if (recoveryStep === 'email') {
-            await window.SB.requestPasswordReset(email.trim());
-            setRecoveryStep('code');
-            return;
-          }
+  const cleanEmail = email.trim().toLowerCase();
 
-          if (newPassword !== newPasswordConfirmation) {
-            throw new Error('Les deux mots de passe sont différents.');
-          }
+  setError('');
 
-          await window.SB.completePasswordReset({
-            email: email.trim(),
-            token: recoveryCode,
-            password: newPassword
-          });
-
-          Store.showToast('Ton mot de passe a été modifié.');
-          onClose();
-          return;
-        }
-
-        if (mode === 'login') {
-          await window.SB.signIn(email.trim(), password);
-          onClose();
-          return;
-        }
-
-        if (confirmationSent) {
-          await window.SB.confirmSignUp(
-            email.trim(),
-            confirmationCode
-          );
-
-          Store.showToast('Adresse confirmée, bienvenue !');
-          onClose();
-          return;
-        }
-
-        await window.SB.signUp(
-          email.trim(),
-          password,
-          pseudo.trim() || null
-        );
-
-        setConfirmationSent(true);
-      } catch (err) {
-        setError(err.message || 'Erreur');
-      } finally {
-        setBusy(false);
-      }
+  try {
+    if (!isValidEmail(cleanEmail)) {
+      throw new Error('Indique une adresse e-mail valide.');
     }
+
+    setBusy(true);
+
+    if (mode === 'recovery') {
+      if (recoveryStep === 'email') {
+        await window.SB.requestPasswordReset(cleanEmail);
+        setRecoveryStep('code');
+        return;
+      }
+
+      if (!/^\d{8}$/.test(recoveryCode)) {
+        throw new Error(
+          'Le code de réinitialisation doit contenir exactement 8 chiffres.'
+        );
+      }
+
+      if (newPassword.length < 8) {
+        throw new Error(
+          'Le nouveau mot de passe doit contenir au moins 8 caractères.'
+        );
+      }
+
+      if (newPassword !== newPasswordConfirmation) {
+        throw new Error('Les deux mots de passe sont différents.');
+      }
+
+      await window.SB.completePasswordReset({
+        email: cleanEmail,
+        token: recoveryCode,
+        password: newPassword
+      });
+
+      Store.showToast('Ton mot de passe a été modifié.');
+      onClose();
+      return;
+    }
+
+    if (mode === 'login') {
+      if (!password) {
+        throw new Error('Indique ton mot de passe.');
+      }
+
+      await window.SB.signIn(cleanEmail, password);
+      onClose();
+      return;
+    }
+
+    if (confirmationSent) {
+      if (!/^\d{8}$/.test(confirmationCode)) {
+        throw new Error(
+          'Le code de confirmation doit contenir exactement 8 chiffres.'
+        );
+      }
+
+      await window.SB.confirmSignUp(
+        cleanEmail,
+        confirmationCode
+      );
+
+      Store.showToast('Adresse confirmée, bienvenue !');
+      onClose();
+      return;
+    }
+
+    if (password.length < 8) {
+      throw new Error(
+        'Le mot de passe doit contenir au moins 8 caractères.'
+      );
+    }
+
+    if (password !== passwordConfirmation) {
+      throw new Error('Les deux mots de passe sont différents.');
+    }
+
+    await window.SB.signUp(
+      cleanEmail,
+      password,
+      pseudo.trim() || null
+    );
+
+    setPassword('');
+    setPasswordConfirmation('');
+    setConfirmationSent(true);
+  } catch (err) {
+    console.error('Authentification :', err);
+    setError(friendlyAuthError(err));
+  } finally {
+    setBusy(false);
+  }
+}
 
     return (
       <ModalShell
@@ -5022,6 +5516,7 @@ function NoTripHome() {
                 : 'Créer un compte'
         }
         onClose={onClose}
+        onSubmit={submit}
       >
         {!confirmationSent && mode !== 'recovery' && (
           <div className="mode-tabs">
@@ -5109,6 +5604,19 @@ function NoTripHome() {
             />
           </Field>
 )}
+
+{mode === 'signup' && !confirmationSent && (
+  <Field label="Confirmer le mot de passe">
+    <input
+      type="password"
+      value={passwordConfirmation}
+      onChange={event => setPasswordConfirmation(event.target.value)}
+      placeholder="Répète ton mot de passe"
+      autoComplete="new-password"
+    />
+  </Field>
+)}
+
         {mode === 'login' && !confirmationSent && (
           <button
             type="button"
@@ -5232,6 +5740,9 @@ function NoTripHome() {
 
         {error && (
           <div
+            className="auth-form-error"
+            role="alert"
+            aria-live="assertive"
             style={{
               color: 'var(--danger, #c0563f)',
               fontSize: 13,
@@ -5244,8 +5755,8 @@ function NoTripHome() {
 
         <div style={{ marginTop: 16 }}>
           <AppButton
+            type="submit"
             variant="primary"
-            onClick={submit}
             disabled={busy}
             style={{
               width: '100%',
@@ -5329,68 +5840,62 @@ function NoTripHome() {
       }
     }
 
-        async function submit() {
-      setError('');
-      setBusy(true);
+async function submit() {
+  const cleanName = name.trim();
 
-      try {
-        if (mode === 'recovery') {
-          if (recoveryStep === 'email') {
-            await window.SB.requestPasswordReset(email.trim());
-            setRecoveryStep('code');
-            return;
-          }
+  if (!cleanName) {
+    setError('Donne un nom à ton voyage.');
+    return;
+  }
 
-          if (newPassword !== newPasswordConfirmation) {
-            throw new Error('Les deux mots de passe sont différents.');
-          }
+  if (startDate && endDate && endDate < startDate) {
+    setError('La date de retour doit être postérieure à la date de départ.');
+    return;
+  }
 
-          await window.SB.completePasswordReset({
-            email: email.trim(),
-            token: recoveryCode,
-            password: newPassword
-          });
+  setError('');
+  setBusy(true);
 
-          Store.showToast('Ton mot de passe a été modifié.');
-          onClose();
-          return;
-        }
+  try {
+    const created = await window.SB.createTrip({
+      name: cleanName,
+      startDate: startDate || null,
+      endDate: endDate || null,
+      days: Math.max(1, Number(days) || 1)
+    });
 
-        if (mode === 'login') {
-          await window.SB.signIn(email.trim(), password);
-          onClose();
-          return;
-        }
+    const nextTrips = await window.SB.listMyTrips();
+    const fullTrip = await window.SB.loadTrip(created.id);
 
-        if (confirmationSent) {
-          await window.SB.confirmSignUp(
-            email.trim(),
-            confirmationCode
-          );
+    Store.set({
+      trips: nextTrips,
+      activeTripId: created.id,
+      trip: fullTrip,
+      selectedDayIndex: 0,
+      selectedStepId: null,
+      pendingEditStepId: null,
+      view: 'itinerary'
+    });
 
-          Store.showToast('Adresse confirmée, bienvenue !');
-          onClose();
-          return;
-        }
+    Store.showToast(
+      'Voyage « ' + created.name + ' » créé ✓'
+    );
 
-        await window.SB.signUp(
-          email.trim(),
-          password,
-          pseudo.trim() || null
-        );
-
-        setConfirmationSent(true);
-      } catch (err) {
-        setError(err.message || 'Erreur');
-      } finally {
-        setBusy(false);
-      }
-    }
+    onClose();
+  } catch (err) {
+    setError(
+      err.message || 'Impossible de créer le voyage.'
+    );
+  } finally {
+    setBusy(false);
+  }
+}
 
     return (
       <ModalShell
         title="Nouveau voyage"
         onClose={onClose}
+        onSubmit={submit}
       >
         <Field label="Nom du voyage">
           <input
@@ -5438,6 +5943,9 @@ function NoTripHome() {
 
         {error && (
           <div
+            className="new-trip-form-error"
+            role="alert"
+            aria-live="assertive"
             style={{
               color: 'var(--danger, #c0563f)',
               fontSize: 13,
@@ -5468,8 +5976,8 @@ function NoTripHome() {
           </AppButton>
 
           <AppButton
+            type="submit"
             variant="primary"
-            onClick={submit}
             disabled={busy}
             style={{
               flex: 1,
@@ -5495,35 +6003,44 @@ function NoTripHome() {
     );
   }
 
-  function ModalShell({ title, onClose, children }) {
-    React.useEffect(function listenEscape() {
-      function onKeyDown(event) {
-        if (event.key === 'Escape') onClose();
-      }
+  function ModalShell({ title, onClose, onSubmit, children }) {
+React.useEffect(function listenEscape() {
+  const previousOverflow = document.body.style.overflow;
 
-      document.addEventListener('keydown', onKeyDown);
-      return function cleanup() {
-        document.removeEventListener('keydown', onKeyDown);
-      };
-    }, [onClose]);
+  function onKeyDown(event) {
+    if (event.key === 'Escape') onClose();
+  }
+
+  document.body.style.overflow = 'hidden';
+  document.addEventListener('keydown', onKeyDown);
+
+  return function cleanup() {
+    document.body.style.overflow = previousOverflow;
+    document.removeEventListener('keydown', onKeyDown);
+  };
+}, [onClose]);
 
     return ReactDOM.createPortal(
       <div
         className="modal-backdrop"
         onClick={onClose}
       >
-        <div
+<div
           className="modal-card"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="app-modal-title"
           onClick={event => event.stopPropagation()}
         >
           <div className="modal-head">
-            <div className="modal-title">
+            <div className="modal-title" id="app-modal-title">
               {title}
             </div>
 
             <button
               type="button"
               className="topbar-icon-btn"
+              aria-label="Fermer la fenêtre"
               onClick={onClose}
             >
               <Icon name="x" size={18} />
@@ -5531,7 +6048,18 @@ function NoTripHome() {
           </div>
 
           <div className="modal-body">
-            {children}
+            {onSubmit ? (
+              <form
+                className="modal-form"
+                noValidate
+                onSubmit={event => {
+                  event.preventDefault();
+                  onSubmit();
+                }}
+              >
+                {children}
+              </form>
+            ) : children}
           </div>
         </div>
       </div>,

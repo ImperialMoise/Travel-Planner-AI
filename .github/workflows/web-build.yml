@@ -41,7 +41,7 @@ jobs:
         working-directory: web
         run: npm run build
 
-              - name: Verify public build
+      - name: Verify public build
         working-directory: web
         run: npm run check:public-build
 

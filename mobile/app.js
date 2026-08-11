@@ -4679,6 +4679,18 @@ function renderGuestAccountUpgrade() {
             </p>
           </section>
         `}
+
+        <div
+          class="mobile-guest-actions"
+          style="justify-content:center;margin-top:18px;"
+        >
+          <button
+            type="button"
+            data-action="guest-existing-account-login"
+          >
+            J’ai déjà un compte
+          </button>
+        </div>
       </main>
     </div>
   `;
@@ -8433,6 +8445,22 @@ if ([
 
     if (action === 'account') {
     navigate(mobileUser ? 'account' : 'auth');
+    return;
+  }
+
+    if (action === 'guest-existing-account-login') {
+    const hasTemporaryTrip = Boolean(activeTrip?.id);
+
+    const canContinue = !hasTemporaryTrip || confirm(
+      'Ton voyage temporaire ne sera pas supprimé, mais il ne sera pas ' +
+      'automatiquement rattaché à ton compte existant. ' +
+      'Veux-tu quand même ouvrir la connexion ?'
+    );
+
+    if (canContinue) {
+      navigate('auth');
+    }
+
     return;
   }
 

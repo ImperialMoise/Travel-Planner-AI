@@ -532,17 +532,28 @@ export async function updateDayCoverCrop(dayId, patch = {}) {
   return data;
 }
 
-export async function moveTripDayInsideFixedRange(tripId, fromIndex, toIndex) {
-  if (!tripId) throw new Error('Voyage introuvable');
+async function moveTripDayInsideFixedRange(
+  tripId,
+  fromIndex,
+  toIndex
+) {
+  if (!tripId) {
+    throw new Error('Voyage introuvable');
+  }
 
-  fromIndex = Number(fromIndex);
-  toIndex = Number(toIndex);
+  const sourceIndex = Number(fromIndex);
+  const destinationIndex = Number(toIndex);
 
-  if (!Number.isFinite(fromIndex) || !Number.isFinite(toIndex)) {
+  if (
+    !Number.isInteger(sourceIndex) ||
+    !Number.isInteger(destinationIndex)
+  ) {
     throw new Error('Déplacement invalide');
   }
 
-  if (fromIndex === toIndex) return true;
+  if (sourceIndex === destinationIndex) {
+    return true;
+  }
 
   function parseLocalDate(iso) {
     if (!iso) return null;
@@ -554,23 +565,43 @@ export async function moveTripDayInsideFixedRange(tripId, fromIndex, toIndex) {
     return date.toISOString().slice(0, 10);
   }
 
-  function addDaysISO(baseISO, diff) {
-    const d = parseLocalDate(baseISO);
-    if (!d) return null;
+  function addDaysISO(baseISO, difference) {
+    const date = parseLocalDate(baseISO);
 
-    d.setDate(d.getDate() + diff);
-    return toISO(d);
+    if (!date) return null;
+
+    date.setDate(date.getDate() + difference);
+    return toISO(date);
   }
 
   function dateLabel(iso) {
-    const d = parseLocalDate(iso);
-    if (!d) return '';
+    const date = parseLocalDate(iso);
 
-    return d.toLocaleDateString('fr-FR', {
+    if (!date) return '';
+
+    return date.toLocaleDateString('fr-FR', {
       weekday: 'short',
       day: 'numeric',
       month: 'short'
     });
+  }
+
+  async function updatePosition(dayId, values) {
+    const { data, error } = await sb
+      .from('trip_days')
+      .update(values)
+      .eq('id', dayId)
+      .eq('trip_id', tripId)
+      .select('id')
+      .single();
+
+    if (error) throw error;
+
+    if (!data?.id) {
+      throw new Error(
+        'Une journée n’a pas pu être déplacée.'
+      );
+    }
   }
 
   const { data: trip, error: tripError } = await sb
@@ -583,51 +614,113 @@ export async function moveTripDayInsideFixedRange(tripId, fromIndex, toIndex) {
 
   const { data: days, error: daysError } = await sb
     .from('trip_days')
-    .select('id, day_index, date_iso')
+    .select(
+      'id, day_index, date_iso, date_label'
+    )
     .eq('trip_id', tripId)
     .order('day_index');
 
   if (daysError) throw daysError;
 
-  const currentDays = days || [];
+  const currentDays = Array.isArray(days)
+    ? days
+    : [];
 
-  if (!currentDays.length) return true;
-  if (fromIndex < 0 || fromIndex >= currentDays.length) throw new Error('Jour source introuvable');
-  if (toIndex < 0 || toIndex >= currentDays.length) throw new Error('Date hors voyage');
+  if (!currentDays.length) {
+    return true;
+  }
 
-  const baseISO = trip.start_date || currentDays[0].date_iso;
+  if (
+    sourceIndex < 0 ||
+    sourceIndex >= currentDays.length
+  ) {
+    throw new Error('Jour source introuvable');
+  }
+
+  if (
+    destinationIndex < 0 ||
+    destinationIndex >= currentDays.length
+  ) {
+    throw new Error('Date hors voyage');
+  }
+
+  const baseISO =
+    trip.start_date ||
+    currentDays[0].date_iso;
 
   if (!baseISO) {
-    throw new Error('Date de départ du voyage manquante');
+    throw new Error(
+      'Date de départ du voyage manquante'
+    );
   }
 
   const nextDays = currentDays.slice();
-  const moved = nextDays.splice(fromIndex, 1)[0];
-  nextDays.splice(toIndex, 0, moved);
+  const movedDay = nextDays.splice(
+    sourceIndex,
+    1
+  )[0];
 
-  // Phase 1 : index temporaires pour éviter les collisions éventuelles
-  await Promise.all(nextDays.map(function(day, index) {
-    return sb
-      .from('trip_days')
-      .update({
-        day_index: 10000 + index
+  nextDays.splice(
+    destinationIndex,
+    0,
+    movedDay
+  );
+
+  try {
+    await Promise.all(
+      nextDays.map(function setTemporaryIndex(
+        day,
+        index
+      ) {
+        return updatePosition(day.id, {
+          day_index: 10000 + index
+        });
       })
-      .eq('id', day.id);
-  }));
+    );
 
-  // Phase 2 : index définitifs + dates recalculées dans le cadre fixe
-  await Promise.all(nextDays.map(function(day, index) {
-    const iso = addDaysISO(baseISO, index);
+    await Promise.all(
+      nextDays.map(function setFinalIndex(
+        day,
+        index
+      ) {
+        const iso = addDaysISO(
+          baseISO,
+          index
+        );
 
-    return sb
-      .from('trip_days')
-      .update({
-        day_index: index,
-        date_iso: iso,
-        date_label: iso ? dateLabel(iso) : ''
+        return updatePosition(day.id, {
+          day_index: index,
+          date_iso: iso,
+          date_label: iso
+            ? dateLabel(iso)
+            : ''
+        });
       })
-      .eq('id', day.id);
-  }));
+    );
+  } catch (error) {
+    await Promise.allSettled(
+      currentDays.map(function prepareRollback(
+        day,
+        index
+      ) {
+        return updatePosition(day.id, {
+          day_index: 20000 + index
+        });
+      })
+    );
+
+    await Promise.allSettled(
+      currentDays.map(function restoreDay(day) {
+        return updatePosition(day.id, {
+          day_index: day.day_index,
+          date_iso: day.date_iso,
+          date_label: day.date_label || ''
+        });
+      })
+    );
+
+    throw error;
+  }
 
   return true;
 }

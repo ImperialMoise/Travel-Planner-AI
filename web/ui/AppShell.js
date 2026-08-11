@@ -2645,6 +2645,273 @@
     }
   }
 
+  /* Déplacement des journées */
+
+.day-spine-reorder-hint {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 4px 13px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 800;
+  line-height: 14px;
+  letter-spacing: 0.04em;
+}
+
+.day-spine-empty {
+  min-height: 180px;
+  display: grid;
+  place-content: center;
+  gap: 7px;
+  padding: 22px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.day-spine-empty strong {
+  color: var(--text);
+  font-size: 15px;
+}
+
+.day-spine-empty span {
+  max-width: 210px;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.day-card {
+  display: block;
+  padding: 0;
+  cursor: default;
+}
+
+.day-card-select {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px 92px 8px 10px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.day-card-move-actions {
+  position: absolute;
+  top: 10px;
+  right: 8px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  opacity: 0.38;
+  transition: opacity 0.18s ease;
+}
+
+.day-card:hover .day-card-move-actions,
+.day-card.active .day-card-move-actions,
+.day-card:focus-within .day-card-move-actions {
+  opacity: 1;
+}
+
+.day-card-drag-handle,
+.day-card-move-btn {
+  width: 24px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--muted);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.day-card-drag-handle {
+  cursor: grab;
+  user-select: none;
+}
+
+.day-card-drag-handle:active {
+  cursor: grabbing;
+}
+
+.day-card-move-btn {
+  cursor: pointer;
+}
+
+.day-card-move-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.day-card-move-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.3;
+}
+
+.day-card > .day-card-note {
+  width: calc(100% - 64px);
+  margin: 0 10px 11px 64px;
+}
+
+.day-card.dragging {
+  opacity: 0.45;
+  transform: scale(0.985);
+}
+
+.day-card.drag-over {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow:
+    0 0 0 3px var(--accent-soft),
+    0 12px 28px rgba(54, 42, 27, 0.1);
+}
+
+.day-card.moving {
+  opacity: 0.68;
+}
+
+@media (max-width: 900px) {
+  .day-spine-reorder-hint {
+    margin-right: 2px;
+    margin-left: 2px;
+  }
+
+  .day-card-select {
+    padding-right: 72px;
+  }
+
+  .day-card-move-actions {
+    opacity: 1;
+  }
+
+  .day-card-drag-handle {
+    display: none;
+  }
+
+  .day-card-move-btn {
+    width: 28px;
+    height: 30px;
+  }
+}
+
+/* Réseau et chargement */
+
+.network-status-banner {
+  position: relative;
+  z-index: 45;
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding:
+    8px
+    max(14px, env(safe-area-inset-right))
+    8px
+    max(14px, env(safe-area-inset-left));
+  background: #7d2e20;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 18px;
+  text-align: center;
+}
+
+.network-status-banner.online {
+  background: #286443;
+}
+
+.network-status-dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: currentColor;
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.14);
+}
+
+.trip-loading {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--bg);
+}
+
+.trip-loading-card {
+  width: min(560px, 100%);
+  padding: 26px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: var(--card);
+  box-shadow: var(--shadow-md);
+}
+
+.trip-loading-heading {
+  margin-bottom: 20px;
+  color: var(--text);
+  font-family: var(--font-serif);
+  font-size: 25px;
+  font-style: italic;
+}
+
+.trip-loading-line {
+  height: 13px;
+  margin-top: 11px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--inset);
+}
+
+.trip-loading-line::after {
+  content: "";
+  display: block;
+  width: 45%;
+  height: 100%;
+  background:
+    linear-gradient(
+      90deg,
+      transparent,
+      rgba(150, 100, 13, 0.15),
+      transparent
+    );
+  animation: trip-loading-shimmer 1.15s ease-in-out infinite;
+}
+
+.trip-loading-line.short {
+  width: 58%;
+}
+
+.trip-loading-slow {
+  margin-top: 20px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+@keyframes trip-loading-shimmer {
+  from {
+    transform: translateX(-120%);
+  }
+
+  to {
+    transform: translateX(250%);
+  }
+}
+
   /* =========================================================
    Accueil, authentification et petits téléphones
    ========================================================= */
@@ -3248,6 +3515,100 @@
     }
   }
 
+  function NetworkStatusBanner() {
+  const [online, setOnline] =
+    React.useState(function initialNetworkState() {
+      return navigator.onLine;
+    });
+
+  const [restored, setRestored] =
+    React.useState(false);
+
+  const restoredTimer =
+    React.useRef(null);
+
+  React.useEffect(function listenNetwork() {
+    function handleOffline() {
+      if (restoredTimer.current) {
+        window.clearTimeout(
+          restoredTimer.current
+        );
+      }
+
+      setRestored(false);
+      setOnline(false);
+    }
+
+    function handleOnline() {
+      setOnline(true);
+      setRestored(true);
+
+      if (restoredTimer.current) {
+        window.clearTimeout(
+          restoredTimer.current
+        );
+      }
+
+      restoredTimer.current =
+        window.setTimeout(function hideSuccess() {
+          setRestored(false);
+        }, 2500);
+    }
+
+    window.addEventListener(
+      'offline',
+      handleOffline
+    );
+
+    window.addEventListener(
+      'online',
+      handleOnline
+    );
+
+    return function cleanupNetwork() {
+      window.removeEventListener(
+        'offline',
+        handleOffline
+      );
+
+      window.removeEventListener(
+        'online',
+        handleOnline
+      );
+
+      if (restoredTimer.current) {
+        window.clearTimeout(
+          restoredTimer.current
+        );
+      }
+    };
+  }, []);
+
+  if (online && !restored) {
+    return null;
+  }
+
+  return (
+    <div
+      className={
+        'network-status-banner' +
+        (online ? ' online' : '')
+      }
+      role="status"
+      aria-live="polite"
+    >
+      <span
+        className="network-status-dot"
+        aria-hidden="true"
+      />
+
+      {online
+        ? 'Connexion rétablie.'
+        : 'Tu es hors ligne. Les modifications ne pourront pas être enregistrées.'}
+    </div>
+  );
+}
+
   function AppShell() {
     injectCss();
 
@@ -3325,6 +3686,7 @@ function toggleToolboxCollapsed() {
 >
         <Topbar compact={isTopbarCompact} />
         <WebMobileBanner />
+        <NetworkStatusBanner />
 
         <main className="app-main">
           {!user ? (
@@ -3977,159 +4339,582 @@ function setAppMode(nextMode) {
     );
   }
 
-  function DaySpine({ width = 300, onPickDay }) {
-    const {
-      trip,
-      selectedDayIndex = 0
-    } = Store.useStore(function select(state) {
-      return {
-        trip: state.trip,
-        selectedDayIndex: state.selectedDayIndex || 0
-      };
+function DaySpine({
+  width = 300,
+  onPickDay
+}) {
+  const {
+    trip,
+    selectedDayIndex = 0
+  } = Store.useStore(function select(state) {
+    return {
+      trip: state.trip,
+      selectedDayIndex:
+        state.selectedDayIndex || 0
+    };
+  });
+
+  const [
+    draggedDayIndex,
+    setDraggedDayIndex
+  ] = React.useState(null);
+
+  const [
+    dragTargetIndex,
+    setDragTargetIndex
+  ] = React.useState(null);
+
+  const [
+    movingDayId,
+    setMovingDayId
+  ] = React.useState(null);
+
+  if (
+    !trip ||
+    !Array.isArray(trip.days)
+  ) {
+    return null;
+  }
+
+  const days = trip.days;
+
+  const selected = Math.min(
+    Math.max(0, selectedDayIndex),
+    Math.max(0, days.length - 1)
+  );
+
+  function selectDay(index) {
+    Store.set({
+      selectedDayIndex: index,
+      selectedStepId: null
     });
 
-    if (!trip || !Array.isArray(trip.days)) return null;
+    if (onPickDay) {
+      onPickDay(index);
+    }
+  }
 
-    const days = trip.days;
-    const selected = Math.min(
-      Math.max(0, selectedDayIndex),
-      Math.max(0, days.length - 1)
+  async function handleNoteBlur(
+    day,
+    event
+  ) {
+    const noteElement = event.currentTarget;
+
+    const newNote = (
+      noteElement.textContent || ''
+    ).trim();
+
+    const oldNote = (
+      day.note || ''
+    ).trim();
+
+    if (newNote === oldNote) return;
+
+    try {
+      if (
+        !window.SB?.updateDay ||
+        !trip.id
+      ) {
+        throw new Error(
+          'Sauvegarde indisponible'
+        );
+      }
+
+      await window.SB.updateDay(
+        day.id,
+        { note: newNote }
+      );
+
+      const refreshed =
+        await window.SB.loadTrip(trip.id);
+
+      if (refreshed) {
+        Store.set({ trip: refreshed });
+      }
+    } catch (error) {
+      console.error(
+        'Note save failed:',
+        error
+      );
+
+      noteElement.textContent = oldNote;
+
+      Store.showToast(
+        'La note n’a pas pu être enregistrée.'
+      );
+    }
+  }
+
+  function handleNoteKeyDown(event) {
+    event.stopPropagation();
+
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      event.currentTarget.blur();
+    }
+  }
+
+  async function moveDay(
+    fromIndex,
+    toIndex
+  ) {
+    const sourceIndex = Number(fromIndex);
+    const destinationIndex = Number(toIndex);
+
+    if (
+      movingDayId ||
+      sourceIndex === destinationIndex ||
+      sourceIndex < 0 ||
+      destinationIndex < 0 ||
+      sourceIndex >= days.length ||
+      destinationIndex >= days.length
+    ) {
+      return;
+    }
+
+    const movedDay = days[sourceIndex];
+
+    if (
+      !movedDay ||
+      !window.SB?.moveTripDayInsideFixedRange
+    ) {
+      Store.showToast(
+        'Le déplacement des journées est indisponible.'
+      );
+      return;
+    }
+
+    const selectedDayId =
+      days[selected]?.id || null;
+
+    setMovingDayId(
+      movedDay.id ||
+      'day-' + sourceIndex
     );
 
-    function selectDay(index) {
+    try {
+      await window.SB
+        .moveTripDayInsideFixedRange(
+          trip.id,
+          sourceIndex,
+          destinationIndex
+        );
+
+      const refreshed =
+        await window.SB.loadTrip(trip.id);
+
+      const refreshedDays =
+        Array.isArray(refreshed?.days)
+          ? refreshed.days
+          : [];
+
+      let nextSelectedIndex =
+        destinationIndex;
+
+      if (selectedDayId) {
+        const foundIndex =
+          refreshedDays.findIndex(
+            day => day.id === selectedDayId
+          );
+
+        if (foundIndex >= 0) {
+          nextSelectedIndex = foundIndex;
+        }
+      }
+
       Store.set({
-        selectedDayIndex: index,
+        trip: refreshed,
+        selectedDayIndex:
+          nextSelectedIndex,
         selectedStepId: null
       });
 
-      if (onPickDay) onPickDay(index);
-    }
+      Store.showToast(
+        'Journée déplacée vers J' +
+        (destinationIndex + 1) +
+        '.'
+      );
+    } catch (error) {
+      console.error(
+        'Day move failed:',
+        error
+      );
 
-    function handleNoteBlur(day, event) {
-      const newNote = (event.target.textContent || '').trim();
-      const oldNote = (day.note || '').trim();
+      Store.showToast(
+        'La journée n’a pas pu être déplacée.'
+      );
 
-      if (newNote === oldNote) return;
+      try {
+        const refreshed =
+          await window.SB.loadTrip(trip.id);
 
-      if (window.SB && window.SB.updateDay && trip.id) {
-        window.SB.updateDay(day.id, { note: newNote }).then(function () {
-          return window.SB.loadTrip(trip.id);
-        }).then(function (refreshed) {
-          if (refreshed) Store.set({ trip: refreshed });
-        }).catch(function (err) {
-          console.error('Note save failed:', err);
-        });
+        if (refreshed) {
+          Store.set({ trip: refreshed });
+        }
+      } catch (refreshError) {
+        console.error(
+          'Trip refresh failed:',
+          refreshError
+        );
       }
+    } finally {
+      setMovingDayId(null);
+      setDraggedDayIndex(null);
+      setDragTargetIndex(null);
     }
-
-    function handleNoteKeyDown(event) {
-      if (event.key === 'Enter') {
-        event.preventDefault();
-        event.target.blur();
-      }
-    }
-
-    return (
-      <aside
-        className="day-spine"
-        style={{ width }}
-      >
-        <div className="day-spine-head">
-          <div className="day-spine-kicker">
-            Itinéraire actif
-          </div>
-
-          <div className="day-spine-title">
-            {trip.name || 'Mon voyage'}
-          </div>
-
-          {trip.startDate && trip.endDate && (
-            <div className="day-spine-meta">
-              <Icon name="cal" size={12} />
-              {formatDayDate(trip.startDate)} → {formatDayDate(trip.endDate)}
-            </div>
-          )}
-        </div>
-
-        <div className="day-spine-scroll">
-
-          {days.map(function renderDay(day, index) {
-  const active = index === selected;
-  const tags = countDayTags(day);
-  const title = getDisplayDayTitle(day) || 'Journée à préciser';
-  const dateStr = formatDayDate(day.dateISO) || 'Date à définir';
-
-  const preparation = [
-    { label: 'programme', ready: tags.steps > 0 },
-    { label: 'repas', ready: tags.restaurants > 0 },
-    { label: 'hébergement', ready: tags.lodgings > 0 }
-  ];
-
-  const preparationDone = preparation.filter(item => item.ready).length;
-  const preparationMissing = preparation
-    .filter(item => !item.ready)
-    .map(item => item.label)
-    .join(', ');
+  }
 
   return (
-    <button
-      key={day.id || index}
-      type="button"
-      className={'day-card' + (active ? ' active' : '')}
-      onClick={() => Store.set({ selectedDayIndex: index })}
+    <aside
+      className="day-spine"
+      style={{ width }}
     >
-      <span className="day-card-num">
-        J{index + 1}
-      </span>
-
-      <span className="day-card-body">
-        <span className="day-card-title">
-          {title}
-        </span>
-
-        <span className="day-card-date">
-          <Icon name="cal" size={11} />
-          {dateStr}
-        </span>
-
-        <span
-  className={'day-card-progress' + (preparationDone === 3 ? ' complete' : '')}
-  title={
-    preparationDone === 3
-      ? 'Journée entièrement préparée'
-      : 'À compléter : ' + preparationMissing
-  }
->
-  <span className="day-card-progress-track" aria-hidden="true">
-    <span
-      className="day-card-progress-fill"
-      style={{ width: `${(preparationDone / preparation.length) * 100}%` }}
-    />
-  </span>
-
-  <span>
-    {preparationDone === 3 ? 'Prête' : `${preparationDone}/3 préparé`}
-  </span>
-</span>
-
-        <span
-          className="day-card-note"
-          contentEditable
-          suppressContentEditableWarning
-          data-placeholder="+ note..."
-          onBlur={event => handleDayNoteBlur(day, event)}
-          dangerouslySetInnerHTML={{
-            __html: day.note || ''
-          }}
-        />
-      </span>
-    </button>
-  );
-})}
+      <div className="day-spine-head">
+        <div className="day-spine-kicker">
+          Itinéraire actif
         </div>
-      </aside>
-    );
-  }
+
+        <div className="day-spine-title">
+          {trip.name || 'Mon voyage'}
+        </div>
+
+        {trip.startDate &&
+          trip.endDate && (
+            <div className="day-spine-meta">
+              <Icon name="cal" size={12} />
+
+              {formatDayDate(
+                trip.startDate
+              )}
+
+              {' → '}
+
+              {formatDayDate(
+                trip.endDate
+              )}
+            </div>
+          )}
+      </div>
+
+      <div className="day-spine-scroll">
+        {!!days.length && (
+          <div className="day-spine-reorder-hint">
+            <span aria-hidden="true">↕</span>
+            Glisse une journée ou utilise les flèches
+          </div>
+        )}
+
+        {!days.length && (
+          <div className="day-spine-empty">
+            <strong>
+              Aucune journée
+            </strong>
+
+            <span>
+              Vérifie les dates du voyage pour créer son itinéraire.
+            </span>
+          </div>
+        )}
+
+        {days.map(function renderDay(
+          day,
+          index
+        ) {
+          const active =
+            index === selected;
+
+          const tags =
+            countDayTags(day);
+
+          const title =
+            getDisplayDayTitle(day) ||
+            'Journée à préciser';
+
+          const dateStr =
+            formatDayDate(day.dateISO) ||
+            'Date à définir';
+
+          const preparation = [
+            {
+              label: 'programme',
+              ready: tags.steps > 0
+            },
+            {
+              label: 'repas',
+              ready:
+                tags.restaurants > 0
+            },
+            {
+              label: 'hébergement',
+              ready:
+                tags.lodgings > 0
+            }
+          ];
+
+          const preparationDone =
+            preparation.filter(
+              item => item.ready
+            ).length;
+
+          const preparationMissing =
+            preparation
+              .filter(
+                item => !item.ready
+              )
+              .map(item => item.label)
+              .join(', ');
+
+          const dayIdentity =
+            day.id ||
+            'day-' + index;
+
+          const moving =
+            movingDayId === dayIdentity;
+
+          return (
+            <article
+              key={dayIdentity}
+              className={
+                'day-card' +
+                (active ? ' active' : '') +
+                (
+                  draggedDayIndex === index
+                    ? ' dragging'
+                    : ''
+                ) +
+                (
+                  dragTargetIndex === index
+                    ? ' drag-over'
+                    : ''
+                ) +
+                (
+                  moving
+                    ? ' moving'
+                    : ''
+                )
+              }
+              aria-busy={moving}
+              onDragOver={event => {
+                if (
+                  draggedDayIndex === null ||
+                  draggedDayIndex === index
+                ) {
+                  return;
+                }
+
+                event.preventDefault();
+                event.dataTransfer.dropEffect =
+                  'move';
+
+                setDragTargetIndex(index);
+              }}
+              onDrop={event => {
+                event.preventDefault();
+
+                const transferredIndex =
+                  Number(
+                    event.dataTransfer.getData(
+                      'text/plain'
+                    )
+                  );
+
+                const sourceIndex =
+                  Number.isInteger(
+                    transferredIndex
+                  )
+                    ? transferredIndex
+                    : draggedDayIndex;
+
+                setDragTargetIndex(null);
+
+                moveDay(
+                  sourceIndex,
+                  index
+                );
+              }}
+            >
+              <button
+                type="button"
+                className="day-card-select"
+                onClick={() =>
+                  selectDay(index)
+                }
+                aria-current={
+                  active
+                    ? 'date'
+                    : undefined
+                }
+              >
+                <span className="day-card-num">
+                  J{index + 1}
+                </span>
+
+                <span className="day-card-body">
+                  <span className="day-card-title">
+                    {title}
+                  </span>
+
+                  <span className="day-card-date">
+                    <Icon
+                      name="cal"
+                      size={11}
+                    />
+
+                    {dateStr}
+                  </span>
+
+                  <span
+                    className={
+                      'day-card-progress' +
+                      (
+                        preparationDone === 3
+                          ? ' complete'
+                          : ''
+                      )
+                    }
+                    title={
+                      preparationDone === 3
+                        ? 'Journée entièrement préparée'
+                        : 'À compléter : ' +
+                          preparationMissing
+                    }
+                  >
+                    <span
+                      className="day-card-progress-track"
+                      aria-hidden="true"
+                    >
+                      <span
+                        className="day-card-progress-fill"
+                        style={{
+                          width:
+                            (
+                              preparationDone /
+                              preparation.length
+                            ) *
+                              100 +
+                            '%'
+                        }}
+                      />
+                    </span>
+
+                    <span>
+                      {preparationDone === 3
+                        ? 'Prête'
+                        : preparationDone +
+                          '/3 préparé'}
+                    </span>
+                  </span>
+                </span>
+              </button>
+
+              <div className="day-card-move-actions">
+                <span
+                  className="day-card-drag-handle"
+                  role="button"
+                  tabIndex="-1"
+                  draggable={!movingDayId}
+                  title="Faire glisser la journée"
+                  aria-label="Faire glisser la journée"
+                  onDragStart={event => {
+                    event.dataTransfer
+                      .setData(
+                        'text/plain',
+                        String(index)
+                      );
+
+                    event.dataTransfer
+                      .effectAllowed =
+                        'move';
+
+                    setDraggedDayIndex(
+                      index
+                    );
+                  }}
+                  onDragEnd={() => {
+                    setDraggedDayIndex(
+                      null
+                    );
+
+                    setDragTargetIndex(
+                      null
+                    );
+                  }}
+                >
+                  ↕
+                </span>
+
+                <button
+                  type="button"
+                  className="day-card-move-btn"
+                  disabled={
+                    index === 0 ||
+                    Boolean(movingDayId)
+                  }
+                  aria-label={
+                    'Déplacer ' +
+                    title +
+                    ' vers le jour précédent'
+                  }
+                  title="Jour précédent"
+                  onClick={() =>
+                    moveDay(
+                      index,
+                      index - 1
+                    )
+                  }
+                >
+                  ↑
+                </button>
+
+                <button
+                  type="button"
+                  className="day-card-move-btn"
+                  disabled={
+                    index ===
+                      days.length - 1 ||
+                    Boolean(movingDayId)
+                  }
+                  aria-label={
+                    'Déplacer ' +
+                    title +
+                    ' vers le jour suivant'
+                  }
+                  title="Jour suivant"
+                  onClick={() =>
+                    moveDay(
+                      index,
+                      index + 1
+                    )
+                  }
+                >
+                  ↓
+                </button>
+              </div>
+
+              <div
+                className="day-card-note"
+                contentEditable
+                suppressContentEditableWarning
+                data-placeholder="+ note..."
+                onKeyDown={
+                  handleNoteKeyDown
+                }
+                onBlur={event =>
+                  handleNoteBlur(
+                    day,
+                    event
+                  )
+                }
+              >
+                {day.note || ''}
+              </div>
+            </article>
+          );
+        })}
+      </div>
+    </aside>
+  );
+}
 
   function getHomeTripSummary(trip) {
   const days = Array.isArray(trip?.days) ? trip.days : [];
@@ -5291,21 +6076,49 @@ function NoTripHome() {
   );
 }
 
-  function LoadingTrip() {
-    return (
-      <div
-        style={{
-          flex: 1,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: 'var(--muted)'
-        }}
-      >
-        Chargement du voyage…
-      </div>
+function LoadingTrip() {
+  const [slow, setSlow] =
+    React.useState(false);
+
+  React.useEffect(function detectSlowLoading() {
+    const timer = window.setTimeout(
+      function showSlowMessage() {
+        setSlow(true);
+      },
+      4500
     );
-  }
+
+    return function cleanup() {
+      window.clearTimeout(timer);
+    };
+  }, []);
+
+  return (
+    <section
+      className="trip-loading"
+      role="status"
+      aria-live="polite"
+      aria-label="Chargement du voyage"
+    >
+      <div className="trip-loading-card">
+        <div className="trip-loading-heading">
+          Préparation du carnet…
+        </div>
+
+        <div className="trip-loading-line" />
+        <div className="trip-loading-line" />
+        <div className="trip-loading-line short" />
+
+        {slow && (
+          <div className="trip-loading-slow">
+            Le chargement prend plus de temps que prévu.
+            Vérifie ta connexion si rien ne s’affiche.
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
 
   function isValidEmail(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(

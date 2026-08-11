@@ -944,8 +944,85 @@
     }
 
     .atelier-v2-sidebar{
+      width:100%;
+      min-width:0;
+      height:auto;
+      min-height:0;
       padding-top:16px;
       margin-top:4px;
+      overflow:visible;
+      position:relative;
+      isolation:isolate;
+    }
+
+    .atelier-v2-sidebar > .web-meal-rail{
+      display:block !important;
+      width:100% !important;
+      max-width:100% !important;
+      height:auto !important;
+      min-height:0 !important;
+      overflow:visible !important;
+      border-left:0 !important;
+      background:transparent !important;
+    }
+
+    .atelier-v2-sidebar .web-meal-rail-scroll{
+      display:flex !important;
+      flex:none !important;
+      flex-direction:column !important;
+      width:100% !important;
+      height:auto !important;
+      min-height:0 !important;
+      overflow:visible !important;
+      scrollbar-gutter:auto !important;
+      padding:0 !important;
+      gap:14px !important;
+      position:static !important;
+      transform:none !important;
+    }
+
+    .atelier-v2-sidebar .web-meal-rail-scroll > section{
+      position:relative !important;
+      z-index:1;
+      flex:none !important;
+      width:100% !important;
+      max-width:100% !important;
+      height:auto !important;
+      min-height:0 !important;
+      margin:0 !important;
+      padding:16px !important;
+      overflow:visible !important;
+      border:1px solid var(--line) !important;
+      border-radius:16px;
+      background:var(--card);
+      box-shadow:0 7px 22px rgba(54,42,27,.065);
+    }
+
+    .atelier-v2-sidebar .web-meal-rail-scroll > section > div:first-child{
+      display:grid !important;
+      grid-template-columns:minmax(0,1fr) auto;
+      align-items:start !important;
+      gap:10px !important;
+      width:100%;
+      min-width:0;
+    }
+
+    .atelier-v2-sidebar .web-meal-rail-scroll > section > div:first-child > div:first-child{
+      min-width:0;
+      overflow-wrap:anywhere;
+    }
+
+    .atelier-v2-sidebar .web-meal-rail-scroll > section button{
+      min-height:44px;
+      touch-action:manipulation;
+    }
+
+    .atelier-v2-sidebar .web-meal-card-title,
+    .atelier-v2-sidebar .web-meal-card-subtitle{
+      white-space:normal !important;
+      overflow:visible !important;
+      text-overflow:clip !important;
+      overflow-wrap:anywhere;
     }
 
     .atelier-v2-modal-backdrop{

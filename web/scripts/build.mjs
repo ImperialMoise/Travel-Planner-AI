@@ -9,6 +9,27 @@ const outputDir = path.join(sourceDir, 'dist');
 const indexPath = path.join(sourceDir, 'index.html');
 
 const sourceHtml = await readFile(indexPath, 'utf8');
+const excludedDirectories = new Set([
+  'dist',
+  'node_modules',
+  '.vercel',
+  'scripts',
+  'tests',
+  'playwright-report',
+  'test-results',
+  'blob-report'
+]);
+
+const excludedFiles = new Set([
+  '.gitignore',
+  'package.json',
+  'package-lock.json',
+  'playwright.config.mjs',
+  'vercel.json',
+  'README.md',
+  'npm-debug.log'
+]);
+
 const babelScriptPattern = /<script\s+type="text\/babel"\s+src="([^"]+)"><\/script>/g;
 const babelSources = [...sourceHtml.matchAll(babelScriptPattern)].map((match) => match[1]);
 
@@ -25,7 +46,20 @@ async function copyDirectory(source, destination) {
   const entries = await readdir(source, { withFileTypes: true });
 
   for (const entry of entries) {
-    if (['dist', 'node_modules', '.vercel'].includes(entry.name)) {
+    if (
+      entry.isDirectory() &&
+      excludedDirectories.has(entry.name)
+    ) {
+      continue;
+    }
+
+    if (
+      entry.isFile() &&
+      (
+        excludedFiles.has(entry.name) ||
+        entry.name.startsWith('.env')
+      )
+    ) {
       continue;
     }
 

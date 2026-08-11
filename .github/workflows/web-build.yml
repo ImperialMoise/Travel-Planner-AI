@@ -41,6 +41,10 @@ jobs:
         working-directory: web
         run: npm run build
 
+              - name: Verify public build
+        working-directory: web
+        run: npm run check:public-build
+
       - name: Install Chromium
         working-directory: web
         run: npx playwright install --with-deps chromium

@@ -179,28 +179,60 @@ test(
 );
 
 test(
-  'la fenêtre de connexion se ferme avec Échap',
+  'la fenêtre conserve le focus et se ferme avec Échap',
   async function runTest({ page }) {
     await page.goto('/', {
       waitUntil: 'domcontentloaded'
     });
 
-    await page
-      .getByRole('button', {
+    const openButton =
+      page.getByRole('button', {
         name: 'J’ai déjà un compte',
         exact: true
-      })
-      .click();
+      });
 
-    await expect(
-      page.getByRole('dialog')
-    ).toBeVisible();
+    await openButton.click();
+
+    const dialog =
+      page.getByRole('dialog');
+
+    await expect(dialog).toBeVisible();
+
+    const focusIsInside =
+      await dialog.evaluate(
+        function checkFocus(element) {
+          return element.contains(
+            document.activeElement
+          );
+        }
+      );
+
+    expect(focusIsInside).toBe(true);
+
+    for (
+      let index = 0;
+      index < 12;
+      index += 1
+    ) {
+      await page.keyboard.press('Tab');
+
+      const stillInside =
+        await dialog.evaluate(
+          function checkFocus(element) {
+            return element.contains(
+              document.activeElement
+            );
+          }
+        );
+
+      expect(stillInside).toBe(true);
+    }
 
     await page.keyboard.press('Escape');
 
-    await expect(
-      page.getByRole('dialog')
-    ).toBeHidden();
+    await expect(dialog).toBeHidden();
+
+    await expect(openButton).toBeFocused();
   }
 );
 
@@ -304,3 +336,33 @@ test(
     );
   }
 );
+
+test(
+  'le build public ne contient aucun fichier de développement',
+  async function runTest({ request }) {
+    const privatePaths = [
+      '/package.json',
+      '/package-lock.json',
+      '/playwright.config.mjs',
+      '/scripts/build.mjs',
+      '/tests/public-smoke.spec.mjs',
+      '/.env'
+    ];
+
+    for (
+      const privatePath
+      of privatePaths
+    ) {
+      const response =
+        await request.get(
+          privatePath
+        );
+
+      expect(
+        response.status(),
+        privatePath +
+          ' ne doit pas être public'
+      ).toBe(404);
+    }
+  }
+);dc

@@ -7006,37 +7006,182 @@ async function submit() {
     );
   }
 
-  function ModalShell({ title, onClose, onSubmit, children }) {
-React.useEffect(function listenEscape() {
-  const previousOverflow = document.body.style.overflow;
+  function ModalShell({
+    title,
+    onClose,
+    onSubmit,
+    children
+  }) {
+    const cardRef = React.useRef(null);
 
-  function onKeyDown(event) {
-    if (event.key === 'Escape') onClose();
-  }
+    React.useEffect(function manageDialogFocus() {
+      const previousOverflow =
+        document.body.style.overflow;
 
-  document.body.style.overflow = 'hidden';
-  document.addEventListener('keydown', onKeyDown);
+      const previousActiveElement =
+        document.activeElement;
 
-  return function cleanup() {
-    document.body.style.overflow = previousOverflow;
-    document.removeEventListener('keydown', onKeyDown);
-  };
-}, [onClose]);
+      function getFocusableElements() {
+        const card = cardRef.current;
+
+        if (!card) return [];
+
+        return Array.from(
+          card.querySelectorAll(
+            [
+              'a[href]',
+              'button:not([disabled])',
+              'input:not([disabled])',
+              'select:not([disabled])',
+              'textarea:not([disabled])',
+              '[tabindex]:not([tabindex="-1"])'
+            ].join(',')
+          )
+        ).filter(function keepVisible(element) {
+          return (
+            element.getAttribute(
+              'aria-hidden'
+            ) !== 'true'
+          );
+        });
+      }
+
+      function handleKeyDown(event) {
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          onClose();
+          return;
+        }
+
+        if (event.key !== 'Tab') {
+          return;
+        }
+
+        const card = cardRef.current;
+
+        if (!card) return;
+
+        const focusableElements =
+          getFocusableElements();
+
+        if (!focusableElements.length) {
+          event.preventDefault();
+          card.focus();
+          return;
+        }
+
+        const firstElement =
+          focusableElements[0];
+
+        const lastElement =
+          focusableElements[
+            focusableElements.length - 1
+          ];
+
+        const activeElement =
+          document.activeElement;
+
+        if (
+          event.shiftKey &&
+          (
+            activeElement === firstElement ||
+            !card.contains(activeElement)
+          )
+        ) {
+          event.preventDefault();
+          lastElement.focus();
+          return;
+        }
+
+        if (
+          !event.shiftKey &&
+          activeElement === lastElement
+        ) {
+          event.preventDefault();
+          firstElement.focus();
+        }
+      }
+
+      document.body.style.overflow =
+        'hidden';
+
+      document.addEventListener(
+        'keydown',
+        handleKeyDown
+      );
+
+      const focusFrame =
+        window.requestAnimationFrame(
+          function focusDialog() {
+            const card = cardRef.current;
+
+            if (!card) return;
+
+            const preferredElement =
+              card.querySelector(
+                [
+                  'input:not([disabled]):not([readonly])',
+                  'select:not([disabled])',
+                  'textarea:not([disabled])'
+                ].join(',')
+              );
+
+            const firstFocusable =
+              getFocusableElements()[0];
+
+            (
+              preferredElement ||
+              firstFocusable ||
+              card
+            ).focus();
+          }
+        );
+
+      return function cleanupDialog() {
+        window.cancelAnimationFrame(
+          focusFrame
+        );
+
+        document.body.style.overflow =
+          previousOverflow;
+
+        document.removeEventListener(
+          'keydown',
+          handleKeyDown
+        );
+
+        if (
+          previousActiveElement &&
+          previousActiveElement.isConnected &&
+          typeof previousActiveElement.focus ===
+            'function'
+        ) {
+          previousActiveElement.focus();
+        }
+      };
+    }, [onClose]);
 
     return ReactDOM.createPortal(
       <div
         className="modal-backdrop"
         onClick={onClose}
       >
-<div
+        <div
+          ref={cardRef}
           className="modal-card"
           role="dialog"
           aria-modal="true"
           aria-labelledby="app-modal-title"
-          onClick={event => event.stopPropagation()}
+          tabIndex="-1"
+          onClick={event =>
+            event.stopPropagation()
+          }
         >
           <div className="modal-head">
-            <div className="modal-title" id="app-modal-title">
+            <div
+              className="modal-title"
+              id="app-modal-title"
+            >
               {title}
             </div>
 
@@ -7062,7 +7207,9 @@ React.useEffect(function listenEscape() {
               >
                 {children}
               </form>
-            ) : children}
+            ) : (
+              children
+            )}
           </div>
         </div>
       </div>,

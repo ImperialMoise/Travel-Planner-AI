@@ -196,6 +196,38 @@ for (const absolutePath of files) {
   }
 }
 
+const publicIndexHtml =
+  await readFile(
+    path.join(
+      distDirectory,
+      'index.html'
+    ),
+    'utf8'
+  );
+
+const forbiddenDevelopmentRuntimes = [
+  'react.development.js',
+  'react-dom.development.js',
+  '@babel/standalone'
+];
+
+for (
+  const developmentRuntime
+  of forbiddenDevelopmentRuntimes
+) {
+  if (
+    publicIndexHtml.includes(
+      developmentRuntime
+    )
+  ) {
+    violations.push(
+      'index.html publie encore le runtime de développement : ' +
+      developmentRuntime +
+      '.'
+    );
+  }
+}
+
 if (violations.length) {
   throw new Error(
     [

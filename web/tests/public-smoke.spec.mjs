@@ -448,3 +448,74 @@ test(
     expect(mapLibreRequests).toEqual([]);
   }
 );
+
+test(
+  'le clavier permet d’aller directement au contenu',
+  async function runTest({ page }) {
+    await page.goto('/', {
+      waitUntil: 'domcontentloaded'
+    });
+
+    const skipLink =
+      page.getByRole('link', {
+        name: 'Aller au contenu principal'
+      });
+
+    await page.keyboard.press('Tab');
+
+    await expect(skipLink).toBeFocused();
+    await expect(skipLink).toBeVisible();
+
+    await page.keyboard.press('Enter');
+
+    await expect(
+      page.locator('#app-main-content')
+    ).toBeFocused();
+  }
+);
+
+test(
+  'les images secondaires utilisent le chargement différé',
+  async function runTest({ page }) {
+    await page.goto('/', {
+      waitUntil: 'domcontentloaded'
+    });
+
+    const lazyImages =
+      page.locator(
+        [
+          '.home-inspiration-item img',
+          '.home-public-qr img'
+        ].join(',')
+      );
+
+    const imageCount =
+      await lazyImages.count();
+
+    expect(imageCount).toBeGreaterThan(0);
+
+    for (
+      let index = 0;
+      index < imageCount;
+      index += 1
+    ) {
+      const image =
+        lazyImages.nth(index);
+
+      await expect(image).toHaveAttribute(
+        'loading',
+        'lazy'
+      );
+
+      await expect(image).toHaveAttribute(
+        'decoding',
+        'async'
+      );
+
+      await expect(image).toHaveAttribute(
+        'draggable',
+        'false'
+      );
+    }
+  }
+);

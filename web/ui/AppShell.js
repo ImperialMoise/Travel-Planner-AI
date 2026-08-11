@@ -50,6 +50,29 @@
   }
 
   const APP_SHELL_CSS = `
+  .skip-link{
+    position:fixed;
+    top:10px;
+    left:50%;
+    z-index:3000;
+    padding:10px 16px;
+    border-radius:999px;
+    background:var(--accent);
+    color:var(--accent-ink);
+    font-size:13px;
+    font-weight:900;
+    text-decoration:none;
+    box-shadow:var(--shadow-lg);
+    transform:translate(-50%,-180%);
+    transition:transform .18s ease;
+  }
+
+  .skip-link:focus{
+    transform:translate(-50%,0);
+    outline:3px solid var(--card);
+    outline-offset:3px;
+  }
+
   .app-shell{
     height:100dvh;
     max-height:100dvh;
@@ -1223,8 +1246,18 @@
 .home-trip-cover{
   position:relative;
   height:170px;
-  background-size:cover;
-  background-position:center;
+  overflow:hidden;
+  background:var(--soft);
+}
+
+.home-trip-cover img{
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  object-position:center;
+  pointer-events:none;
+  user-select:none;
 }
 
 .home-trip-cover::after{
@@ -1728,8 +1761,17 @@
 .home-dashboard-trip-thumb {
   position: absolute;
   inset: 0;
-  background-position: center;
-  background-size: cover;
+  overflow: hidden;
+  pointer-events: none;
+  user-select: none;
+}
+
+.home-dashboard-trip-thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
   pointer-events: none;
   user-select: none;
 }
@@ -3780,11 +3822,22 @@ function toggleToolboxCollapsed() {
     '--accent-shadow': accent.shadow
   }}
 >
+        <a
+          className="skip-link"
+          href="#app-main-content"
+        >
+          Aller au contenu principal
+        </a>
+
         <Topbar compact={isTopbarCompact} />
         <WebMobileBanner />
         <NetworkStatusBanner />
 
-        <main className="app-main">
+                <main
+          id="app-main-content"
+          className="app-main"
+          tabIndex="-1"
+        >
           {!user ? (
             <LoggedOutHome />
           ) : !activeTripId ? (
@@ -5960,11 +6013,26 @@ async function createTripFromHero() {
             <span
               className="home-dashboard-trip-thumb"
               aria-hidden="true"
-              style={{
-                backgroundImage:
-                  'url("' + image + '")'
-              }}
-            />
+            >
+              <img
+                src={image}
+                alt=""
+                width="560"
+                height="240"
+                loading={
+                  index === 0
+                    ? 'eager'
+                    : 'lazy'
+                }
+                fetchPriority={
+                  index === 0
+                    ? 'high'
+                    : 'low'
+                }
+                decoding="async"
+                draggable="false"
+              />
+            </span>
 
             <span className="home-dashboard-trip-copy">
               <strong>
@@ -6014,7 +6082,10 @@ async function createTripFromHero() {
             <img
               src={item.image}
               alt={item.name + ', ' + item.country}
-                            loading="lazy"
+              width="720"
+              height="900"
+              loading="lazy"
+              decoding="async"
               draggable="false"
             />
 
@@ -6090,7 +6161,10 @@ async function createTripFromHero() {
             <img
               src={androidQrUrl}
               alt="QR code pour télécharger l’application Android"
+              width="320"
+              height="320"
               loading="lazy"
+              decoding="async"
               draggable="false"
             />
           </div>
@@ -6149,12 +6223,18 @@ async function createTripFromHero() {
                     key={trip.id || index}
                     className="home-trip-card"
                   >
-                    <div
-                      className="home-trip-cover"
-                      style={{
-                        backgroundImage: 'url("' + image + '")'
-                      }}
-                    >
+                    <div className="home-trip-cover">
+                      <img
+                        src={image}
+                        alt=""
+                        width="680"
+                        height="340"
+                        loading="lazy"
+                        decoding="async"
+                        draggable="false"
+                        aria-hidden="true"
+                      />
+
                       <div className="home-trip-chip">
                         {tripDateRange(trip)}
                       </div>
@@ -6182,6 +6262,13 @@ async function createTripFromHero() {
                           type="button"
                           className="home-trip-map"
                           title="Ouvrir le voyage"
+                          aria-label={
+                            'Ouvrir le voyage ' +
+                            (
+                              trip.name ||
+                              'sans titre'
+                            )
+                          }
                           onClick={() => openTrip(trip.id)}
                         >
                           <Icon name="map" size={17} />

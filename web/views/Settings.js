@@ -75,7 +75,8 @@ function SettingsModal() {
         backdropFilter: 'blur(7px)'
       }}
     >
-      <div
+<div
+        className="web-settings-dialog"
         role="dialog"
         aria-modal="true"
         aria-label="Paramètres du compte"
@@ -93,13 +94,13 @@ function SettingsModal() {
           boxShadow: 'var(--shadow-lg)'
         }}
       >
-        <aside style={{
+        <aside className="web-settings-nav" style={{
           display: 'flex',
           flexDirection: compact ? 'row' : 'column',
           gap: compact ? 4 : 6,
           overflowX: compact ? 'auto' : 'visible',
           padding: compact ? '10px 12px' : '22px 14px',
-          background: 'var(--bg-2)',
+          background: 'var(--inset)',
           borderRight: compact ? 'none' : '1px solid var(--line)',
           borderBottom: compact ? '1px solid var(--line)' : 'none'
         }}>
@@ -167,7 +168,7 @@ function SettingsModal() {
         </aside>
 
         <section style={{ minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-          <header style={{
+          <header className="web-settings-header" style={{
             display: 'flex',
             alignItems: 'flex-start',
             justifyContent: 'space-between',
@@ -210,7 +211,7 @@ function SettingsModal() {
             </button>
           </header>
 
-          <div style={{
+          <div className="web-settings-content" style={{
             flex: 1,
             overflowY: 'auto',
             padding: compact ? 18 : 30
@@ -810,7 +811,7 @@ function AccountSection({ user }) {
         padding: 18,
         border: '1px solid var(--line)',
         borderRadius: 12,
-        background: 'var(--bg-2)'
+        background: 'var(--inset)'
       }}>
         <div style={{
           width: 62,
@@ -1485,7 +1486,7 @@ function TripsSection({ trips, activeTripId, onOpen }) {
           border: '1px solid ' + (trip.id === activeTripId ? 'rgba(157, 104, 12, .35)' : 'var(--line)'),
           borderLeft: '4px solid ' + getTripAccentTheme(trip.accent_theme).accent,
           borderRadius: 10,
-          background: trip.id === activeTripId ? 'var(--accent-soft)' : 'var(--bg-2)'
+          background: trip.id === activeTripId ? 'var(--accent-soft)' : 'var(--inset)'
         }}>
           <div style={{
             width: 38,
@@ -2056,11 +2057,11 @@ function activityDescription(activity, names) {
 
 function SettingsCard({ eyebrow, title, children }) {
   return (
-    <section style={{
+    <section className="web-settings-card" style={{
       padding: 18,
       border: '1px solid var(--line)',
       borderRadius: 12,
-      background: 'var(--bg-2)'
+      background: 'var(--inset)'
     }}>
       {eyebrow && (
         <div style={{
@@ -2090,7 +2091,7 @@ function SettingsCard({ eyebrow, title, children }) {
 
 function SettingsField({ label, description, children }) {
   return (
-    <div style={{
+    <div className="web-settings-field" style={{
       display: 'grid',
       gridTemplateColumns: 'minmax(120px, .7fr) minmax(0, 1.3fr)',
       gap: 16,
@@ -2112,6 +2113,7 @@ function SettingsField({ label, description, children }) {
 function SettingsChoice({ icon, label, description, active, onClick }) {
   return (
     <button
+      className="web-settings-choice"
       type="button"
       onClick={onClick}
       style={{

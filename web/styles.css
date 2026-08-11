@@ -1278,6 +1278,123 @@ body.is-dragging-day * {
 }
 
 /* =========================================================
+   Carte — surfaces et commandes
+   ========================================================= */
+
+.web-map-search .mv-glass {
+  min-height: 46px;
+  border: 1px solid rgba(80, 64, 44, 0.16) !important;
+  background: rgba(255, 253, 249, 0.94) !important;
+  box-shadow: 0 10px 28px rgba(54, 42, 27, 0.12) !important;
+  backdrop-filter: blur(18px) saturate(135%);
+  -webkit-backdrop-filter: blur(18px) saturate(135%);
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    background 0.18s ease;
+}
+
+.web-map-search .mv-glass:focus {
+  border-color: var(--accent) !important;
+  background: var(--card) !important;
+  box-shadow:
+    0 0 0 4px var(--accent-soft),
+    0 14px 34px rgba(54, 42, 27, 0.14) !important;
+}
+
+.web-map-search > div > .mv-glass:not(input) {
+  margin-top: 4px;
+  border-radius: 16px !important;
+  overflow: hidden;
+}
+
+.web-map-controls > button,
+.web-map-controls > div {
+  border: 1px solid rgba(80, 64, 44, 0.14) !important;
+  background: rgba(255, 253, 249, 0.92) !important;
+  box-shadow: 0 8px 24px rgba(54, 42, 27, 0.10) !important;
+  backdrop-filter: blur(18px) saturate(135%);
+  -webkit-backdrop-filter: blur(18px) saturate(135%);
+}
+
+.web-map-controls button {
+  transition:
+    transform 0.18s var(--ease-out),
+    background 0.18s ease,
+    color 0.18s ease;
+}
+
+.web-map-controls button:hover {
+  transform: translateY(-1px);
+}
+
+.web-map-controls button:focus-visible {
+  outline: 3px solid var(--accent-soft);
+  outline-offset: 2px;
+}
+
+.web-map-pick-banner {
+  border: 1px solid rgba(150, 100, 13, 0.20) !important;
+  background: rgba(255, 253, 249, 0.96) !important;
+  box-shadow: 0 12px 30px rgba(54, 42, 27, 0.14) !important;
+}
+
+.web-map-day-card .mv-card {
+  border: 1px solid rgba(80, 64, 44, 0.16) !important;
+  border-radius: 20px !important;
+  background: rgba(255, 253, 249, 0.95) !important;
+  box-shadow: 0 20px 48px rgba(54, 42, 27, 0.17) !important;
+  backdrop-filter: blur(18px) saturate(130%);
+  -webkit-backdrop-filter: blur(18px) saturate(130%);
+}
+
+.web-map-day-card .mv-card-head {
+  border-bottom: 1px solid var(--line) !important;
+  background:
+    linear-gradient(
+      90deg,
+      rgba(243, 238, 228, 0.86),
+      rgba(255, 253, 249, 0.94)
+    ) !important;
+}
+
+.web-map-day-card .mv-card-toggle {
+  min-width: 40px;
+  min-height: 40px;
+}
+
+.web-map-day-card .mv-step-row {
+  border-color: var(--line);
+  border-radius: 11px;
+  transition:
+    transform 0.18s var(--ease-out),
+    border-color 0.18s ease,
+    background 0.18s ease;
+}
+
+.web-map-day-card .mv-step-row:hover {
+  transform: translateX(2px);
+  border-color: var(--accent);
+}
+
+@media (max-width: 760px) {
+  .web-map-search .mv-glass {
+    border-radius: 14px !important;
+  }
+
+  .web-map-controls > button,
+  .web-map-controls > div {
+    border-radius: 14px !important;
+  }
+
+  .web-map-day-card .mv-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    border-radius: 17px !important;
+  }
+}
+
+/* =========================================================
    Carte — téléphone
    ========================================================= */
 
@@ -1352,5 +1469,335 @@ body.is-dragging-day * {
     padding: 0 !important;
     justify-content: center;
     font-size: 0 !important;
+  }
+}
+
+/* =========================================================
+   Budget, documents et paramètres — finition visuelle
+   ========================================================= */
+
+.web-budget-page,
+.web-docs-page {
+  background:
+    radial-gradient(
+      circle at 8% -10%,
+      rgba(150, 100, 13, 0.1),
+      transparent 30rem
+    ),
+    linear-gradient(180deg, var(--bg), var(--inset));
+}
+
+/* ---------- Budget ---------- */
+
+.web-budget-total {
+  position: relative;
+  overflow: hidden;
+  border-radius: 22px !important;
+  border-color: rgba(150, 100, 13, 0.2) !important;
+  background:
+    linear-gradient(
+      135deg,
+      var(--card) 0%,
+      var(--accent-soft) 100%
+    ) !important;
+  box-shadow: 0 14px 38px rgba(54, 42, 27, 0.1) !important;
+}
+
+.web-budget-total::after {
+  content: "";
+  position: absolute;
+  top: -48px;
+  right: -38px;
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  background: rgba(150, 100, 13, 0.08);
+  pointer-events: none;
+}
+
+.web-budget-total > * {
+  position: relative;
+  z-index: 1;
+}
+
+.web-budget-tabs,
+.web-docs-tabs {
+  padding: 4px !important;
+  border: 1px solid var(--line);
+  border-radius: 14px !important;
+  background: var(--inset) !important;
+  box-shadow: inset 0 1px 2px rgba(54, 42, 27, 0.04);
+}
+
+.web-budget-expense-form {
+  border-radius: 20px !important;
+  border-color: rgba(150, 100, 13, 0.16) !important;
+  background: var(--card) !important;
+  box-shadow: 0 10px 28px rgba(54, 42, 27, 0.07) !important;
+}
+
+.web-budget-expense-row {
+  border-radius: 14px !important;
+  border: 1px solid transparent !important;
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    background 0.18s ease;
+}
+
+/* ---------- Documents ---------- */
+
+.web-docs-detail {
+  border-radius: 22px !important;
+  border-color: rgba(150, 100, 13, 0.16) !important;
+  box-shadow: 0 16px 42px rgba(54, 42, 27, 0.1) !important;
+}
+
+.web-docs-list-panel {
+  background: var(--card) !important;
+}
+
+.web-docs-search-area {
+  background:
+    linear-gradient(
+      180deg,
+      var(--card),
+      var(--inset)
+    ) !important;
+  border-bottom-color: var(--line) !important;
+}
+
+.web-docs-list {
+  padding: 10px !important;
+}
+
+.web-docs-list-item {
+  margin-bottom: 7px;
+  border: 1px solid transparent !important;
+  border-radius: 14px !important;
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    background 0.18s ease;
+}
+
+.web-docs-preview-panel {
+  background:
+    radial-gradient(
+      circle at 100% 0,
+      rgba(150, 100, 13, 0.07),
+      transparent 26rem
+    ),
+    var(--inset) !important;
+}
+
+.web-docs-preview-zone,
+.web-docs-pdf-preview {
+  border-radius: 16px !important;
+  overflow: hidden;
+}
+
+.web-docs-upload-controls {
+  gap: 10px !important;
+}
+
+/* ---------- Paramètres et profil ---------- */
+
+.web-settings-dialog {
+  border-radius: 22px !important;
+  border-color: rgba(150, 100, 13, 0.18) !important;
+  box-shadow: 0 30px 90px rgba(35, 27, 18, 0.24) !important;
+}
+
+.web-settings-nav {
+  background:
+    linear-gradient(
+      180deg,
+      var(--inset),
+      var(--card)
+    ) !important;
+}
+
+.web-settings-nav button {
+  min-height: 44px;
+  border-radius: 12px !important;
+  transition:
+    background 0.18s ease,
+    color 0.18s ease,
+    transform 0.18s ease;
+}
+
+.web-settings-header {
+  background: color-mix(in srgb, var(--card) 92%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.web-settings-content {
+  background:
+    radial-gradient(
+      circle at 100% 0,
+      rgba(150, 100, 13, 0.08),
+      transparent 28rem
+    ),
+    var(--bg);
+}
+
+.web-settings-card {
+  border-radius: 18px !important;
+  border-color: rgba(150, 100, 13, 0.14) !important;
+  background: var(--card) !important;
+  box-shadow: 0 9px 28px rgba(54, 42, 27, 0.065);
+}
+
+.web-settings-field {
+  transition: background 0.18s ease;
+}
+
+.web-settings-choice {
+  border-radius: 15px !important;
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    background 0.18s ease;
+}
+
+/* ---------- Survols ordinateur ---------- */
+
+@media (hover: hover) and (pointer: fine) {
+  .web-budget-expense-row:hover,
+  .web-docs-list-item:hover {
+    transform: translateY(-2px);
+    border-color: rgba(150, 100, 13, 0.22) !important;
+    box-shadow: 0 8px 22px rgba(54, 42, 27, 0.08);
+  }
+
+  .web-settings-choice:hover {
+    transform: translateY(-2px);
+    border-color: rgba(150, 100, 13, 0.28) !important;
+    box-shadow: 0 9px 24px rgba(54, 42, 27, 0.08);
+  }
+
+  .web-settings-nav button:hover {
+    transform: translateX(2px);
+    background: var(--accent-soft) !important;
+  }
+}
+
+/* ---------- Navigation au clavier ---------- */
+
+.web-budget-page button:focus-visible,
+.web-budget-page input:focus-visible,
+.web-budget-page select:focus-visible,
+.web-docs-page button:focus-visible,
+.web-docs-page input:focus-visible,
+.web-settings-dialog button:focus-visible,
+.web-settings-dialog input:focus-visible,
+.web-settings-dialog select:focus-visible,
+.web-settings-dialog textarea:focus-visible {
+  outline: 3px solid rgba(150, 100, 13, 0.25);
+  outline-offset: 2px;
+  border-color: var(--accent) !important;
+}
+
+/* ---------- Adaptation téléphone ---------- */
+
+@media (max-width: 760px) {
+  .web-budget-page,
+  .web-docs-page {
+    background: var(--bg);
+  }
+
+  .web-budget-total {
+    padding: 18px !important;
+    border-radius: 18px !important;
+  }
+
+  .web-budget-expense-form {
+    border-radius: 17px !important;
+  }
+
+  .web-docs-detail {
+    border-radius: 16px !important;
+  }
+
+  .web-docs-list {
+    padding: 8px !important;
+  }
+
+  .web-docs-list-item {
+    margin-bottom: 6px;
+  }
+
+  .web-settings-dialog {
+    border-radius: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  .web-settings-nav {
+    gap: 6px !important;
+    padding: 8px 10px !important;
+    overflow-x: auto !important;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+
+  .web-settings-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .web-settings-nav button {
+    flex: 0 0 auto !important;
+    width: auto !important;
+    min-height: 42px;
+    white-space: nowrap;
+  }
+
+  .web-settings-content {
+    padding:
+      16px
+      12px
+      calc(24px + env(safe-area-inset-bottom)) !important;
+  }
+
+  .web-settings-card {
+    padding: 16px !important;
+    border-radius: 16px !important;
+  }
+
+  .web-settings-field {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 10px !important;
+    align-items: start !important;
+  }
+
+  .web-settings-field input,
+  .web-settings-field select,
+  .web-settings-field textarea {
+    width: 100% !important;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .web-settings-choice {
+    width: 100%;
+    min-height: 88px;
+  }
+}
+
+/* ---------- Réduction des animations ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .web-budget-page *,
+  .web-docs-page *,
+  .web-settings-dialog * {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

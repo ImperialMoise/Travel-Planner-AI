@@ -3,6 +3,142 @@
 // MapLibre GL JS + tuiles MapTiler (français, POIs, satellite)
 // ════════════════════════════════════════════════════════════
 
+const MAPLIBRE_VERSION = '5.24.0';
+
+const MAPLIBRE_CDN =
+  'https://unpkg.com/maplibre-gl@' +
+  MAPLIBRE_VERSION +
+  '/dist/';
+
+let mapLibrePromise = null;
+
+function loadMapLibre() {
+  if (window.maplibregl) {
+    return Promise.resolve(
+      window.maplibregl
+    );
+  }
+
+  if (mapLibrePromise) {
+    return mapLibrePromise;
+  }
+
+  const existingStyle =
+    document.querySelector(
+      'link[href*="maplibre-gl"]'
+    );
+
+  if (!existingStyle) {
+    const style =
+      document.createElement('link');
+
+    style.rel = 'stylesheet';
+    style.href =
+      MAPLIBRE_CDN +
+      'maplibre-gl.css';
+    style.crossOrigin = 'anonymous';
+
+    document.head.appendChild(style);
+  }
+
+  mapLibrePromise =
+    new Promise(function loadLibrary(
+      resolve,
+      reject
+    ) {
+      const existingScript =
+        document.querySelector(
+          'script[src*="maplibre-gl"]'
+        );
+
+      function finishLoading() {
+        if (window.maplibregl) {
+          resolve(window.maplibregl);
+          return;
+        }
+
+        reject(
+          new Error(
+            'MapLibre ne s’est pas initialisé.'
+          )
+        );
+      }
+
+      function failLoading() {
+        if (existingScript) {
+          existingScript.remove();
+        }
+
+        reject(
+          new Error(
+            'Impossible de télécharger MapLibre.'
+          )
+        );
+      }
+
+      if (existingScript) {
+        existingScript.addEventListener(
+          'load',
+          finishLoading,
+          {
+            once: true
+          }
+        );
+
+        existingScript.addEventListener(
+          'error',
+          failLoading,
+          {
+            once: true
+          }
+        );
+
+        return;
+      }
+
+      const script =
+        document.createElement('script');
+
+      script.src =
+        MAPLIBRE_CDN +
+        'maplibre-gl.js';
+      script.async = true;
+      script.crossOrigin = 'anonymous';
+
+      script.addEventListener(
+        'load',
+        finishLoading,
+        {
+          once: true
+        }
+      );
+
+      script.addEventListener(
+        'error',
+        function handleError() {
+          script.remove();
+
+          reject(
+            new Error(
+              'Impossible de télécharger MapLibre.'
+            )
+          );
+        },
+        {
+          once: true
+        }
+      );
+
+      document.head.appendChild(script);
+    })
+      .catch(function resetLoader(error) {
+        mapLibrePromise = null;
+        throw error;
+      });
+
+  return mapLibrePromise;
+}
+
 /* ═══ DONNÉES DÉMO (coordonnées GPS réelles) ═══ */
 const MAP_TRIP={name:"Corée du Sud",dates:"1 oct. — 15 oct. 2025",days:[
 {n:1,date:"2025-10-01",wd:"Mer",region:"Vol",city:"Paris → Séoul",title:"Le grand départ",tag:"ROISSY-CDG · TERMINAL 2E",note:"Vol de nuit.",c:[2.5479,49.0097],z:9,steps:[{t:"transport",mode:"avion",l:"Paris CDG → Séoul ICN",s:"AF 267 · 11 h 25",time:"13:05",c:[2.5479,49.0097]}]},
@@ -46,6 +182,8 @@ const MV_CSS=`
 .mv-spine-list{flex:1;overflow-y:auto;padding:8px 14px 12px;position:relative}
 .mv-spine-line{position:absolute;left:30px;top:16px;bottom:16px;width:2px;background:var(--line2)}
 .mv-map-wrap{flex:1;position:relative;min-width:0;background:var(--inset)}
+.mv-map-loading{position:absolute;inset:0;z-index:40;display:grid;place-items:center;padding:24px;text-align:center;background:var(--inset);color:var(--muted);font-size:14px;font-weight:700}
+.mv-map-loading[data-error="true"]{color:#b44738}
 #mv-map{position:absolute;inset:0}
 #mv-map .maplibregl-ctrl-attrib{font-size:9px;background:rgba(255,255,255,.7);border-radius:8px 0 0 0}
 .mv-card{
@@ -615,6 +753,56 @@ function MapView(){
   const T=tripToMapTrip(realTrip);
 
   const [sel,setSel]=React.useState(null);
+
+  const [
+    mapLibraryState,
+    setMapLibraryState
+  ] = React.useState(
+    window.maplibregl
+      ? 'ready'
+      : 'idle'
+  );
+
+  React.useEffect(function prepareMapLibrary() {
+    if (!realTrip) {
+      setMapLibraryState('idle');
+      return undefined;
+    }
+
+    if (window.maplibregl) {
+      setMapLibraryState('ready');
+      return undefined;
+    }
+
+    let active = true;
+
+    setMapLibraryState('loading');
+
+    loadMapLibre()
+      .then(function handleMapLibrary() {
+        if (active) {
+          setMapLibraryState('ready');
+        }
+      })
+      .catch(function handleMapLibraryError(
+        error
+      ) {
+        console.error(
+          'Erreur chargement MapLibre',
+          error
+        );
+
+        if (active) {
+          setMapLibraryState('error');
+        }
+      });
+
+    return function cancelMapLibrary() {
+      active = false;
+    };
+  }, [
+    realTrip && realTrip.id
+  ]);
   const { selectedDayIndex, mapFocusStepId, mapLocateStep, mapPickResult, mapPreviewPlace } = Store.useStore();
   const locatingStepName = React.useMemo(function() {
   if (!mapLocateStep || !realTrip || !Array.isArray(realTrip.days)) return '';
@@ -1446,8 +1634,15 @@ function pickResult(f) {
 
   // ── Init map ──
   React.useEffect(()=>{
-    if(!mapEl.current||mapRef.current)return;
-    const map=new maplibregl.Map({container:mapEl.current,style:theme==='dark'?MV_DARK:MV_LIGHT,center:[64,44],zoom:1.6,attributionControl:{compact:true},dragRotate:true,maxPitch:70});
+    if(
+      mapLibraryState !== 'ready' ||
+      !realTrip ||
+      !mapEl.current ||
+      mapRef.current ||
+      !window.maplibregl
+    ) return;
+
+    const map=new window.maplibregl.Map({container:mapEl.current,style:theme==='dark'?MV_DARK:MV_LIGHT,center:[64,44],zoom:1.6,attributionControl:{compact:true},dragRotate:true,maxPitch:70});
     mapRef.current=map;
 map.on('style.load',()=>{
   applyGlobe(map);
@@ -1522,7 +1717,10 @@ function initContent() {
   mapRef.current=null;
   markersRef.current={day:[],step:[]};
 };
-  },[]);
+  },[
+    mapLibraryState,
+    realTrip && realTrip.id
+  ]);
   React.useEffect(()=>{const map=mapRef.current;if(!map)return;(async()=>{map.setStyle(curStyle==='sat'?await buildSat():await buildBase());})();},[theme,curStyle]);
 
 if(!realTrip)return null;
@@ -1661,6 +1859,27 @@ Store.set({
     <style>{MV_CSS}</style>
     <div className="mv-map-wrap" style={{flex:1}}>
       <div id="mv-map" ref={mapEl}/>
+
+      {mapLibraryState !== 'ready' && (
+        <div
+          className="mv-map-loading"
+          data-error={
+            mapLibraryState === 'error'
+              ? 'true'
+              : 'false'
+          }
+          role={
+            mapLibraryState === 'error'
+              ? 'alert'
+              : 'status'
+          }
+          aria-live="polite"
+        >
+          {mapLibraryState === 'error'
+            ? 'Impossible de charger la carte. Vérifie ta connexion puis recharge la page.'
+            : 'Chargement de la carte…'}
+        </div>
+      )}
       {/* Bannière mode pick */}
       {pickMode && (
         <div className="mv-glass web-map-pick-banner" style={{
@@ -1680,7 +1899,7 @@ Store.set({
       {/* ═══ RECHERCHE (centre haut) ═══ */}
       <div className="web-map-search" style={{position:'absolute',top:14,left:'50%',transform:'translateX(-50%)',zIndex:22,width:380,maxWidth:'calc(100% - 200px)'}}>
         <div style={{position:'relative'}}>
-          <input value={query} onChange={e=>doSearch(e.target.value)} placeholder="Rechercher un lieu…" className="mv-glass" style={{width:'100%',padding:'10px 14px 10px 38px',borderRadius:999,color:'var(--text)',fontFamily:'inherit',fontSize:13.5,outline:'none'}}/>
+          <input aria-label="Rechercher un lieu" value={query} onChange={e=>doSearch(e.target.value)} placeholder="Rechercher un lieu…" className="mv-glass" style={{width:'100%',padding:'10px 14px 10px 38px',borderRadius:999,color:'var(--text)',fontFamily:'inherit',fontSize:13.5,outline:'none'}}/>
           <Icon name="pin" size={14} style={{position:'absolute',left:13,top:12,color:'var(--accent)'}}/>
           {results.length>0&&(
             <div className="mv-glass" style={{position:'absolute',top:'calc(100% + 4px)',left:0,right:0,borderRadius:14,overflow:'hidden',maxHeight:280,overflowY:'auto',zIndex:200}}>

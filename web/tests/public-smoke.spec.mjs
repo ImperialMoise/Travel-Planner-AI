@@ -366,3 +366,85 @@ test(
     }
   }
 );
+
+test(
+  'la page publique expose ses métadonnées de partage',
+  async function runTest({ page }) {
+    await page.goto('/', {
+      waitUntil: 'domcontentloaded'
+    });
+
+    await expect(page).toHaveTitle(
+      'La Fabrique à Voyages — Planifie et suis ton voyage'
+    );
+
+    await expect(
+      page.locator(
+        'link[rel="canonical"]'
+      )
+    ).toHaveAttribute(
+      'href',
+      'https://travel-planner-ai-chi.vercel.app/'
+    );
+
+    await expect(
+      page.locator(
+        'meta[property="og:title"]'
+      )
+    ).toHaveAttribute(
+      'content',
+      'La Fabrique à Voyages — Planifie et suis ton voyage'
+    );
+
+    await expect(
+      page.locator(
+        'meta[property="og:description"]'
+      )
+    ).toHaveAttribute(
+      'content',
+      /Construis ton itinéraire/
+    );
+
+    await expect(
+      page.locator(
+        'meta[name="twitter:card"]'
+      )
+    ).toHaveAttribute(
+      'content',
+      'summary'
+    );
+  }
+);
+
+test(
+  'la carte reste déchargée sur l’accueil public',
+  async function runTest({ page }) {
+    const mapLibreRequests = [];
+
+    page.on(
+      'request',
+      function monitorRequest(request) {
+        if (
+          request.url()
+            .includes('maplibre-gl')
+        ) {
+          mapLibreRequests.push(
+            request.url()
+          );
+        }
+      }
+    );
+
+    await page.goto('/', {
+      waitUntil: 'domcontentloaded'
+    });
+
+    await expect(
+      page.locator('.home-page.is-public')
+    ).toBeVisible();
+
+    await page.waitForTimeout(500);
+
+    expect(mapLibreRequests).toEqual([]);
+  }
+);

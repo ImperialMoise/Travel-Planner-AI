@@ -18,9 +18,14 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: verify-web-e2e
+  cancel-in-progress: false
+
 jobs:
   build-and-test-web:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - name: Recover project

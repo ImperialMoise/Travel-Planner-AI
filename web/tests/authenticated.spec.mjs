@@ -12,6 +12,18 @@ const TEST_PASSWORD =
 const TEST_TRIP_PREFIX =
   'E2E-CODEX-';
 
+const FIRST_DAY_NOTE =
+  'E2E — Tour Eiffel';
+
+const SECOND_DAY_NOTE =
+  'E2E — Versailles';
+
+const FIRST_STEP_LABEL =
+  'E2E — Visite Tour Eiffel';
+
+const SECOND_STEP_LABEL =
+  'E2E — Déjeuner';
+
 async function removeTestTrips(
   page,
   exactName
@@ -208,6 +220,291 @@ test(
           }
         ).first()
       ).toBeVisible();
+
+      await page.evaluate(
+        async function prepareReorderTest({
+          expectedTripName,
+          firstDayNote,
+          secondDayNote,
+          firstStepLabel,
+          secondStepLabel
+        }) {
+          const trips =
+            await window.SB.listMyTrips();
+
+          const targetTrip =
+            trips.find(
+              trip =>
+                trip.name ===
+                expectedTripName
+            );
+
+          if (!targetTrip) {
+            throw new Error(
+              'Voyage E2E introuvable.'
+            );
+          }
+
+          const loadedTrip =
+            await window.SB.loadTrip(
+              targetTrip.id
+            );
+
+          const firstDay =
+            loadedTrip?.days?.[0];
+
+          const secondDay =
+            loadedTrip?.days?.[1];
+
+          if (!firstDay || !secondDay) {
+            throw new Error(
+              'Le voyage E2E doit contenir au moins deux journées.'
+            );
+          }
+
+          await window.SB.updateDay(
+            firstDay.id,
+            {
+              note: firstDayNote
+            }
+          );
+
+          await window.SB.updateDay(
+            secondDay.id,
+            {
+              note: secondDayNote
+            }
+          );
+
+          await window.SB.saveStep(
+            targetTrip.id,
+            firstDay.id,
+            {
+              type: 'activite',
+              label: firstStepLabel,
+              time: '09:00',
+              stepIndex: 0
+            }
+          );
+
+          await window.SB.saveStep(
+            targetTrip.id,
+            firstDay.id,
+            {
+              type: 'activite',
+              label: secondStepLabel,
+              time: '12:00',
+              stepIndex: 1
+            }
+          );
+        },
+        {
+          expectedTripName: tripName,
+          firstDayNote:
+            FIRST_DAY_NOTE,
+          secondDayNote:
+            SECOND_DAY_NOTE,
+          firstStepLabel:
+            FIRST_STEP_LABEL,
+          secondStepLabel:
+            SECOND_STEP_LABEL
+        }
+      );
+
+      await page.reload({
+        waitUntil:
+          'domcontentloaded'
+      });
+
+      await expect(
+        page.getByText(
+          tripName,
+          {
+            exact: true
+          }
+        ).first()
+      ).toBeVisible();
+
+      await page.setViewportSize({
+        width: 390,
+        height: 844
+      });
+
+      const firstDayCard =
+        page.locator(
+          '.day-card'
+        ).filter({
+          hasText:
+            FIRST_DAY_NOTE
+        });
+
+      const secondDayCard =
+        page.locator(
+          '.day-card'
+        ).filter({
+          hasText:
+            SECOND_DAY_NOTE
+        });
+
+      await expect(
+        firstDayCard
+      ).toBeVisible();
+
+      await expect(
+        secondDayCard
+      ).toBeVisible();
+
+      await firstDayCard
+        .getByRole('button', {
+          name:
+            /vers le jour suivant/
+        })
+        .click();
+
+      await expect(
+        page.getByText(
+          'Journée déplacée vers J2.',
+          {
+            exact: true
+          }
+        )
+      ).toBeVisible();
+
+      await expect
+        .poll(
+          async function readMode() {
+            return page.evaluate(
+              function getMode() {
+                return localStorage
+                  .getItem(
+                    'atelier_app_mode'
+                  );
+              }
+            );
+          }
+        )
+        .toBe('plan');
+
+      await expect(
+        page.locator(
+          '.travel-mode'
+        )
+      ).toHaveCount(0);
+
+      await page.reload({
+        waitUntil:
+          'domcontentloaded'
+      });
+
+      const persistedDayNotes =
+        await page
+          .locator(
+            '.day-card-note'
+          )
+          .allTextContents();
+
+      expect(
+        persistedDayNotes
+          .slice(0, 2)
+          .map(
+            note => note.trim()
+          )
+      ).toEqual([
+        SECOND_DAY_NOTE,
+        FIRST_DAY_NOTE
+      ]);
+
+      const movedDayCard =
+        page.locator(
+          '.day-card'
+        ).filter({
+          hasText:
+            FIRST_DAY_NOTE
+        });
+
+      await movedDayCard
+        .locator(
+          '.day-card-select'
+        )
+        .click();
+
+      const timelineSteps =
+        page.locator(
+          '.atelier-v2-drop'
+        );
+
+      await expect(
+        timelineSteps
+      ).toHaveCount(2);
+
+      await expect(
+        timelineSteps.nth(0)
+      ).toContainText(
+        FIRST_STEP_LABEL
+      );
+
+      await expect(
+        timelineSteps.nth(1)
+      ).toContainText(
+        SECOND_STEP_LABEL
+      );
+
+      await timelineSteps
+        .nth(0)
+        .getByRole('button', {
+          name:
+            'Déplacer l’étape vers le bas',
+          exact: true
+        })
+        .click();
+
+      await expect(
+        page.getByText(
+          'Nouvel ordre enregistré.',
+          {
+            exact: true
+          }
+        )
+      ).toBeVisible();
+
+      await page.reload({
+        waitUntil:
+          'domcontentloaded'
+      });
+
+      await page
+        .locator(
+          '.day-card'
+        )
+        .filter({
+          hasText:
+            FIRST_DAY_NOTE
+        })
+        .locator(
+          '.day-card-select'
+        )
+        .click();
+
+      const persistedSteps =
+        page.locator(
+          '.atelier-v2-drop'
+        );
+
+      await expect(
+        persistedSteps
+      ).toHaveCount(2);
+
+      await expect(
+        persistedSteps.nth(0)
+      ).toContainText(
+        SECOND_STEP_LABEL
+      );
+
+      await expect(
+        persistedSteps.nth(1)
+      ).toContainText(
+        FIRST_STEP_LABEL
+      );
 
       await page
         .getByRole('button', {

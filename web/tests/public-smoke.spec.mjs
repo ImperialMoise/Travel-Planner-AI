@@ -520,29 +520,54 @@ test(
 
     expect(imageCount).toBeGreaterThan(0);
 
-    for (
-      let index = 0;
-      index < imageCount;
-      index += 1
-    ) {
-      const image =
-        lazyImages.nth(index);
-
-      await expect(image).toHaveAttribute(
-        'loading',
-        'lazy'
+    const invalidImages =
+      await lazyImages.evaluateAll(
+        function inspectImages(
+          images
+        ) {
+          return images
+            .map(
+              function inspectImage(
+                image,
+                index
+              ) {
+                return {
+                  index,
+                  loading:
+                    image.getAttribute(
+                      'loading'
+                    ),
+                  decoding:
+                    image.getAttribute(
+                      'decoding'
+                    ),
+                  draggable:
+                    image.getAttribute(
+                      'draggable'
+                    )
+                };
+              }
+            )
+            .filter(
+              function findInvalid(
+                image
+              ) {
+                return (
+                  image.loading !==
+                    'lazy' ||
+                  image.decoding !==
+                    'async' ||
+                  image.draggable !==
+                    'false'
+                );
+              }
+            );
+        }
       );
 
-      await expect(image).toHaveAttribute(
-        'decoding',
-        'async'
-      );
-
-      await expect(image).toHaveAttribute(
-        'draggable',
-        'false'
-      );
-    }
+    expect(
+      invalidImages
+    ).toEqual([]);
   }
 );
 

@@ -379,6 +379,233 @@ export async function createTrip({ name, startDate, endDate, days }) {
   return trip;
 }
 
+export async function duplicateTrip(
+  sourceTripId,
+  requestedName
+) {
+  if (!sourceTripId) {
+    throw new Error(
+      'Voyage source introuvable.'
+    );
+  }
+
+  const sourceTrip =
+    await loadTrip(sourceTripId);
+
+  if (!sourceTrip) {
+    throw new Error(
+      'Voyage source introuvable.'
+    );
+  }
+
+  const cleanName =
+    String(requestedName || '')
+      .trim();
+
+  if (!cleanName) {
+    throw new Error(
+      'Donne un nom à la copie.'
+    );
+  }
+
+  const sourceDays =
+    Array.isArray(sourceTrip.days)
+      ? sourceTrip.days
+      : [];
+
+  let createdTrip = null;
+
+  try {
+    createdTrip =
+      await createTrip({
+        name: cleanName,
+        startDate:
+          sourceTrip.startDate ||
+          null,
+        endDate:
+          sourceTrip.endDate ||
+          null,
+        days: Math.max(
+          1,
+          sourceDays.length
+        )
+      });
+
+    await updateTrip(
+      createdTrip.id,
+      {
+        globalNote:
+          sourceTrip.globalNote ||
+          '',
+        accentTheme:
+          sourceTrip.accentTheme ||
+          'ochre'
+      }
+    );
+
+    if (
+      sourceTrip.coverImageUrl
+    ) {
+      await saveTripCover(
+        createdTrip.id,
+        {
+          imageUrl:
+            sourceTrip.coverImageUrl,
+          alt:
+            sourceTrip.coverImageAlt,
+          photographer:
+            sourceTrip
+              .coverPhotographerName,
+          photographerUrl:
+            sourceTrip
+              .coverPhotographerUrl,
+          sourceUrl:
+            sourceTrip.coverSourceUrl
+        }
+      );
+    }
+
+    const targetTrip =
+      await loadTrip(
+        createdTrip.id
+      );
+
+    const targetDays =
+      Array.isArray(targetTrip.days)
+        ? targetTrip.days
+        : [];
+
+    for (
+      let dayIndex = 0;
+      dayIndex < sourceDays.length;
+      dayIndex += 1
+    ) {
+      const sourceDay =
+        sourceDays[dayIndex];
+
+      const targetDay =
+        targetDays[dayIndex];
+
+      if (!targetDay) {
+        throw new Error(
+          'Une journée de la copie est introuvable.'
+        );
+      }
+
+      await updateDay(
+        targetDay.id,
+        {
+          title:
+            sourceDay.title || '',
+          note:
+            sourceDay.note || '',
+          todo:
+            Array.isArray(
+              sourceDay.todo
+            )
+              ? sourceDay.todo
+              : []
+        }
+      );
+
+      if (
+        sourceDay.coverImageUrl
+      ) {
+        await saveDayCover(
+          targetDay.id,
+          {
+            imageUrl:
+              sourceDay.coverImageUrl,
+            alt:
+              sourceDay.coverImageAlt,
+            photographer:
+              sourceDay
+                .coverPhotographerName,
+            photographerUrl:
+              sourceDay
+                .coverPhotographerUrl,
+            sourceUrl:
+              sourceDay.coverSourceUrl
+          }
+        );
+
+        await updateDayCoverCrop(
+          targetDay.id,
+          {
+            positionY:
+              sourceDay
+                .coverPositionY,
+            locked:
+              sourceDay
+                .coverCropLocked
+          }
+        );
+      }
+
+      const orderedSteps = (
+        Array.isArray(
+          sourceDay.steps
+        )
+          ? sourceDay.steps
+          : []
+      )
+        .slice()
+        .sort(
+          (first, second) =>
+            Number(
+              first.stepIndex || 0
+            ) -
+            Number(
+              second.stepIndex || 0
+            )
+        );
+
+      for (
+        let stepIndex = 0;
+        stepIndex <
+          orderedSteps.length;
+        stepIndex += 1
+      ) {
+        const sourceStep =
+          orderedSteps[stepIndex];
+
+        await saveStep(
+          createdTrip.id,
+          targetDay.id,
+          {
+            ...sourceStep,
+            id: null,
+            dayId:
+              targetDay.id,
+            stepIndex
+          }
+        );
+      }
+    }
+
+    return await loadTrip(
+      createdTrip.id
+    );
+  } catch (error) {
+    if (createdTrip?.id) {
+      try {
+        await deleteTrip(
+          createdTrip.id
+        );
+      } catch (
+        cleanupError
+      ) {
+        console.warn(
+          'Duplicate cleanup failed:',
+          cleanupError
+        );
+      }
+    }
+
+    throw error;
+  }
+}
+
 export async function loadTrip(tripId) {
   const [
     { data: trip, error: e1 },
@@ -1557,6 +1784,7 @@ window.SB = {
 
   listMyTrips,
   createTrip,
+  duplicateTrip,
   loadTrip,
   updateTrip,
   searchTripCoverPhotos,

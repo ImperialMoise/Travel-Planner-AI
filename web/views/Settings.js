@@ -1420,7 +1420,177 @@ function getTripAccentTheme(key) {
   return TRIP_ACCENT_THEMES.find(theme => theme.key === key) || TRIP_ACCENT_THEMES[0];
 }
 
-function TripsSection({ trips, activeTripId, onOpen }) {
+function TripsSection({
+  trips,
+  activeTripId,
+  onOpen
+}) {
+  const [
+    duplicatingTripId,
+    setDuplicatingTripId
+  ] = React.useState(null);
+
+  const [
+    tripSearch,
+    setTripSearch
+  ] = React.useState('');
+
+  const [
+    tripFilter,
+    setTripFilter
+  ] = React.useState(
+    'all'
+  );
+
+  const now = new Date();
+
+  const today = [
+    now.getFullYear(),
+    String(
+      now.getMonth() + 1
+    ).padStart(2, '0'),
+    String(
+      now.getDate()
+    ).padStart(2, '0')
+  ].join('-');
+
+  function getTripStatus(
+    trip
+  ) {
+    const startDate =
+      trip.start_date || '';
+
+    const endDate =
+      trip.end_date || '';
+
+    if (!startDate) {
+      return 'undated';
+    }
+
+    if (startDate > today) {
+      return 'upcoming';
+    }
+
+    if (
+      endDate &&
+      endDate < today
+    ) {
+      return 'past';
+    }
+
+    return 'current';
+  }
+
+  const normalizedSearch =
+    tripSearch
+      .trim()
+      .toLocaleLowerCase(
+        'fr-FR'
+      );
+
+  const visibleTrips =
+    trips.filter(
+      function filterTrip(trip) {
+        const matchesSearch =
+          !normalizedSearch ||
+          String(
+            trip.name || ''
+          )
+            .toLocaleLowerCase(
+              'fr-FR'
+            )
+            .includes(
+              normalizedSearch
+            );
+
+        const status =
+          getTripStatus(trip);
+
+        const matchesFilter =
+          tripFilter === 'all' ||
+          tripFilter === status;
+
+        return (
+          matchesSearch &&
+          matchesFilter
+        );
+      }
+    );
+
+  async function duplicateTrip(
+    trip
+  ) {
+    if (
+      duplicatingTripId ||
+      !window.SB?.duplicateTrip
+    ) {
+      return;
+    }
+
+    const requestedName =
+      window.prompt(
+        'Nom de la copie :',
+        trip.name + ' (copie)'
+      );
+
+    if (
+      requestedName === null
+    ) {
+      return;
+    }
+
+    const cleanName =
+      requestedName.trim();
+
+    if (!cleanName) {
+      Store.showToast(
+        'Donne un nom à la copie.'
+      );
+
+      return;
+    }
+
+    setDuplicatingTripId(
+      trip.id
+    );
+
+    try {
+      const created =
+        await window.SB
+          .duplicateTrip(
+            trip.id,
+            cleanName
+          );
+
+      const nextTrips =
+        await window.SB
+          .listMyTrips();
+
+      Store.set({
+        trips: nextTrips
+      });
+
+      setDuplicatingTripId(
+        null
+      );
+
+      Store.showToast(
+        'Voyage dupliqué.'
+      );
+
+      onOpen(created.id);
+    } catch (error) {
+      setDuplicatingTripId(
+        null
+      );
+
+      Store.showToast(
+        error.message ||
+          'La duplication a échoué.'
+      );
+    }
+  }
+
   async function removeTrip(trip) {
     if (!confirm(`Supprimer « ${trip.name} » définitivement ?`)) return;
 
@@ -1476,8 +1646,141 @@ function TripsSection({ trips, activeTripId, onOpen }) {
   }
 
   return (
-    <div style={{ maxWidth: 740, display: 'flex', flexDirection: 'column', gap: 10 }}>
-      {trips.map(trip => (
+    <div
+      style={{
+        maxWidth: 740,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 10
+      }}
+    >
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns:
+            'minmax(0, 1fr) minmax(150px, 210px)',
+          gap: 10,
+          marginBottom: 4
+        }}
+      >
+        <label>
+          <span
+            style={{
+              display: 'block',
+              marginBottom: 5,
+              color:
+                'var(--muted)',
+              fontSize: 11,
+              fontWeight: 900
+            }}
+          >
+            Rechercher
+          </span>
+
+          <input
+            type="search"
+            value={tripSearch}
+            placeholder="Nom du voyage…"
+            aria-label="Rechercher un voyage"
+            onChange={event =>
+              setTripSearch(
+                event.target.value
+              )
+            }
+            style={{
+              width: '100%',
+              minHeight: 44,
+              padding: '0 12px',
+              border:
+                '1px solid var(--line)',
+              borderRadius: 8,
+              color: 'var(--text)',
+              background:
+                'var(--card)',
+              font: 'inherit'
+            }}
+          />
+        </label>
+
+        <label>
+          <span
+            style={{
+              display: 'block',
+              marginBottom: 5,
+              color:
+                'var(--muted)',
+              fontSize: 11,
+              fontWeight: 900
+            }}
+          >
+            Période
+          </span>
+
+          <select
+            value={tripFilter}
+            aria-label="Filtrer les voyages"
+            onChange={event =>
+              setTripFilter(
+                event.target.value
+              )
+            }
+            style={{
+              width: '100%',
+              minHeight: 44,
+              padding: '0 10px',
+              border:
+                '1px solid var(--line)',
+              borderRadius: 8,
+              color: 'var(--text)',
+              background:
+                'var(--card)',
+              font: 'inherit'
+            }}
+          >
+            <option value="all">
+              Tous les voyages
+            </option>
+
+            <option value="upcoming">
+              À venir
+            </option>
+
+            <option value="current">
+              En cours
+            </option>
+
+            <option value="past">
+              Terminés
+            </option>
+
+            <option value="undated">
+              Sans dates
+            </option>
+          </select>
+        </label>
+      </div>
+
+      {!visibleTrips.length && (
+        <div
+          role="status"
+          style={{
+            padding: 24,
+            border:
+              '1px dashed var(--line)',
+            borderRadius: 10,
+            color:
+              'var(--muted)',
+            background:
+              'var(--inset)',
+            textAlign: 'center',
+            fontSize: 13
+          }}
+        >
+          Aucun voyage ne correspond à cette recherche.
+        </div>
+      )}
+
+      {visibleTrips.map(trip => (
         <div
           key={trip.id}
           className="settings-trip-row"
@@ -1485,6 +1788,7 @@ function TripsSection({ trips, activeTripId, onOpen }) {
           style={{
           display: 'flex',
           alignItems: 'center',
+          flexWrap: 'wrap',
           gap: 13,
           padding: 14,
           border: '1px solid ' + (trip.id === activeTripId ? 'rgba(157, 104, 12, .35)' : 'var(--line)'),
@@ -1567,12 +1871,58 @@ function TripsSection({ trips, activeTripId, onOpen }) {
 </div>
           </div>
 
-          <SettingsButton icon="arrow" onClick={() => onOpen(trip.id)}>
-            Ouvrir
-          </SettingsButton>
-          <SettingsButton variant="danger" icon="x" onClick={() => removeTrip(trip)}>
-            Supprimer
-          </SettingsButton>
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              justifyContent:
+                'flex-end',
+              gap: 8,
+              marginLeft: 'auto'
+            }}
+          >
+            <SettingsButton
+              icon="arrow"
+              disabled={Boolean(
+                duplicatingTripId
+              )}
+              onClick={() =>
+                onOpen(trip.id)
+              }
+            >
+              Ouvrir
+            </SettingsButton>
+
+            <SettingsButton
+              icon="plus"
+              disabled={Boolean(
+                duplicatingTripId
+              )}
+              onClick={() =>
+                duplicateTrip(trip)
+              }
+            >
+              {
+                duplicatingTripId ===
+                  trip.id
+                  ? 'Copie…'
+                  : 'Dupliquer'
+              }
+            </SettingsButton>
+
+            <SettingsButton
+              variant="danger"
+              icon="x"
+              disabled={Boolean(
+                duplicatingTripId
+              )}
+              onClick={() =>
+                removeTrip(trip)
+              }
+            >
+              Supprimer
+            </SettingsButton>
+          </div>
         </div>
       ))}
     </div>

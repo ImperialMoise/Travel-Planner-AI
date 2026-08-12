@@ -4448,6 +4448,37 @@ function setAppMode(nextMode) {
                     );
                   })}
 
+                  {trip && (
+                    <button
+                      type="button"
+                      className="trip-menu-btn"
+                      onClick={() => {
+                        setTripMenuOpen(false);
+
+                        if (
+                          !window.TripPrint?.open
+                        ) {
+                          Store.showToast(
+                            'L’export PDF est indisponible.'
+                          );
+
+                          return;
+                        }
+
+                        window.TripPrint.open(
+                          trip
+                        );
+                      }}
+                    >
+                      <Icon
+                        name="print"
+                        size={13}
+                      />
+
+                      Imprimer / PDF
+                    </button>
+                  )}
+
                   <div
                     style={{
                       height: 1,

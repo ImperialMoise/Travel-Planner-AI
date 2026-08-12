@@ -123,6 +123,9 @@ test(
       TEST_TRIP_PREFIX +
       Date.now();
 
+    const duplicateTripName =
+      tripName + '-COPIE';
+
     let signedIn = false;
     let tripCreated = false;
 
@@ -576,17 +579,118 @@ test(
         .click();
 
       const tripRow =
-        settingsDialog
-          .locator(
-            '.settings-trip-row'
-          )
-          .filter({
-            hasText: tripName
-          });
+        settingsDialog.locator(
+          `.settings-trip-row[data-trip-name="${tripName}"]`
+        );
 
       await expect(
         tripRow
       ).toBeVisible();
+
+            await tripRow
+        .getByRole('button', {
+          name: 'Dupliquer',
+          exact: true
+        })
+        .click();
+
+      const duplicateDialog =
+        page.getByRole(
+          'dialog',
+          {
+            name:
+              'Dupliquer le voyage'
+          }
+        );
+
+      await expect(
+        duplicateDialog
+      ).toBeVisible();
+
+      const duplicateNameInput =
+        duplicateDialog.getByLabel(
+          'Nom de la copie',
+          {
+            exact: true
+          }
+        );
+
+      await expect(
+        duplicateNameInput
+      ).toHaveValue(
+        tripName + ' (copie)'
+      );
+
+      await duplicateNameInput.fill(
+        duplicateTripName
+      );
+
+      await duplicateDialog
+        .getByRole('button', {
+          name: 'Créer la copie',
+          exact: true
+        })
+        .click();
+
+      await expect(
+        duplicateDialog
+      ).toBeHidden();
+
+      await expect(
+        page.getByText(
+          duplicateTripName,
+          {
+            exact: true
+          }
+        ).first()
+      ).toBeVisible();
+
+      await page
+        .getByRole('button', {
+          name: 'Paramètres',
+          exact: true
+        })
+        .click();
+
+      await expect(
+        settingsDialog
+      ).toBeVisible();
+
+      await settingsDialog
+        .getByRole('button', {
+          name: 'Mes voyages',
+          exact: true
+        })
+        .click();
+
+      const duplicateTripRow =
+        settingsDialog.locator(
+          `.settings-trip-row[data-trip-name="${duplicateTripName}"]`
+        );
+
+      await expect(
+        duplicateTripRow
+      ).toBeVisible();
+
+      page.once(
+        'dialog',
+        async function confirmDuplicateDeletion(
+          confirmation
+        ) {
+          await confirmation.accept();
+        }
+      );
+
+      await duplicateTripRow
+        .getByRole('button', {
+          name: 'Supprimer',
+          exact: true
+        })
+        .click();
+
+      await expect(
+        duplicateTripRow
+      ).toBeHidden();
 
       page.once(
         'dialog',
@@ -643,7 +747,7 @@ test(
         try {
           await removeTestTrips(
             page,
-            tripName
+            ''
           );
         } catch (cleanupError) {
           console.warn(

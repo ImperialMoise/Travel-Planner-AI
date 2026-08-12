@@ -1431,6 +1431,16 @@ function TripsSection({
   ] = React.useState(null);
 
   const [
+    tripToDuplicate,
+    setTripToDuplicate
+  ] = React.useState(null);
+
+  const [
+    duplicateName,
+    setDuplicateName
+  ] = React.useState('');
+
+  const [
     tripSearch,
     setTripSearch
   ] = React.useState('');
@@ -1751,30 +1761,45 @@ function TripsSection({
       )
       .sort(compareTrips);
 
-  async function duplicateTrip(
+  function openDuplicateDialog(
     trip
   ) {
+    if (duplicatingTripId) {
+      return;
+    }
+
+    setTripToDuplicate(trip);
+    setDuplicateName(
+      trip.name + ' (copie)'
+    );
+  }
+
+  function closeDuplicateDialog() {
+    if (duplicatingTripId) {
+      return;
+    }
+
+    setTripToDuplicate(null);
+    setDuplicateName('');
+  }
+
+  async function duplicateTrip(
+    event
+  ) {
+    event.preventDefault();
+
+    const trip = tripToDuplicate;
+
     if (
+      !trip ||
       duplicatingTripId ||
       !window.SB?.duplicateTrip
     ) {
       return;
     }
 
-    const requestedName =
-      window.prompt(
-        'Nom de la copie :',
-        trip.name + ' (copie)'
-      );
-
-    if (
-      requestedName === null
-    ) {
-      return;
-    }
-
     const cleanName =
-      requestedName.trim();
+      duplicateName.trim();
 
     if (!cleanName) {
       Store.showToast(
@@ -1804,9 +1829,9 @@ function TripsSection({
         trips: nextTrips
       });
 
-      setDuplicatingTripId(
-        null
-      );
+      setDuplicatingTripId(null);
+      setTripToDuplicate(null);
+      setDuplicateName('');
 
       Store.showToast(
         'Voyage dupliqué.'
@@ -1814,9 +1839,7 @@ function TripsSection({
 
       onOpen(created.id);
     } catch (error) {
-      setDuplicatingTripId(
-        null
-      );
+      setDuplicatingTripId(null);
 
       Store.showToast(
         error.message ||
@@ -2235,7 +2258,9 @@ function TripsSection({
                 duplicatingTripId
               )}
               onClick={() =>
-                duplicateTrip(trip)
+                openDuplicateDialog(
+                  trip
+                )
               }
             >
               {
@@ -2261,6 +2286,225 @@ function TripsSection({
           </div>
         </div>
       ))}
+
+      {tripToDuplicate && (
+        <div
+          onClick={
+            closeDuplicateDialog
+          }
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 700,
+            display: 'grid',
+            placeItems: 'center',
+            padding: 18,
+            background:
+              'rgba(30, 25, 18, .56)',
+            backdropFilter:
+              'blur(5px)'
+          }}
+        >
+          <form
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="duplicate-trip-title"
+            onClick={event =>
+              event.stopPropagation()
+            }
+            onKeyDown={event => {
+              if (
+                event.key ===
+                'Escape'
+              ) {
+                event.preventDefault();
+                event.stopPropagation();
+                closeDuplicateDialog();
+              }
+            }}
+            onSubmit={duplicateTrip}
+            style={{
+              width: '100%',
+              maxWidth: 440,
+              padding: 22,
+              border:
+                '1px solid var(--line)',
+              borderRadius: 14,
+              background:
+                'var(--card)',
+              boxShadow:
+                'var(--shadow-lg)'
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems:
+                  'flex-start',
+                justifyContent:
+                  'space-between',
+                gap: 16
+              }}
+            >
+              <div>
+                <div
+                  style={{
+                    color:
+                      'var(--accent)',
+                    fontSize: 10,
+                    fontWeight: 900,
+                    letterSpacing:
+                      '.12em',
+                    textTransform:
+                      'uppercase'
+                  }}
+                >
+                  Nouvelle copie
+                </div>
+
+                <h2
+                  id="duplicate-trip-title"
+                  style={{
+                    margin: '5px 0 0',
+                    fontFamily:
+                      'var(--serif)',
+                    fontSize: 25
+                  }}
+                >
+                  Dupliquer le voyage
+                </h2>
+              </div>
+
+              <button
+                type="button"
+                aria-label="Fermer la duplication"
+                disabled={Boolean(
+                  duplicatingTripId
+                )}
+                onClick={
+                  closeDuplicateDialog
+                }
+                style={{
+                  width: 36,
+                  height: 36,
+                  border:
+                    '1px solid var(--line)',
+                  borderRadius: 8,
+                  color:
+                    'var(--text)',
+                  background:
+                    'var(--inset)',
+                  fontSize: 20,
+                  cursor: 'pointer'
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            <p
+              style={{
+                margin: '12px 0 18px',
+                color: 'var(--muted)',
+                fontSize: 13,
+                lineHeight: 1.5
+              }}
+            >
+              Toutes les journées et les informations du voyage seront copiées.
+            </p>
+
+            <label
+              htmlFor="duplicate-trip-name"
+              style={{
+                display: 'block',
+                marginBottom: 6,
+                fontSize: 11,
+                fontWeight: 900,
+                letterSpacing:
+                  '.06em',
+                textTransform:
+                  'uppercase'
+              }}
+            >
+              Nom de la copie
+            </label>
+
+            <input
+              id="duplicate-trip-name"
+              autoFocus
+              required
+              maxLength={120}
+              value={duplicateName}
+              onChange={event =>
+                setDuplicateName(
+                  event.target.value
+                )
+              }
+              style={{
+                width: '100%',
+                minHeight: 46,
+                padding: '0 12px',
+                border:
+                  '1px solid var(--line)',
+                borderRadius: 8,
+                color: 'var(--text)',
+                background:
+                  'var(--inset)',
+                font: 'inherit'
+              }}
+            />
+
+            <div
+              style={{
+                display: 'flex',
+                justifyContent:
+                  'flex-end',
+                flexWrap: 'wrap',
+                gap: 8,
+                marginTop: 20
+              }}
+            >
+              <SettingsButton
+                disabled={Boolean(
+                  duplicatingTripId
+                )}
+                onClick={
+                  closeDuplicateDialog
+                }
+              >
+                Annuler
+              </SettingsButton>
+
+              <button
+                type="submit"
+                disabled={Boolean(
+                  duplicatingTripId
+                )}
+                style={{
+                  minHeight: 40,
+                  padding: '0 16px',
+                  border: 0,
+                  borderRadius: 8,
+                  color: '#fff',
+                  background:
+                    'var(--accent)',
+                  fontWeight: 900,
+                  cursor:
+                    duplicatingTripId
+                      ? 'wait'
+                      : 'pointer'
+                }}
+              >
+                {
+                  duplicatingTripId
+                    ? 'Duplication…'
+                    : 'Créer la copie'
+                }
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 }

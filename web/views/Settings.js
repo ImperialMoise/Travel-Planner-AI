@@ -1478,7 +1478,11 @@ function TripsSection({ trips, activeTripId, onOpen }) {
   return (
     <div style={{ maxWidth: 740, display: 'flex', flexDirection: 'column', gap: 10 }}>
       {trips.map(trip => (
-        <div key={trip.id} style={{
+        <div
+          key={trip.id}
+          className="settings-trip-row"
+          data-trip-name={trip.name}
+          style={{
           display: 'flex',
           alignItems: 'center',
           gap: 13,

@@ -51,6 +51,9 @@ jobs:
 
       - name: Run web smoke tests
         working-directory: web
+        env:
+          E2E_TEST_EMAIL: ${{ secrets.E2E_TEST_EMAIL }}
+          E2E_TEST_PASSWORD: ${{ secrets.E2E_TEST_PASSWORD }}
         run: npm run test:e2e
 
       - name: Upload Playwright report

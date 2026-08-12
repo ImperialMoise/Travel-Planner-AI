@@ -540,6 +540,14 @@
     box-shadow:0 5px 12px rgba(66, 48, 18, .10);
   }
 
+  .topbar-settings-btn.topbar-print-btn{
+    display:grid;
+  }
+
+  .topbar-settings-btn.topbar-print-btn:hover{
+    transform:translateY(-2px);
+  }
+
   .user-pill{
     display:flex;
     align-items:center;
@@ -4448,37 +4456,6 @@ function setAppMode(nextMode) {
                     );
                   })}
 
-                  {trip && (
-                    <button
-                      type="button"
-                      className="trip-menu-btn"
-                      onClick={() => {
-                        setTripMenuOpen(false);
-
-                        if (
-                          !window.TripPrint?.open
-                        ) {
-                          Store.showToast(
-                            'L’export PDF est indisponible.'
-                          );
-
-                          return;
-                        }
-
-                        window.TripPrint.open(
-                          trip
-                        );
-                      }}
-                    >
-                      <Icon
-                        name="print"
-                        size={13}
-                      />
-
-                      Imprimer / PDF
-                    </button>
-                  )}
-
                   <div
                     style={{
                       height: 1,
@@ -4626,6 +4603,35 @@ function setAppMode(nextMode) {
               </div>
 
               <div className="topbar-account">
+                {trip && (
+                  <button
+                    type="button"
+                    className="topbar-settings-btn topbar-print-btn"
+                    title="Imprimer ou enregistrer le voyage en PDF"
+                    aria-label="Imprimer le voyage"
+                    onClick={() => {
+                      if (
+                        !window.TripPrint?.open
+                      ) {
+                        Store.showToast(
+                          'L’export PDF est indisponible.'
+                        );
+
+                        return;
+                      }
+
+                      window.TripPrint.open(
+                        trip
+                      );
+                    }}
+                  >
+                    <Icon
+                      name="print"
+                      size={17}
+                    />
+                  </button>
+                )}
+
                 <button
                   type="button"
                   className="topbar-settings-btn"

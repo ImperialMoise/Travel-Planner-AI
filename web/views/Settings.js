@@ -1442,6 +1442,109 @@ function TripsSection({
     'all'
   );
 
+  const [
+    backupBusy,
+    setBackupBusy
+  ] = React.useState(false);
+
+  const [
+    restoreBusy,
+    setRestoreBusy
+  ] = React.useState(false);
+
+  const backupInputRef =
+    React.useRef(null);
+
+  async function downloadBackup() {
+    if (
+      backupBusy ||
+      !window.TripBackup
+        ?.downloadAll
+    ) {
+      return;
+    }
+
+    setBackupBusy(true);
+
+    try {
+      const result =
+        await window.TripBackup
+          .downloadAll();
+
+      Store.showToast(
+        result.tripCount +
+          (
+            result.tripCount > 1
+              ? ' voyages sauvegardés.'
+              : ' voyage sauvegardé.'
+          )
+      );
+    } catch (error) {
+      Store.showToast(
+        error.message ||
+          'La sauvegarde a échoué.'
+      );
+    } finally {
+      setBackupBusy(false);
+    }
+  }
+
+  async function restoreBackup(
+    event
+  ) {
+    const file =
+      event.target
+        .files?.[0] ||
+      null;
+
+    event.target.value = '';
+
+    if (
+      !file ||
+      restoreBusy ||
+      !window.TripBackup
+        ?.restoreFile
+    ) {
+      return;
+    }
+
+    setRestoreBusy(true);
+
+    try {
+      const result =
+        await window.TripBackup
+          .restoreFile(file);
+
+      if (result.cancelled) {
+        return;
+      }
+
+      const nextTrips =
+        await window.SB
+          .listMyTrips();
+
+      Store.set({
+        trips: nextTrips
+      });
+
+      Store.showToast(
+        result.tripCount +
+          (
+            result.tripCount > 1
+              ? ' voyages restaurés.'
+              : ' voyage restauré.'
+          )
+      );
+    } catch (error) {
+      Store.showToast(
+        error.message ||
+          'La restauration a échoué.'
+      );
+    } finally {
+      setRestoreBusy(false);
+    }
+  }
+
   const now = new Date();
 
   const today = [
@@ -1481,6 +1584,132 @@ function TripsSection({
     return 'current';
   }
 
+  const TRIP_STATUS_META = {
+    current: {
+      label: 'En cours',
+      color: '#27644f',
+      background:
+        'rgba(39, 100, 79, .12)'
+    },
+    upcoming: {
+      label: 'À venir',
+      color: '#32637e',
+      background:
+        'rgba(50, 99, 126, .12)'
+    },
+    past: {
+      label: 'Terminé',
+      color: 'var(--muted)',
+      background:
+        'var(--card)'
+    },
+    undated: {
+      label: 'Sans dates',
+      color: '#96640d',
+      background:
+        'rgba(150, 100, 13, .12)'
+    }
+  };
+
+  const TRIP_STATUS_ORDER = {
+    current: 0,
+    upcoming: 1,
+    undated: 2,
+    past: 3
+  };
+
+  function compareTrips(
+    first,
+    second
+  ) {
+    const firstStatus =
+      getTripStatus(first);
+
+    const secondStatus =
+      getTripStatus(second);
+
+    const statusDifference =
+      TRIP_STATUS_ORDER[
+        firstStatus
+      ] -
+      TRIP_STATUS_ORDER[
+        secondStatus
+      ];
+
+    if (statusDifference) {
+      return statusDifference;
+    }
+
+    if (
+      firstStatus ===
+      'upcoming'
+    ) {
+      return String(
+        first.start_date || ''
+      ).localeCompare(
+        String(
+          second.start_date ||
+            ''
+        )
+      );
+    }
+
+    if (
+      firstStatus === 'past'
+    ) {
+      return String(
+        second.end_date ||
+          second.start_date ||
+          ''
+      ).localeCompare(
+        String(
+          first.end_date ||
+            first.start_date ||
+            ''
+        )
+      );
+    }
+
+    return String(
+      first.name || ''
+    ).localeCompare(
+      String(
+        second.name || ''
+      ),
+      'fr'
+    );
+  }
+
+  function renderTripStatusBadge(
+    trip
+  ) {
+    const status =
+      getTripStatus(trip);
+
+    const meta =
+      TRIP_STATUS_META[status];
+
+    return (
+      <span
+        style={{
+          padding: '2px 6px',
+          borderRadius: 999,
+          color: meta.color,
+          background:
+            meta.background,
+          fontSize: 9,
+          fontWeight: 900,
+          letterSpacing: '.06em',
+          whiteSpace: 'nowrap',
+          textTransform:
+            'uppercase'
+        }}
+      >
+        {meta.label}
+      </span>
+    );
+  }
+
   const normalizedSearch =
     tripSearch
       .trim()
@@ -1489,33 +1718,38 @@ function TripsSection({
       );
 
   const visibleTrips =
-    trips.filter(
-      function filterTrip(trip) {
-        const matchesSearch =
-          !normalizedSearch ||
-          String(
-            trip.name || ''
-          )
-            .toLocaleLowerCase(
-              'fr-FR'
+    trips
+      .filter(
+        function filterTrip(
+          trip
+        ) {
+          const matchesSearch =
+            !normalizedSearch ||
+            String(
+              trip.name || ''
             )
-            .includes(
-              normalizedSearch
-            );
+              .toLocaleLowerCase(
+                'fr-FR'
+              )
+              .includes(
+                normalizedSearch
+              );
 
-        const status =
-          getTripStatus(trip);
+          const status =
+            getTripStatus(trip);
 
-        const matchesFilter =
-          tripFilter === 'all' ||
-          tripFilter === status;
+          const matchesFilter =
+            tripFilter ===
+              'all' ||
+            tripFilter === status;
 
-        return (
-          matchesSearch &&
-          matchesFilter
-        );
-      }
-    );
+          return (
+            matchesSearch &&
+            matchesFilter
+          );
+        }
+      )
+      .sort(compareTrips);
 
   async function duplicateTrip(
     trip
@@ -1654,6 +1888,98 @@ function TripsSection({
         gap: 10
       }}
     >
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent:
+            'space-between',
+          flexWrap: 'wrap',
+          gap: 10,
+          marginBottom: 6
+        }}
+      >
+        <div>
+          <strong
+            style={{
+              display: 'block',
+              fontSize: 13
+            }}
+          >
+            {
+              trips.length === 1
+                ? '1 voyage'
+                : trips.length +
+                  ' voyages'
+            }
+          </strong>
+
+          <span
+            style={{
+              color:
+                'var(--muted)',
+              fontSize: 11
+            }}
+          >
+            Télécharge une copie de tes données.
+          </span>
+        </div>
+
+        <div
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: 8
+          }}
+        >
+          <input
+            ref={backupInputRef}
+            type="file"
+            accept=".json,application/json"
+            hidden
+            onChange={
+              restoreBackup
+            }
+          />
+
+          <SettingsButton
+            icon="upload"
+            disabled={
+              backupBusy ||
+              restoreBusy
+            }
+            onClick={() =>
+              backupInputRef
+                .current
+                ?.click()
+            }
+          >
+            {
+              restoreBusy
+                ? 'Restauration…'
+                : 'Restaurer'
+            }
+          </SettingsButton>
+
+          <SettingsButton
+            icon="download"
+            disabled={
+              backupBusy ||
+              restoreBusy
+            }
+            onClick={
+              downloadBackup
+            }
+          >
+            {
+              backupBusy
+                ? 'Sauvegarde…'
+                : 'Sauvegarder'
+            }
+          </SettingsButton>
+        </div>
+      </div>
+
       <div
         style={{
           display: 'grid',
@@ -1820,18 +2146,28 @@ function TripsSection({
                 {trip.name}
               </strong>
               {trip.id === activeTripId && (
-                <span style={{
-                  padding: '2px 6px',
-                  borderRadius: 5,
-                  background: 'var(--accent)',
-                  color: 'var(--bg)',
-                  fontSize: 9,
-                  fontWeight: 900,
-                  letterSpacing: '.08em'
-                }}>
+                <span
+                  style={{
+                    padding: '2px 6px',
+                    borderRadius: 5,
+                    background:
+                      'var(--accent)',
+                    color: 'var(--bg)',
+                    fontSize: 9,
+                    fontWeight: 900,
+                    letterSpacing:
+                      '.08em'
+                  }}
+                >
                   ACTIF
                 </span>
               )}
+
+              {
+                renderTripStatusBadge(
+                  trip
+                )
+              }
             </div>
             <div style={{ marginTop: 4, color: 'var(--muted)', fontSize: 12 }}>
               {trip.start_date ? `Départ ${fmtDate(trip.start_date)}` : 'Sans date définie'}

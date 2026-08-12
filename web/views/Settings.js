@@ -2514,9 +2514,16 @@ function ShareSection({ trips, activeTripId, user }) {
   const [members, setMembers] = React.useState([]);
   const [managedTrip, setManagedTrip] = React.useState(null);
   const [invite, setInvite] = React.useState(null);
+  const [invites, setInvites] = React.useState([]);
   const [inviteRole, setInviteRole] = React.useState('editor');
   const [busy, setBusy] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
+  const [inviteError, setInviteError] = React.useState('');
+  const [loadError, setLoadError] = React.useState('');
+  const [
+    revokingInviteId,
+    setRevokingInviteId
+  ] = React.useState(null);
 
   const selectedTrip = trips.find(trip => trip.id === managedTripId) || null;
   const canManage = selectedTrip?.owner_id === user?.id;
@@ -2531,28 +2538,49 @@ function ShareSection({ trips, activeTripId, user }) {
     if (!managedTripId) {
       setMembers([]);
       setManagedTrip(null);
+      setInvites([]);
       return;
     }
 
     let alive = true;
     setInvite(null);
+    setInviteError('');
+    setLoadError('');
     setLoading(true);
 
     Promise.all([
-      SB.listTripMembers(managedTripId),
-      SB.loadTrip(managedTripId)
+      SB.listTripMembers(
+        managedTripId
+      ),
+      SB.loadTrip(
+        managedTripId
+      ),
+      SB.listTripInvites(
+        managedTripId
+      )
     ])
-      .then(([memberList, fullTrip]) => {
+      .then(([
+        memberList,
+        fullTrip,
+        inviteList
+      ]) => {
         if (!alive) return;
+
         setMembers(memberList);
         setManagedTrip(fullTrip);
+        setInvites(inviteList);
 
         if (managedTripId === activeTripId) {
           Store.set({ trip: fullTrip });
         }
       })
       .catch(error => {
-        if (alive) Store.showToast('Erreur : ' + error.message);
+        if (alive) {
+          setLoadError(
+            error.message ||
+              'Impossible de charger les membres.'
+          );
+        }
       })
       .finally(() => {
         if (alive) setLoading(false);
@@ -2566,13 +2594,25 @@ function ShareSection({ trips, activeTripId, user }) {
   async function refreshTrip() {
     if (!managedTripId) return;
 
-    const [memberList, fullTrip] = await Promise.all([
-      SB.listTripMembers(managedTripId),
-      SB.loadTrip(managedTripId)
+    const [
+      memberList,
+      fullTrip,
+      inviteList
+    ] = await Promise.all([
+      SB.listTripMembers(
+        managedTripId
+      ),
+      SB.loadTrip(
+        managedTripId
+      ),
+      SB.listTripInvites(
+        managedTripId
+      )
     ]);
 
     setMembers(memberList);
     setManagedTrip(fullTrip);
+    setInvites(inviteList);
 
     if (managedTripId === activeTripId) {
       Store.set({ trip: fullTrip });
@@ -2580,27 +2620,182 @@ function ShareSection({ trips, activeTripId, user }) {
   }
 
   async function createInvite() {
+    setInviteError('');
+
     if (!canManage) {
-      Store.showToast('Seul le propriétaire peut inviter des membres.');
+      Store.showToast(
+        'Seul le propriétaire peut inviter des membres.'
+      );
       return;
     }
 
     setBusy(true);
 
     try {
-      const created = await SB.createTripInvite(managedTripId, inviteRole);
+      const created =
+        await SB.createTripInvite(
+          managedTripId,
+          inviteRole
+        );
+
       setInvite(created);
 
+      setInvites(current => [
+        created,
+        ...current.filter(
+          item =>
+            item.id !== created.id
+        )
+      ]);
+
       try {
-        await navigator.clipboard.writeText(created.url);
-        Store.showToast('Lien créé et copié');
+        await navigator.clipboard.writeText(
+          created.url
+        );
+
+        Store.showToast(
+          'Lien créé et copié.'
+        );
       } catch (error) {
-        Store.showToast('Lien créé : copie-le depuis le champ');
+        Store.showToast(
+          'Lien créé : copie-le depuis le champ.'
+        );
       }
     } catch (error) {
-      Store.showToast('Erreur invitation : ' + error.message);
+      setInviteError(
+        error.message ||
+          "Impossible de créer l'invitation."
+      );
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function copyInviteLink(
+    invitation = invite
+  ) {
+    if (!invitation?.url) return;
+
+    setInviteError('');
+
+    try {
+      await navigator.clipboard.writeText(
+        invitation.url
+      );
+
+      Store.showToast(
+        'Lien copié.'
+      );
+    } catch (error) {
+      setInviteError(
+        'La copie automatique a échoué. Sélectionne le lien et copie-le manuellement.'
+      );
+    }
+  }
+
+  async function shareInviteLink(
+    invitation = invite
+  ) {
+    if (!invitation?.url) return;
+
+    setInviteError('');
+
+    if (!navigator.share) {
+      await copyInviteLink(
+        invitation
+      );
+      return;
+    }
+
+    try {
+      await navigator.share({
+        title:
+          selectedTrip?.name ||
+          'Invitation au voyage',
+        text:
+          'Rejoins mon voyage sur La Fabrique à Voyages.',
+        url: invitation.url
+      });
+    } catch (error) {
+      if (
+        error?.name !==
+        'AbortError'
+      ) {
+        setInviteError(
+          "Le partage n'a pas pu être ouvert. Tu peux toujours copier le lien."
+        );
+      }
+    }
+  }
+
+   function inviteExpirationLabel(
+    invitation
+  ) {
+    if (!invitation?.expiresAt) {
+      return 'sans date limite';
+    }
+
+    return (
+      'expire le ' +
+      new Intl.DateTimeFormat(
+        'fr-FR',
+        {
+          dateStyle: 'medium',
+          timeStyle: 'short'
+        }
+      ).format(
+        new Date(
+          invitation.expiresAt
+        )
+      )
+    );
+  }
+
+  async function revokeInviteLink(
+    invitation
+  ) {
+    if (
+      !canManage ||
+      revokingInviteId
+    ) {
+      return;
+    }
+
+    setInviteError('');
+    setRevokingInviteId(
+      invitation.id
+    );
+
+    try {
+      await SB.revokeTripInvite(
+        invitation.id
+      );
+
+      setInvites(current =>
+        current.filter(
+          item =>
+            item.id !==
+            invitation.id
+        )
+      );
+
+      if (
+        invite?.id ===
+        invitation.id
+      ) {
+        setInvite(null);
+      }
+
+      Store.showToast(
+        'Invitation révoquée.'
+      );
+    } catch (error) {
+      setInviteError(
+        error.message ||
+          "Impossible de révoquer l'invitation."
+      );
+    } finally {
+      setRevokingInviteId(null);
     }
   }
 
@@ -2664,20 +2859,67 @@ function ShareSection({ trips, activeTripId, user }) {
         </div>
       </SettingsCard>
 
-      <SettingsCard eyebrow="Invitation" title="Voyager à plusieurs">
-        <div style={{ display: 'flex', alignItems: 'end', gap: 10, flexWrap: 'wrap' }}>
-          <div style={{ flex: 1, minWidth: 210 }}>
-            <label style={{ display: 'block', marginBottom: 6, fontSize: 12, fontWeight: 900 }}>
-              Rôle de l’invitation
+            <SettingsCard
+        eyebrow="Invitation"
+        title="Voyager à plusieurs"
+      >
+        <p
+          style={{
+            margin: '0 0 16px',
+            color: 'var(--muted)',
+            fontSize: 13,
+            lineHeight: 1.5
+          }}
+        >
+          Choisis les droits de la personne, puis partage-lui un lien personnel valable une seule fois.
+        </p>
+
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'end',
+            gap: 10,
+            flexWrap: 'wrap'
+          }}
+        >
+          <div
+            style={{
+              flex: 1,
+              minWidth: 210
+            }}
+          >
+            <label
+              htmlFor="trip-invite-role"
+              style={{
+                display: 'block',
+                marginBottom: 6,
+                fontSize: 12,
+                fontWeight: 900
+              }}
+            >
+              Droits accordés
             </label>
+
             <select
+              id="trip-invite-role"
               value={inviteRole}
               disabled={!canManage}
-              onChange={event => setInviteRole(event.target.value)}
+              onChange={event => {
+                setInviteRole(
+                  event.target.value
+                );
+                setInvite(null);
+                setInviteError('');
+              }}
               style={settingsInputStyle}
             >
-              <option value="editor">Éditeur : peut modifier le voyage</option>
-              <option value="viewer">Lecteur : peut uniquement consulter</option>
+              <option value="editor">
+                Éditeur — peut modifier le voyage
+              </option>
+
+              <option value="viewer">
+                Lecteur — peut uniquement consulter
+              </option>
             </select>
           </div>
 
@@ -2685,32 +2927,192 @@ function ShareSection({ trips, activeTripId, user }) {
             variant="primary"
             icon="share"
             onClick={createInvite}
-            disabled={!canManage || busy}
+            disabled={
+              !canManage ||
+              busy ||
+              loading
+            }
           >
-            {busy ? 'Création' : 'Créer un lien'}
+            {
+              busy
+                ? 'Création…'
+                : 'Créer le lien'
+            }
           </SettingsButton>
         </div>
 
+        {!canManage && (
+          <div
+            style={{
+              marginTop: 14,
+              padding: '11px 13px',
+              borderRadius: 8,
+              color: 'var(--muted)',
+              background: 'var(--card)',
+              fontSize: 12,
+              lineHeight: 1.45
+            }}
+          >
+            Seul le propriétaire du voyage peut créer des invitations.
+          </div>
+        )}
+
+        {inviteError && (
+          <div
+            role="alert"
+            style={{
+              marginTop: 14,
+              padding: '11px 13px',
+              borderRadius: 8,
+              color: '#b64f38',
+              background:
+                'rgba(192, 86, 63, .10)',
+              fontSize: 12,
+              fontWeight: 700,
+              lineHeight: 1.45
+            }}
+          >
+            {inviteError}
+          </div>
+        )}
+
         {invite && (
-          <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-            <input readOnly value={invite.url} style={settingsInputStyle} />
-            <SettingsButton
-              icon="check"
-              onClick={() => {
-                navigator.clipboard?.writeText(invite.url);
-                Store.showToast('Lien copié');
+          <div
+            aria-live="polite"
+            style={{
+              marginTop: 16,
+              padding: 14,
+              border:
+                '1px solid rgba(39, 100, 79, .25)',
+              borderRadius: 10,
+              background:
+                'rgba(39, 100, 79, .08)'
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems:
+                  'flex-start',
+                justifyContent:
+                  'space-between',
+                flexWrap: 'wrap',
+                gap: 10
               }}
             >
-              Copier
-            </SettingsButton>
+              <div>
+                <strong
+                  style={{
+                    display: 'block',
+                    fontSize: 13
+                  }}
+                >
+                  Lien prêt à partager
+                </strong>
+
+                <span
+                  style={{
+                    display: 'block',
+                    marginTop: 4,
+                    color: 'var(--muted)',
+                    fontSize: 11
+                  }}
+                >
+                  {
+                    invite.role ===
+                    'viewer'
+                      ? 'Lecture seule'
+                      : 'Modification autorisée'
+                  }
+                  {' · '}
+                  {inviteExpirationLabel()}
+                </span>
+              </div>
+
+              <span
+                style={{
+                  padding: '4px 7px',
+                  borderRadius: 999,
+                  color: '#27644f',
+                  background:
+                    'rgba(39, 100, 79, .12)',
+                  fontSize: 9,
+                  fontWeight: 900,
+                  letterSpacing: '.06em',
+                  textTransform:
+                    'uppercase'
+                }}
+              >
+                1 utilisation
+              </span>
+            </div>
+
+            <input
+              readOnly
+              value={invite.url}
+              aria-label="Lien d’invitation"
+              onFocus={event =>
+                event.target.select()
+              }
+              style={{
+                ...settingsInputStyle,
+                marginTop: 12,
+                background: 'var(--card)'
+              }}
+            />
+
+            <div
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: 8,
+                marginTop: 10
+              }}
+            >
+              <SettingsButton
+                icon="check"
+                onClick={copyInviteLink}
+              >
+                Copier le lien
+              </SettingsButton>
+
+              <SettingsButton
+                variant="primary"
+                icon="share"
+                onClick={shareInviteLink}
+              >
+                Partager
+              </SettingsButton>
+            </div>
           </div>
         )}
       </SettingsCard>
 
       <SettingsCard eyebrow="Membres" title={`Personnes de ${selectedTrip?.name || 'ce voyage'}`}>
         {loading ? (
-          <div style={{ color: 'var(--muted)', fontSize: 13 }}>
+          <div
+            role="status"
+            style={{
+              color: 'var(--muted)',
+              fontSize: 13
+            }}
+          >
             Chargement des membres…
+          </div>
+        ) : loadError ? (
+          <div
+            role="alert"
+            style={{
+              padding: '11px 13px',
+              borderRadius: 8,
+              color: '#b64f38',
+              background:
+                'rgba(192, 86, 63, .10)',
+              fontSize: 12,
+              fontWeight: 700
+            }}
+          >
+            {loadError}
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>

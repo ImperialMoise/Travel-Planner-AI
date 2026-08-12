@@ -1507,17 +1507,80 @@ export async function createTripInvite(tripId, role = 'editor') {
       role,
       created_by: user.id
     })
-    .select('token, role, expires_at')
+    .select('id, token, role, expires_at, used_at, created_at')
     .single();
 
   if (error) throw error;
 
   return {
+    id: data.id,
     token: data.token,
     role: data.role,
     expiresAt: data.expires_at,
+    usedAt: data.used_at,
+    createdAt: data.created_at,
     url: `${window.location.origin}${window.location.pathname}?invite=${data.token}`
   };
+}
+
+export async function listTripInvites(tripId) {
+  if (!tripId) return [];
+
+  const { data, error } = await sb
+    .from('trip_invites')
+    .select('id, token, role, expires_at, used_at, created_at')
+    .eq('trip_id', tripId)
+    .order('created_at', {
+      ascending: false
+    });
+
+  if (error) throw error;
+
+  const now = Date.now();
+
+  return (data || [])
+    .map(invite => ({
+      id: invite.id,
+      token: invite.token,
+      role: invite.role,
+      expiresAt: invite.expires_at,
+      usedAt: invite.used_at,
+      createdAt: invite.created_at,
+      url: `${window.location.origin}${window.location.pathname}?invite=${invite.token}`
+    }))
+    .filter(invite => (
+      !invite.usedAt &&
+      (
+        !invite.expiresAt ||
+        new Date(
+          invite.expiresAt
+        ).getTime() > now
+      )
+    ));
+}
+
+export async function revokeTripInvite(
+  inviteId
+) {
+  if (!inviteId) {
+    throw new Error(
+      'Invitation introuvable'
+    );
+  }
+
+  const { data, error } = await sb
+    .from('trip_invites')
+    .delete()
+    .eq('id', inviteId)
+    .select('id');
+
+  if (error) throw error;
+
+  if (!data?.length) {
+    throw new Error(
+      'Invitation introuvable ou non autorisée'
+    );
+  }
 }
 
 export async function getInvite(token) {
@@ -1809,6 +1872,8 @@ window.SB = {
 
   listTripMembers,
   createTripInvite,
+  listTripInvites,
+  revokeTripInvite,
   getInvite,
   acceptInvite,
   removeTripMember,

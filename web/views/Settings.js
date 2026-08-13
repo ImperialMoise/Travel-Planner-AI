@@ -2531,6 +2531,11 @@ function ShareSection({ trips, activeTripId, user }) {
     setUpdatingMemberId
   ] = React.useState(null);
 
+  const [
+    transferringMemberId,
+    setTransferringMemberId
+  ] = React.useState(null);
+
   const selectedTrip = trips.find(trip => trip.id === managedTripId) || null;
   const canManage = selectedTrip?.owner_id === user?.id;
 
@@ -2870,6 +2875,77 @@ function ShareSection({ trips, activeTripId, user }) {
     }
   }
 
+  async function transferOwnership(
+    member
+  ) {
+    if (
+      !canManage ||
+      member.role === 'owner' ||
+      transferringMemberId ||
+      updatingMemberId
+    ) {
+      return;
+    }
+
+    const confirmed = confirm(
+      `Transférer définitivement « ${selectedTrip.name} » à ${member.name || 'ce membre'} ? Tu deviendras éditeur du voyage.`
+    );
+
+    if (!confirmed) return;
+
+    setTransferringMemberId(
+      member.id
+    );
+
+    try {
+      await SB.transferTripOwnership(
+        managedTripId,
+        member.id
+      );
+
+      const [
+        nextTrips,
+        nextTrip,
+        nextMembers
+      ] = await Promise.all([
+        SB.listMyTrips(),
+        SB.loadTrip(
+          managedTripId
+        ),
+        SB.listTripMembers(
+          managedTripId
+        )
+      ]);
+
+      setMembers(nextMembers);
+      setManagedTrip(nextTrip);
+      setInvites([]);
+      setInvite(null);
+
+      Store.set({
+        trips: nextTrips,
+        trip:
+          managedTripId ===
+          activeTripId
+            ? nextTrip
+            : Store.get().trip
+      });
+
+      Store.showToast(
+        'Propriété du voyage transférée.'
+      );
+    } catch (error) {
+      Store.showToast(
+        'Erreur : ' +
+          (
+            error.message ||
+            'Impossible de transférer le voyage.'
+          )
+      );
+    } finally {
+      setTransferringMemberId(null);
+    }
+  }
 
     async function changeMemberRole(
     member,
@@ -3396,6 +3472,7 @@ function ShareSection({ trips, activeTripId, user }) {
               <div key={member.id} style={{
                 display: 'flex',
                 alignItems: 'center',
+                flexWrap: 'wrap',
                 gap: 11,
                 padding: 11,
                 border: '1px solid var(--line)',
@@ -3469,20 +3546,55 @@ function ShareSection({ trips, activeTripId, user }) {
                 </div>
 
                 {canManage && member.role !== 'owner' && (
-                  <>
-                    {!SB.isMemberAlreadyParticipant(member, managedTrip?.participants || []) && (
-                      <SettingsButton onClick={() => addToBudget(member)}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      justifyContent: 'flex-end',
+                      gap: 6,
+                      marginLeft: 'auto'
+                    }}
+                  >
+                    {!SB.isMemberAlreadyParticipant(
+                      member,
+                      managedTrip?.participants || []
+                    ) && (
+                      <SettingsButton
+                        onClick={() =>
+                          addToBudget(member)
+                        }
+                      >
                         Budget
                       </SettingsButton>
                     )}
 
                     <SettingsButton
+                      disabled={Boolean(
+                        transferringMemberId ||
+                        updatingMemberId
+                      )}
+                      onClick={() =>
+                        transferOwnership(member)
+                      }
+                    >
+                      {transferringMemberId ===
+                      member.id
+                        ? 'Transfert…'
+                        : 'Transférer'}
+                    </SettingsButton>
+
+                    <SettingsButton
                       variant="danger"
-                      onClick={() => removeMember(member)}
+                      disabled={Boolean(
+                        transferringMemberId
+                      )}
+                      onClick={() =>
+                        removeMember(member)
+                      }
                     >
                       Retirer
                     </SettingsButton>
-                  </>
+                  </div>
                 )}
               </div>
             ))}

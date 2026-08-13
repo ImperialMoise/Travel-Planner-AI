@@ -1633,6 +1633,21 @@ export async function updateTripMemberRole(
   if (error) throw error;
 }
 
+export async function transferTripOwnership(
+  tripId,
+  memberId
+) {
+  const { error } = await sb.rpc(
+    'transfer_trip_ownership',
+    {
+      p_trip_id: tripId,
+      p_member_id: memberId
+    }
+  );
+
+  if (error) throw error;
+}
+
 export async function leaveTrip(tripId) {
   const user = await getUser();
 
@@ -1927,6 +1942,7 @@ window.SB = {
   getInvite,
   acceptInvite,
   updateTripMemberRole,
+  transferTripOwnership,
   leaveTrip,
   removeTripMember,
   listTripActivity,

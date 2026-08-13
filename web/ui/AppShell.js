@@ -763,105 +763,6 @@
     color:var(--accent);
   }
 
-  .places-control{
-    position:relative;
-    display:flex;
-    align-items:center;
-    gap:5px;
-    padding:4px 6px 4px 8px;
-    border:1px solid var(--outline-variant);
-    border-radius:9px;
-    background:var(--inset);
-  }
-
-  .places-usage{
-    min-height:26px;
-    display:inline-flex;
-    align-items:center;
-    gap:5px;
-    padding:0 5px;
-    border:none;
-    border-radius:6px;
-    background:transparent;
-    color:var(--muted);
-    font-family:var(--font-mono, ui-monospace);
-    font-size:11px;
-    font-weight:900;
-    white-space:nowrap;
-    cursor:pointer;
-  }
-
-  .places-usage:hover{
-    color:var(--accent);
-    background:var(--card);
-  }
-
-  .places-usage.reached{
-    color:var(--danger, #c0563f);
-  }
-
-  .places-mode-control{
-    display:inline-flex;
-    align-items:center;
-    gap:5px;
-    padding-left:7px;
-    border-left:1px solid var(--outline-variant);
-    color:var(--muted);
-    font-size:11px;
-    font-weight:900;
-    cursor:pointer;
-    white-space:nowrap;
-  }
-
-  .places-mode-input{
-    position:absolute;
-    opacity:0;
-    pointer-events:none;
-  }
-
-  .places-mode-track{
-    width:28px;
-    height:16px;
-    padding:2px;
-    display:flex;
-    align-items:center;
-    border-radius:999px;
-    background:var(--line);
-    transition:background .18s ease;
-  }
-
-  .places-mode-knob{
-    width:12px;
-    height:12px;
-    border-radius:50%;
-    background:var(--card);
-    box-shadow:0 1px 3px rgba(0,0,0,.2);
-    transition:transform .18s ease;
-  }
-
-  .places-mode-input:checked + .places-mode-track{
-    background:var(--accent);
-  }
-
-  .places-mode-input:checked + .places-mode-track .places-mode-knob{
-    transform:translateX(12px);
-  }
-
-  .places-help-btn{
-    width:28px;
-    height:28px;
-    padding:0;
-    border:1px solid var(--outline-variant);
-    border-radius:50%;
-    background:var(--card);
-    color:var(--muted);
-    display:grid;
-    place-items:center;
-    font-size:11px;
-    font-weight:900;
-    cursor:help;
-  }
-
   .topbar-account{
     display:flex;
     align-items:center;
@@ -888,6 +789,67 @@
     background:var(--card);
     color:var(--accent);
     box-shadow:0 5px 12px rgba(66, 48, 18, .10);
+  }
+
+  .topbar-focus-btn{
+    min-height:34px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    padding:0 10px;
+    border:
+      1px solid var(--outline-variant);
+    border-radius:9px;
+    background:var(--card);
+    color:var(--muted);
+    cursor:pointer;
+    font-family:inherit;
+    font-size:11px;
+    font-weight:900;
+    transition:
+      transform .18s ease,
+      background .18s ease,
+      color .18s ease,
+      box-shadow .18s ease;
+  }
+
+  .topbar-focus-btn:hover{
+    transform:translateY(-1px);
+    background:var(--accent-soft);
+    color:var(--accent);
+  }
+
+  .topbar-focus-btn.active{
+    border-color:
+      rgba(150,100,13,.28);
+    background:var(--accent-soft);
+    color:var(--accent);
+    box-shadow:
+      0 4px 12px var(--accent-shadow);
+  }
+
+  .topbar-focus-btn:focus-visible{
+    outline:
+      3px solid var(--accent-soft);
+    outline-offset:2px;
+  }
+
+  @media(max-width:1180px){
+    .topbar-focus-btn{
+      width:34px;
+      padding:0;
+    }
+
+    .topbar-focus-label{
+      display:none;
+    }
+  }
+
+  @media(max-width:1099px){
+    .topbar-focus-btn{
+      display:none;
+    }
   }
 
   .topbar-settings-btn.topbar-print-btn{
@@ -935,28 +897,12 @@
   }
 
   @media(max-width:900px){
-    .places-mode-label,
     .user-name{
       display:none;
     }
 
     .topbar-account{
       padding-left:6px;
-    }
-  }
-
-  @media(max-width:760px){
-    .places-usage-label{
-      display:none;
-    }
-
-    .places-control{
-      gap:4px;
-      padding-left:5px;
-    }
-
-    .places-mode-control{
-      padding-left:5px;
     }
   }
 
@@ -3075,10 +3021,6 @@
       outline-offset:1px;
     }
 
-    .places-control{
-      display:none;
-    }
-
     .topbar-settings-btn{
       display:none;
     }
@@ -4271,7 +4213,8 @@
       trip,
       toast,
       settingsOpen,
-      appMode = 'plan'
+      appMode = 'plan',
+      focusMode = false
     } = Store.useStore(function select(state) {
       return {
         user: state.user,
@@ -4281,7 +4224,14 @@
         trip: state.trip,
         toast: state.toast,
         settingsOpen: state.settingsOpen,
-        appMode: state.appMode || 'plan'
+        appMode: state.appMode || 'plan',
+        focusMode:
+          state.focusMode ??
+          (
+            localStorage.getItem(
+              'atelier_focus_mode'
+            ) === 'true'
+          )
       };
     });
 
@@ -4306,7 +4256,13 @@
     const isNarrowShell = width < 1100;
     const isTinyShell = width < 900;
     const isTopbarCompact = width < 1180;
-   const accent = getTripAccent(trip?.accentTheme);
+
+    const desktopFocusMode =
+      focusMode &&
+      !isNarrowShell;
+
+    const accent =
+      getTripAccent(trip?.accentTheme);
 
     const sideWidth = isCompactShell ? 260 : 300;
     const toolWidth = isCompactShell ? 280 : 320;
@@ -4387,9 +4343,13 @@ function toggleToolboxCollapsed() {
             <LoadingTrip />
           ) : (
             <>
-              {appMode !== 'travel' && !isTinyShell && (
-                <DaySpine width={sideWidth} />
-              )}
+              {appMode !== 'travel' &&
+                !isTinyShell &&
+                !desktopFocusMode && (
+                  <DaySpine
+                    width={sideWidth}
+                  />
+                )}
 
               {isTinyShell && daySpineOpen && (
                 <div
@@ -4427,7 +4387,10 @@ function toggleToolboxCollapsed() {
                 )}
               </section>
 
-              {appMode !== 'travel' && !isNarrowShell && window.Toolbox && (
+              {appMode !== 'travel' &&
+                !isNarrowShell &&
+                !desktopFocusMode &&
+                window.Toolbox && (
   <div style={{
     width: toolboxCollapsed ? 48 : toolWidth + 48,
     height: '100%',
@@ -4865,7 +4828,7 @@ function toggleToolboxCollapsed() {
       trip,
       view,
       appMode = 'plan',
-      theme = localStorage.getItem('it_theme') || 'light'
+      focusMode = false
     } = Store.useStore(function select(state) {
       return {
         user: state.user,
@@ -4874,49 +4837,19 @@ function toggleToolboxCollapsed() {
         trip: state.trip,
         view: state.view || 'itinerary',
         appMode: state.appMode || 'plan',
-        theme: state.theme || localStorage.getItem('it_theme') || 'light'
+        focusMode:
+          state.focusMode ??
+          (
+            localStorage.getItem(
+              'atelier_focus_mode'
+            ) === 'true'
+          )
       };
     });
 
     const [authOpen, setAuthOpen] = React.useState(false);
     const [tripMenuOpen, setTripMenuOpen] = React.useState(false);
     const [newTripOpen, setNewTripOpen] = React.useState(false);
-
-        const [placesUsage, setPlacesUsage] = React.useState(null);
-        const [placesMode, setPlacesMode] = React.useState(
-      () => localStorage.getItem('places_search_mode') === 'google' ? 'google' : 'basic'
-    );
-        const [placesHelpOpen, setPlacesHelpOpen] = React.useState(false);
-
-    React.useEffect(function syncPlacesUsage() {
-      if (!user) {
-        setPlacesUsage(null);
-        return undefined;
-      }
-
-      let alive = true;
-
-      function applyUsage(event) {
-        if (alive && event.detail) {
-          setPlacesUsage(event.detail);
-        }
-      }
-
-      window.addEventListener('places-usage', applyUsage);
-
-      if (window.SB && window.SB.getPlacesUsage) {
-        window.SB.getPlacesUsage()
-          .then(function setInitialUsage(usage) {
-            if (alive && usage) setPlacesUsage(usage);
-          })
-          .catch(function ignoreUsageError() {});
-      }
-
-      return function cleanup() {
-        alive = false;
-        window.removeEventListener('places-usage', applyUsage);
-      };
-    }, [user]);
 
     const menuRef = React.useRef(null);
 
@@ -4995,32 +4928,27 @@ function setAppMode(nextMode) {
     }
   }
 
-  localStorage.setItem('atelier_app_mode', nextMode);
+  localStorage.setItem(
+    'atelier_app_mode',
+    nextMode
+  );
+
   Store.set(patch);
 }
 
+function toggleFocusMode() {
+  const nextFocusMode =
+    !focusMode;
 
-        function updatePlacesMode(enabled) {
-      const nextMode = enabled ? 'google' : 'basic';
+  localStorage.setItem(
+    'atelier_focus_mode',
+    String(nextFocusMode)
+  );
 
-      localStorage.setItem('places_search_mode', nextMode);
-      setPlacesMode(nextMode);
-
-      window.dispatchEvent(new CustomEvent('places-search-mode', {
-        detail: nextMode
-      }));
-    }
-
-    function toggleTheme() {
-      const nextTheme = theme === 'dark' ? 'light' : 'dark';
-
-      localStorage.setItem('it_theme', nextTheme);
-      document.documentElement.classList.toggle('dark', nextTheme === 'dark');
-
-      Store.set({
-        theme: nextTheme
-      });
-    }
+  Store.set({
+    focusMode: nextFocusMode
+  });
+}
 
     return (
       <header className={'topbar' + (compact ? ' compact' : '')}>
@@ -5193,81 +5121,48 @@ function setAppMode(nextMode) {
         <div className="topbar-right">
           {user ? (
             <>
-              <div className="places-control">
-                <button
-                  type="button"
-                  className={'places-usage' + (placesUsage?.reached ? ' reached' : '')}
-                  onClick={() => setPlacesHelpOpen(open => !open)}
-                  title="Consulter le fonctionnement des recherches de lieux"
-                  style={{ opacity: placesUsage ? 1 : .65 }}
-                >
-                  <Icon name="search" size={14} />
-                  <span className="places-usage-label">Places</span>
-                  <span>
-                    {placesUsage ? placesUsage.count : '…'} / {placesUsage ? placesUsage.limit : 100}
-                  </span>
-                </button>
-
-                <label className="places-mode-control" title="Recherche précise Google Places">
-                  <input
-                    className="places-mode-input"
-                    type="checkbox"
-                    checked={placesMode === 'google'}
-                    onChange={event => updatePlacesMode(event.target.checked)}
-                  />
-                  <span className="places-mode-track">
-                    <span className="places-mode-knob" />
-                  </span>
-                  <span className="places-mode-label">Précis</span>
-                </label>
-
-                <div
-                  onMouseEnter={() => setPlacesHelpOpen(true)}
-                  onMouseLeave={() => setPlacesHelpOpen(false)}
-                  style={{ position: 'relative' }}
-                >
+              <div className="topbar-account">
+                {trip && (
                   <button
                     type="button"
-                    className="places-help-btn"
-                    onClick={() => setPlacesHelpOpen(open => !open)}
-                    aria-label="Comprendre le compteur Google Places"
+                    className={
+                      'topbar-focus-btn' +
+                      (
+                        focusMode
+                          ? ' active'
+                          : ''
+                      )
+                    }
+                    title={
+                      focusMode
+                        ? 'Réafficher les panneaux'
+                        : 'Activer le mode Focus'
+                    }
+                    aria-label={
+                      focusMode
+                        ? 'Réafficher les panneaux'
+                        : 'Activer le mode Focus'
+                    }
+                    aria-pressed={focusMode}
+                    onClick={toggleFocusMode}
                   >
-                    ?
+                    <Icon
+                      name={
+                        focusMode
+                          ? 'expand'
+                          : 'eye'
+                      }
+                      size={16}
+                    />
+
+                    <span className="topbar-focus-label">
+                      {focusMode
+                        ? 'Panneaux'
+                        : 'Focus'}
+                    </span>
                   </button>
+                )}
 
-                  {placesHelpOpen && (
-                    <div style={{
-                      position: 'absolute',
-                      top: 'calc(100% + 8px)',
-                      right: 0,
-                      width: 300,
-                      padding: 14,
-                      border: '1px solid var(--outline-variant)',
-                      borderRadius: 10,
-                      background: 'var(--card)',
-                      color: 'var(--text)',
-                      boxShadow: 'var(--shadow-lg)',
-                      fontSize: 12,
-                      lineHeight: 1.45,
-                      zIndex: 6000
-                    }}>
-                      <div style={{ fontWeight: 900, marginBottom: 7 }}>
-                        Recherche de lieux
-                      </div>
-
-                      <div>
-                        Chaque utilisateur dispose de <strong>100 recherches Google Places par mois</strong>.
-                      </div>
-
-                      <div style={{ marginTop: 8, color: 'var(--muted)' }}>
-                        Active Précis pour les musées, restaurants, hôtels et lieux exacts. Désactive-le pour utiliser la recherche simple, sans consommation Google.
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="topbar-account">
                 {trip && (
                   <button
                     type="button"

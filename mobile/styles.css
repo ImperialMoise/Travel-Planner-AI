@@ -1314,19 +1314,24 @@ button {
   font-weight: 700;
 }
 
-.section-heading a,
-.section-link {
-  border: 0;
-  padding: 0;
-  background: transparent;
+.section-heading a {
   color: var(--primary);
   font-size: 13px;
   line-height: 18px;
   font-weight: 700;
-  text-decoration: underline;
-  text-decoration-color: rgba(124, 84, 16, 0.3);
-  text-underline-offset: 4px;
-  cursor: pointer;
+}
+
+.trip-count {
+  flex-shrink: 0;
+  padding: 5px 9px;
+  border: 1px solid var(--faint-border);
+  border-radius: 999px;
+  background: var(--surface-container);
+  color: var(--on-surface-variant);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 700;
 }
 
 .trip-strip {
@@ -1342,26 +1347,11 @@ button {
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-x: contain;
   scroll-snap-type: x mandatory;
-  touch-action: pan-x;
+  touch-action: pan-x pan-y;
 }
 
 .trip-strip::-webkit-scrollbar {
   display: none;
-}
-
-.trip-strip.expanded {
-  display: grid;
-  grid-template-columns: 1fr;
-  width: 100%;
-  max-width: 100%;
-  margin: 0;
-  padding: 0 0 18px;
-  overflow: visible;
-  scroll-snap-type: none;
-}
-
-.trip-strip.expanded .trip-card {
-  width: 100%;
 }
 
 .trip-card {
@@ -1401,10 +1391,10 @@ button {
   border-radius: 4px;
   background: rgba(254, 249, 239, 0.92);
   color: var(--on-surface);
-  font-size: 9px;
-  line-height: 12px;
+  font-size: 10px;
+  line-height: 14px;
   font-weight: 800;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 

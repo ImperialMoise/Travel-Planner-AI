@@ -10,7 +10,7 @@
   /* Texte */
   --text: #211b14;
   --muted: #655a4d;
-  --faint: #8b7d6e;
+  --faint: #786b5f;
 
   /* Accent principal */
   --accent: #96640d;
@@ -65,6 +65,24 @@ body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button,
+a,
+[role="button"] {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1862,4 +1880,12 @@ body.is-dragging-day * {
     transition-duration: 0.01ms !important;
     transition-delay: 0ms !important;
   }
-}cd
+}
+
+@media (max-width: 760px) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}

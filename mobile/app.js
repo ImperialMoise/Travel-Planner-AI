@@ -367,7 +367,6 @@ let activeTrip = null;
 let mobileReady = false;
 let pendingMobileInvite = null;
 let pendingMobileInviteInfo = null;
-let showAllTrips = false;
 let mobileSupabaseReady = false;
 let mobileSupabaseError = '';
 let mobilePasswordResetEmail = '';
@@ -2627,7 +2626,7 @@ function renderHome() {
   renderMobileWelcome();
   return;
 }
-  const visibleTrips = showAllTrips ? realTrips : realTrips.slice(0, 2);
+  const visibleTrips = realTrips;
   const nextTrip = activeTrip || realTrips[0] || null;
 
   const nextTripName = nextTrip?.name || 'Aucun voyage';
@@ -2731,15 +2730,27 @@ ${nextTrip ? `
 
         <section>
           <div class="section-heading">
-            <h3>Mes Voyages</h3>
-            <button class="section-link" type="button" data-action="toggle-all-trips">
-              ${showAllTrips ? 'Réduire' : 'Tout voir'}
-            </button>
+            <h3>Mes voyages</h3>
+
+            <span class="trip-count">
+              ${realTrips.length}
+              ${realTrips.length > 1 ? 'voyages' : 'voyage'}
+            </span>
           </div>
 
-          <div class="trip-strip ${showAllTrips ? 'expanded' : ''}">
+          <div
+            class="trip-strip"
+            role="list"
+            aria-label="Tous mes voyages"
+          >
             ${visibleTrips.length ? visibleTrips.map(trip => `
-              <article class="trip-card" data-action="open-trip" data-trip-id="${trip.id}" style="cursor:pointer">
+              <article
+                class="trip-card"
+                role="listitem"
+                data-action="open-trip"
+                data-trip-id="${trip.id}"
+                style="cursor:pointer"
+              >
                 <div  class="trip-image"  style="background-image: url('${escapeHtml(getMobileTripCoverUrl(trip))}')">
                   <span class="trip-status">Synchronisé</span>
                 </div>
@@ -12446,12 +12457,6 @@ if (action === 'remove-trip-member') {
     handleCreateBoard();
     return;
   }
-
-  if (action === 'toggle-all-trips') {
-  showAllTrips = !showAllTrips;
-  renderHome();
-  return;
-}
 
 if (action === 'open-trip-travel') {
   const tripId = event.target

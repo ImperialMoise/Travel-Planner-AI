@@ -379,6 +379,8 @@ let mobileReminderBusy = false;
 let mobileTripLibrary = [];
 let mobileTripLibraryBusy = false;
 let mobileTripLibraryError = '';
+let mobileItineraryReorderBusy = false;
+let mobileDayCoverBusy = false;
 let pendingMobileNotificationTripId = null;
 let pendingMobileNotificationReminderId = null;
 let mobileWorkspaceMode =
@@ -393,6 +395,78 @@ function setMobileWorkspaceMode(mode) {
     'mobile_workspace_mode',
     mobileWorkspaceMode
   );
+}
+
+const MOBILE_TRIP_ACCENTS = {
+  ochre: {
+    label: 'Ocre',
+    accent: '#9d680c',
+    soft: '#f4ead7'
+  },
+  forest: {
+    label: 'Forêt',
+    accent: '#2f6a55',
+    soft: '#e2f0e8'
+  },
+  ocean: {
+    label: 'Océan',
+    accent: '#2f617b',
+    soft: '#e2eef4'
+  },
+  terracotta: {
+    label: 'Terracotta',
+    accent: '#a45132',
+    soft: '#f6e6df'
+  },
+  plum: {
+    label: 'Prune',
+    accent: '#71506c',
+    soft: '#efe5ed'
+  }
+};
+
+function getMobileTripAccent(
+  accentKey
+) {
+  return (
+    MOBILE_TRIP_ACCENTS[
+      accentKey
+    ] ||
+    MOBILE_TRIP_ACCENTS.ochre
+  );
+}
+
+function applyMobileTripAccent(
+  accentKey = 'ochre'
+) {
+  const theme =
+    getMobileTripAccent(
+      accentKey
+    );
+
+  document.documentElement
+    .style.setProperty(
+      '--primary',
+      theme.accent
+    );
+
+  document.documentElement
+    .style.setProperty(
+      '--primary-container',
+      theme.accent
+    );
+
+  document.documentElement
+    .style.setProperty(
+      '--primary-fixed',
+      theme.soft
+    );
+
+  document.documentElement
+    .style.setProperty(
+      '--shadow-action',
+      `0 4px 14px ${theme.accent}33`
+    );
 }
 
 function getMobileTheme() {
@@ -2327,6 +2401,8 @@ function getMobileDashboardTripSummary(trip) {
 }
 
 function renderHome() {
+  applyMobileTripAccent('ochre');
+
   const realTrips = mobileTrips || [];
   if (!mobileUser && realTrips.length === 0) {
   renderMobileWelcome();
@@ -6983,12 +7059,491 @@ function initCreateTripControls() {
   }
 }
 
+function openMobileDayCoverPicker() {
+  const activeDay =
+    getActiveItineraryDay();
+
+  if (
+    !activeTrip?.id ||
+    !activeDay?.id ||
+    !window.SB?.searchTripCoverPhotos ||
+    !window.SB?.saveDayCover
+  ) {
+    alert(
+      'La modification de la photo est indisponible.'
+    );
+    return;
+  }
+
+  document
+    .querySelector(
+      '.mobile-day-cover-backdrop'
+    )
+    ?.remove();
+
+  const trigger =
+    document.activeElement;
+
+  const modal =
+    document.createElement('div');
+
+  modal.className =
+    'mobile-day-cover-backdrop';
+
+  const activeAccentKey =
+    activeTrip.accentTheme ||
+    activeTrip.accent_theme ||
+    'ochre';
+
+  modal.innerHTML = `
+    <section
+      class="mobile-day-cover-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="mobile-day-cover-title"
+    >
+      <header>
+        <div>
+          <span>Personnalisation</span>
+
+          <h2 id="mobile-day-cover-title">
+            Apparence du voyage
+          </h2>
+        </div>
+
+        <button
+          type="button"
+          data-cover-close
+          aria-label="Fermer"
+        >
+          <span class="material-symbols-outlined">
+            close
+          </span>
+        </button>
+      </header>
+
+      <section class="mobile-trip-accent-picker">
+        <span>Couleur du voyage</span>
+
+        <div
+          role="group"
+          aria-label="Choisir la couleur du voyage"
+        >
+          ${Object.entries(
+            MOBILE_TRIP_ACCENTS
+          ).map(
+            ([key, theme]) => `
+              <button
+                type="button"
+                data-cover-accent="${key}"
+                aria-label="${escapeHtml(theme.label)}"
+                aria-pressed="${key === activeAccentKey
+                  ? 'true'
+                  : 'false'}"
+                title="${escapeHtml(theme.label)}"
+                style="--trip-accent:${theme.accent};--trip-accent-soft:${theme.soft}"
+              >
+                <span></span>
+              </button>
+            `
+          ).join('')}
+        </div>
+      </section>
+
+      <form data-cover-search-form>
+        <label for="mobile-day-cover-query">
+          Destination ou ambiance
+        </label>
+
+        <div>
+          <input
+            id="mobile-day-cover-query"
+            type="search"
+            value="${escapeHtml(
+              activeDay.title ||
+              activeTrip.name ||
+              ''
+            )}"
+            placeholder="Paris, plage, montagne…"
+            autocomplete="off"
+          >
+
+          <button type="submit">
+            <span class="material-symbols-outlined">
+              search
+            </span>
+            Rechercher
+          </button>
+        </div>
+      </form>
+
+      <div
+        class="mobile-day-cover-results"
+        role="status"
+        aria-live="polite"
+      ></div>
+
+      ${activeDay.coverImageUrl ||
+        activeDay.cover_image_url ||
+        activeDay.coverUrl ||
+        activeDay.cover_url
+        ? `
+          <button
+            class="mobile-day-cover-remove"
+            type="button"
+            data-cover-remove
+          >
+            <span class="material-symbols-outlined">
+              image_not_supported
+            </span>
+            Retirer la photo actuelle
+          </button>
+        `
+        : ''}
+    </section>
+  `;
+
+  document.body.appendChild(
+    modal
+  );
+
+  const results =
+    modal.querySelector(
+      '.mobile-day-cover-results'
+    );
+
+  const input =
+    modal.querySelector(
+      '#mobile-day-cover-query'
+    );
+
+  let photos = [];
+
+  function closePicker() {
+    if (mobileDayCoverBusy) {
+      return;
+    }
+
+    modal.remove();
+
+    if (
+      trigger &&
+      typeof trigger.focus === 'function'
+    ) {
+      trigger.focus();
+    }
+  }
+
+  async function searchPhotos() {
+    const query =
+      String(input?.value || '')
+        .trim();
+
+    if (query.length < 2) {
+      results.innerHTML = `
+        <p class="mobile-day-cover-message">
+          Indiquez au moins deux caractères.
+        </p>
+      `;
+      return;
+    }
+
+    mobileDayCoverBusy = true;
+
+    results.innerHTML = `
+      <p class="mobile-day-cover-message">
+        <span class="material-symbols-outlined">
+          progress_activity
+        </span>
+        Recherche des photos…
+      </p>
+    `;
+
+    try {
+      photos =
+        await window.SB
+          .searchTripCoverPhotos(
+            activeTrip.id,
+            query
+          );
+
+      results.innerHTML =
+        photos.length
+          ? photos.map(
+              (photo, index) => `
+                <button
+                  type="button"
+                  data-cover-photo-index="${index}"
+                >
+                  <img
+                    src="${escapeHtml(photo.imageUrl)}"
+                    alt="${escapeHtml(
+                      photo.alt ||
+                      query
+                    )}"
+                    width="640"
+                    height="420"
+                    loading="lazy"
+                    decoding="async"
+                  >
+
+                  <span>
+                    <strong>
+                      Choisir cette photo
+                    </strong>
+
+                    <small>
+                      Photo par ${escapeHtml(
+                        photo.photographer ||
+                        'Pexels'
+                      )}
+                    </small>
+                  </span>
+                </button>
+              `
+            ).join('')
+          : `
+              <p class="mobile-day-cover-message">
+                Aucune photo trouvée.
+              </p>
+            `;
+    } catch (error) {
+      photos = [];
+
+      results.innerHTML = `
+        <p class="mobile-day-cover-message danger">
+          ${escapeHtml(
+            error.message ||
+            'Recherche impossible.'
+          )}
+        </p>
+      `;
+    } finally {
+      mobileDayCoverBusy = false;
+    }
+  }
+
+  modal
+    .querySelector(
+      '[data-cover-search-form]'
+    )
+    ?.addEventListener(
+      'submit',
+      event => {
+        event.preventDefault();
+        searchPhotos();
+      }
+    );
+
+  modal
+    .querySelector(
+      '[data-cover-close]'
+    )
+    ?.addEventListener(
+      'click',
+      closePicker
+    );
+
+  modal.addEventListener(
+    'click',
+    async event => {
+      if (event.target === modal) {
+        closePicker();
+        return;
+      }
+
+      const accentButton =
+        event.target.closest(
+          '[data-cover-accent]'
+        );
+
+      if (
+        accentButton &&
+        !mobileDayCoverBusy
+      ) {
+        const accentKey =
+          accentButton.dataset
+            .coverAccent;
+
+        if (
+          !MOBILE_TRIP_ACCENTS[
+            accentKey
+          ]
+        ) {
+          return;
+        }
+
+        mobileDayCoverBusy = true;
+
+        try {
+          await window.SB.updateTrip(
+            activeTrip.id,
+            {
+              accentTheme:
+                accentKey
+            }
+          );
+
+          activeTrip.accentTheme =
+            accentKey;
+
+          activeTrip.accent_theme =
+            accentKey;
+
+          const summary =
+            mobileTrips.find(
+              trip =>
+                trip.id ===
+                activeTrip.id
+            );
+
+          if (summary) {
+            summary.accent_theme =
+              accentKey;
+          }
+
+          applyMobileTripAccent(
+            accentKey
+          );
+
+          modal
+            .querySelectorAll(
+              '[data-cover-accent]'
+            )
+            .forEach(button => {
+              button.setAttribute(
+                'aria-pressed',
+                button.dataset
+                  .coverAccent ===
+                  accentKey
+                  ? 'true'
+                  : 'false'
+              );
+            });
+        } catch (error) {
+          alert(
+            'Impossible de modifier la couleur : ' +
+            (error.message || error)
+          );
+        } finally {
+          mobileDayCoverBusy = false;
+        }
+
+        return;
+      }
+
+      const photoButton =
+        event.target.closest(
+          '[data-cover-photo-index]'
+        );
+
+      if (
+        photoButton &&
+        !mobileDayCoverBusy
+      ) {
+        const photo =
+          photos[
+            Number(
+              photoButton.dataset
+                .coverPhotoIndex
+            )
+          ];
+
+        if (!photo) return;
+
+        mobileDayCoverBusy = true;
+        photoButton.disabled = true;
+
+        try {
+          await window.SB.saveDayCover(
+            activeDay.id,
+            photo
+          );
+
+          await refreshMobileTrips(
+            activeTrip.id
+          );
+
+          mobileDayCoverBusy = false;
+          modal.remove();
+          renderItinerary();
+        } catch (error) {
+          mobileDayCoverBusy = false;
+          photoButton.disabled = false;
+
+          alert(
+            'Impossible d’enregistrer la photo : ' +
+            (error.message || error)
+          );
+        }
+
+        return;
+      }
+
+      const removeButton =
+        event.target.closest(
+          '[data-cover-remove]'
+        );
+
+      if (
+        removeButton &&
+        !mobileDayCoverBusy &&
+        confirm(
+          'Retirer la photo de cette journée ?'
+        )
+      ) {
+        mobileDayCoverBusy = true;
+        removeButton.disabled = true;
+
+        try {
+          await window.SB.saveDayCover(
+            activeDay.id,
+            null
+          );
+
+          await refreshMobileTrips(
+            activeTrip.id
+          );
+
+          mobileDayCoverBusy = false;
+          modal.remove();
+          renderItinerary();
+        } catch (error) {
+          mobileDayCoverBusy = false;
+          removeButton.disabled = false;
+
+          alert(
+            'Impossible de retirer la photo : ' +
+            (error.message || error)
+          );
+        }
+      }
+    }
+  );
+
+  window.setTimeout(
+    function focusCoverSearch() {
+      input?.focus();
+      input?.select();
+    },
+    50
+  );
+
+  searchPhotos();
+}
+
 function renderItinerary() {
   setMobileWorkspaceMode('prepare');
   renderTripDayMode(true);
 }
 
 function renderTripDayMode(editable = false) {
+  applyMobileTripAccent(
+    activeTrip?.accentTheme ||
+    activeTrip?.accent_theme ||
+    'ochre'
+  );
+
   const days = activeTrip?.days || [];
   const activeDay = getActiveItineraryDay();
   const steps = getCurrentTimelineSteps();
@@ -7028,13 +7583,17 @@ function renderTripDayMode(editable = false) {
     'Votre voyage';
 
   const heroImage =
+    activeDay?.coverImageUrl ||
+    activeDay?.cover_image_url ||
     activeDay?.coverUrl ||
     activeDay?.cover_url ||
     activeDay?.imageUrl ||
     activeDay?.image_url ||
+    activeTrip?.coverImageUrl ||
+    activeTrip?.cover_image_url ||
     activeTrip?.coverUrl ||
     activeTrip?.cover_url ||
-    'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1200&auto=format&fit=crop';
+    getMobileTripCoverUrl(activeTrip);
 
   app.innerHTML = `
     <div class="mobile-shell travel-mode-shell">
@@ -7086,6 +7645,47 @@ function renderTripDayMode(editable = false) {
           </button>
         </section>
 
+        ${editable && days.length > 1 ? `
+          <div
+            class="travel-day-reorder"
+            aria-label="Modifier l’ordre des journées"
+          >
+            <span>
+              Déplacer cette journée
+            </span>
+
+            <div>
+              <button
+                type="button"
+                data-action="move-day-up"
+                aria-label="Déplacer la journée vers la date précédente"
+                ${mobileItineraryDayIndex <= 0
+                  ? 'disabled'
+                  : ''}
+              >
+                <span class="material-symbols-outlined">
+                  arrow_back
+                </span>
+                Avant
+              </button>
+
+              <button
+                type="button"
+                data-action="move-day-down"
+                aria-label="Déplacer la journée vers la date suivante"
+                ${mobileItineraryDayIndex >= days.length - 1
+                  ? 'disabled'
+                  : ''}
+              >
+                Après
+                <span class="material-symbols-outlined">
+                  arrow_forward
+                </span>
+              </button>
+            </div>
+          </div>
+        ` : ''}
+
         ${days.length > 1 ? `
           <div class="travel-day-list" aria-label="Toutes les journées">
             ${days.map((day, index) => `
@@ -7102,8 +7702,27 @@ function renderTripDayMode(editable = false) {
         ` : ''}
 
         <section class="travel-mode-hero">
-          <img src="${escapeHtml(heroImage)}" alt="" loading="eager">
+          <img
+            src="${escapeHtml(heroImage)}"
+            alt=""
+            loading="eager"
+            decoding="async"
+          >
+
           <div class="travel-mode-hero-overlay"></div>
+
+          ${editable ? `
+            <button
+              class="travel-cover-edit"
+              type="button"
+              data-action="day-cover-open"
+            >
+              <span class="material-symbols-outlined">
+                add_photo_alternate
+              </span>
+              Personnaliser
+            </button>
+          ` : ''}
 
           <div class="travel-mode-hero-copy">
             <span>${isToday ? "Aujourd'hui" : escapeHtml(period)}</span>
@@ -7141,6 +7760,36 @@ function renderTripDayMode(editable = false) {
     <span class="material-symbols-outlined">map</span>
     Voir sur la carte
   </button>
+
+  ${editable ? `
+    <button
+      type="button"
+      data-action="move-step-up"
+      data-step-index="${nextStepIndex}"
+      aria-label="Monter cette étape"
+      ${nextStepIndex <= 0
+        ? 'disabled'
+        : ''}
+    >
+      <span class="material-symbols-outlined">
+        arrow_upward
+      </span>
+    </button>
+
+    <button
+      type="button"
+      data-action="move-step-down"
+      data-step-index="${nextStepIndex}"
+      aria-label="Descendre cette étape"
+      ${nextStepIndex >= steps.length - 1
+        ? 'disabled'
+        : ''}
+    >
+      <span class="material-symbols-outlined">
+        arrow_downward
+      </span>
+    </button>
+  ` : ''}
 
   ${nextStep.type === 'Activité' ? `
     <button
@@ -7196,27 +7845,76 @@ function renderTripDayMode(editable = false) {
 
             <div class="travel-later-list">
               ${laterSteps.map((step, offset) => {
-                const realIndex = nextStepIndex + offset + 1;
+                const realIndex =
+                  nextStepIndex +
+                  offset +
+                  1;
 
                 return `
-                  <button
-                    type="button"
-                    data-action="${step.type === 'Activité' ? 'activity-detail' : 'show-step-on-map'}"
-                    data-step-index="${realIndex}"
-                  >
-                    <time>${escapeHtml(step.time)}</time>
+                  <div class="travel-later-row">
+                    <button
+                      class="travel-later-main"
+                      type="button"
+                      data-action="${step.type === 'Activité'
+                        ? 'activity-detail'
+                        : 'show-step-on-map'}"
+                      data-step-index="${realIndex}"
+                    >
+                      <time>${escapeHtml(step.time)}</time>
 
-                    <span class="travel-later-icon ${step.tone}">
-                      <span class="material-symbols-outlined">${step.icon}</span>
-                    </span>
+                      <span class="travel-later-icon ${step.tone}">
+                        <span class="material-symbols-outlined">
+                          ${step.icon}
+                        </span>
+                      </span>
 
-                    <span class="travel-later-copy">
-                      <strong>${escapeHtml(step.title)}</strong>
-                      <small>${escapeHtml(step.description)}</small>
-                    </span>
+                      <span class="travel-later-copy">
+                        <strong>
+                          ${escapeHtml(step.title)}
+                        </strong>
 
-                    <span class="material-symbols-outlined">chevron_right</span>
-                  </button>
+                        <small>
+                          ${escapeHtml(step.description)}
+                        </small>
+                      </span>
+
+                      <span class="material-symbols-outlined">
+                        chevron_right
+                      </span>
+                    </button>
+
+                    ${editable ? `
+                      <div class="travel-later-reorder">
+                        <button
+                          type="button"
+                          data-action="move-step-up"
+                          data-step-index="${realIndex}"
+                          aria-label="Monter cette étape"
+                          ${realIndex <= 0
+                            ? 'disabled'
+                            : ''}
+                        >
+                          <span class="material-symbols-outlined">
+                            arrow_upward
+                          </span>
+                        </button>
+
+                        <button
+                          type="button"
+                          data-action="move-step-down"
+                          data-step-index="${realIndex}"
+                          aria-label="Descendre cette étape"
+                          ${realIndex >= steps.length - 1
+                            ? 'disabled'
+                            : ''}
+                        >
+                          <span class="material-symbols-outlined">
+                            arrow_downward
+                          </span>
+                        </button>
+                      </div>
+                    ` : ''}
+                  </div>
                 `;
               }).join('')}
             </div>
@@ -9634,6 +10332,165 @@ async function handleDeleteTrip(tripId = activeTrip?.id) {
   renderHome();
 }
 
+async function moveMobileItineraryDay(
+  direction
+) {
+  if (
+    mobileItineraryReorderBusy ||
+    !activeTrip?.id
+  ) {
+    return;
+  }
+
+  const days =
+    activeTrip.days || [];
+
+  const sourceIndex =
+    mobileItineraryDayIndex;
+
+  const targetIndex =
+    sourceIndex +
+    (direction === 'up' ? -1 : 1);
+
+  if (
+    targetIndex < 0 ||
+    targetIndex >= days.length
+  ) {
+    return;
+  }
+
+  if (
+    !window.SB
+      ?.moveTripDayInsideFixedRange
+  ) {
+    alert(
+      'Le déplacement des journées est indisponible.'
+    );
+    return;
+  }
+
+  mobileItineraryReorderBusy = true;
+
+  try {
+    await window.SB
+      .moveTripDayInsideFixedRange(
+        activeTrip.id,
+        sourceIndex,
+        targetIndex
+      );
+
+    mobileItineraryDayIndex =
+      targetIndex;
+
+    await refreshMobileTrips(
+      activeTrip.id
+    );
+
+    renderItinerary();
+  } catch (error) {
+    alert(
+      'Impossible de déplacer la journée : ' +
+      (error.message || error)
+    );
+  } finally {
+    mobileItineraryReorderBusy = false;
+  }
+}
+
+async function moveMobileItineraryStep(
+  stepIndex,
+  direction
+) {
+  if (
+    mobileItineraryReorderBusy ||
+    !activeTrip?.id
+  ) {
+    return;
+  }
+
+  const activeDay =
+    getActiveItineraryDay();
+
+  const orderedSteps = (
+    Array.isArray(activeDay?.steps)
+      ? activeDay.steps
+      : []
+  )
+    .slice()
+    .sort(
+      (first, second) =>
+        Number(
+          first.stepIndex ?? 0
+        ) -
+        Number(
+          second.stepIndex ?? 0
+        )
+    );
+
+  const sourceIndex =
+    Number(stepIndex);
+
+  const targetIndex =
+    sourceIndex +
+    (direction === 'up' ? -1 : 1);
+
+  if (
+    !Number.isInteger(sourceIndex) ||
+    targetIndex < 0 ||
+    targetIndex >= orderedSteps.length
+  ) {
+    return;
+  }
+
+  if (!window.SB?.reorderSteps) {
+    alert(
+      'Le déplacement des étapes est indisponible.'
+    );
+    return;
+  }
+
+  const nextSteps =
+    orderedSteps.slice();
+
+  const movedStep =
+    nextSteps.splice(
+      sourceIndex,
+      1
+    )[0];
+
+  nextSteps.splice(
+    targetIndex,
+    0,
+    movedStep
+  );
+
+  mobileItineraryReorderBusy = true;
+
+  try {
+    await window.SB.reorderSteps(
+      nextSteps.map(
+        (step, index) => ({
+          ...step,
+          stepIndex: index
+        })
+      )
+    );
+
+    await refreshMobileTrips(
+      activeTrip.id
+    );
+
+    renderItinerary();
+  } catch (error) {
+    alert(
+      'Impossible de déplacer l’étape : ' +
+      (error.message || error)
+    );
+  } finally {
+    mobileItineraryReorderBusy = false;
+  }
+}
+
 function handleEditStep(stepIndex) {
   const steps = getCurrentTimelineSteps();
   const step = steps[stepIndex];
@@ -10446,6 +11303,53 @@ if (action === 'delete-trip') {
     event.target.closest('[data-stopover-row]')?.remove();
     return;
   }
+
+if (action === 'day-cover-open') {
+  openMobileDayCoverPicker();
+  return;
+}
+
+if (action === 'move-day-up') {
+  await moveMobileItineraryDay(
+    'up'
+  );
+  return;
+}
+
+if (action === 'move-day-down') {
+  await moveMobileItineraryDay(
+    'down'
+  );
+  return;
+}
+
+if (action === 'move-step-up') {
+  const button =
+    event.target.closest(
+      '[data-step-index]'
+    );
+
+  await moveMobileItineraryStep(
+    Number(button?.dataset.stepIndex),
+    'up'
+  );
+
+  return;
+}
+
+if (action === 'move-step-down') {
+  const button =
+    event.target.closest(
+      '[data-step-index]'
+    );
+
+  await moveMobileItineraryStep(
+    Number(button?.dataset.stepIndex),
+    'down'
+  );
+
+  return;
+}
 
 if (action === 'travel-previous-day') {
   if (mobileItineraryDayIndex > 0) {

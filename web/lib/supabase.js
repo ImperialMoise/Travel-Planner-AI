@@ -798,7 +798,7 @@ export async function updateDayCoverCrop(dayId, patch = {}) {
   return data;
 }
 
-async function moveTripDayInsideFixedRange(
+export async function moveTripDayInsideFixedRange(
   tripId,
   fromIndex,
   toIndex

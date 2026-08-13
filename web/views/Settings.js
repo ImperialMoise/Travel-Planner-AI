@@ -3780,11 +3780,68 @@ function activityDescription(activity, names) {
   const label = details.label || details.name || 'un élément';
 
   if (activity.entity_type === 'trip_members') {
+    const memberName =
+      details.member_name ||
+      'Un membre';
+
     if (activity.action === 'joined') {
-      return <><strong>{details.member_name || 'Un membre'}</strong> a rejoint le voyage.</>;
+      return (
+        <>
+          <strong>{memberName}</strong> a rejoint le voyage.
+        </>
+      );
     }
 
-    return <><strong>{details.member_name || 'Un membre'}</strong> a quitté ou a été retiré du voyage.</>;
+    if (activity.action === 'role_changed') {
+      const roleNames = {
+        owner: 'Propriétaire',
+        editor: 'Éditeur',
+        viewer: 'Lecteur'
+      };
+
+      const oldRole =
+        roleNames[details.old_role] ||
+        details.old_role;
+
+      const newRole =
+        roleNames[details.new_role] ||
+        details.new_role;
+
+      if (details.new_role === 'owner') {
+        return (
+          <>
+            <strong>{memberName}</strong> est maintenant
+            propriétaire du voyage.
+          </>
+        );
+      }
+
+      if (
+        activity.actor_id ===
+        details.member_user_id
+      ) {
+        return (
+          <>
+            <strong>{memberName}</strong> est maintenant{' '}
+            {String(newRole).toLowerCase()}.
+          </>
+        );
+      }
+
+      return (
+        <>
+          <strong>{actor}</strong> a changé le rôle de{' '}
+          <strong>{memberName}</strong> : {oldRole} → {newRole}.
+        </>
+      );
+    }
+
+    return (
+      <>
+        <strong>{memberName}</strong> a quitté ou a été
+        retiré du voyage.
+      </>
+    );
   }
 
   if (activity.entity_type === 'trip_invites') {

@@ -1904,6 +1904,229 @@ export async function searchPlaces(params = {}) {
   };
 }
 
+// ─── Rappels personnels ────────────────────────────────────
+
+function normalizeReminder(reminder) {
+  return {
+    id: reminder.id,
+    tripId: reminder.trip_id,
+    tripName:
+      reminder.trips?.name ||
+      'Voyage',
+    title: reminder.title,
+    remindAt: reminder.remind_at,
+    completedAt: reminder.completed_at,
+    notifiedAt: reminder.notified_at,
+    createdAt: reminder.created_at
+  };
+}
+
+export async function listMyReminders(
+  {
+    pendingOnly = false
+  } = {}
+) {
+  const user = await getUser();
+
+  if (!user) {
+    return [];
+  }
+
+  let query = sb
+    .from('trip_reminders')
+    .select(`
+      id,
+      trip_id,
+      title,
+      remind_at,
+      completed_at,
+      notified_at,
+      created_at,
+      trips(name)
+    `)
+    .eq('user_id', user.id)
+    .order('remind_at', {
+      ascending: true
+    })
+    .limit(100);
+
+  if (pendingOnly) {
+    query = query.is(
+      'completed_at',
+      null
+    );
+  }
+
+  const {
+    data,
+    error
+  } = await query;
+
+  if (error) throw error;
+
+  return (data || []).map(
+    normalizeReminder
+  );
+}
+
+export async function createTripReminder({
+  tripId,
+  title,
+  remindAt
+}) {
+  const user = await getUser();
+  const cleanTitle =
+    String(title || '').trim();
+
+  if (!user) {
+    throw new Error(
+      'Connexion requise.'
+    );
+  }
+
+  if (!tripId) {
+    throw new Error(
+      'Choisis un voyage.'
+    );
+  }
+
+  if (!cleanTitle) {
+    throw new Error(
+      'Écris le contenu du rappel.'
+    );
+  }
+
+  if (!remindAt) {
+    throw new Error(
+      'Choisis une date et une heure.'
+    );
+  }
+
+  const {
+    data,
+    error
+  } = await sb
+    .from('trip_reminders')
+    .insert({
+      trip_id: tripId,
+      user_id: user.id,
+      title: cleanTitle,
+      remind_at:
+        new Date(remindAt).toISOString()
+    })
+    .select(`
+      id,
+      trip_id,
+      title,
+      remind_at,
+      completed_at,
+      notified_at,
+      created_at,
+      trips(name)
+    `)
+    .single();
+
+  if (error) throw error;
+
+  return normalizeReminder(data);
+}
+
+export async function setReminderCompleted(
+  reminderId,
+  completed
+) {
+  const {
+    data,
+    error
+  } = await sb
+    .from('trip_reminders')
+    .update({
+      completed_at: completed
+        ? new Date().toISOString()
+        : null,
+      notified_at: completed
+        ? undefined
+        : null
+    })
+    .eq('id', reminderId)
+    .select()
+    .single();
+
+  if (error) throw error;
+
+  return data;
+}
+
+export async function deleteReminder(
+  reminderId
+) {
+  const {
+    error
+  } = await sb
+    .from('trip_reminders')
+    .delete()
+    .eq('id', reminderId);
+
+  if (error) throw error;
+}
+
+export async function listDueReminders() {
+  const user = await getUser();
+
+  if (!user) {
+    return [];
+  }
+
+  const {
+    data,
+    error
+  } = await sb
+    .from('trip_reminders')
+    .select(`
+      id,
+      trip_id,
+      title,
+      remind_at,
+      completed_at,
+      notified_at,
+      created_at,
+      trips(name)
+    `)
+    .eq('user_id', user.id)
+    .is('completed_at', null)
+    .is('notified_at', null)
+    .lte(
+      'remind_at',
+      new Date().toISOString()
+    )
+    .order('remind_at', {
+      ascending: true
+    })
+    .limit(10);
+
+  if (error) throw error;
+
+  return (data || []).map(
+    normalizeReminder
+  );
+}
+
+export async function markReminderNotified(
+  reminderId
+) {
+  const {
+    error
+  } = await sb
+    .from('trip_reminders')
+    .update({
+      notified_at:
+        new Date().toISOString()
+    })
+    .eq('id', reminderId);
+
+  if (error) throw error;
+}
+
 // ─── Realtime ──────────────────────────────────────────────
 let _channel = null;
 export function subscribeTrip(tripId, onChange) {
@@ -2018,6 +2241,13 @@ window.SB = {
   leaveTrip,
   removeTripMember,
   listTripActivity,
+
+  listMyReminders,
+  createTripReminder,
+  setReminderCompleted,
+  deleteReminder,
+  listDueReminders,
+  markReminderNotified,
 
   listDocuments,
   uploadDocument,

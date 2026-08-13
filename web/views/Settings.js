@@ -31,6 +31,11 @@ const SETTINGS_SECTIONS = {
     description: 'Invite et gère les membres du voyage actif.',
     icon: 'users'
   },
+  reminders: {
+    title: 'Rappels',
+    description: 'Programme tes alertes personnelles.',
+    icon: 'clock'
+  },
   activity: {
     title: 'Journal',
     description: 'Les dernières modifications de chaque voyage.',
@@ -235,6 +240,14 @@ function SettingsModal() {
     activeTripId={activeTripId}
     user={user}
   />
+)}
+
+{section === 'reminders' &&
+  window.RemindersSection && (
+    <window.RemindersSection
+      trips={trips || []}
+      activeTripId={activeTripId}
+    />
 )}
 
 {section === 'activity' && (

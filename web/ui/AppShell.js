@@ -4008,6 +4008,12 @@ function toggleToolboxCollapsed() {
           </button>
         )}
 
+        {user && window.ReminderNotifier && (
+          <window.ReminderNotifier
+            user={user}
+          />
+        )}
+
         {settingsOpen && window.SettingsModal && (
           <window.SettingsModal />
         )}

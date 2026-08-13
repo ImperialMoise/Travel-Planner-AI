@@ -1,5 +1,6 @@
 import { Capacitor } from '@capacitor/core';
 import { Geolocation } from '@capacitor/geolocation';
+import { LocalNotifications } from '@capacitor/local-notifications';
 
 function hasMobileLocationPermission(status) {
   return (
@@ -72,6 +73,209 @@ async function getMobileCurrentPosition(options = {}) {
   });
 }
 
+const MOBILE_REMINDERS_ENABLED_KEY =
+  'mobile_reminder_notifications_enabled';
+
+const MOBILE_REMINDERS_MAP_KEY =
+  'mobile_reminder_notification_map';
+
+function mobileRemindersAreEnabled() {
+  return (
+    localStorage.getItem(
+      MOBILE_REMINDERS_ENABLED_KEY
+    ) === 'true'
+  );
+}
+
+function getMobileReminderNotificationMap() {
+  try {
+    const parsed = JSON.parse(
+      localStorage.getItem(
+        MOBILE_REMINDERS_MAP_KEY
+      ) || '{}'
+    );
+
+    return parsed &&
+      typeof parsed === 'object'
+      ? parsed
+      : {};
+  } catch (_) {
+    return {};
+  }
+}
+
+function saveMobileReminderNotificationMap(map) {
+  localStorage.setItem(
+    MOBILE_REMINDERS_MAP_KEY,
+    JSON.stringify(map)
+  );
+}
+
+function getMobileReminderNotificationId(reminderId) {
+  const value = String(reminderId || '');
+  let hash = 0;
+
+  for (let index = 0; index < value.length; index += 1) {
+    hash = (
+      Math.imul(hash, 31) +
+      value.charCodeAt(index)
+    ) | 0;
+  }
+
+  return (hash & 0x7fffffff) || 1;
+}
+
+async function cancelScheduledMobileReminders({
+  disable = false
+} = {}) {
+  if (!Capacitor.isNativePlatform()) {
+    return;
+  }
+
+  const notificationMap =
+    getMobileReminderNotificationMap();
+
+  const notifications = Object.values(
+    notificationMap
+  )
+    .filter(Number.isInteger)
+    .map(id => ({ id }));
+
+  if (notifications.length) {
+    try {
+      await LocalNotifications.cancel({
+        notifications
+      });
+    } catch (error) {
+      console.warn(
+        'Mobile reminder cancellation error:',
+        error
+      );
+    }
+  }
+
+  localStorage.removeItem(
+    MOBILE_REMINDERS_MAP_KEY
+  );
+
+  if (disable) {
+    localStorage.setItem(
+      MOBILE_REMINDERS_ENABLED_KEY,
+      'false'
+    );
+  }
+}
+
+async function syncMobileTripReminders({
+  requestPermission = false
+} = {}) {
+  if (
+    !Capacitor.isNativePlatform() ||
+    !mobileUser ||
+    !window.SB?.listMyReminders
+  ) {
+    return {
+      enabled: false,
+      count: 0
+    };
+  }
+
+  let permission =
+    await LocalNotifications.checkPermissions();
+
+  if (
+    permission.display !== 'granted' &&
+    requestPermission
+  ) {
+    permission =
+      await LocalNotifications.requestPermissions();
+  }
+
+  if (permission.display !== 'granted') {
+    localStorage.setItem(
+      MOBILE_REMINDERS_ENABLED_KEY,
+      'false'
+    );
+
+    return {
+      enabled: false,
+      count: 0
+    };
+  }
+
+  const reminders =
+    await window.SB.listMyReminders({
+      pendingOnly: true
+    });
+
+  const minimumDate = Date.now() + 2000;
+
+  const futureReminders = reminders.filter(
+    reminder => {
+      const timestamp =
+        new Date(reminder.remindAt).getTime();
+
+      return (
+        Number.isFinite(timestamp) &&
+        timestamp > minimumDate
+      );
+    }
+  );
+
+  await cancelScheduledMobileReminders();
+
+  const notificationMap = {};
+
+  const notifications = futureReminders.map(
+    reminder => {
+      const id =
+        getMobileReminderNotificationId(
+          reminder.id
+        );
+
+      notificationMap[reminder.id] = id;
+
+      return {
+        id,
+        title:
+          reminder.tripName ||
+          'Rappel de voyage',
+        body: reminder.title,
+        schedule: {
+          at: new Date(reminder.remindAt),
+          allowWhileIdle: true
+        },
+        autoCancel: true,
+        extra: {
+          source: 'trip-reminder',
+          reminderId: reminder.id,
+          tripId: reminder.tripId
+        }
+      };
+    }
+  );
+
+  if (notifications.length) {
+    await LocalNotifications.schedule({
+      notifications
+    });
+  }
+
+  saveMobileReminderNotificationMap(
+    notificationMap
+  );
+
+  localStorage.setItem(
+    MOBILE_REMINDERS_ENABLED_KEY,
+    'true'
+  );
+
+  return {
+    enabled: true,
+    count: notifications.length
+  };
+}
+
 const app = document.getElementById('app');
 
 let mobileSB = null;
@@ -90,6 +294,8 @@ let mobileItineraryDayIndex = 0;
 let mobileShareMembers = [];
 let mobileShareActivity = [];
 let mobileShareLoading = false;
+let pendingMobileNotificationTripId = null;
+let pendingMobileNotificationReminderId = null;
 let mobileWorkspaceMode =
   localStorage.getItem('mobile_workspace_mode') === 'travel'
     ? 'travel'
@@ -336,6 +542,16 @@ async function initMobileData() {
     }
 
     await refreshMobileTrips();
+    if (mobileRemindersAreEnabled()) {
+  try {
+    await syncMobileTripReminders();
+  } catch (error) {
+    console.warn(
+      'Mobile reminder synchronization error:',
+      error
+    );
+  }
+}
   } catch (error) {
     console.warn('Mobile Supabase init error:', error);
 
@@ -740,6 +956,8 @@ function updateMobilePlacesControl() {
 
   const precise = mobilePlacesMode === 'google';
   const { used, limit } = getMobilePlacesNumbers();
+  const remindersEnabled =
+  mobileRemindersAreEnabled();
 
   control.classList.toggle('is-precise', precise);
 
@@ -4928,6 +5146,490 @@ function renderAccount() {
   `;
 }
 
+function formatMobileReminderDate(value) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return 'Date inconnue';
+  }
+
+  return new Intl.DateTimeFormat('fr-FR', {
+    dateStyle: 'medium',
+    timeStyle: 'short'
+  }).format(date);
+}
+
+function getDefaultMobileReminderDate() {
+  const date = new Date(
+    Date.now() + 60 * 60 * 1000
+  );
+
+  date.setMinutes(
+    Math.ceil(date.getMinutes() / 5) * 5,
+    0,
+    0
+  );
+
+  const localDate = new Date(
+    date.getTime() -
+    date.getTimezoneOffset() * 60000
+  );
+
+  return localDate
+    .toISOString()
+    .slice(0, 16);
+}
+
+async function renderReminders() {
+  if (!mobileUser) {
+    navigate('auth');
+    return;
+  }
+
+  app.innerHTML = `
+    <div class="mobile-shell settings-shell">
+      ${topbar()}
+
+      <main class="mobile-personal-main">
+        <header class="mobile-personal-heading">
+          <span>Organisation</span>
+          <h2>Mes rappels</h2>
+          <p>Chargement de vos rappels…</p>
+        </header>
+
+        <section class="mobile-personal-card">
+          <div class="mobile-reminder-loading">
+            <span class="material-symbols-outlined">
+              progress_activity
+            </span>
+
+            Chargement…
+          </div>
+        </section>
+      </main>
+    </div>
+  `;
+
+  let reminders = [];
+  let loadingError = '';
+
+  try {
+    reminders =
+      await window.SB.listMyReminders();
+  } catch (error) {
+    console.error(
+      'Mobile reminders loading error:',
+      error
+    );
+
+    loadingError =
+      error.message ||
+      'Impossible de charger les rappels.';
+  }
+
+  const defaultDate =
+    getDefaultMobileReminderDate();
+
+  app.innerHTML = `
+    <div class="mobile-shell settings-shell">
+      ${topbar()}
+
+      <main class="mobile-personal-main">
+        <header class="mobile-personal-heading">
+          <button
+            class="mobile-reminder-back"
+            type="button"
+            data-action="settings"
+          >
+            <span class="material-symbols-outlined">
+              arrow_back
+            </span>
+            Paramètres
+          </button>
+
+          <span>Organisation</span>
+          <h2>Mes rappels</h2>
+
+          <p>
+            Préparez vos échéances avant et pendant le voyage.
+          </p>
+        </header>
+
+        <section class="mobile-personal-card">
+          <header>
+            <span>Nouveau rappel</span>
+            <h3>Ajouter une échéance</h3>
+          </header>
+
+          ${mobileTrips.length ? `
+            <form data-mobile-reminder-form>
+              <label class="mobile-account-field">
+                <span>Voyage</span>
+
+                <div>
+                  <span class="material-symbols-outlined">
+                    luggage
+                  </span>
+
+                  <select id="mobile-reminder-trip">
+                    ${mobileTrips.map(trip => `
+                      <option
+                        value="${escapeHtml(trip.id)}"
+                        ${trip.id === activeTrip?.id
+                          ? 'selected'
+                          : ''}
+                      >
+                        ${escapeHtml(
+                          trip.name ||
+                          'Voyage sans nom'
+                        )}
+                      </option>
+                    `).join('')}
+                  </select>
+                </div>
+              </label>
+
+              <label class="mobile-account-field">
+                <span>Rappel</span>
+
+                <div>
+                  <span class="material-symbols-outlined">
+                    edit_note
+                  </span>
+
+                  <input
+                    id="mobile-reminder-title"
+                    type="text"
+                    maxlength="160"
+                    placeholder="Ex. Réserver les billets du musée"
+                    required
+                  >
+                </div>
+              </label>
+
+              <label class="mobile-account-field">
+                <span>Date et heure</span>
+
+                <div>
+                  <span class="material-symbols-outlined">
+                    schedule
+                  </span>
+
+                  <input
+                    id="mobile-reminder-date"
+                    type="datetime-local"
+                    min="${defaultDate}"
+                    value="${defaultDate}"
+                    required
+                  >
+                </div>
+              </label>
+
+              <button
+                class="mobile-personal-primary"
+                type="submit"
+              >
+                <span class="material-symbols-outlined">
+                  add_alert
+                </span>
+                Créer le rappel
+              </button>
+            </form>
+          ` : `
+            <div class="mobile-reminder-empty">
+              <span class="material-symbols-outlined">
+                luggage
+              </span>
+
+              <strong>Aucun voyage disponible</strong>
+
+              <p>
+                Créez d’abord un voyage pour pouvoir lui
+                associer un rappel.
+              </p>
+
+              <button
+                class="mobile-personal-primary"
+                type="button"
+                data-action="create-trip"
+              >
+                Créer un voyage
+              </button>
+            </div>
+          `}
+        </section>
+
+        <section class="mobile-personal-card">
+          <header>
+            <span>Planning</span>
+            <h3>Vos rappels</h3>
+          </header>
+
+          ${loadingError ? `
+            <div class="mobile-reminder-empty danger">
+              <span class="material-symbols-outlined">
+                error
+              </span>
+
+              <strong>Chargement impossible</strong>
+              <p>${escapeHtml(loadingError)}</p>
+
+              <button
+                type="button"
+                class="mobile-personal-primary"
+                data-action="reminders"
+              >
+                Réessayer
+              </button>
+            </div>
+          ` : reminders.length ? `
+            <div class="mobile-reminder-list">
+              ${reminders.map(reminder => {
+                const completed =
+                  Boolean(reminder.completedAt);
+
+                const timestamp =
+                  new Date(
+                    reminder.remindAt
+                  ).getTime();
+
+                const late =
+                  !completed &&
+                  Number.isFinite(timestamp) &&
+                  timestamp < Date.now();
+
+                return `
+                  <article
+                    class="mobile-reminder-item
+                      ${completed ? 'completed' : ''}
+                      ${late ? 'late' : ''}"
+                  >
+                    <div class="mobile-reminder-item-icon">
+                      <span class="material-symbols-outlined">
+                        ${completed
+                          ? 'task_alt'
+                          : late
+                            ? 'notification_important'
+                            : 'notifications_active'}
+                      </span>
+                    </div>
+
+                    <div class="mobile-reminder-item-content">
+                      <small>
+                        ${escapeHtml(
+                          reminder.tripName ||
+                          'Voyage'
+                        )}
+                      </small>
+
+                      <strong>
+                        ${escapeHtml(reminder.title)}
+                      </strong>
+
+                      <time>
+                        ${late ? 'En retard · ' : ''}
+                        ${escapeHtml(
+                          formatMobileReminderDate(
+                            reminder.remindAt
+                          )
+                        )}
+                      </time>
+                    </div>
+
+                    <div class="mobile-reminder-actions">
+                      <button
+                        type="button"
+                        data-action="reminder-toggle"
+                        data-reminder-id="${escapeHtml(
+                          reminder.id
+                        )}"
+                        data-completed="${completed
+                          ? 'false'
+                          : 'true'}"
+                        aria-label="${completed
+                          ? 'Réactiver le rappel'
+                          : 'Marquer comme terminé'}"
+                      >
+                        <span class="material-symbols-outlined">
+                          ${completed
+                            ? 'undo'
+                            : 'check'}
+                        </span>
+                      </button>
+
+                      <button
+                        class="danger"
+                        type="button"
+                        data-action="reminder-delete"
+                        data-reminder-id="${escapeHtml(
+                          reminder.id
+                        )}"
+                        aria-label="Supprimer le rappel"
+                      >
+                        <span class="material-symbols-outlined">
+                          delete
+                        </span>
+                      </button>
+                    </div>
+                  </article>
+                `;
+              }).join('')}
+            </div>
+          ` : `
+            <div class="mobile-reminder-empty">
+              <span class="material-symbols-outlined">
+                notifications_none
+              </span>
+
+              <strong>Aucun rappel</strong>
+
+              <p>
+                Vos prochains rappels apparaîtront ici.
+              </p>
+            </div>
+          `}
+        </section>
+      </main>
+    </div>
+  `;
+}
+
+async function handleCreateMobileReminder() {
+  const tripId =
+    document.querySelector(
+      '#mobile-reminder-trip'
+    )?.value || '';
+
+  const title =
+    document.querySelector(
+      '#mobile-reminder-title'
+    )?.value.trim() || '';
+
+  const remindAt =
+    document.querySelector(
+      '#mobile-reminder-date'
+    )?.value || '';
+
+  const button =
+    document.querySelector(
+      '[data-mobile-reminder-form] button[type="submit"]'
+    );
+
+  if (!tripId) {
+    alert('Choisissez un voyage.');
+    return;
+  }
+
+  if (!title) {
+    alert('Écrivez le contenu du rappel.');
+    return;
+  }
+
+  const reminderDate = new Date(remindAt);
+
+  if (
+    Number.isNaN(reminderDate.getTime()) ||
+    reminderDate.getTime() <= Date.now()
+  ) {
+    alert(
+      'Choisissez une date et une heure futures.'
+    );
+    return;
+  }
+
+  if (button) {
+    button.disabled = true;
+    button.textContent = 'Création…';
+  }
+
+  try {
+    await window.SB.createTripReminder({
+      tripId,
+      title,
+      remindAt
+    });
+
+    if (mobileRemindersAreEnabled()) {
+      await syncMobileTripReminders();
+    }
+
+    await renderReminders();
+  } catch (error) {
+    console.error(
+      'Mobile reminder creation error:',
+      error
+    );
+
+    alert(
+      'Impossible de créer le rappel : ' +
+      (error.message || error)
+    );
+
+    if (button) {
+      button.disabled = false;
+      button.innerHTML = `
+        <span class="material-symbols-outlined">
+          add_alert
+        </span>
+        Créer le rappel
+      `;
+    }
+  }
+}
+
+async function handleToggleMobileReminder(
+  reminderId,
+  completed
+) {
+  if (!reminderId) return;
+
+  try {
+    await window.SB.setReminderCompleted(
+      reminderId,
+      completed
+    );
+
+    if (mobileRemindersAreEnabled()) {
+      await syncMobileTripReminders();
+    }
+
+    await renderReminders();
+  } catch (error) {
+    alert(
+      'Impossible de modifier le rappel : ' +
+      (error.message || error)
+    );
+  }
+}
+
+async function handleDeleteMobileReminder(
+  reminderId
+) {
+  if (
+    !reminderId ||
+    !confirm('Supprimer définitivement ce rappel ?')
+  ) {
+    return;
+  }
+
+  try {
+    await window.SB.deleteReminder(
+      reminderId
+    );
+
+    if (mobileRemindersAreEnabled()) {
+      await syncMobileTripReminders();
+    }
+
+    await renderReminders();
+  } catch (error) {
+    alert(
+      'Impossible de supprimer le rappel : ' +
+      (error.message || error)
+    );
+  }
+}
+
 function renderSettings() {
   const theme = getMobileTheme();
   const precise = mobilePlacesMode === 'google';
@@ -5004,6 +5706,61 @@ function renderSettings() {
             </p>
           </div>
         </section>
+
+        <section class="mobile-personal-card">
+  <header>
+    <span>Notifications</span>
+    <h3>Rappels de voyage</h3>
+  </header>
+
+  <button
+    class="mobile-setting-switch ${remindersEnabled ? 'enabled' : ''}"
+    type="button"
+    data-action="settings-reminders"
+    aria-pressed="${remindersEnabled ? 'true' : 'false'}"
+  >
+    <span class="mobile-setting-icon">
+      <span class="material-symbols-outlined">
+        ${remindersEnabled
+          ? 'notifications_active'
+          : 'notifications_none'}
+      </span>
+    </span>
+
+    <span>
+      <strong>
+        ${remindersEnabled
+          ? 'Notifications activées'
+          : 'Notifications désactivées'}
+      </strong>
+
+      <small>
+        ${remindersEnabled
+          ? 'Les prochains rappels sont programmés sur ce téléphone'
+          : 'Recevoir les rappels même lorsque l’application est fermée'}
+      </small>
+    </span>
+
+    <span class="mobile-switch-track">
+      <span></span>
+    </span>
+  </button>
+
+  <button
+    class="mobile-session-row"
+    type="button"
+    data-action="reminders"
+  >
+    <span class="material-symbols-outlined">event_note</span>
+
+    <span>
+      <strong>Gérer mes rappels</strong>
+      <small>Créer, terminer ou supprimer un rappel</small>
+    </span>
+
+    <span class="material-symbols-outlined">chevron_right</span>
+  </button>
+</section>
 
         <section class="mobile-personal-card">
           <header>
@@ -7982,6 +8739,10 @@ async function handleMobileDeleteAccount() {
 }
 
 async function handleLogout() {
+  await cancelScheduledMobileReminders({
+    disable: true
+  });
+
   await window.SB.signOut();
   mobileUser = null;
   mobileTrips = [];
@@ -8299,9 +9060,12 @@ function navigate(route) {
   } else if (route === 'account') {
     window.location.hash = 'account';
     renderAccount();
-  } else if (route === 'settings') {
+} else if (route === 'settings') {
   window.location.hash = 'settings';
   renderSettings();
+  } else if (route === 'reminders') {
+  window.location.hash = 'reminders';
+  renderReminders();
   } else if (route === 'share') {
   window.location.hash = 'share';
   renderShare();
@@ -8538,6 +9302,94 @@ if ([
     handleMobileAccountPasswordChange();
     return;
   }
+
+if (action === 'reminders') {
+  navigate('reminders');
+  return;
+}
+
+if (action === 'reminder-toggle') {
+  const button = event.target.closest(
+    '[data-reminder-id]'
+  );
+
+  await handleToggleMobileReminder(
+    button?.dataset.reminderId,
+    button?.dataset.completed === 'true'
+  );
+
+  return;
+}
+
+if (action === 'reminder-delete') {
+  const button = event.target.closest(
+    '[data-reminder-id]'
+  );
+
+  await handleDeleteMobileReminder(
+    button?.dataset.reminderId
+  );
+
+  return;
+}
+
+if (action === 'settings-reminders') {
+  const button = event.target.closest(
+    '[data-action="settings-reminders"]'
+  );
+
+  if (button) {
+    button.disabled = true;
+  }
+
+  try {
+    if (mobileRemindersAreEnabled()) {
+      await cancelScheduledMobileReminders({
+        disable: true
+      });
+
+      alert(
+        'Les notifications de rappels sont désactivées.'
+      );
+    } else {
+      const result =
+        await syncMobileTripReminders({
+          requestPermission: true
+        });
+
+      if (!result.enabled) {
+        alert(
+          'Autorise les notifications dans les réglages du téléphone pour recevoir les rappels.'
+        );
+      } else {
+        alert(
+          result.count
+            ? `${result.count} rappel(s) programmé(s) sur ce téléphone.`
+            : 'Notifications activées. Aucun rappel futur à programmer.'
+        );
+      }
+    }
+
+    renderSettings();
+  } catch (error) {
+    console.error(
+      'Mobile reminder activation error:',
+      error
+    );
+
+    alert(
+      'Impossible de configurer les notifications : ' +
+      (error.message || error)
+    );
+
+    if (button) {
+      button.disabled = false;
+    }
+  }
+
+  return;
+}
+
 
   if (action === 'toggle-theme') {
     toggleMobileTheme();
@@ -9417,11 +10269,87 @@ if (action === 'map-geolocate') {
   navigate(action);
 });
 
+async function openPendingMobileNotification() {
+  const tripId =
+    pendingMobileNotificationTripId;
+
+  const reminderId =
+    pendingMobileNotificationReminderId;
+
+  if (
+    !tripId ||
+    !mobileReady ||
+    !mobileUser ||
+    !window.SB?.loadTrip
+  ) {
+    return;
+  }
+
+  pendingMobileNotificationTripId = null;
+  pendingMobileNotificationReminderId = null;
+
+  try {
+    activeTrip =
+      await window.SB.loadTrip(tripId);
+
+    mobileItineraryDayIndex = 0;
+
+    if (
+      reminderId &&
+      window.SB.markReminderNotified
+    ) {
+      try {
+        await window.SB.markReminderNotified(
+          reminderId
+        );
+      } catch (error) {
+        console.warn(
+          'Mobile reminder notified update error:',
+          error
+        );
+      }
+    }
+
+    navigate('itinerary');
+  } catch (error) {
+    console.error(
+      'Mobile notification trip opening error:',
+      error
+    );
+
+    alert(
+      'Le rappel a bien été reçu, mais le voyage ne peut pas être ouvert.'
+    );
+  }
+}
+
+async function handleMobileNotificationAction(
+  event
+) {
+  const extra =
+    event?.notification?.extra || {};
+
+  if (extra.source !== 'trip-reminder') {
+    return;
+  }
+
+  pendingMobileNotificationTripId =
+    extra.tripId || null;
+
+  pendingMobileNotificationReminderId =
+    extra.reminderId || null;
+
+  if (mobileReady) {
+    await openPendingMobileNotification();
+  }
+}
+
 function renderCurrentRoute() {
   if (window.location.hash === '#invite') renderInvite();
   else if (window.location.hash === '#auth') renderAuth();
   else if (window.location.hash === '#account') renderAccount();
-  else if (window.location.hash === '#settings') renderSettings();
+else if (window.location.hash === '#settings') renderSettings();
+  else if (window.location.hash === '#reminders') renderReminders();
   else if (window.location.hash === '#share') renderShare();
   else if (window.location.hash === '#create-trip') renderCreateTrip();
   else if (window.location.hash === '#budget-overview') renderBudgetOverview();
@@ -9509,6 +10437,17 @@ window.addEventListener('change', async event => {
 });
 
 window.addEventListener('submit', event => {
+  const reminderForm =
+    event.target.closest?.(
+      '[data-mobile-reminder-form]'
+    );
+
+  if (reminderForm) {
+    event.preventDefault();
+    handleCreateMobileReminder();
+    return;
+  }
+
   const form = event.target.closest?.('[data-create-form]');
   if (!form) return;
 
@@ -9594,11 +10533,47 @@ window.addEventListener('change', async event => {
   }
 });
 
-initMobileData().then(() => {
+if (Capacitor.isNativePlatform()) {
+  LocalNotifications.addListener(
+    'localNotificationActionPerformed',
+    handleMobileNotificationAction
+  ).catch(error => {
+    console.warn(
+      'Mobile notification listener error:',
+      error
+    );
+  });
+}
+
+document.addEventListener(
+  'visibilitychange',
+  async () => {
+    if (
+      document.visibilityState !== 'visible' ||
+      !mobileUser ||
+      !mobileRemindersAreEnabled()
+    ) {
+      return;
+    }
+
+    try {
+      await syncMobileTripReminders();
+    } catch (error) {
+      console.warn(
+        'Mobile reminder resume synchronization error:',
+        error
+      );
+    }
+  }
+);
+
+initMobileData().then(async () => {
   if (pendingMobileInvite) {
     renderInvite();
     return;
   }
 
   renderCurrentRoute();
+
+  await openPendingMobileNotification();
 });

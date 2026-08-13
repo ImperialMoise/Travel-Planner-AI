@@ -696,6 +696,21 @@ test(
       ] || ''
     ).toMatch(/javascript/i);
 
+    const workerSource =
+      await workerResponse.text();
+
+    expect(
+      workerSource
+    ).toContain(
+      "'la-fabrique-static-v2'"
+    );
+
+    expect(
+      workerSource
+    ).toContain(
+      'await fetch(request)'
+    );
+
     const offlineResponse =
       await request.get(
         '/offline.html'

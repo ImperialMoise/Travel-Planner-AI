@@ -1,5 +1,5 @@
 const CACHE_NAME =
-  'la-fabrique-static-v1';
+  'la-fabrique-static-v2';
 
 const OFFLINE_URL =
   '/offline.html';
@@ -108,48 +108,38 @@ self.addEventListener(
     }
 
     event.respondWith(
-      caches
-        .match(request)
-        .then(async function useCache(
-          cachedResponse
-        ) {
-          const networkResponse =
-            fetch(request)
-              .then(
-                function cacheResponse(
-                  response
-                ) {
-                  if (response.ok) {
-                    const copy =
-                      response.clone();
+      (
+        async function useNetworkFirst() {
+          try {
+            const response =
+              await fetch(request);
 
-                    caches
-                      .open(CACHE_NAME)
-                      .then(
-                        function saveResponse(
-                          cache
-                        ) {
-                          return cache.put(
-                            request,
-                            copy
-                          );
-                        }
-                      );
-                  }
+            if (response.ok) {
+              const cache =
+                await caches.open(
+                  CACHE_NAME
+                );
 
-                  return response;
-                }
-              )
-              .catch(function ignoreFailure() {
-                return null;
-              });
+              await cache.put(
+                request,
+                response.clone()
+              );
+            }
 
-          return (
-            cachedResponse ||
-            await networkResponse ||
-            Response.error()
-          );
-        })
+            return response;
+          } catch (networkError) {
+            const cachedResponse =
+              await caches.match(
+                request
+              );
+
+            return (
+              cachedResponse ||
+              Response.error()
+            );
+          }
+        }
+      )()
     );
   }
 );

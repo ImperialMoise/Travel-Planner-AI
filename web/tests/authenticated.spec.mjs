@@ -24,6 +24,9 @@ const FIRST_STEP_LABEL =
 const SECOND_STEP_LABEL =
   'E2E — Déjeuner';
 
+const REMINDER_TITLE =
+  'E2E — Réserver les billets';
+
 async function removeTestTrips(
   page,
   exactName
@@ -844,6 +847,130 @@ test(
           'Aucun lien actif.',
           {
             exact: false
+          }
+        )
+      ).toBeVisible();
+
+      await settingsDialog
+        .getByRole('button', {
+          name: 'Rappels',
+          exact: true
+        })
+        .click();
+
+      await expect(
+        settingsDialog.getByRole(
+          'heading',
+          {
+            name: 'Ne rien oublier',
+            exact: true
+          }
+        )
+      ).toBeVisible();
+
+      await settingsDialog
+        .getByPlaceholder(
+          'Ex. Réserver les billets du musée',
+          {
+            exact: true
+          }
+        )
+        .fill(REMINDER_TITLE);
+
+      await settingsDialog
+        .getByRole('button', {
+          name: 'Créer le rappel',
+          exact: true
+        })
+        .click();
+
+      const reminderRow =
+        settingsDialog
+          .locator('article')
+          .filter({
+            hasText:
+              REMINDER_TITLE
+          });
+
+      await expect(
+        reminderRow
+      ).toBeVisible();
+
+      await expect(
+        reminderRow
+      ).toContainText(
+        tripName
+      );
+
+      await expect(
+        settingsDialog.getByRole(
+          'heading',
+          {
+            name: '1 rappel actif',
+            exact: true
+          }
+        )
+      ).toBeVisible();
+
+      await reminderRow
+        .getByRole('button', {
+          name: 'Terminé',
+          exact: true
+        })
+        .click();
+
+      await expect(
+        reminderRow.getByRole(
+          'button',
+          {
+            name: 'Réactiver',
+            exact: true
+          }
+        )
+      ).toBeVisible();
+
+      await reminderRow
+        .getByRole('button', {
+          name: 'Réactiver',
+          exact: true
+        })
+        .click();
+
+      await expect(
+        reminderRow.getByRole(
+          'button',
+          {
+            name: 'Terminé',
+            exact: true
+          }
+        )
+      ).toBeVisible();
+
+      page.once(
+        'dialog',
+        async function confirmReminderDeletion(
+          confirmation
+        ) {
+          await confirmation.accept();
+        }
+      );
+
+      await reminderRow
+        .getByRole('button', {
+          name: 'Supprimer',
+          exact: true
+        })
+        .click();
+
+      await expect(
+        reminderRow
+      ).toBeHidden();
+
+      await expect(
+        settingsDialog.getByText(
+          'Aucun rappel pour le moment.',
+          {
+            exact: true
           }
         )
       ).toBeVisible();

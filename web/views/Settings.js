@@ -2517,6 +2517,7 @@ function ShareSection({ trips, activeTripId, user }) {
   const [invites, setInvites] = React.useState([]);
   const [inviteRole, setInviteRole] = React.useState('editor');
   const [busy, setBusy] = React.useState(false);
+  const [leaving, setLeaving] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [inviteError, setInviteError] = React.useState('');
   const [loadError, setLoadError] = React.useState('');
@@ -2804,6 +2805,72 @@ function ShareSection({ trips, activeTripId, user }) {
     }
   }
 
+    async function leaveManagedTrip() {
+    if (
+      canManage ||
+      !selectedTrip ||
+      leaving
+    ) {
+      return;
+    }
+
+    const confirmed = confirm(
+      `Quitter « ${selectedTrip.name} » ? Tu n’auras plus accès à ce voyage.`
+    );
+
+    if (!confirmed) return;
+
+    setLeaving(true);
+
+    try {
+      await SB.leaveTrip(
+        managedTripId
+      );
+
+      const remaining =
+        await SB.listMyTrips();
+
+      const wasActive =
+        managedTripId ===
+        activeTripId;
+
+      setManagedTripId(
+        remaining[0]?.id || ''
+      );
+
+      setMembers([]);
+      setManagedTrip(null);
+      setInvites([]);
+
+      Store.set({
+        trips: remaining,
+        activeTripId:
+          wasActive
+            ? null
+            : activeTripId,
+        trip:
+          wasActive
+            ? null
+            : Store.get().trip
+      });
+
+      Store.showToast(
+        'Tu as quitté le voyage.'
+      );
+    } catch (error) {
+      Store.showToast(
+        'Erreur : ' +
+          (
+            error.message ||
+            'Impossible de quitter ce voyage.'
+          )
+      );
+    } finally {
+      setLeaving(false);
+    }
+  }
+
+
     async function changeMemberRole(
     member,
     nextRole
@@ -2909,11 +2976,37 @@ function ShareSection({ trips, activeTripId, user }) {
           ))}
         </select>
 
-        <div style={{ marginTop: 10, color: 'var(--muted)', fontSize: 12 }}>
+        <div
+          style={{
+            marginTop: 10,
+            color: 'var(--muted)',
+            fontSize: 12
+          }}
+        >
           {canManage
             ? 'Tu es propriétaire de ce voyage : tu peux inviter et retirer des membres.'
             : 'Tu participes à ce voyage, mais seul son propriétaire peut gérer les invitations.'}
         </div>
+
+        {!canManage && (
+          <div
+            style={{
+              display: 'flex',
+              marginTop: 14
+            }}
+          >
+            <SettingsButton
+              variant="danger"
+              icon="x"
+              disabled={leaving}
+              onClick={leaveManagedTrip}
+            >
+              {leaving
+                ? 'Départ…'
+                : 'Quitter ce voyage'}
+            </SettingsButton>
+          </div>
+        )}
       </SettingsCard>
 
             <SettingsCard

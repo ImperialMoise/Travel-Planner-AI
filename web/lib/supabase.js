@@ -1633,6 +1633,38 @@ export async function updateTripMemberRole(
   if (error) throw error;
 }
 
+export async function leaveTrip(tripId) {
+  const user = await getUser();
+
+  if (!user) {
+    throw new Error(
+      'Connexion requise'
+    );
+  }
+
+  if (!tripId) {
+    throw new Error(
+      'Voyage introuvable'
+    );
+  }
+
+  const { data, error } = await sb
+    .from('trip_members')
+    .delete()
+    .eq('trip_id', tripId)
+    .eq('user_id', user.id)
+    .neq('role', 'owner')
+    .select('id');
+
+  if (error) throw error;
+
+  if (!data?.length) {
+    throw new Error(
+      'Impossible de quitter ce voyage.'
+    );
+  }
+}
+
 
 export async function removeTripMember(tripId, memberId) {
   const { error } = await sb.rpc('remove_trip_member', {
@@ -1895,6 +1927,7 @@ window.SB = {
   getInvite,
   acceptInvite,
   updateTripMemberRole,
+  leaveTrip,
   removeTripMember,
   listTripActivity,
 

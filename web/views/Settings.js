@@ -2976,114 +2976,240 @@ function ShareSection({ trips, activeTripId, user }) {
           </div>
         )}
 
-        {invite && (
+                {canManage && (
           <div
-            aria-live="polite"
             style={{
-              marginTop: 16,
-              padding: 14,
-              border:
-                '1px solid rgba(39, 100, 79, .25)',
-              borderRadius: 10,
-              background:
-                'rgba(39, 100, 79, .08)'
+              marginTop: 18,
+              paddingTop: 16,
+              borderTop:
+                '1px solid var(--line)'
             }}
           >
             <div
               style={{
                 display: 'flex',
-                alignItems:
-                  'flex-start',
+                alignItems: 'center',
                 justifyContent:
                   'space-between',
-                flexWrap: 'wrap',
-                gap: 10
+                gap: 10,
+                marginBottom: 10
               }}
             >
-              <div>
-                <strong
-                  style={{
-                    display: 'block',
-                    fontSize: 13
-                  }}
-                >
-                  Lien prêt à partager
-                </strong>
-
-                <span
-                  style={{
-                    display: 'block',
-                    marginTop: 4,
-                    color: 'var(--muted)',
-                    fontSize: 11
-                  }}
-                >
-                  {
-                    invite.role ===
-                    'viewer'
-                      ? 'Lecture seule'
-                      : 'Modification autorisée'
-                  }
-                  {' · '}
-                  {inviteExpirationLabel()}
-                </span>
-              </div>
+              <strong
+                style={{
+                  fontSize: 13
+                }}
+              >
+                Invitations actives
+              </strong>
 
               <span
                 style={{
-                  padding: '4px 7px',
-                  borderRadius: 999,
-                  color: '#27644f',
-                  background:
-                    'rgba(39, 100, 79, .12)',
-                  fontSize: 9,
-                  fontWeight: 900,
-                  letterSpacing: '.06em',
-                  textTransform:
-                    'uppercase'
+                  color: 'var(--muted)',
+                  fontSize: 11
                 }}
               >
-                1 utilisation
+                {invites.length}
               </span>
             </div>
 
-            <input
-              readOnly
-              value={invite.url}
-              aria-label="Lien d’invitation"
-              onFocus={event =>
-                event.target.select()
-              }
-              style={{
-                ...settingsInputStyle,
-                marginTop: 12,
-                background: 'var(--card)'
-              }}
-            />
-
-            <div
-              style={{
-                display: 'flex',
-                flexWrap: 'wrap',
-                gap: 8,
-                marginTop: 10
-              }}
-            >
-              <SettingsButton
-                icon="check"
-                onClick={copyInviteLink}
+            {!invites.length ? (
+              <div
+                style={{
+                  padding: 14,
+                  border:
+                    '1px dashed var(--line)',
+                  borderRadius: 9,
+                  color: 'var(--muted)',
+                  background: 'var(--card)',
+                  fontSize: 12,
+                  textAlign: 'center'
+                }}
               >
-                Copier le lien
-              </SettingsButton>
-
-              <SettingsButton
-                variant="primary"
-                icon="share"
-                onClick={shareInviteLink}
+                Aucun lien actif. Crée une invitation lorsque tu es prêt à la partager.
+              </div>
+            ) : (
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 10
+                }}
               >
-                Partager
-              </SettingsButton>
-            </div>
+                {invites.map(
+                  activeInvite => (
+                    <div
+                      key={activeInvite.id}
+                      className="settings-invite-row"
+                      data-invite-id={
+                        activeInvite.id
+                      }
+                      aria-live={
+                        activeInvite.id ===
+                        invite?.id
+                          ? 'polite'
+                          : undefined
+                      }
+                      style={{
+                        padding: 14,
+                        border:
+                          '1px solid ' +
+                          (
+                            activeInvite.id ===
+                            invite?.id
+                              ? 'rgba(39, 100, 79, .3)'
+                              : 'var(--line)'
+                          ),
+                        borderRadius: 10,
+                        background:
+                          activeInvite.id ===
+                          invite?.id
+                            ? 'rgba(39, 100, 79, .08)'
+                            : 'var(--card)'
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems:
+                            'flex-start',
+                          justifyContent:
+                            'space-between',
+                          flexWrap: 'wrap',
+                          gap: 10
+                        }}
+                      >
+                        <div>
+                          <strong
+                            style={{
+                              display: 'block',
+                              fontSize: 13
+                            }}
+                          >
+                            {
+                              activeInvite.role ===
+                              'viewer'
+                                ? 'Accès lecteur'
+                                : 'Accès éditeur'
+                            }
+                          </strong>
+
+                          <span
+                            style={{
+                              display: 'block',
+                              marginTop: 4,
+                              color:
+                                'var(--muted)',
+                              fontSize: 11
+                            }}
+                          >
+                            {
+                              inviteExpirationLabel(
+                                activeInvite
+                              )
+                            }
+                            {' · une seule utilisation'}
+                          </span>
+                        </div>
+
+                        <span
+                          style={{
+                            padding: '4px 7px',
+                            borderRadius: 999,
+                            color: '#27644f',
+                            background:
+                              'rgba(39, 100, 79, .12)',
+                            fontSize: 9,
+                            fontWeight: 900,
+                            letterSpacing:
+                              '.06em',
+                            textTransform:
+                              'uppercase'
+                          }}
+                        >
+                          {
+                            activeInvite.id ===
+                            invite?.id
+                              ? 'Nouveau'
+                              : 'Actif'
+                          }
+                        </span>
+                      </div>
+
+                      <input
+                        readOnly
+                        value={activeInvite.url}
+                        aria-label={
+                          "Lien d'invitation " +
+                          activeInvite.role
+                        }
+                        onFocus={event =>
+                          event.target.select()
+                        }
+                        style={{
+                          ...settingsInputStyle,
+                          marginTop: 12,
+                          background:
+                            'var(--inset)'
+                        }}
+                      />
+
+                      <div
+                        style={{
+                          display: 'flex',
+                          flexWrap: 'wrap',
+                          gap: 8,
+                          marginTop: 10
+                        }}
+                      >
+                        <SettingsButton
+                          icon="check"
+                          onClick={() =>
+                            copyInviteLink(
+                              activeInvite
+                            )
+                          }
+                        >
+                          Copier
+                        </SettingsButton>
+
+                        <SettingsButton
+                          variant="primary"
+                          icon="share"
+                          onClick={() =>
+                            shareInviteLink(
+                              activeInvite
+                            )
+                          }
+                        >
+                          Partager
+                        </SettingsButton>
+
+                        <SettingsButton
+                          variant="danger"
+                          icon="x"
+                          disabled={Boolean(
+                            revokingInviteId
+                          )}
+                          onClick={() =>
+                            revokeInviteLink(
+                              activeInvite
+                            )
+                          }
+                        >
+                          {
+                            revokingInviteId ===
+                            activeInvite.id
+                              ? 'Révocation…'
+                              : 'Révoquer'
+                          }
+                        </SettingsButton>
+                      </div>
+                    </div>
+                  )
+                )}
+              </div>
+            )}
           </div>
         )}
       </SettingsCard>

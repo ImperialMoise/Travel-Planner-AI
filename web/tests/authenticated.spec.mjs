@@ -692,6 +692,90 @@ test(
         duplicateTripRow
       ).toBeHidden();
 
+      await settingsDialog
+        .getByRole('button', {
+          name: 'Partage',
+          exact: true
+        })
+        .click();
+
+      await settingsDialog
+        .getByLabel(
+          'Droits accordés',
+          {
+            exact: true
+          }
+        )
+        .selectOption('viewer');
+
+      await settingsDialog
+        .getByRole('button', {
+          name: 'Créer le lien',
+          exact: true
+        })
+        .click();
+
+      const inviteRow =
+        settingsDialog
+          .locator(
+            '.settings-invite-row'
+          )
+          .first();
+
+      await expect(
+        inviteRow
+      ).toBeVisible();
+
+      await expect(
+        inviteRow
+      ).toContainText(
+        'Accès lecteur'
+      );
+
+      await expect(
+        inviteRow
+      ).toContainText(
+        'une seule utilisation'
+      );
+
+      await expect(
+        inviteRow.getByLabel(
+          "Lien d'invitation viewer",
+          {
+            exact: true
+          }
+        )
+      ).toHaveValue(
+        /\?invite=/
+      );
+
+      await inviteRow
+        .getByRole('button', {
+          name: 'Révoquer',
+          exact: true
+        })
+        .click();
+
+      await expect(
+        inviteRow
+      ).toBeHidden();
+
+      await expect(
+        settingsDialog.getByText(
+          'Aucun lien actif.',
+          {
+            exact: false
+          }
+        )
+      ).toBeVisible();
+
+      await settingsDialog
+        .getByRole('button', {
+          name: 'Mes voyages',
+          exact: true
+        })
+        .click();
+
       page.once(
         'dialog',
         async function confirmDeletion(

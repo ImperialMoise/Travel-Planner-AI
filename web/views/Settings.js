@@ -1681,11 +1681,6 @@ function TripsSection({
     past: 3,
     archived: 4
   };
-    current: 0,
-    upcoming: 1,
-    undated: 2,
-    past: 3
-  };
 
   function compareTrips(
     first,
@@ -2452,7 +2447,7 @@ function TripsSection({
                     : 'Archiver'}
               </SettingsButton>
             )}
-            
+
             <SettingsButton
               variant="danger"
               icon="x"

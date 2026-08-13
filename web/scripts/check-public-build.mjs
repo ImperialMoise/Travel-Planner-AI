@@ -242,9 +242,7 @@ const requiredObservabilityMarkers = [
   '/_vercel/insights/script.js',
   '/_vercel/speed-insights/script.js',
   'sensitiveUrlParameters',
-  'beforeSend',
-  'lfav_client_errors',
-  'ClientErrorLog'
+  'beforeSend'
 ];
 
 for (
@@ -259,6 +257,38 @@ for (
     violations.push(
       'index.html ne contient pas le suivi Vercel : ' +
       observabilityMarker +
+      '.'
+    );
+  }
+}
+
+const publicAppShellJavaScript =
+  await readFile(
+    path.join(
+      distDirectory,
+      'ui',
+      'AppShell.js'
+    ),
+    'utf8'
+  );
+
+const requiredErrorLogMarkers = [
+  'lfav_client_errors',
+  'ClientErrorLog'
+];
+
+for (
+  const errorLogMarker
+  of requiredErrorLogMarkers
+) {
+  if (
+    !publicAppShellJavaScript.includes(
+      errorLogMarker
+    )
+  ) {
+    violations.push(
+      'AppShell.js ne contient pas le journal technique : ' +
+      errorLogMarker +
       '.'
     );
   }

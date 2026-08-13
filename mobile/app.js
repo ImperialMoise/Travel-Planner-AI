@@ -373,6 +373,7 @@ let mobilePasswordResetEmail = '';
 let mobilePasswordResetReturnRoute = 'auth';
 let mobileItineraryDayIndex = 0;
 let mobileShareMembers = [];
+let mobileShareInvites = [];
 let mobileShareActivity = [];
 let mobileShareLoading = false;
 let mobileReminderBusy = false;
@@ -1687,6 +1688,143 @@ function topbar() {
   `;
 }
 
+function activateMobileDialog(
+  backdrop,
+  initialFocusSelector = '',
+  requestClose = null
+) {
+  if (!backdrop) return;
+
+  const previousFocus =
+    document.activeElement;
+
+  const dialog =
+    backdrop.querySelector(
+      '[role="dialog"]'
+    );
+
+  if (!dialog) return;
+
+  const getFocusableElements = () =>
+    Array.from(
+      dialog.querySelectorAll(`
+        button:not([disabled]),
+        input:not([disabled]),
+        select:not([disabled]),
+        textarea:not([disabled]),
+        a[href],
+        [tabindex]:not([tabindex="-1"])
+      `)
+    ).filter(element =>
+      !element.hidden &&
+      element.getAttribute('aria-hidden') !== 'true'
+    );
+
+  const closeDialog = () => {
+    if (!backdrop.isConnected) return;
+
+    if (typeof requestClose === 'function') {
+      requestClose();
+      return;
+    }
+
+    backdrop.remove();
+
+    requestAnimationFrame(() => {
+      if (
+        previousFocus?.isConnected &&
+        typeof previousFocus.focus === 'function'
+      ) {
+        previousFocus.focus();
+      }
+    });
+  };
+
+  backdrop.closeMobileDialog =
+    closeDialog;
+
+  dialog.addEventListener(
+    'keydown',
+    event => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeDialog();
+        return;
+      }
+
+      if (event.key !== 'Tab') return;
+
+      const focusableElements =
+        getFocusableElements();
+
+      if (!focusableElements.length) {
+        event.preventDefault();
+        dialog.focus();
+        return;
+      }
+
+      const firstElement =
+        focusableElements[0];
+
+      const lastElement =
+        focusableElements[
+          focusableElements.length - 1
+        ];
+
+      if (
+        event.shiftKey &&
+        document.activeElement === firstElement
+      ) {
+        event.preventDefault();
+        lastElement.focus();
+      } else if (
+        !event.shiftKey &&
+        document.activeElement === lastElement
+      ) {
+        event.preventDefault();
+        firstElement.focus();
+      }
+    }
+  );
+
+  requestAnimationFrame(() => {
+    const initialElement =
+      initialFocusSelector
+        ? dialog.querySelector(
+            initialFocusSelector
+          )
+        : null;
+
+    const target =
+      initialElement ||
+      getFocusableElements()[0] ||
+      dialog;
+
+    if (target === dialog) {
+      dialog.setAttribute(
+        'tabindex',
+        '-1'
+      );
+    }
+
+    target.focus();
+  });
+}
+
+function closeMobileDialog(backdrop) {
+  if (!backdrop) return;
+
+  if (
+    typeof backdrop.closeMobileDialog ===
+    'function'
+  ) {
+    backdrop.closeMobileDialog();
+    return;
+  }
+
+  backdrop.remove();
+}
+
 function openMobileTripMenu() {
   document.querySelector('.mobile-trip-menu-backdrop')?.remove();
 
@@ -1694,11 +1832,16 @@ function openMobileTripMenu() {
   menu.className = 'mobile-trip-menu-backdrop';
 
   menu.innerHTML = `
-    <aside class="mobile-trip-menu" role="dialog" aria-modal="true">
+    <aside
+      class="mobile-trip-menu"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="mobile-trip-menu-title"
+    >
       <header>
         <div>
           <span>La Fabrique à Voyages</span>
-          <strong>Choisir un voyage</strong>
+          <strong id="mobile-trip-menu-title">Choisir un voyage</strong>
         </div>
 
         <button
@@ -1778,11 +1921,19 @@ function openMobileTripMenu() {
 
   document.body.appendChild(menu);
 
-  menu.addEventListener('click', event => {
-  if (event.target === menu) {
-    menu.remove();
-  }
-});
+  activateMobileDialog(
+    menu,
+    '.mobile-trip-menu-list .active'
+  );
+
+  menu.addEventListener(
+    'click',
+    event => {
+      if (event.target === menu) {
+        closeMobileDialog(menu);
+      }
+    }
+  );
 }
 
 function bottomNav(active = 'plan') {
@@ -1857,11 +2008,78 @@ function hasMobileTripCover(trip) {
   );
 }
 
+function getOptimizedMobileImageUrl(
+  value,
+  requestedWidth = 900
+) {
+  const source = String(value || '').trim();
+
+  if (!source) return '';
+
+  try {
+    const url = new URL(
+      source,
+      window.location.origin
+    );
+
+    const connection =
+      navigator.connection ||
+      navigator.mozConnection ||
+      navigator.webkitConnection;
+
+    const constrainedConnection =
+      connection?.saveData === true ||
+      ['slow-2g', '2g'].includes(
+        connection?.effectiveType
+      );
+
+    const width = constrainedConnection
+      ? Math.min(requestedWidth, 640)
+      : requestedWidth;
+
+    const quality = constrainedConnection
+      ? 62
+      : 78;
+
+    if (url.hostname === 'images.unsplash.com') {
+      url.searchParams.set('auto', 'format');
+      url.searchParams.set('fit', 'crop');
+      url.searchParams.set('w', String(width));
+      url.searchParams.set('q', String(quality));
+
+      return url.toString();
+    }
+
+    if (url.hostname === 'images.pexels.com') {
+      url.searchParams.set('auto', 'compress');
+      url.searchParams.set('cs', 'tinysrgb');
+      url.searchParams.set('fit', 'crop');
+      url.searchParams.set('w', String(width));
+
+      return url.toString();
+    }
+
+    return source;
+  } catch (error) {
+    console.warn(
+      'Invalid mobile image URL:',
+      source,
+      error
+    );
+
+    return source;
+  }
+}
+
 function getMobileTripCoverUrl(trip) {
-  return (
+  const coverUrl =
     trip?.coverImageUrl ||
     trip?.cover_image_url ||
-    'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=900&auto=format&fit=crop'
+    'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=900&auto=format&fit=crop';
+
+  return getOptimizedMobileImageUrl(
+    coverUrl,
+    900
   );
 }
 
@@ -5654,6 +5872,7 @@ async function renderTripLibrary({
                     height="360"
                     loading="lazy"
                     decoding="async"
+                    fetchpriority="low"
                   >
 
                   <div class="mobile-trip-library-card-body">
@@ -6704,6 +6923,48 @@ function getMobileActivityDescription(activity) {
   );
 }
 
+async function shareMobileInvite(url) {
+  const invitationUrl = String(url || '').trim();
+
+  if (!invitationUrl) {
+    throw new Error("Le lien d'invitation est vide");
+  }
+
+  if (typeof navigator.share === 'function') {
+    try {
+      await navigator.share({
+        title: 'Invitation — La Fabrique à Voyages',
+        text: 'Rejoignez-moi pour préparer ce voyage.',
+        url: invitationUrl
+      });
+
+      return 'shared';
+    } catch (error) {
+      if (error?.name === 'AbortError') {
+        return 'cancelled';
+      }
+
+      console.warn('Native mobile share unavailable:', error);
+    }
+  }
+
+  if (navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(invitationUrl);
+      return 'copied';
+    } catch (error) {
+      console.warn('Mobile clipboard unavailable:', error);
+    }
+  }
+
+  prompt(
+    'Copiez ce lien pour inviter la personne :',
+    invitationUrl
+  );
+
+  return 'manual';
+}
+
 async function renderShare() {
   if (!mobileUser) {
     navigate('auth');
@@ -6737,14 +6998,24 @@ async function renderShare() {
     </div>
   `;
 
-  const [membersResult, activityResult] = await Promise.allSettled([
+  const [
+    membersResult,
+    invitesResult,
+    activityResult
+  ] = await Promise.allSettled([
     window.SB.listTripMembers(activeTrip.id),
+    window.SB.listTripInvites(activeTrip.id),
     window.SB.listTripActivity(activeTrip.id, 20)
   ]);
 
   mobileShareMembers =
     membersResult.status === 'fulfilled'
       ? membersResult.value
+      : [];
+
+  mobileShareInvites =
+    invitesResult.status === 'fulfilled'
+      ? invitesResult.value
       : [];
 
   mobileShareActivity =
@@ -6843,9 +7114,69 @@ async function renderShare() {
             data-action="create-trip-invite"
           >
             <span class="material-symbols-outlined">share</span>
-            Créer et copier le lien
+            Créer et partager le lien
           </button>
         </section>
+
+        ${isOwner ? `
+          <section class="mobile-personal-card mobile-pending-invites">
+            <header>
+              <span>Liens actifs</span>
+              <h3>Invitations en attente</h3>
+            </header>
+
+            <div class="mobile-invite-list">
+              ${mobileShareInvites.length ? mobileShareInvites.map(invite => `
+                <article class="mobile-invite-row">
+                  <span class="mobile-invite-icon">
+                    <span class="material-symbols-outlined">link</span>
+                  </span>
+
+                  <span>
+                    <strong>
+                      ${invite.role === 'viewer'
+                        ? 'Lecture uniquement'
+                        : 'Modification autorisée'}
+                    </strong>
+
+                    <small>
+                      Créée le
+                      ${escapeHtml(
+                        formatMobileActivityDate(invite.createdAt)
+                      )}
+                    </small>
+                  </span>
+
+                  <span class="mobile-invite-actions">
+                    <button
+                      type="button"
+                      data-action="share-trip-invite"
+                      data-invite-url="${escapeHtml(invite.url)}"
+                      aria-label="Partager cette invitation"
+                      title="Partager"
+                    >
+                      <span class="material-symbols-outlined">ios_share</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      data-action="revoke-trip-invite"
+                      data-invite-id="${escapeHtml(String(invite.id))}"
+                      aria-label="Révoquer cette invitation"
+                      title="Révoquer"
+                    >
+                      <span class="material-symbols-outlined">link_off</span>
+                    </button>
+                  </span>
+                </article>
+              `).join('') : `
+                <p class="mobile-share-empty">
+                  Aucun lien d’invitation n’est actuellement actif.
+                </p>
+              `}
+            </div>
+          </section>
+        ` : ''}
 
         <section class="mobile-personal-card">
           <header>
@@ -7234,6 +7565,12 @@ function openMobileDayCoverPicker() {
     }
   }
 
+  activateMobileDialog(
+    modal,
+    '#mobile-day-cover-query',
+    closePicker
+  );
+
   async function searchPhotos() {
     const query =
       String(input?.value || '')
@@ -7276,7 +7613,12 @@ function openMobileDayCoverPicker() {
                   data-cover-photo-index="${index}"
                 >
                   <img
-                    src="${escapeHtml(photo.imageUrl)}"
+                    src="${escapeHtml(
+                      getOptimizedMobileImageUrl(
+                        photo.imageUrl,
+                        640
+                      )
+                    )}"
                     alt="${escapeHtml(
                       photo.alt ||
                       query
@@ -7285,6 +7627,7 @@ function openMobileDayCoverPicker() {
                     height="420"
                     loading="lazy"
                     decoding="async"
+                    fetchpriority="low"
                   >
 
                   <span>
@@ -7582,7 +7925,7 @@ function renderTripDayMode(editable = false) {
     activeTrip?.name ||
     'Votre voyage';
 
-  const heroImage =
+  const heroImage = getOptimizedMobileImageUrl(
     activeDay?.coverImageUrl ||
     activeDay?.cover_image_url ||
     activeDay?.coverUrl ||
@@ -7593,7 +7936,9 @@ function renderTripDayMode(editable = false) {
     activeTrip?.cover_image_url ||
     activeTrip?.coverUrl ||
     activeTrip?.cover_url ||
-    getMobileTripCoverUrl(activeTrip);
+    getMobileTripCoverUrl(activeTrip),
+    1200
+  );
 
   app.innerHTML = `
     <div class="mobile-shell travel-mode-shell">
@@ -7705,8 +8050,11 @@ function renderTripDayMode(editable = false) {
           <img
             src="${escapeHtml(heroImage)}"
             alt=""
+            width="1200"
+            height="720"
             loading="eager"
             decoding="async"
+            fetchpriority="high"
           >
 
           <div class="travel-mode-hero-overlay"></div>
@@ -10519,14 +10867,20 @@ function openStepDeleteModal(stepIndex, step) {
   const modal = document.createElement('div');
   modal.className = 'step-delete-backdrop';
   modal.innerHTML = `
-    <article class="step-delete-modal" role="dialog" aria-modal="true" aria-labelledby="step-delete-title">
+     <article
+      class="step-delete-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="step-delete-title"
+      aria-describedby="step-delete-description"
+    >
       <button class="step-delete-close" type="button" data-action="step-delete-cancel" aria-label="Fermer">
         <span class="material-symbols-outlined" aria-hidden="true">close</span>
       </button>
 
       <span class="step-delete-kicker">Suppression</span>
       <h2 id="step-delete-title">Supprimer cette étape ?</h2>
-      <p>
+      <p id="step-delete-description">
         “${escapeHtml(step.title || 'Cette étape')}” sera retirée de votre itinéraire.
       </p>
 
@@ -10540,6 +10894,11 @@ function openStepDeleteModal(stepIndex, step) {
   `;
 
   document.body.appendChild(modal);
+
+  activateMobileDialog(
+    modal,
+    '.step-delete-actions .secondary'
+  );
 }
 
 async function confirmDeleteStep(stepIndex) {
@@ -10731,9 +11090,70 @@ function announceMobileRoute(route) {
     document.body.appendChild(announcer);
   }
 
-  announcer.textContent =
-    'Page affichée : ' +
-    getMobileRouteLabel(route);
+  announcer.textContent = '';
+
+  requestAnimationFrame(() => {
+    announcer.textContent =
+      'Page affichée : ' +
+      getMobileRouteLabel(route);
+  });
+}
+
+function focusMobileRoute(route) {
+  const expectedRoute =
+    window.location.hash.replace(/^#/, '') ||
+    'home';
+
+  if (expectedRoute !== route) return;
+
+  document.title =
+    `${getMobileRouteLabel(route)} — La Fabrique à Voyages`;
+
+  const focusCurrentHeading = () => {
+    const currentRoute =
+      window.location.hash.replace(/^#/, '') ||
+      'home';
+
+    if (currentRoute !== route) return;
+
+    const activeElement =
+      document.activeElement;
+
+    if (
+      activeElement &&
+      activeElement !== document.body &&
+      document.contains(activeElement)
+    ) {
+      return;
+    }
+
+    const main =
+      document.querySelector('main');
+
+    const target =
+      main?.querySelector('h1, h2') ||
+      main;
+
+    if (!target) return;
+
+    target.setAttribute(
+      'tabindex',
+      '-1'
+    );
+
+    target.focus({
+      preventScroll: true
+    });
+  };
+
+  requestAnimationFrame(
+    focusCurrentHeading
+  );
+
+  window.setTimeout(
+    focusCurrentHeading,
+    450
+  );
 }
 
 function navigate(route) {
@@ -10804,6 +11224,8 @@ function navigate(route) {
     window.location.hash = '';
     renderHome();
   }
+
+  focusMobileRoute(route);
 }
 
 window.addEventListener('click', async event => {
@@ -10852,7 +11274,12 @@ window.addEventListener('click', async event => {
 }
 
 if (action === 'close-trip-menu') {
-  document.querySelector('.mobile-trip-menu-backdrop')?.remove();
+  closeMobileDialog(
+    document.querySelector(
+      '.mobile-trip-menu-backdrop'
+    )
+  );
+
   return;
 }
 
@@ -11181,19 +11608,25 @@ if (action === 'create-trip-invite') {
       throw new Error("Le lien d'invitation est vide");
     }
 
-    try {
-      await navigator.clipboard.writeText(invitation.url);
+    const shareResult = await shareMobileInvite(
+      invitation.url
+    );
 
+    if (shareResult === 'copied') {
       alert(
         'Le lien d’invitation a été copié. ' +
         'Vous pouvez maintenant l’envoyer à la personne.'
       );
-    } catch (clipboardError) {
-      prompt(
-        'La copie automatique est bloquée. Copiez ce lien :',
-        invitation.url
+    }
+
+    if (shareResult === 'cancelled') {
+      alert(
+        'Le partage a été annulé, mais le lien reste disponible ' +
+        'dans les invitations en attente.'
       );
     }
+
+    await renderShare();
   } catch (error) {
     console.error('Create mobile invite error:', error);
 
@@ -11204,6 +11637,82 @@ if (action === 'create-trip-invite') {
   } finally {
     button.disabled = false;
     button.innerHTML = originalContent;
+  }
+
+  return;
+}
+
+if (action === 'share-trip-invite') {
+  const inviteButton = event.target.closest(
+    '[data-action="share-trip-invite"]'
+  );
+
+  const invitationUrl = inviteButton?.dataset.inviteUrl;
+
+  if (!inviteButton || !invitationUrl) {
+    alert('Lien d’invitation introuvable.');
+    return;
+  }
+
+  inviteButton.disabled = true;
+
+  try {
+    const shareResult = await shareMobileInvite(
+      invitationUrl
+    );
+
+    if (shareResult === 'copied') {
+      alert('Le lien d’invitation a été copié.');
+    }
+  } catch (error) {
+    console.error('Share mobile invite error:', error);
+
+    alert(
+      'Impossible de partager cette invitation : ' +
+      (error.message || error)
+    );
+  } finally {
+    inviteButton.disabled = false;
+  }
+
+  return;
+}
+
+if (action === 'revoke-trip-invite') {
+  const inviteButton = event.target.closest(
+    '[data-action="revoke-trip-invite"]'
+  );
+
+  const invitationId = inviteButton?.dataset.inviteId;
+
+  if (!inviteButton || !invitationId) {
+    alert('Invitation introuvable.');
+    return;
+  }
+
+  const confirmed = confirm(
+    'Révoquer ce lien ? Il ne permettra plus de rejoindre le voyage.'
+  );
+
+  if (!confirmed) return;
+
+  inviteButton.disabled = true;
+
+  try {
+    await window.SB.revokeTripInvite(
+      invitationId
+    );
+
+    await renderShare();
+  } catch (error) {
+    console.error('Revoke mobile invite error:', error);
+
+    alert(
+      'Impossible de révoquer cette invitation : ' +
+      (error.message || error)
+    );
+
+    inviteButton.disabled = false;
   }
 
   return;
@@ -11604,7 +12113,12 @@ if (action === 'delete-step') {
 }
 
 if (action === 'step-delete-cancel') {
-  document.querySelector('.step-delete-backdrop')?.remove();
+  closeMobileDialog(
+    document.querySelector(
+      '.step-delete-backdrop'
+    )
+  );
+
   return;
 }
 

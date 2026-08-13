@@ -1301,6 +1301,16 @@ function PreferencesSection({ user }) {
   const [placesMode, setPlacesMode] = React.useState(
     () => localStorage.getItem('places_search_mode') === 'google' ? 'google' : 'basic'
   );
+  const [
+    analyticsEnabled,
+    setAnalyticsEnabled
+  ] = React.useState(
+    () =>
+      localStorage.getItem(
+        'lfav_analytics_disabled'
+      ) !== 'true'
+  );
+
   const [usage, setUsage] = React.useState(null);
 
   async function refreshUsage() {
@@ -1330,6 +1340,27 @@ function PreferencesSection({ user }) {
     localStorage.setItem('places_search_mode', nextMode);
     window.dispatchEvent(new CustomEvent('places-search-mode', { detail: nextMode }));
     setPlacesMode(nextMode);
+  }
+
+  function applyAnalyticsPreference(enabled) {
+    if (enabled) {
+      localStorage.removeItem(
+        'lfav_analytics_disabled'
+      );
+    } else {
+      localStorage.setItem(
+        'lfav_analytics_disabled',
+        'true'
+      );
+    }
+
+    setAnalyticsEnabled(enabled);
+
+    Store.showToast(
+      enabled
+        ? 'Mesure anonyme activée'
+        : 'Mesure anonyme désactivée'
+    );
   }
 
   function savePreferences() {
@@ -1410,6 +1441,42 @@ function PreferencesSection({ user }) {
             </button>
           </div>
         </div>
+      </SettingsCard>
+
+      <SettingsCard
+        eyebrow="Confidentialité"
+        title="Mesure anonyme du site"
+      >
+        <SettingsToggle
+          checked={analyticsEnabled}
+          onChange={applyAnalyticsPreference}
+          label="Partager les statistiques anonymes"
+          description="Aide à connaître les pages utilisées et à détecter les problèmes de rapidité. Aucun contenu de voyage, email, document ou position précise n’est transmis."
+        />
+
+        <p style={{
+          margin: '14px 0 0',
+          color: 'var(--muted)',
+          fontSize: 11,
+          lineHeight: 1.55
+        }}>
+          Les mesures sont fournies par Vercel Analytics et
+          Speed Insights, sans cookie publicitaire. Les liens
+          contenant un code de connexion ou d’invitation sont
+          automatiquement exclus.
+          {' '}
+          <a
+            href="/informations.html#confidentialite"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              color: 'var(--accent)',
+              fontWeight: 800
+            }}
+          >
+            Politique de confidentialité
+          </a>
+        </p>
       </SettingsCard>
 
       <div style={{ display: 'flex', justifyContent: 'flex-end' }}>

@@ -21,6 +21,13 @@ const distDirectory =
     'dist'
   );
 
+const vercelConfigPath =
+  path.resolve(
+    scriptDirectory,
+    '..',
+    'vercel.json'
+  );
+
 const forbiddenPaths = [
   '.env',
   '.gitignore',
@@ -231,6 +238,32 @@ const publicIndexHtml =
 }
 
 
+const requiredObservabilityMarkers = [
+  '/_vercel/insights/script.js',
+  '/_vercel/speed-insights/script.js',
+  'sensitiveUrlParameters',
+  'beforeSend',
+  'lfav_client_errors',
+  'ClientErrorLog'
+];
+
+for (
+  const observabilityMarker
+  of requiredObservabilityMarkers
+) {
+  if (
+    !publicIndexHtml.includes(
+      observabilityMarker
+    )
+  ) {
+    violations.push(
+      'index.html ne contient pas le suivi Vercel : ' +
+      observabilityMarker +
+      '.'
+    );
+  }
+}
+
 const forbiddenDevelopmentRuntimes = [
   'react.development.js',
   'react-dom.development.js',
@@ -249,6 +282,91 @@ for (
     violations.push(
       'index.html publie encore le runtime de développement : ' +
       developmentRuntime +
+      '.'
+    );
+  }
+}
+
+const vercelConfig =
+  JSON.parse(
+    await readFile(
+      vercelConfigPath,
+      'utf8'
+    )
+  );
+
+const globalHeaderRule =
+  (
+    vercelConfig.headers || []
+  ).find(
+    rule =>
+      rule.source === '/(.*)'
+  );
+
+const configuredHeaders =
+  new Map(
+    (
+      globalHeaderRule?.headers || []
+    ).map(
+      header => [
+        String(header.key)
+          .toLowerCase(),
+        String(header.value || '')
+      ]
+    )
+  );
+
+const requiredSecurityHeaders = [
+  'content-security-policy',
+  'strict-transport-security',
+  'x-content-type-options',
+  'x-frame-options',
+  'referrer-policy',
+  'permissions-policy'
+];
+
+for (
+  const requiredHeader
+  of requiredSecurityHeaders
+) {
+  if (
+    !configuredHeaders.has(
+      requiredHeader
+    )
+  ) {
+    violations.push(
+      'En-tête Vercel absent : ' +
+      requiredHeader +
+      '.'
+    );
+  }
+}
+
+const contentSecurityPolicy =
+  configuredHeaders.get(
+    'content-security-policy'
+  ) || '';
+
+const requiredPolicyDirectives = [
+  "default-src 'self'",
+  "object-src 'none'",
+  "frame-ancestors 'none'",
+  "connect-src 'self'",
+  "worker-src 'self' blob:"
+];
+
+for (
+  const requiredDirective
+  of requiredPolicyDirectives
+) {
+  if (
+    !contentSecurityPolicy.includes(
+      requiredDirective
+    )
+  ) {
+    violations.push(
+      'Directive CSP absente : ' +
+      requiredDirective +
       '.'
     );
   }

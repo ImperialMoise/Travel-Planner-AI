@@ -99,6 +99,14 @@ self.addEventListener(
       return;
     }
 
+    if (
+      url.pathname.startsWith(
+        '/_vercel/'
+      )
+    ) {
+      return;
+    }
+
     const isStaticAsset =
       /\.(?:css|js|svg|png|html|webmanifest)$/i
         .test(url.pathname);

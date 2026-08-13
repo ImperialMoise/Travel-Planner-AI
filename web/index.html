@@ -148,5 +148,149 @@
   <script type="text/babel" src="ui/AppShell.js"></script>
   <script type="text/babel" src="app.js"></script>
 
+  <script>
+    (function enableVercelObservability() {
+      const hostname =
+        window.location.hostname;
+
+      const localHostnames = [
+        'localhost',
+        '127.0.0.1',
+        '0.0.0.0'
+      ];
+
+      const sensitiveUrlParameters = [
+        'invite',
+        'token',
+        'code',
+        'access_token',
+        'refresh_token'
+      ];
+
+      const currentUrl =
+        new URL(window.location.href);
+
+      const hasSensitiveParameter =
+        sensitiveUrlParameters.some(
+          function containsSensitiveParameter(
+            parameter
+          ) {
+            return (
+              currentUrl.searchParams.has(
+                parameter
+              ) ||
+              currentUrl.hash.includes(
+                parameter + '='
+              )
+            );
+          }
+        );
+
+      if (
+        window.location.protocol !== 'https:' ||
+        localHostnames.includes(hostname) ||
+        hasSensitiveParameter
+      ) {
+        return;
+      }
+
+      window.va =
+        window.va ||
+        function queueAnalytics() {
+          (
+            window.vaq =
+              window.vaq || []
+          ).push(arguments);
+        };
+
+      window.si =
+        window.si ||
+        function queueSpeedInsight() {
+          (
+            window.siq =
+              window.siq || []
+          ).push(arguments);
+        };
+
+      function redactSensitiveUrl(event) {
+        if (
+          localStorage.getItem(
+            'lfav_analytics_disabled'
+          ) === 'true'
+        ) {
+          return null;
+        }
+
+        try {
+          const eventUrl =
+            new URL(
+              event.url,
+              window.location.origin
+            );
+
+          sensitiveUrlParameters.forEach(
+            function removeSensitiveParameter(
+              parameter
+            ) {
+              eventUrl.searchParams.delete(
+                parameter
+              );
+            }
+          );
+
+          eventUrl.hash = '';
+
+          return {
+            ...event,
+            url: eventUrl.toString()
+          };
+        } catch (error) {
+          return null;
+        }
+      }
+
+      window.va(
+        'beforeSend',
+        redactSensitiveUrl
+      );
+
+      window.si(
+        'beforeSend',
+        redactSensitiveUrl
+      );
+
+      [
+        '/_vercel/insights/script.js',
+        '/_vercel/speed-insights/script.js'
+      ].forEach(function loadObservabilityScript(
+        source
+      ) {
+        if (
+          document.querySelector(
+            'script[src="' +
+            source +
+            '"]'
+          )
+        ) {
+          return;
+        }
+
+        const script =
+          document.createElement(
+            'script'
+          );
+
+        script.src = source;
+        script.async = true;
+        script.dataset.observability =
+          'vercel';
+
+        document.head.appendChild(
+          script
+        );
+      });
+    })();
+  </script>
+
 </body>
 </html>

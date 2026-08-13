@@ -11211,6 +11211,83 @@ form button {
   opacity: 0.65;
 }
 
+.mobile-invite-list {
+  display: grid;
+  gap: 8px;
+}
+
+.mobile-invite-row {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  padding: 10px;
+  border: 1px solid #e4d7c5;
+  border-radius: 8px;
+  background: #fffdf9;
+}
+
+.mobile-invite-icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #f1e5d2;
+  color: #8f610b;
+}
+
+.mobile-invite-icon .material-symbols-outlined {
+  font-size: 19px;
+}
+
+.mobile-invite-row strong,
+.mobile-invite-row small {
+  display: block;
+}
+
+.mobile-invite-row strong {
+  color: #4e3d27;
+  font-size: 11px;
+}
+
+.mobile-invite-row small {
+  margin-top: 3px;
+  color: #8b7e6d;
+  font-size: 9px;
+}
+
+.mobile-invite-actions {
+  display: flex;
+  gap: 5px;
+}
+
+.mobile-invite-actions button {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #f3eadc;
+  color: #76500c;
+}
+
+.mobile-invite-actions button:last-child {
+  background: #f8ebe6;
+  color: #b64f38;
+}
+
+.mobile-invite-actions button:disabled {
+  cursor: wait;
+  opacity: 0.45;
+}
+
+.mobile-invite-actions .material-symbols-outlined {
+  font-size: 17px;
+}
+
 .mobile-member-list {
   display: grid;
   gap: 8px;
@@ -11989,6 +12066,8 @@ form button {
   border-radius: 18px;
   background: var(--surface-container-lowest);
   box-shadow: var(--shadow-card);
+  content-visibility: auto;
+  contain-intrinsic-size: 280px;
 }
 
 .mobile-trip-library-card[hidden] {

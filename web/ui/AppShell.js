@@ -34,6 +34,177 @@
 // ════════════════════════════════════════════════════════════
 
 (function initAppShell() {
+  function createClientErrorLog() {
+    const STORAGE_KEY =
+      'lfav_client_errors';
+
+    function sanitizeText(
+      value,
+      maximumLength = 800
+    ) {
+      return String(value || '')
+        .replace(
+          /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi,
+          '[email masqué]'
+        )
+        .replace(
+          /(access_token|refresh_token|token|code|invite)=([^&\s]+)/gi,
+          '$1=[masqué]'
+        )
+        .slice(0, maximumLength);
+    }
+
+    function readErrors() {
+      try {
+        const storedErrors =
+          JSON.parse(
+            sessionStorage.getItem(
+              STORAGE_KEY
+            ) || '[]'
+          );
+
+        return Array.isArray(
+          storedErrors
+        )
+          ? storedErrors
+          : [];
+      } catch (error) {
+        return [];
+      }
+    }
+
+    function capture(
+      error,
+      context = {}
+    ) {
+      const entry = {
+        id:
+          window.crypto?.randomUUID
+            ? window.crypto.randomUUID()
+            : String(Date.now()),
+        date: new Date().toISOString(),
+        source: sanitizeText(
+          context.source ||
+          'javascript',
+          80
+        ),
+        message: sanitizeText(
+          error?.message ||
+          error ||
+          'Erreur inconnue'
+        ),
+        file: sanitizeText(
+          context.file || '',
+          240
+        ),
+        line:
+          Number(context.line) || null,
+        column:
+          Number(context.column) || null,
+        page:
+          window.location.pathname,
+        online:
+          navigator.onLine
+      };
+
+      try {
+        const nextErrors = [
+          ...readErrors(),
+          entry
+        ].slice(-5);
+
+        sessionStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify(nextErrors)
+        );
+      } catch (storageError) {
+        console.warn(
+          'Journal local indisponible :',
+          storageError
+        );
+      }
+
+      return entry;
+    }
+
+    function buildDiagnostic(
+      currentError
+    ) {
+      return [
+        'Diagnostic — La Fabrique à Voyages',
+        '',
+        'Date : ' +
+          new Date().toISOString(),
+        'Page : ' +
+          window.location.pathname,
+        'Connexion : ' +
+          (
+            navigator.onLine
+              ? 'en ligne'
+              : 'hors ligne'
+          ),
+        'Navigateur : ' +
+          navigator.userAgent,
+        'Erreur actuelle : ' +
+          sanitizeText(
+            currentError?.message ||
+            currentError ||
+            'Non précisée'
+          ),
+        '',
+        'Erreurs récentes :',
+        JSON.stringify(
+          readErrors(),
+          null,
+          2
+        )
+      ].join('\n');
+    }
+
+    return {
+      capture,
+      buildDiagnostic
+    };
+  }
+
+  if (!window.ClientErrorLog) {
+    window.ClientErrorLog =
+      createClientErrorLog();
+
+    window.addEventListener(
+      'error',
+      function captureWindowError(
+        event
+      ) {
+        window.ClientErrorLog.capture(
+          event.error ||
+          event.message,
+          {
+            source: 'window.error',
+            file: event.filename,
+            line: event.lineno,
+            column: event.colno
+          }
+        );
+      }
+    );
+
+    window.addEventListener(
+      'unhandledrejection',
+      function captureRejectedPromise(
+        event
+      ) {
+        window.ClientErrorLog.capture(
+          event.reason,
+          {
+            source:
+              'unhandledrejection'
+          }
+        );
+      }
+    );
+  }
+
   const U = window.ItineraryUtils || {};
   const ANDROID_APK_URL =
     'https://github.com/ImperialMoise/Travel-Planner-AI/releases/download/android-latest/la-fabrique-a-voyages.apk';
@@ -3580,7 +3751,8 @@
       super(props);
       this.state = {
         hasError: false,
-        error: null
+        error: null,
+        diagnosticCopied: false
       };
     }
 
@@ -3592,7 +3764,19 @@
     }
 
     componentDidCatch(error, info) {
-      console.error('ErrorBoundary:', error, info);
+      console.error(
+        'ErrorBoundary:',
+        error,
+        info
+      );
+
+      window.ClientErrorLog?.capture(
+        error,
+        {
+          source:
+            'react-error-boundary'
+        }
+      );
     }
 
     render() {
@@ -3681,10 +3865,55 @@
             </AppButton>
 
             <AppButton
-              onClick={() => this.setState({ hasError: false, error: null })}
+              onClick={() => this.setState({
+                hasError: false,
+                error: null,
+                diagnosticCopied: false
+              })}
               style={{ width: '100%' }}
             >
               Retenter sans recharger
+            </AppButton>
+
+            <AppButton
+              onClick={async () => {
+                const diagnostic =
+                  window.ClientErrorLog
+                    ?.buildDiagnostic(
+                      this.state.error
+                    ) ||
+                  'Diagnostic indisponible';
+
+                try {
+                  if (
+                    !navigator.clipboard
+                      ?.writeText
+                  ) {
+                    throw new Error(
+                      'Presse-papiers indisponible'
+                    );
+                  }
+
+                  await navigator.clipboard
+                    .writeText(
+                      diagnostic
+                    );
+
+                  this.setState({
+                    diagnosticCopied: true
+                  });
+                } catch (error) {
+                  window.prompt(
+                    'Copie ce diagnostic :',
+                    diagnostic
+                  );
+                }
+              }}
+              style={{ width: '100%' }}
+            >
+              {this.state.diagnosticCopied
+                ? 'Diagnostic copié'
+                : 'Copier le diagnostic'}
             </AppButton>
           </div>
         </div>

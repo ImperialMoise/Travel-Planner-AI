@@ -1,6 +1,7 @@
 import { Capacitor } from '@capacitor/core';
 import { Geolocation } from '@capacitor/geolocation';
 import { LocalNotifications } from '@capacitor/local-notifications';
+import '../web/ui/TripBackup.js';
 
 function hasMobileLocationPermission(status) {
   return (
@@ -375,6 +376,9 @@ let mobileShareMembers = [];
 let mobileShareActivity = [];
 let mobileShareLoading = false;
 let mobileReminderBusy = false;
+let mobileTripLibrary = [];
+let mobileTripLibraryBusy = false;
+let mobileTripLibraryError = '';
 let pendingMobileNotificationTripId = null;
 let pendingMobileNotificationReminderId = null;
 let mobileWorkspaceMode =
@@ -1570,6 +1574,7 @@ function topbar() {
   const personalPage = [
     '#account',
     '#settings',
+    '#trip-library',
     '#reminders',
     '#share'
   ].includes(window.location.hash);
@@ -1670,6 +1675,11 @@ function openMobileTripMenu() {
   <button type="button" data-action="create-trip">
     <span class="material-symbols-outlined">add</span>
     Nouveau voyage
+  </button>
+
+  <button type="button" data-action="trip-library">
+    <span class="material-symbols-outlined">travel_explore</span>
+    Gérer mes voyages
   </button>
 
   ${activeTrip?.id ? `
@@ -5230,6 +5240,645 @@ function renderAccount() {
       </main>
     </div>
   `;
+}
+
+function getMobileTripLibraryStatus(trip) {
+  if (trip?.archived_at) {
+    return 'archived';
+  }
+
+  const today =
+    new Date().toISOString().slice(0, 10);
+
+  const start =
+    trip?.start_date || '';
+
+  const end =
+    trip?.end_date || start;
+
+  if (!start) {
+    return 'undated';
+  }
+
+  if (end && end < today) {
+    return 'past';
+  }
+
+  if (start > today) {
+    return 'upcoming';
+  }
+
+  return 'current';
+}
+
+function getMobileTripLibraryStatusLabel(status) {
+  return {
+    upcoming: 'À venir',
+    current: 'En cours',
+    past: 'Terminé',
+    archived: 'Archivé',
+    undated: 'Sans date'
+  }[status] || 'Voyage';
+}
+
+function applyMobileTripLibraryFilters() {
+  const searchInput =
+    document.querySelector(
+      '#mobile-trip-library-search'
+    );
+
+  const filterSelect =
+    document.querySelector(
+      '#mobile-trip-library-filter'
+    );
+
+  const query =
+    String(searchInput?.value || '')
+      .trim()
+      .toLocaleLowerCase('fr-FR')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+
+  const filter =
+    filterSelect?.value || 'all';
+
+  let visibleCount = 0;
+
+  document
+    .querySelectorAll(
+      '[data-mobile-library-trip]'
+    )
+    .forEach(card => {
+      const name =
+        String(card.dataset.search || '');
+
+      const status =
+        card.dataset.status || '';
+
+      const visible =
+        (!query || name.includes(query)) &&
+        (filter === 'all' ||
+          status === filter);
+
+      card.hidden = !visible;
+
+      if (visible) {
+        visibleCount += 1;
+      }
+    });
+
+  const count =
+    document.querySelector(
+      '#mobile-trip-library-count'
+    );
+
+  if (count) {
+    count.textContent =
+      `${visibleCount} voyage` +
+      (visibleCount > 1 ? 's' : '');
+  }
+
+  const empty =
+    document.querySelector(
+      '#mobile-trip-library-empty'
+    );
+
+  if (empty) {
+    empty.hidden = visibleCount > 0;
+  }
+}
+
+async function renderTripLibrary({
+  reload = true
+} = {}) {
+  if (!mobileUser) {
+    navigate('auth');
+    return;
+  }
+
+  if (reload) {
+    app.innerHTML = `
+      <div class="mobile-shell settings-shell">
+        ${topbar()}
+
+        <main class="mobile-personal-main">
+          <header class="mobile-personal-heading">
+            <span>Bibliothèque</span>
+            <h2>Mes voyages</h2>
+            <p>Chargement de vos voyages…</p>
+          </header>
+
+          <section class="mobile-personal-card">
+            <div
+              class="mobile-reminder-loading"
+              role="status"
+            >
+              <span class="material-symbols-outlined">
+                progress_activity
+              </span>
+              Chargement…
+            </div>
+          </section>
+        </main>
+      </div>
+    `;
+
+    mobileTripLibraryError = '';
+
+    try {
+      mobileTripLibrary =
+        await window.SB.listMyTrips({
+          includeArchived: true
+        });
+    } catch (error) {
+      console.error(
+        'Mobile trip library error:',
+        error
+      );
+
+      mobileTripLibrary = [];
+
+      mobileTripLibraryError =
+        error.message ||
+        'Impossible de charger les voyages.';
+    }
+  }
+
+  app.innerHTML = `
+    <div class="mobile-shell settings-shell">
+      ${topbar()}
+
+      <main class="mobile-personal-main">
+        <header class="mobile-personal-heading">
+          <button
+            class="mobile-reminder-back"
+            type="button"
+            data-action="home"
+          >
+            <span class="material-symbols-outlined">
+              arrow_back
+            </span>
+            Accueil
+          </button>
+
+          <span>Bibliothèque</span>
+          <h2>Mes voyages</h2>
+
+          <p>
+            Recherchez, dupliquez ou archivez vos voyages.
+          </p>
+        </header>
+
+        <section class="mobile-trip-library-tools">
+          <label>
+            <span class="material-symbols-outlined">
+              search
+            </span>
+
+            <input
+              id="mobile-trip-library-search"
+              type="search"
+              placeholder="Rechercher un voyage"
+              autocomplete="off"
+            >
+          </label>
+
+          <select
+            id="mobile-trip-library-filter"
+            aria-label="Filtrer les voyages"
+          >
+            <option value="all">Tous</option>
+            <option value="upcoming">À venir</option>
+            <option value="current">En cours</option>
+            <option value="past">Terminés</option>
+            <option value="archived">Archivés</option>
+            <option value="undated">Sans date</option>
+          </select>
+        </section>
+
+        <div class="mobile-trip-library-summary">
+          <strong id="mobile-trip-library-count">
+            ${mobileTripLibrary.length} voyage${mobileTripLibrary.length > 1 ? 's' : ''}
+          </strong>
+
+          <button
+            type="button"
+            data-action="create-trip"
+          >
+            <span class="material-symbols-outlined">
+              add
+            </span>
+            Nouveau
+          </button>
+        </div>
+
+        <section class="mobile-trip-backup-card">
+          <div>
+            <span class="material-symbols-outlined">
+              shield
+            </span>
+
+            <span>
+              <strong>Sauvegarde personnelle</strong>
+
+              <small>
+                Exportez tous vos voyages en JSON ou
+                restaurez une sauvegarde du site web.
+              </small>
+            </span>
+          </div>
+
+          <input
+            id="mobile-trip-backup-input"
+            type="file"
+            accept=".json,application/json"
+            hidden
+          >
+
+          <div class="mobile-trip-backup-actions">
+            <button
+              type="button"
+              data-action="trip-backup-import"
+            >
+              <span class="material-symbols-outlined">
+                upload
+              </span>
+              Importer
+            </button>
+
+            <button
+              type="button"
+              data-action="trip-backup-export"
+            >
+              <span class="material-symbols-outlined">
+                download
+              </span>
+              Sauvegarder
+            </button>
+          </div>
+
+          <p>
+            Les voyages existants ne seront jamais remplacés.
+            Les documents privés ne sont pas inclus.
+          </p>
+        </section>
+
+        ${mobileTripLibraryError ? `
+          <section
+            class="mobile-personal-card mobile-reminder-empty danger"
+            role="alert"
+          >
+            <span class="material-symbols-outlined">
+              error
+            </span>
+
+            <strong>Chargement impossible</strong>
+
+            <p>
+              ${escapeHtml(mobileTripLibraryError)}
+            </p>
+
+            <button
+              class="mobile-personal-primary"
+              type="button"
+              data-action="trip-library"
+            >
+              Réessayer
+            </button>
+          </section>
+        ` : `
+          <section class="mobile-trip-library-list">
+            ${mobileTripLibrary.map(trip => {
+              const status =
+                getMobileTripLibraryStatus(trip);
+
+              const owner =
+                String(trip.owner_id || '') ===
+                String(mobileUser?.id || '');
+
+              const normalizedName =
+                String(trip.name || '')
+                  .toLocaleLowerCase('fr-FR')
+                  .normalize('NFD')
+                  .replace(/[\u0300-\u036f]/g, '');
+
+              return `
+                <article
+                  class="mobile-trip-library-card"
+                  data-mobile-library-trip
+                  data-search="${escapeHtml(normalizedName)}"
+                  data-status="${status}"
+                >
+                  <img
+                    src="${escapeHtml(
+                      getMobileTripCoverUrl(trip)
+                    )}"
+                    alt=""
+                    width="720"
+                    height="360"
+                    loading="lazy"
+                    decoding="async"
+                  >
+
+                  <div class="mobile-trip-library-card-body">
+                    <div>
+                      <span class="mobile-trip-library-status ${status}">
+                        ${getMobileTripLibraryStatusLabel(status)}
+                      </span>
+
+                      <h3>
+                        ${escapeHtml(
+                          trip.name ||
+                          'Voyage sans titre'
+                        )}
+                      </h3>
+
+                      <p>
+                        ${trip.start_date
+                          ? escapeHtml(
+                              formatDateLabel(
+                                trip.start_date,
+                                ''
+                              )
+                            )
+                          : 'Dates à définir'}
+                      </p>
+                    </div>
+
+                    <div class="mobile-trip-library-actions">
+                      ${status !== 'archived' ? `
+                        <button
+                          type="button"
+                          data-action="open-trip"
+                          data-trip-id="${escapeHtml(trip.id)}"
+                        >
+                          <span class="material-symbols-outlined">
+                            edit_calendar
+                          </span>
+                          Ouvrir
+                        </button>
+                      ` : ''}
+
+                      <button
+                        type="button"
+                        data-action="trip-duplicate"
+                        data-trip-id="${escapeHtml(trip.id)}"
+                      >
+                        <span class="material-symbols-outlined">
+                          content_copy
+                        </span>
+                        Dupliquer
+                      </button>
+
+                      ${owner ? `
+                        <button
+                          type="button"
+                          class="${status === 'archived'
+                            ? ''
+                            : 'danger'}"
+                          data-action="trip-archive"
+                          data-trip-id="${escapeHtml(trip.id)}"
+                          data-archived="${status === 'archived'
+                            ? 'false'
+                            : 'true'}"
+                        >
+                          <span class="material-symbols-outlined">
+                            ${status === 'archived'
+                              ? 'unarchive'
+                              : 'archive'}
+                          </span>
+
+                          ${status === 'archived'
+                            ? 'Restaurer'
+                            : 'Archiver'}
+                        </button>
+                      ` : ''}
+                    </div>
+                  </div>
+                </article>
+              `;
+            }).join('')}
+
+            <div
+              id="mobile-trip-library-empty"
+              class="mobile-reminder-empty"
+              ${mobileTripLibrary.length ? 'hidden' : ''}
+            >
+              <span class="material-symbols-outlined">
+                search_off
+              </span>
+
+              <strong>Aucun voyage trouvé</strong>
+
+              <p>
+                Modifiez la recherche ou le filtre sélectionné.
+              </p>
+            </div>
+          </section>
+        `}
+      </main>
+    </div>
+  `;
+
+  applyMobileTripLibraryFilters();
+}
+
+async function handleMobileBackupDownload() {
+  if (
+    mobileTripLibraryBusy ||
+    !window.TripBackup?.downloadAll
+  ) {
+    return;
+  }
+
+  mobileTripLibraryBusy = true;
+
+  try {
+    const result =
+      await window.TripBackup.downloadAll();
+
+    alert(
+      `${result.tripCount} voyage` +
+      (result.tripCount > 1 ? 's' : '') +
+      ` sauvegardé${result.tripCount > 1 ? 's' : ''}. ` +
+      `Fichier : ${result.fileName}`
+    );
+  } catch (error) {
+    alert(
+      'Impossible de créer la sauvegarde : ' +
+      (error.message || error)
+    );
+  } finally {
+    mobileTripLibraryBusy = false;
+  }
+}
+
+async function handleMobileBackupRestore(
+  file
+) {
+  if (
+    !file ||
+    mobileTripLibraryBusy ||
+    !window.TripBackup?.restoreFile
+  ) {
+    return;
+  }
+
+  mobileTripLibraryBusy = true;
+
+  try {
+    const result =
+      await window.TripBackup.restoreFile(
+        file
+      );
+
+    if (result.cancelled) {
+      return;
+    }
+
+    activeTrip = null;
+
+    await refreshMobileTrips();
+
+    alert(
+      `${result.tripCount} voyage` +
+      (result.tripCount > 1 ? 's' : '') +
+      ` restauré${result.tripCount > 1 ? 's' : ''}.`
+    );
+
+    await renderTripLibrary({
+      reload: true
+    });
+  } catch (error) {
+    alert(
+      'Impossible de restaurer la sauvegarde : ' +
+      (error.message || error)
+    );
+  } finally {
+    mobileTripLibraryBusy = false;
+
+    const input =
+      document.querySelector(
+        '#mobile-trip-backup-input'
+      );
+
+    if (input) {
+      input.value = '';
+    }
+  }
+}
+
+async function handleMobileTripArchive(
+  tripId,
+  archived
+) {
+  if (
+    !tripId ||
+    mobileTripLibraryBusy
+  ) {
+    return;
+  }
+
+  const trip =
+    mobileTripLibrary.find(
+      item => item.id === tripId
+    );
+
+  if (
+    archived &&
+    !confirm(
+      `Archiver « ${trip?.name || 'ce voyage'} » ?`
+    )
+  ) {
+    return;
+  }
+
+  mobileTripLibraryBusy = true;
+
+  try {
+    await window.SB.setTripArchived(
+      tripId,
+      archived
+    );
+
+    if (
+      archived &&
+      activeTrip?.id === tripId
+    ) {
+      activeTrip = null;
+    }
+
+    await refreshMobileTrips();
+
+    await renderTripLibrary({
+      reload: true
+    });
+  } catch (error) {
+    alert(
+      'Impossible de modifier le voyage : ' +
+      (error.message || error)
+    );
+  } finally {
+    mobileTripLibraryBusy = false;
+  }
+}
+
+async function handleMobileTripDuplicate(
+  tripId
+) {
+  if (
+    !tripId ||
+    mobileTripLibraryBusy
+  ) {
+    return;
+  }
+
+  const trip =
+    mobileTripLibrary.find(
+      item => item.id === tripId
+    );
+
+  const requestedName = prompt(
+    'Nom de la copie',
+    `${trip?.name || 'Voyage'} — copie`
+  );
+
+  if (requestedName === null) {
+    return;
+  }
+
+  const cleanName =
+    requestedName.trim();
+
+  if (!cleanName) {
+    alert('Donnez un nom à la copie.');
+    return;
+  }
+
+  mobileTripLibraryBusy = true;
+
+  try {
+    const createdTrip =
+      await window.SB.duplicateTrip(
+        tripId,
+        cleanName
+      );
+
+    await refreshMobileTrips(
+      createdTrip.id
+    );
+
+    alert('Le voyage a été dupliqué.');
+
+    navigate('itinerary');
+  } catch (error) {
+    alert(
+      'Impossible de dupliquer le voyage : ' +
+      (error.message || error)
+    );
+  } finally {
+    mobileTripLibraryBusy = false;
+  }
 }
 
 function formatMobileReminderDate(value) {
@@ -9172,6 +9821,7 @@ function getMobileRouteLabel(route) {
     auth: 'Connexion',
     account: 'Mon compte',
     settings: 'Paramètres',
+    'trip-library': 'Gestion de mes voyages',
     reminders: 'Mes rappels',
     share: 'Partage du voyage',
     'create-trip': 'Créer un voyage',
@@ -9244,6 +9894,9 @@ function navigate(route) {
 } else if (route === 'settings') {
   window.location.hash = 'settings';
   renderSettings();
+  } else if (route === 'trip-library') {
+  window.location.hash = 'trip-library';
+  renderTripLibrary();
   } else if (route === 'reminders') {
   window.location.hash = 'reminders';
   renderReminders();
@@ -9350,6 +10003,7 @@ if ([
   'home',
   'account',
   'settings',
+  'trip-library',
   'share',
   'create-trip'
 ].includes(action)) {
@@ -9483,6 +10137,51 @@ if ([
     handleMobileAccountPasswordChange();
     return;
   }
+
+if (action === 'trip-library') {
+  navigate('trip-library');
+  return;
+}
+
+if (action === 'trip-backup-export') {
+  await handleMobileBackupDownload();
+  return;
+}
+
+if (action === 'trip-backup-import') {
+  document
+    .querySelector(
+      '#mobile-trip-backup-input'
+    )
+    ?.click();
+
+  return;
+}
+
+if (action === 'trip-archive') {
+  const button = event.target.closest(
+    '[data-trip-id]'
+  );
+
+  await handleMobileTripArchive(
+    button?.dataset.tripId,
+    button?.dataset.archived === 'true'
+  );
+
+  return;
+}
+
+if (action === 'trip-duplicate') {
+  const button = event.target.closest(
+    '[data-trip-id]'
+  );
+
+  await handleMobileTripDuplicate(
+    button?.dataset.tripId
+  );
+
+  return;
+}
 
 if (action === 'reminders') {
   navigate('reminders');
@@ -10536,7 +11235,8 @@ function renderCurrentRoute() {
   if (window.location.hash === '#invite') renderInvite();
   else if (window.location.hash === '#auth') renderAuth();
   else if (window.location.hash === '#account') renderAccount();
-else if (window.location.hash === '#settings') renderSettings();
+  else if (window.location.hash === '#settings') renderSettings();
+  else if (window.location.hash === '#trip-library') renderTripLibrary();
   else if (window.location.hash === '#reminders') renderReminders();
   else if (window.location.hash === '#share') renderShare();
   else if (window.location.hash === '#create-trip') renderCreateTrip();
@@ -10556,6 +11256,39 @@ else if (window.location.hash === '#settings') renderSettings();
 }
 
 window.addEventListener('hashchange', renderCurrentRoute);
+
+window.addEventListener('input', event => {
+  if (
+    event.target?.id ===
+    'mobile-trip-library-search'
+  ) {
+    applyMobileTripLibraryFilters();
+  }
+});
+
+window.addEventListener('change', async event => {
+  if (
+    event.target?.id ===
+    'mobile-trip-library-filter'
+  ) {
+    applyMobileTripLibraryFilters();
+    return;
+  }
+
+  if (
+    event.target?.id ===
+    'mobile-trip-backup-input'
+  ) {
+    const file =
+      event.target.files?.[0];
+
+    if (file) {
+      await handleMobileBackupRestore(
+        file
+      );
+    }
+  }
+});
 
 window.addEventListener('click', event => {
   const categoryButton = event.target.closest('[data-category]');

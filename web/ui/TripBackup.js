@@ -112,6 +112,10 @@
         tripSummary.updated_at ||
         null,
 
+      archivedAt:
+        tripSummary.archived_at ||
+        null,
+
       documents:
         documents.map(
           cleanDocument
@@ -146,7 +150,9 @@
         .getUser?.(),
 
       window.SB
-        .listMyTrips()
+        .listMyTrips({
+          includeArchived: true
+        })
     ]);
 
     const trips = [];
@@ -722,6 +728,18 @@
               stepId:
                 restoredStepId
             }
+          );
+      }
+
+            if (
+        sourceTrip.archivedAt &&
+        window.SB
+          ?.setTripArchived
+      ) {
+        await window.SB
+          .setTripArchived(
+            createdTrip.id,
+            true
           );
       }
 

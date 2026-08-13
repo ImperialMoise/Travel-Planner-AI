@@ -674,6 +674,85 @@ test(
 
       page.once(
         'dialog',
+        async function confirmArchiving(
+          confirmation
+        ) {
+          await confirmation.accept();
+        }
+      );
+
+      await duplicateTripRow
+        .getByRole('button', {
+          name: 'Archiver',
+          exact: true
+        })
+        .click();
+
+      await expect(
+        duplicateTripRow
+          .getByText(
+            'Archivé',
+            {
+              exact: true
+            }
+          )
+      ).toBeVisible();
+
+      await expect(
+        duplicateTripRow
+          .getByRole('button', {
+            name: 'Ouvrir',
+            exact: true
+          })
+      ).toHaveCount(0);
+
+      await settingsDialog
+        .getByLabel(
+          'Filtrer les voyages',
+          {
+            exact: true
+          }
+        )
+        .selectOption(
+          'archived'
+        );
+
+      await expect(
+        duplicateTripRow
+      ).toBeVisible();
+
+      await expect(
+        tripRow
+      ).toBeHidden();
+
+      await duplicateTripRow
+        .getByRole('button', {
+          name: 'Restaurer',
+          exact: true
+        })
+        .click();
+
+      await expect(
+        duplicateTripRow
+          .getByRole('button', {
+            name: 'Archiver',
+            exact: true
+          })
+      ).toBeVisible();
+
+      await settingsDialog
+        .getByLabel(
+          'Filtrer les voyages',
+          {
+            exact: true
+          }
+        )
+        .selectOption(
+          'all'
+        );
+
+      page.once(
+        'dialog',
         async function confirmDuplicateDeletion(
           confirmation
         ) {

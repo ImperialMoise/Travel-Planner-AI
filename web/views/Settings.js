@@ -1440,6 +1440,50 @@ function TripsSection({
     setDuplicateName
   ] = React.useState('');
 
+    const [
+    managedTrips,
+    setManagedTrips
+  ] = React.useState(trips);
+
+  const [
+    archivingTripId,
+    setArchivingTripId
+  ] = React.useState(null);
+
+  const currentUserId =
+    Store.get().user?.id ||
+    null;
+
+  React.useEffect(() => {
+    let cancelled = false;
+
+    window.SB
+      .listMyTrips({
+        includeArchived: true
+      })
+      .then(function saveTrips(
+        nextTrips
+      ) {
+        if (!cancelled) {
+          setManagedTrips(
+            nextTrips
+          );
+        }
+      })
+      .catch(function reportError(
+        error
+      ) {
+        console.warn(
+          'Chargement des archives impossible :',
+          error.message
+        );
+      });
+
+    return function cancelLoad() {
+      cancelled = true;
+    };
+  }, [trips]);
+
   const [
     tripSearch,
     setTripSearch
@@ -1570,6 +1614,9 @@ function TripsSection({
   function getTripStatus(
     trip
   ) {
+        if (trip.archived_at) {
+      return 'archived';
+    }
     const startDate =
       trip.start_date || '';
 
@@ -1594,7 +1641,13 @@ function TripsSection({
     return 'current';
   }
 
-  const TRIP_STATUS_META = {
+  const TRIP_STATUS_META = { 
+        archived: {
+      label: 'Archivé',
+      color: '#71506c',
+      background:
+        'rgba(113, 80, 108, .12)'
+    },
     current: {
       label: 'En cours',
       color: '#27644f',
@@ -1622,6 +1675,12 @@ function TripsSection({
   };
 
   const TRIP_STATUS_ORDER = {
+    current: 0,
+    upcoming: 1,
+    undated: 2,
+    past: 3,
+    archived: 4
+  };
     current: 0,
     upcoming: 1,
     undated: 2,
@@ -1728,7 +1787,7 @@ function TripsSection({
       );
 
   const visibleTrips =
-    trips
+    managedTrips
       .filter(
         function filterTrip(
           trip
@@ -1848,6 +1907,101 @@ function TripsSection({
     }
   }
 
+    async function changeArchiveState(
+    trip
+  ) {
+    if (
+      archivingTripId ||
+      duplicatingTripId
+    ) {
+      return;
+    }
+
+    const shouldArchive =
+      !trip.archived_at;
+
+    if (
+      shouldArchive &&
+      !confirm(
+        `Archiver « ${trip.name} » ? Le voyage ne sera pas supprimé.`
+      )
+    ) {
+      return;
+    }
+
+    setArchivingTripId(
+      trip.id
+    );
+
+    try {
+      await SB.setTripArchived(
+        trip.id,
+        shouldArchive
+      );
+
+      const [
+        nextTrips,
+        nextManagedTrips
+      ] = await Promise.all([
+        SB.listMyTrips(),
+        SB.listMyTrips({
+          includeArchived: true
+        })
+      ]);
+
+      setManagedTrips(
+        nextManagedTrips
+      );
+
+      const wasActive =
+        shouldArchive &&
+        trip.id === activeTripId;
+
+      Store.set({
+        trips: nextTrips,
+        activeTripId: wasActive
+          ? null
+          : activeTripId,
+        trip: wasActive
+          ? null
+          : Store.get().trip
+      });
+
+      if (
+        wasActive &&
+        nextTrips[0]?.id &&
+        window.selectTrip
+      ) {
+        try {
+          await window.selectTrip(
+            nextTrips[0].id
+          );
+        } catch (error) {
+          console.warn(
+            'Sélection du voyage suivant impossible :',
+            error.message
+          );
+        }
+      }
+
+      Store.showToast(
+        shouldArchive
+          ? 'Voyage archivé.'
+          : 'Voyage restauré.'
+      );
+    } catch (error) {
+      Store.showToast(
+        'Erreur : ' +
+          (
+            error.message ||
+            'Modification impossible.'
+          )
+      );
+    } finally {
+      setArchivingTripId(null);
+    }
+  }
+
   async function removeTrip(trip) {
     if (!confirm(`Supprimer « ${trip.name} » définitivement ?`)) return;
 
@@ -1889,7 +2043,7 @@ function TripsSection({
     }
   }
 
-  if (!trips.length) {
+  if (!managedTrips.length) {
     return (
       <SettingsCard title="Aucun voyage">
         <div style={{ textAlign: 'center', padding: '22px 8px', color: 'var(--muted)' }}>
@@ -1930,9 +2084,9 @@ function TripsSection({
             }}
           >
             {
-              trips.length === 1
+              managedTrips.length === 1
                 ? '1 voyage'
-                : trips.length +
+                : managedTrips.length +
                   ' voyages'
             }
           </strong>
@@ -2105,6 +2259,9 @@ function TripsSection({
             <option value="undated">
               Sans dates
             </option>
+            <option value="archived">
+              Archivés
+            </option>
           </select>
         </label>
       </div>
@@ -2240,17 +2397,20 @@ function TripsSection({
               marginLeft: 'auto'
             }}
           >
-            <SettingsButton
-              icon="arrow"
-              disabled={Boolean(
-                duplicatingTripId
-              )}
-              onClick={() =>
-                onOpen(trip.id)
-              }
-            >
-              Ouvrir
-            </SettingsButton>
+            {!trip.archived_at && (
+              <SettingsButton
+                icon="arrow"
+                disabled={Boolean(
+                  duplicatingTripId ||
+                  archivingTripId
+                )}
+                onClick={() =>
+                  onOpen(trip.id)
+                }
+              >
+                Ouvrir
+              </SettingsButton>
+            )}
 
             <SettingsButton
               icon="plus"
@@ -2271,6 +2431,28 @@ function TripsSection({
               }
             </SettingsButton>
 
+            {trip.owner_id ===
+              currentUserId && (
+              <SettingsButton
+                disabled={Boolean(
+                  duplicatingTripId ||
+                  archivingTripId
+                )}
+                onClick={() =>
+                  changeArchiveState(
+                    trip
+                  )
+                }
+              >
+                {archivingTripId ===
+                trip.id
+                  ? 'Modification…'
+                  : trip.archived_at
+                    ? 'Restaurer'
+                    : 'Archiver'}
+              </SettingsButton>
+            )}
+            
             <SettingsButton
               variant="danger"
               icon="x"

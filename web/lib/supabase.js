@@ -298,12 +298,51 @@ export async function signOut() {
 }
 
 // ─── Voyages ────────────────────────────────────────────────
-export async function listMyTrips() {
-  const { data, error } = await sb
+export async function listMyTrips(
+  {
+    includeArchived = false
+  } = {}
+) {
+  let query = sb
     .from('trips')
-    .select('id, name, start_date, end_date, owner_id, updated_at, accent_theme, cover_image_url, cover_image_alt, cover_photographer_name, cover_photographer_url, cover_source_url')
-    .order('updated_at', { ascending: false });
+    .select(
+      [
+        'id',
+        'name',
+        'start_date',
+        'end_date',
+        'owner_id',
+        'updated_at',
+        'archived_at',
+        'accent_theme',
+        'cover_image_url',
+        'cover_image_alt',
+        'cover_photographer_name',
+        'cover_photographer_url',
+        'cover_source_url'
+      ].join(', ')
+    )
+    .order(
+      'updated_at',
+      {
+        ascending: false
+      }
+    );
+
+  if (!includeArchived) {
+    query = query.is(
+      'archived_at',
+      null
+    );
+  }
+
+  const {
+    data,
+    error
+  } = await query;
+
   if (error) throw error;
+
   return data ?? [];
 }
 
@@ -1221,6 +1260,38 @@ export async function updateDay(dayId, patch) {
   return data;
 }
 
+export async function setTripArchived(
+  tripId,
+  archived
+) {
+  if (!tripId) {
+    throw new Error(
+      'Voyage introuvable.'
+    );
+  }
+
+  const {
+    data,
+    error
+  } = await sb
+    .from('trips')
+    .update({
+      archived_at: archived
+        ? new Date().toISOString()
+        : null
+    })
+    .eq('id', tripId)
+    .select(
+      'id, archived_at'
+    )
+    .single();
+
+  if (error) throw error;
+
+  return data;
+}
+
+
 export async function deleteTrip(tripId) {
   const { error } = await sb.from('trips').delete().eq('id', tripId);
   if (error) throw error;
@@ -1921,6 +1992,7 @@ window.SB = {
   updateDayCoverCrop,
   updateDay,
   moveTripDayInsideFixedRange,
+  setTripArchived,
   deleteTrip,
 
   reorderSteps,

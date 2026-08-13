@@ -199,6 +199,7 @@ function DayNoteWidget({ day, trip, editMode, onRemove, hideHeader }) {
       <div style={{ padding: 16 }}>
         <textarea
           ref={textareaRef}
+          aria-label="Journal de cette journée"
           value={draft}
           onChange={event => setDraft(event.target.value)}
           placeholder="Écris une note pour cette journée..."

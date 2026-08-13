@@ -11319,6 +11319,10 @@ form button {
   font-weight: 800;
 }
 
+.mobile-member-row > span:nth-child(2) {
+  min-width: 0;
+}
+
 .mobile-member-row strong,
 .mobile-member-row small {
   display: block;
@@ -11332,18 +11336,53 @@ form button {
   font-size: 10px;
 }
 
-.mobile-member-row button {
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
+.mobile-member-actions {
+  grid-column: 2 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.mobile-member-actions button {
+  min-width: 34px;
+  min-height: 34px;
   border: 0;
   border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #f4ece1;
+  color: #725d3f;
+}
+
+.mobile-member-actions .mobile-member-role-toggle {
+  width: auto;
+  border-radius: 999px;
+  padding: 0 10px;
+  gap: 5px;
+  background: #f5ead7;
+  color: #845807;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.mobile-member-actions .mobile-member-transfer {
+  background: #eee8f4;
+  color: #76506f;
+}
+
+.mobile-member-actions .mobile-member-remove {
   background: #f8ebe6;
   color: #b64f38;
 }
 
-.mobile-member-row button:disabled {
+.mobile-member-actions .material-symbols-outlined {
+  font-size: 17px;
+}
+
+.mobile-member-actions button:disabled,
+.mobile-share-leave-button:disabled {
   opacity: 0.45;
 }
 
@@ -11351,6 +11390,40 @@ form button {
   color: #8a7658;
   font-size: 9px;
   font-weight: 800;
+  text-align: right;
+}
+
+.mobile-member-leave {
+  margin-top: 6px;
+  padding-top: 14px;
+  border-top: 1px solid #e6dac9;
+  display: grid;
+  gap: 10px;
+}
+
+.mobile-member-leave p {
+  margin: 0;
+  color: #786c5c;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.mobile-share-leave-button {
+  min-height: 42px;
+  border: 1px solid #d9a99d;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  background: #fff8f5;
+  color: #a34232;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.mobile-share-leave-button .material-symbols-outlined {
+  font-size: 18px;
 }
 
 .mobile-activity-list article {

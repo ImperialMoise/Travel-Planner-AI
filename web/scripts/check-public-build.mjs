@@ -274,7 +274,9 @@ const publicAppShellJavaScript =
 
 const requiredErrorLogMarkers = [
   'lfav_client_errors',
-  'ClientErrorLog'
+  'ClientErrorLog',
+  'ClientPerformance',
+  'largest-contentful-paint'
 ];
 
 for (

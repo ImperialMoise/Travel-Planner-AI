@@ -1,6 +1,7 @@
 import { Capacitor } from '@capacitor/core';
 import { Geolocation } from '@capacitor/geolocation';
 import { LocalNotifications } from '@capacitor/local-notifications';
+import { Share } from '@capacitor/share';
 import '../web/ui/TripBackup.js';
 
 function hasMobileLocationPermission(status) {
@@ -5916,6 +5917,17 @@ async function renderTripLibrary({
 
                       <button
                         type="button"
+                        data-action="trip-share"
+                        data-trip-id="${escapeHtml(trip.id)}"
+                      >
+                        <span class="material-symbols-outlined">
+                          ios_share
+                        </span>
+                        Partager
+                      </button>
+
+                      <button
+                        type="button"
                         data-action="trip-duplicate"
                         data-trip-id="${escapeHtml(trip.id)}"
                       >
@@ -6924,42 +6936,387 @@ function getMobileActivityDescription(activity) {
 }
 
 async function shareMobileInvite(url) {
-  const invitationUrl = String(url || '').trim();
+  const invitationUrl =
+    String(url || '').trim();
 
   if (!invitationUrl) {
-    throw new Error("Le lien d'invitation est vide");
+    throw new Error(
+      "Le lien d'invitation est vide"
+    );
   }
 
-  if (typeof navigator.share === 'function') {
+  if (
+    Capacitor.isNativePlatform()
+  ) {
     try {
-      await navigator.share({
-        title: 'Invitation — La Fabrique à Voyages',
-        text: 'Rejoignez-moi pour préparer ce voyage.',
-        url: invitationUrl
+      await Share.share({
+        title:
+          'Invitation — La Fabrique à Voyages',
+        text:
+          'Rejoignez-moi pour préparer ce voyage.',
+        url:
+          invitationUrl,
+        dialogTitle:
+          'Partager l’invitation'
       });
 
       return 'shared';
     } catch (error) {
-      if (error?.name === 'AbortError') {
-        return 'cancelled';
-      }
-
-      console.warn('Native mobile share unavailable:', error);
+      console.warn(
+        'Native invitation share unavailable:',
+        error
+      );
     }
   }
 
-  if (navigator.clipboard?.writeText) {
+  if (
+    typeof navigator.share ===
+    'function'
+  ) {
     try {
-      await navigator.clipboard.writeText(invitationUrl);
+      await navigator.share({
+        title:
+          'Invitation — La Fabrique à Voyages',
+        text:
+          'Rejoignez-moi pour préparer ce voyage.',
+        url:
+          invitationUrl
+      });
+
+      return 'shared';
+    } catch (error) {
+      if (
+        error?.name ===
+        'AbortError'
+      ) {
+        return 'cancelled';
+      }
+
+      console.warn(
+        'Web invitation share unavailable:',
+        error
+      );
+    }
+  }
+
+  if (
+    navigator.clipboard
+      ?.writeText
+  ) {
+    try {
+      await navigator.clipboard
+        .writeText(
+          invitationUrl
+        );
+
       return 'copied';
     } catch (error) {
-      console.warn('Mobile clipboard unavailable:', error);
+      console.warn(
+        'Mobile clipboard unavailable:',
+        error
+      );
     }
   }
 
   prompt(
     'Copiez ce lien pour inviter la personne :',
     invitationUrl
+  );
+
+  return 'manual';
+}
+
+function formatMobileShareDate(
+  value
+) {
+  if (!value) return '';
+
+  const date =
+    new Date(
+      `${value}T12:00:00`
+    );
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+    return '';
+  }
+
+  return date.toLocaleDateString(
+    'fr-FR',
+    {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    }
+  );
+}
+
+function buildMobileTripShareText(
+  trip
+) {
+  const lines = [
+    trip?.name ||
+      'Mon voyage'
+  ];
+
+  const startDate =
+    formatMobileShareDate(
+      trip?.startDate
+    );
+
+  const endDate =
+    formatMobileShareDate(
+      trip?.endDate
+    );
+
+  if (
+    startDate ||
+    endDate
+  ) {
+    lines.push(
+      [startDate, endDate]
+        .filter(Boolean)
+        .join(' → ')
+    );
+  }
+
+  if (
+    String(
+      trip?.globalNote || ''
+    ).trim()
+  ) {
+    lines.push(
+      '',
+      String(
+        trip.globalNote
+      ).trim()
+    );
+  }
+
+  const days =
+    Array.isArray(trip?.days)
+      ? trip.days
+      : [];
+
+  days.forEach(
+    function addSharedDay(
+      day,
+      dayIndex
+    ) {
+      const dayDate =
+        formatMobileShareDate(
+          day.dateISO
+        );
+
+      lines.push(
+        '',
+        [
+          `Jour ${dayIndex + 1}`,
+          dayDate
+        ]
+          .filter(Boolean)
+          .join(' — ')
+      );
+
+      if (
+        String(
+          day.title || ''
+        ).trim()
+      ) {
+        lines.push(
+          String(
+            day.title
+          ).trim()
+        );
+      }
+
+      if (
+        String(
+          day.note || ''
+        ).trim()
+      ) {
+        lines.push(
+          `Note : ${String(
+            day.note
+          ).trim()}`
+        );
+      }
+
+      const steps = (
+        Array.isArray(day.steps)
+          ? day.steps
+          : []
+      )
+        .slice()
+        .sort(
+          (first, second) =>
+            Number(
+              first.stepIndex
+            ) -
+            Number(
+              second.stepIndex
+            )
+        );
+
+      if (!steps.length) {
+        lines.push(
+          'Aucune étape prévue.'
+        );
+
+        return;
+      }
+
+      steps.forEach(
+        function addSharedStep(
+          step
+        ) {
+          const schedule = [
+            step.time,
+            step.timeEnd
+          ]
+            .filter(Boolean)
+            .join('–');
+
+          const label =
+            String(
+              step.label ||
+              step.lieu ||
+              step.type ||
+              'Étape'
+            ).trim();
+
+          lines.push(
+            `• ${
+              schedule
+                ? `${schedule} · `
+                : ''
+            }${label}`
+          );
+
+          const route = [
+            step.depart,
+            step.arrivee
+          ]
+            .filter(Boolean)
+            .join(' → ');
+
+          if (route) {
+            lines.push(
+              `  ${route}`
+            );
+          }
+
+          if (
+            String(
+              step.note || ''
+            ).trim()
+          ) {
+            lines.push(
+              `  ${String(
+                step.note
+              ).trim()}`
+            );
+          }
+        }
+      );
+    }
+  );
+
+  lines.push(
+    '',
+    'Créé avec La Fabrique à Voyages'
+  );
+
+  return lines.join('\n');
+}
+
+async function shareMobileTrip(
+  tripId
+) {
+  if (!tripId) {
+    throw new Error(
+      'Voyage introuvable.'
+    );
+  }
+
+  const trip =
+    String(activeTrip?.id) ===
+    String(tripId)
+      ? activeTrip
+      : await window.SB
+          .loadTrip(tripId);
+
+  if (!trip) {
+    throw new Error(
+      'Impossible de charger ce voyage.'
+    );
+  }
+
+  const title =
+    trip.name ||
+    'Mon voyage';
+
+  const text =
+    buildMobileTripShareText(
+      trip
+    );
+
+  if (
+    Capacitor.isNativePlatform()
+  ) {
+    await Share.share({
+      title,
+      text,
+      dialogTitle:
+        'Partager l’itinéraire'
+    });
+
+    return 'shared';
+  }
+
+  if (
+    typeof navigator.share ===
+    'function'
+  ) {
+    try {
+      await navigator.share({
+        title,
+        text
+      });
+
+      return 'shared';
+    } catch (error) {
+      if (
+        error?.name ===
+        'AbortError'
+      ) {
+        return 'cancelled';
+      }
+
+      console.warn(
+        'Web trip share unavailable:',
+        error
+      );
+    }
+  }
+
+  if (
+    navigator.clipboard
+      ?.writeText
+  ) {
+    await navigator.clipboard
+      .writeText(text);
+
+    return 'copied';
+  }
+
+  prompt(
+    'Copiez cet itinéraire :',
+    text
   );
 
   return 'manual';
@@ -7030,14 +7387,41 @@ async function renderShare() {
   const tripSummary =
     mobileTrips.find(trip => String(trip.id) === String(activeTrip.id)) || {};
 
+  const ownerMember =
+    mobileShareMembers.find(
+      member => member.role === 'owner'
+    ) || null;
+
+  const participantMembers =
+    mobileShareMembers.filter(
+      member => member.role !== 'owner'
+    );
+
+  const currentMembership =
+    mobileShareMembers.find(
+      member =>
+        String(member.userId || '') ===
+        String(mobileUser.id || '')
+    ) || null;
+
   const isOwner =
-    String(tripSummary.owner_id || '') === String(mobileUser.id || '');
+    String(
+      tripSummary.owner_id ||
+      ownerMember?.userId ||
+      ''
+    ) === String(mobileUser.id || '');
+
+  const canLeave =
+    !isOwner &&
+    Boolean(currentMembership);
 
   const ownerName = isOwner
     ? mobileUser?.user_metadata?.display_name ||
       mobileUser?.email?.split('@')[0] ||
       'Vous'
-    : 'Propriétaire du voyage';
+    : ownerMember?.name ||
+      ownerMember?.email ||
+      'Propriétaire du voyage';
 
   app.innerHTML = `
     <div class="mobile-shell share-shell">
@@ -7198,10 +7582,14 @@ async function renderShare() {
               <span class="mobile-member-role">Propriétaire</span>
             </article>
 
-            ${mobileShareMembers.map(member => `
+            ${participantMembers.map(member => `
               <article class="mobile-member-row">
                 <span class="mobile-member-avatar">
-                  ${escapeHtml((member.name || member.email || 'M').slice(0, 1).toUpperCase())}
+                  ${escapeHtml(
+                    (member.name || member.email || 'M')
+                      .slice(0, 1)
+                      .toUpperCase()
+                  )}
                 </span>
 
                 <span>
@@ -7210,27 +7598,88 @@ async function renderShare() {
                 </span>
 
                 ${isOwner ? `
-                  <button
-                    type="button"
-                    data-action="remove-trip-member"
-                    data-member-id="${member.id}"
-                    aria-label="Retirer ce membre"
-                  >
-                    <span class="material-symbols-outlined">person_remove</span>
-                  </button>
+                  <span class="mobile-member-actions">
+                    <button
+                      class="mobile-member-role-toggle"
+                      type="button"
+                      data-action="toggle-trip-member-role"
+                      data-member-id="${member.id}"
+                      aria-label="${
+                        member.role === 'viewer'
+                          ? 'Autoriser la modification'
+                          : 'Passer en lecture seule'
+                      }"
+                    >
+                      <span class="material-symbols-outlined">
+                        ${member.role === 'viewer' ? 'edit' : 'visibility'}
+                      </span>
+
+                      <span>
+                        ${member.role === 'viewer' ? 'Lecture' : 'Édition'}
+                      </span>
+                    </button>
+
+                    <button
+                      class="mobile-member-transfer"
+                      type="button"
+                      data-action="transfer-trip-ownership"
+                      data-member-id="${member.id}"
+                      aria-label="Transférer la propriété à ce membre"
+                    >
+                      <span class="material-symbols-outlined">
+                        workspace_premium
+                      </span>
+                    </button>
+
+                    <button
+                      class="mobile-member-remove"
+                      type="button"
+                      data-action="remove-trip-member"
+                      data-member-id="${member.id}"
+                      aria-label="Retirer ce membre"
+                    >
+                      <span class="material-symbols-outlined">
+                        person_remove
+                      </span>
+                    </button>
+                  </span>
                 ` : `
                   <span class="mobile-member-role">
                     ${member.role === 'viewer' ? 'Lecture' : 'Édition'}
+                    ${
+                      String(member.userId || '') ===
+                      String(mobileUser.id || '')
+                        ? ' · Vous'
+                        : ''
+                    }
                   </span>
                 `}
               </article>
             `).join('')}
 
-            ${mobileShareMembers.length ? '' : `
+            ${participantMembers.length ? '' : `
               <p class="mobile-share-empty">
                 Aucun autre membre n’a encore rejoint ce voyage.
               </p>
             `}
+
+            ${canLeave ? `
+              <div class="mobile-member-leave">
+                <p>
+                  Vous pouvez quitter ce voyage partagé. Vous n’y aurez
+                  ensuite plus accès.
+                </p>
+
+                <button
+                  class="mobile-share-leave-button"
+                  type="button"
+                  data-action="leave-shared-trip"
+                >
+                  <span class="material-symbols-outlined">logout</span>
+                  Quitter ce voyage
+                </button>
+              </div>
+            ` : ''}
           </div>
         </section>
 
@@ -11455,10 +11904,63 @@ if (action === 'trip-archive') {
   return;
 }
 
+if (action === 'trip-share') {
+  const button =
+    event.target.closest(
+      '[data-trip-id]'
+    );
+
+  const tripId =
+    button?.dataset.tripId;
+
+  if (!button || !tripId) {
+    alert(
+      'Voyage introuvable.'
+    );
+
+    return;
+  }
+
+  button.disabled = true;
+
+  try {
+    const result =
+      await shareMobileTrip(
+        tripId
+      );
+
+    if (
+      result === 'copied'
+    ) {
+      alert(
+        'L’itinéraire a été copié.'
+      );
+    }
+  } catch (error) {
+    console.error(
+      'Mobile trip share error:',
+      error
+    );
+
+    alert(
+      'Impossible de partager cet itinéraire : ' +
+      (
+        error.message ||
+        error
+      )
+    );
+  } finally {
+    button.disabled = false;
+  }
+
+  return;
+}
+
 if (action === 'trip-duplicate') {
-  const button = event.target.closest(
-    '[data-trip-id]'
-  );
+  const button =
+    event.target.closest(
+      '[data-trip-id]'
+    );
 
   await handleMobileTripDuplicate(
     button?.dataset.tripId
@@ -11718,12 +12220,185 @@ if (action === 'revoke-trip-invite') {
   return;
 }
 
+if (action === 'toggle-trip-member-role') {
+  const memberButton = event.target.closest(
+    '[data-action="toggle-trip-member-role"]'
+  );
+
+  const memberId =
+    memberButton?.dataset.memberId;
+
+  const member =
+    mobileShareMembers.find(
+      item =>
+        String(item.id) ===
+        String(memberId)
+    );
+
+  if (
+    !memberButton ||
+    !activeTrip?.id ||
+    !member
+  ) {
+    alert('Membre ou voyage introuvable.');
+    return;
+  }
+
+  const nextRole =
+    member.role === 'viewer'
+      ? 'editor'
+      : 'viewer';
+
+  const nextRoleLabel =
+    nextRole === 'viewer'
+      ? 'lecteur'
+      : 'éditeur';
+
+  const confirmed = confirm(
+    `Passer ${member.name || 'ce membre'} au rôle « ${nextRoleLabel} » ?`
+  );
+
+  if (!confirmed) return;
+
+  memberButton.disabled = true;
+
+  try {
+    await window.SB.updateTripMemberRole(
+      activeTrip.id,
+      member.id,
+      nextRole
+    );
+
+    await renderShare();
+  } catch (error) {
+    console.error(
+      'Update mobile member role error:',
+      error
+    );
+
+    alert(
+      'Impossible de modifier ce rôle : ' +
+      (error.message || error)
+    );
+
+    memberButton.disabled = false;
+  }
+
+  return;
+}
+
+if (action === 'transfer-trip-ownership') {
+  const transferButton = event.target.closest(
+    '[data-action="transfer-trip-ownership"]'
+  );
+
+  const memberId =
+    transferButton?.dataset.memberId;
+
+  const member =
+    mobileShareMembers.find(
+      item =>
+        String(item.id) ===
+        String(memberId)
+    );
+
+  if (
+    !transferButton ||
+    !activeTrip?.id ||
+    !member
+  ) {
+    alert('Membre ou voyage introuvable.');
+    return;
+  }
+
+  const confirmed = confirm(
+    `Transférer définitivement « ${activeTrip.name || 'ce voyage'} » à ${member.name || 'ce membre'} ? Vous deviendrez éditeur du voyage.`
+  );
+
+  if (!confirmed) return;
+
+  transferButton.disabled = true;
+
+  try {
+    await window.SB.transferTripOwnership(
+      activeTrip.id,
+      member.id
+    );
+
+    await refreshMobileTrips(
+      activeTrip.id
+    );
+
+    await renderShare();
+  } catch (error) {
+    console.error(
+      'Transfer mobile trip ownership error:',
+      error
+    );
+
+    alert(
+      'Impossible de transférer ce voyage : ' +
+      (error.message || error)
+    );
+
+    transferButton.disabled = false;
+  }
+
+  return;
+}
+
+if (action === 'leave-shared-trip') {
+  const leaveButton = event.target.closest(
+    '[data-action="leave-shared-trip"]'
+  );
+
+  if (!leaveButton || !activeTrip?.id) {
+    alert('Voyage introuvable.');
+    return;
+  }
+
+  const confirmed = confirm(
+    `Quitter « ${activeTrip.name || 'ce voyage'} » ? Vous n’y aurez ensuite plus accès.`
+  );
+
+  if (!confirmed) return;
+
+  leaveButton.disabled = true;
+
+  try {
+    await window.SB.leaveTrip(
+      activeTrip.id
+    );
+
+    activeTrip = null;
+
+    await refreshMobileTrips();
+
+    navigate('home');
+  } catch (error) {
+    console.error(
+      'Leave mobile shared trip error:',
+      error
+    );
+
+    alert(
+      'Impossible de quitter ce voyage : ' +
+      (error.message || error)
+    );
+
+    leaveButton.disabled = false;
+  }
+
+  return;
+}
+
 if (action === 'remove-trip-member') {
   const memberButton = event.target.closest(
     '[data-action="remove-trip-member"]'
   );
 
-  const memberId = memberButton?.dataset.memberId;
+  const memberId =
+    memberButton?.dataset.memberId;
 
   if (!activeTrip?.id || !memberId) {
     alert('Membre ou voyage introuvable.');
@@ -11746,7 +12421,10 @@ if (action === 'remove-trip-member') {
 
     await renderShare();
   } catch (error) {
-    console.error('Remove mobile member error:', error);
+    console.error(
+      'Remove mobile member error:',
+      error
+    );
 
     alert(
       'Impossible de retirer cette personne : ' +

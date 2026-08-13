@@ -9,6 +9,16 @@ const TEST_EMAIL =
 const TEST_PASSWORD =
   process.env.E2E_TEST_PASSWORD || '';
 
+const COLLABORATOR_EMAIL =
+  process.env.E2E_COLLABORATOR_EMAIL || '';
+
+const COLLABORATOR_PASSWORD =
+  process.env.E2E_COLLABORATOR_PASSWORD || '';
+
+test.describe.configure({
+  mode: 'serial'
+});
+
 const TEST_TRIP_PREFIX =
   'E2E-CODEX-';
 
@@ -26,6 +36,54 @@ const SECOND_STEP_LABEL =
 
 const REMINDER_TITLE =
   'E2E — Réserver les billets';
+
+async function signInTestAccount(
+  page,
+  email,
+  password
+) {
+  await page.goto('/', {
+    waitUntil:
+      'domcontentloaded'
+  });
+
+  await page.waitForFunction(
+    function waitForSupabase() {
+      return Boolean(
+        window.SB?.signIn
+      );
+    }
+  );
+
+  await page.evaluate(
+    async function signIn({
+      accountEmail,
+      accountPassword
+    }) {
+      await window.SB.signIn(
+        accountEmail,
+        accountPassword
+      );
+    },
+    {
+      accountEmail: email,
+      accountPassword: password
+    }
+  );
+
+  await page.reload({
+    waitUntil:
+      'domcontentloaded'
+  });
+
+  await page.waitForFunction(
+    function waitForTrips() {
+      return Boolean(
+        window.SB?.listMyTrips
+      );
+    }
+  );
+}
 
 async function removeTestTrips(
   page,
@@ -511,6 +569,111 @@ test(
       ).toContainText(
         FIRST_STEP_LABEL
       );
+
+      const accessibilityIssues =
+        await page.evaluate(
+          function findUnnamedControls() {
+            function hasAccessibleName(
+              control
+            ) {
+              const ariaLabel =
+                control
+                  .getAttribute(
+                    'aria-label'
+                  )
+                  ?.trim();
+
+              if (ariaLabel) {
+                return true;
+              }
+
+              const labelledBy =
+                control.getAttribute(
+                  'aria-labelledby'
+                );
+
+              if (labelledBy) {
+                const labelText =
+                  labelledBy
+                    .split(/\s+/)
+                    .map(id =>
+                      document
+                        .getElementById(id)
+                        ?.textContent
+                        ?.trim() || ''
+                    )
+                    .join(' ')
+                    .trim();
+
+                if (labelText) {
+                  return true;
+                }
+              }
+
+              if (
+                control.id &&
+                document.querySelector(
+                  `label[for="${CSS.escape(control.id)}"]`
+                )
+              ) {
+                return true;
+              }
+
+              return Boolean(
+                control.closest('label')
+              );
+            }
+
+            const formControls =
+              Array.from(
+                document.querySelectorAll(
+                  'input, select, textarea'
+                )
+              )
+                .filter(
+                  control =>
+                    !hasAccessibleName(
+                      control
+                    )
+                )
+                .map(
+                  control =>
+                    control.placeholder ||
+                    control.id ||
+                    control.tagName
+                );
+
+            const editableRegions =
+              Array.from(
+                document.querySelectorAll(
+                  '[contenteditable="true"]'
+                )
+              )
+                .filter(
+                  control =>
+                    !hasAccessibleName(
+                      control
+                    )
+                )
+                .map(
+                  control =>
+                    control.id ||
+                    control.tagName
+                );
+
+            return {
+              formControls,
+              editableRegions
+            };
+          }
+        );
+
+      expect(
+        accessibilityIssues
+      ).toEqual({
+        formControls: [],
+        editableRegions: []
+      });
 
       await page
         .getByRole('button', {
@@ -1062,6 +1225,474 @@ test(
           );
         }
       }
+    }
+  }
+);
+
+test(
+  'les droits lecteur et éditeur protègent réellement le voyage',
+  async function collaborationRightsFlow(
+    {
+      page,
+      browser
+    },
+    testInfo
+  ) {
+    test.skip(
+      testInfo.project.name !==
+        'desktop-chromium',
+      'Le test de collaboration est exécuté une seule fois.'
+    );
+
+    test.skip(
+      !TEST_EMAIL ||
+        !TEST_PASSWORD ||
+        !COLLABORATOR_EMAIL ||
+        !COLLABORATOR_PASSWORD,
+      'Les deux comptes E2E ne sont pas configurés.'
+    );
+
+    const tripName =
+      TEST_TRIP_PREFIX +
+      'COLLAB-' +
+      Date.now();
+
+    const viewerForbiddenNote =
+      'E2E — modification lecteur interdite';
+
+    const editorAllowedNote =
+      'E2E — modification éditeur autorisée';
+
+    const collaboratorContext =
+      await browser.newContext();
+
+    const collaboratorPage =
+      await collaboratorContext.newPage();
+
+    let ownerSignedIn = false;
+    let collaboratorSignedIn = false;
+    let tripId = '';
+
+    try {
+      await signInTestAccount(
+        page,
+        TEST_EMAIL,
+        TEST_PASSWORD
+      );
+
+      ownerSignedIn = true;
+
+      await removeTestTrips(
+        page,
+        ''
+      );
+
+      const createdTrip =
+        await page.evaluate(
+          async function createTestTrip({
+            name
+          }) {
+            return window.SB.createTrip({
+              name,
+              startDate:
+                '2026-10-05',
+              endDate:
+                '2026-10-06',
+              days: 2
+            });
+          },
+          {
+            name: tripName
+          }
+        );
+
+      tripId = createdTrip.id;
+
+      const invitation =
+        await page.evaluate(
+          async function createViewerInvite({
+            selectedTripId
+          }) {
+            const result =
+              await window.SB
+                .createTripInvite(
+                  selectedTripId,
+                  'viewer'
+                );
+
+            return {
+              token: result.token
+            };
+          },
+          {
+            selectedTripId:
+              tripId
+          }
+        );
+
+      await signInTestAccount(
+        collaboratorPage,
+        COLLABORATOR_EMAIL,
+        COLLABORATOR_PASSWORD
+      );
+
+      collaboratorSignedIn = true;
+
+      await collaboratorPage.evaluate(
+        async function acceptViewerInvite({
+          token
+        }) {
+          await window.SB.acceptInvite(
+            token
+          );
+        },
+        {
+          token:
+            invitation.token
+        }
+      );
+
+      const viewerAttempt =
+        await collaboratorPage.evaluate(
+          async function tryViewerUpdate({
+            selectedTripId,
+            forbiddenNote
+          }) {
+            try {
+              const trip =
+                await window.SB.loadTrip(
+                  selectedTripId
+                );
+
+              const firstDay =
+                trip?.days?.[0];
+
+              if (!firstDay) {
+                throw new Error(
+                  'Journée de test introuvable.'
+                );
+              }
+
+              await window.SB.updateDay(
+                firstDay.id,
+                {
+                  note:
+                    forbiddenNote
+                }
+              );
+
+              return {
+                blocked: false
+              };
+            } catch (error) {
+              return {
+                blocked: true,
+                message:
+                  error.message ||
+                  String(error)
+              };
+            }
+          },
+          {
+            selectedTripId:
+              tripId,
+            forbiddenNote:
+              viewerForbiddenNote
+          }
+        );
+
+      expect(
+        viewerAttempt.blocked,
+        'Un lecteur ne doit pas pouvoir modifier une journée.'
+      ).toBe(true);
+
+      const collaboratorMemberId =
+        await page.evaluate(
+          async function promoteCollaborator({
+            selectedTripId,
+            collaboratorEmail
+          }) {
+            const members =
+              await window.SB
+                .listTripMembers(
+                  selectedTripId
+                );
+
+            const member =
+              members.find(
+                item =>
+                  String(
+                    item.email || ''
+                  ).toLowerCase() ===
+                  String(
+                    collaboratorEmail
+                  ).toLowerCase()
+              );
+
+            if (!member) {
+              throw new Error(
+                'Compte collaborateur introuvable dans les membres.'
+              );
+            }
+
+            await window.SB
+              .updateTripMemberRole(
+                selectedTripId,
+                member.id,
+                'editor'
+              );
+
+            return member.id;
+          },
+          {
+            selectedTripId:
+              tripId,
+            collaboratorEmail:
+              COLLABORATOR_EMAIL
+          }
+        );
+
+      const updatedNote =
+        await collaboratorPage.evaluate(
+          async function updateAsEditor({
+            selectedTripId,
+            allowedNote
+          }) {
+            const trip =
+              await window.SB.loadTrip(
+                selectedTripId
+              );
+
+            const firstDay =
+              trip?.days?.[0];
+
+            if (!firstDay) {
+              throw new Error(
+                'Journée de test introuvable.'
+              );
+            }
+
+            const updatedDay =
+              await window.SB.updateDay(
+                firstDay.id,
+                {
+                  note:
+                    allowedNote
+                }
+              );
+
+            return updatedDay.note;
+          },
+          {
+            selectedTripId:
+              tripId,
+            allowedNote:
+              editorAllowedNote
+          }
+        );
+
+      expect(
+        updatedNote
+      ).toBe(
+        editorAllowedNote
+      );
+
+      await page.evaluate(
+        async function transferOwnership({
+          selectedTripId,
+          memberId
+        }) {
+          await window.SB
+            .transferTripOwnership(
+              selectedTripId,
+              memberId
+            );
+        },
+        {
+          selectedTripId:
+            tripId,
+          memberId:
+            collaboratorMemberId
+        }
+      );
+
+      const collaboratorIsOwner =
+        await collaboratorPage.evaluate(
+          async function verifyOwnership({
+            selectedTripId
+          }) {
+            const user =
+              await window.SB.getUser();
+
+            const trips =
+              await window.SB.listMyTrips({
+                includeArchived: true
+              });
+
+            const trip =
+              trips.find(
+                item =>
+                  String(item.id) ===
+                  String(selectedTripId)
+              );
+
+            return Boolean(
+              trip &&
+              String(trip.owner_id) ===
+                String(user?.id)
+            );
+          },
+          {
+            selectedTripId:
+              tripId
+          }
+        );
+
+      expect(
+        collaboratorIsOwner,
+        'Le transfert doit rendre le collaborateur propriétaire.'
+      ).toBe(true);
+
+      await page.evaluate(
+        async function leaveTransferredTrip({
+          selectedTripId
+        }) {
+          await window.SB.leaveTrip(
+            selectedTripId
+          );
+        },
+        {
+          selectedTripId:
+            tripId
+        }
+      );
+
+      const formerOwnerStillHasAccess =
+        await page.evaluate(
+          async function verifyDeparture({
+            selectedTripId
+          }) {
+            const trips =
+              await window.SB.listMyTrips({
+                includeArchived: true
+              });
+
+            return trips.some(
+              item =>
+                String(item.id) ===
+                String(selectedTripId)
+            );
+          },
+          {
+            selectedTripId:
+              tripId
+          }
+        );
+
+      expect(
+        formerOwnerStillHasAccess,
+        'L’ancien propriétaire ne doit plus voir le voyage après l’avoir quitté.'
+      ).toBe(false);
+
+      await collaboratorPage.evaluate(
+        async function deleteCollaborationTrip({
+          selectedTripId
+        }) {
+          await window.SB.deleteTrip(
+            selectedTripId
+          );
+        },
+        {
+          selectedTripId:
+            tripId
+        }
+      );
+
+      const tripStillExists =
+        await collaboratorPage.evaluate(
+          async function verifyDeletion({
+            selectedTripId
+          }) {
+            const trips =
+              await window.SB.listMyTrips({
+                includeArchived: true
+              });
+
+            return trips.some(
+              item =>
+                String(item.id) ===
+                String(selectedTripId)
+            );
+          },
+          {
+            selectedTripId:
+              tripId
+          }
+        );
+
+      expect(
+        tripStillExists
+      ).toBe(false);
+
+      tripId = '';
+    } finally {
+      if (
+        tripId &&
+        collaboratorSignedIn
+      ) {
+        try {
+          await collaboratorPage.evaluate(
+            async function cleanupTrip({
+              selectedTripId
+            }) {
+              await window.SB.deleteTrip(
+                selectedTripId
+              );
+            },
+            {
+              selectedTripId:
+                tripId
+            }
+          );
+        } catch (cleanupError) {
+          console.warn(
+            'Nettoyage du voyage collaboratif impossible :',
+            cleanupError
+          );
+        }
+      }
+
+      if (collaboratorSignedIn) {
+        try {
+          await collaboratorPage.evaluate(
+            async function signOutCollaborator() {
+              await window.SB.signOut();
+            }
+          );
+        } catch (signOutError) {
+          console.warn(
+            'Déconnexion du collaborateur impossible :',
+            signOutError
+          );
+        }
+      }
+
+      if (ownerSignedIn) {
+        try {
+          await page.evaluate(
+            async function signOutOwner() {
+              await window.SB.signOut();
+            }
+          );
+        } catch (signOutError) {
+          console.warn(
+            'Déconnexion du propriétaire impossible :',
+            signOutError
+          );
+        }
+      }
+
+      await collaboratorContext.close();
     }
   }
 );

@@ -2181,16 +2181,12 @@ return {
                   <div className="atelier-v2-plan-actions">
                     <button
                       type="button"
-                      className="atelier-v2-plan-icon-btn"
-                      title="Filtrer"
-                    >
-                      ≡
-                    </button>
-
-                    <button
-                      type="button"
                       className="atelier-v2-btn primary"
-                      style={{ minHeight: 32, borderRadius: 8, padding: '0 12px' }}
+                      style={{
+                        minHeight: 32,
+                        borderRadius: 8,
+                        padding: '0 12px'
+                      }}
                       onClick={() => openAddStep('activite')}
                     >
                       + Ajouter

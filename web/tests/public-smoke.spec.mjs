@@ -759,3 +759,68 @@ test(
     );
   }
 );
+
+test(
+  'le diagnostic contient les mesures de performance',
+  async function performanceDiagnostic({
+    page
+  }) {
+    await page.goto('/', {
+      waitUntil: 'load'
+    });
+
+    const metrics =
+      await page.evaluate(
+        function readPerformanceMetrics() {
+          return window
+            .ClientPerformance
+            ?.snapshot?.() || null;
+        }
+      );
+
+    expect(
+      metrics
+    ).not.toBeNull();
+
+    expect(
+      metrics
+    ).toEqual(
+      expect.objectContaining({
+        ttfbMs:
+          expect.any(Number),
+        domContentLoadedMs:
+          expect.any(Number),
+        loadMs:
+          expect.any(Number),
+        cls:
+          expect.any(Number),
+        connection:
+          expect.any(String),
+        dataSaver:
+          expect.any(Boolean),
+        viewport:
+          expect.any(String)
+      })
+    );
+
+    expect(
+      metrics.ttfbMs
+    ).toBeGreaterThanOrEqual(0);
+
+    expect(
+      metrics.domContentLoadedMs
+    ).toBeGreaterThanOrEqual(
+      metrics.ttfbMs
+    );
+
+    expect(
+      metrics.loadMs
+    ).toBeGreaterThanOrEqual(
+      metrics.domContentLoadedMs
+    );
+
+    expect(
+      metrics.cls
+    ).toBeGreaterThanOrEqual(0);
+  }
+);

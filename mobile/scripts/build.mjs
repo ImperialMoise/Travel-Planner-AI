@@ -152,9 +152,13 @@ const requiredAppFeatures = [
   ['sauvegarde et restauration', 'window.TripBackup'],
   ['couvertures de journée', 'mobile-day-cover-backdrop'],
   ['réorganisation des étapes', 'move-step-up'],
-  ['thèmes de voyage', 'MOBILE_TRIP_ACCENTS']
+  ['thèmes de voyage', 'MOBILE_TRIP_ACCENTS'],
+  ['gestion des rôles', 'toggle-trip-member-role'],
+  ['transfert de propriété', 'transfer-trip-ownership'],
+  ['départ d’un voyage partagé', 'leave-shared-trip'],
+  ['partage natif d’itinéraire', 'shareMobileTrip'],
+  ['plugin de partage Android', 'Share.share']
 ];
-
 for (const [featureName, marker] of requiredAppFeatures) {
   if (!appBundle.includes(marker)) {
     failures.push(`Fonction mobile absente du build : ${featureName}`);
@@ -163,7 +167,10 @@ for (const [featureName, marker] of requiredAppFeatures) {
 
 const requiredSupabaseFeatures = [
   ['réorganisation des journées', 'export async function moveTripDayInsideFixedRange'],
-  ['rappels de voyage', 'export async function listMyReminders']
+  ['rappels de voyage', 'export async function listMyReminders'],
+  ['gestion des rôles', 'export async function updateTripMemberRole'],
+  ['transfert de propriété', 'export async function transferTripOwnership'],
+  ['départ d’un voyage partagé', 'export async function leaveTrip']
 ];
 
 for (const [featureName, marker] of requiredSupabaseFeatures) {

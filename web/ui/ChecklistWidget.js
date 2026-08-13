@@ -214,6 +214,7 @@ function ChecklistHeader({ editMode, onRemove, hideHeader }) {
       >
         <input
           ref={inputRef}
+          aria-label="Ajouter un élément à la checklist"
           value={value}
           onChange={event => onChange(event.target.value)}
           onKeyDown={event => {

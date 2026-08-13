@@ -34,6 +34,175 @@
 // ════════════════════════════════════════════════════════════
 
 (function initAppShell() {
+  function createClientPerformanceLog() {
+    const metrics = {
+      ttfbMs: null,
+      domContentLoadedMs: null,
+      loadMs: null,
+      lcpMs: null,
+      cls: 0
+    };
+
+    function roundMilliseconds(
+      value
+    ) {
+      const number =
+        Number(value);
+
+      return Number.isFinite(number)
+        ? Math.round(number)
+        : null;
+    }
+
+    function readNavigationMetrics() {
+      const navigation =
+        performance
+          .getEntriesByType(
+            'navigation'
+          )?.[0];
+
+      if (!navigation) return;
+
+      metrics.ttfbMs =
+        roundMilliseconds(
+          navigation.responseStart
+        );
+
+      metrics.domContentLoadedMs =
+        roundMilliseconds(
+          navigation
+            .domContentLoadedEventEnd
+        );
+
+      metrics.loadMs =
+        navigation.loadEventEnd > 0
+          ? roundMilliseconds(
+              navigation.loadEventEnd
+            )
+          : null;
+    }
+
+    function observePerformance(
+      type,
+      callback
+    ) {
+      if (
+        !window.PerformanceObserver ||
+        !window.PerformanceObserver
+          .supportedEntryTypes
+          ?.includes(type)
+      ) {
+        return;
+      }
+
+      try {
+        const observer =
+          new PerformanceObserver(
+            function readEntries(list) {
+              callback(
+                list.getEntries()
+              );
+            }
+          );
+
+        observer.observe({
+          type,
+          buffered: true
+        });
+      } catch (error) {
+        console.warn(
+          `Mesure ${type} indisponible :`,
+          error
+        );
+      }
+    }
+
+    readNavigationMetrics();
+
+    window.addEventListener(
+      'load',
+      readNavigationMetrics,
+      {
+        once: true
+      }
+    );
+
+    observePerformance(
+      'largest-contentful-paint',
+      function recordLargestPaint(
+        entries
+      ) {
+        const lastEntry =
+          entries[
+            entries.length - 1
+          ];
+
+        if (lastEntry) {
+          metrics.lcpMs =
+            roundMilliseconds(
+              lastEntry.startTime
+            );
+        }
+      }
+    );
+
+    observePerformance(
+      'layout-shift',
+      function recordLayoutShift(
+        entries
+      ) {
+        entries.forEach(
+          function addLayoutShift(
+            entry
+          ) {
+            if (
+              !entry.hadRecentInput
+            ) {
+              metrics.cls +=
+                Number(
+                  entry.value
+                ) || 0;
+            }
+          }
+        );
+      }
+    );
+
+    function snapshot() {
+      readNavigationMetrics();
+
+      return {
+        ...metrics,
+        cls:
+          Number(
+            metrics.cls.toFixed(4)
+          ),
+        connection:
+          navigator.connection
+            ?.effectiveType ||
+          'inconnue',
+        dataSaver:
+          Boolean(
+            navigator.connection
+              ?.saveData
+          ),
+        viewport:
+          `${window.innerWidth}x${window.innerHeight}`
+      };
+    }
+
+    return {
+      snapshot
+    };
+  }
+
+  if (
+    !window.ClientPerformance
+  ) {
+    window.ClientPerformance =
+      createClientPerformanceLog();
+  }
+
   function createClientErrorLog() {
     const STORAGE_KEY =
       'lfav_client_errors';
@@ -145,6 +314,15 @@
           ),
         'Navigateur : ' +
           navigator.userAgent,
+        '',
+        'Performances :',
+        JSON.stringify(
+          window.ClientPerformance
+            ?.snapshot?.() || {},
+          null,
+          2
+        ),
+        '',
         'Erreur actuelle : ' +
           sanitizeText(
             currentError?.message ||
@@ -669,8 +847,8 @@
   }
 
   .places-help-btn{
-    width:19px;
-    height:19px;
+    width:28px;
+    height:28px;
     padding:0;
     border:1px solid var(--outline-variant);
     border-radius:50%;

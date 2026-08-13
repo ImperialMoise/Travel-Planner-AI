@@ -59,6 +59,8 @@ jobs:
         env:
           E2E_TEST_EMAIL: ${{ secrets.E2E_TEST_EMAIL }}
           E2E_TEST_PASSWORD: ${{ secrets.E2E_TEST_PASSWORD }}
+          E2E_COLLABORATOR_EMAIL: ${{ secrets.E2E_COLLABORATOR_EMAIL }}
+          E2E_COLLABORATOR_PASSWORD: ${{ secrets.E2E_COLLABORATOR_PASSWORD }}
         run: npm run test:e2e
 
       - name: Upload Playwright report

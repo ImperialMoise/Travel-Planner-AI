@@ -115,6 +115,7 @@ function headerStyle() {
       <button
         type="button"
         title={title}
+        aria-label={title}
         onMouseDown={event => event.preventDefault()}
         onClick={onClick}
         disabled={disabled}
@@ -440,6 +441,9 @@ function headerStyle() {
 
             <div
               ref={editorRef}
+              role="textbox"
+              aria-label="Notes générales du voyage"
+              aria-multiline="true"
               contentEditable={!saving}
               suppressContentEditableWarning
               onInput={syncDraftFromEditor}

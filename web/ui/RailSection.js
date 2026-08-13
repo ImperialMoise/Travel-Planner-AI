@@ -38,6 +38,7 @@
       <button
         type="button"
         title={title}
+        aria-label={title}
         onClick={onClick}
         disabled={disabled}
         style={{

@@ -1,4 +1,4 @@
-name: Build Signed Android APK
+name: Build Signed Android Releases
 
 on:
   workflow_dispatch:
@@ -74,18 +74,20 @@ jobs:
 
           test -s "$RUNNER_TEMP/la-fabrique-release.jks"
 
-      - name: Construire l’APK release signé
+      - name: Construire l’APK et l’AAB signés
         working-directory: mobile/android
         env:
           ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/la-fabrique-release.jks
           ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_VERSION_CODE: ${{ github.run_number }}
+          ANDROID_VERSION_NAME: 1.0.${{ github.run_number }}
         run: |
           chmod +x gradlew
-          ./gradlew assembleRelease
+          ./gradlew assembleRelease bundleRelease
 
-      - name: Vérifier la signature de l’APK
+      - name: Vérifier les signatures Android
         run: |
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" \
             verify \
@@ -93,27 +95,40 @@ jobs:
             --print-certs \
             mobile/android/app/build/outputs/apk/release/app-release.apk
 
-      - name: Publier l’artefact signé
+          jarsigner \
+            -verify \
+            -certs \
+            mobile/android/app/build/outputs/bundle/release/app-release.aab
+
+      - name: Publier les artefacts signés
         uses: actions/upload-artifact@v4
         with:
-          name: la-fabrique-a-voyages-release
-          path: mobile/android/app/build/outputs/apk/release/app-release.apk
+          name: la-fabrique-a-voyages-android
+          path: |
+            mobile/android/app/build/outputs/apk/release/app-release.apk
+            mobile/android/app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error
           retention-days: 30
 
-      - name: Préparer le téléchargement public
+      - name: Préparer les fichiers Android
         run: |
           cp mobile/android/app/build/outputs/apk/release/app-release.apk \
              la-fabrique-a-voyages.apk
 
+          cp mobile/android/app/build/outputs/bundle/release/app-release.aab \
+             la-fabrique-a-voyages-play-store.aab
+
           sha256sum la-fabrique-a-voyages.apk \
             > la-fabrique-a-voyages.apk.sha256
+
+          sha256sum la-fabrique-a-voyages-play-store.aab \
+            > la-fabrique-a-voyages-play-store.aab.sha256
 
       - name: Publier la version Android signée
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          RELEASE_NOTES="APK Android release signé automatiquement depuis le commit $GITHUB_SHA."
+          RELEASE_NOTES="Version Android signée automatiquement depuis le commit $GITHUB_SHA. L’APK est destiné à l’installation directe. L’AAB est destiné au Google Play Store."
 
           if gh release view android-latest >/dev/null 2>&1; then
             gh release edit android-latest \
@@ -123,11 +138,15 @@ jobs:
             gh release upload android-latest \
               la-fabrique-a-voyages.apk \
               la-fabrique-a-voyages.apk.sha256 \
+              la-fabrique-a-voyages-play-store.aab \
+              la-fabrique-a-voyages-play-store.aab.sha256 \
               --clobber
           else
             gh release create android-latest \
               la-fabrique-a-voyages.apk \
               la-fabrique-a-voyages.apk.sha256 \
+              la-fabrique-a-voyages-play-store.aab \
+              la-fabrique-a-voyages-play-store.aab.sha256 \
               --target "$GITHUB_SHA" \
               --title "La Fabrique à Voyages - Android" \
               --notes "$RELEASE_NOTES"

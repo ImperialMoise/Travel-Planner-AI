@@ -3811,6 +3811,21 @@
       };
     });
 
+    const routeAnnouncement =
+      !user
+        ? 'Accueil public'
+        : !activeTripId
+          ? 'Accueil de vos voyages'
+          : appMode === 'travel'
+            ? 'Mode Voyager'
+            : {
+                itinerary: 'Itinéraire du voyage',
+                map: 'Carte du voyage',
+                budget: 'Budget du voyage',
+                docs: 'Documents du voyage'
+              }[view] ||
+              'Voyage';
+
     const width = useWindowWidth();
 
     const isCompactShell = width < 1320;
@@ -3867,6 +3882,15 @@ function toggleToolboxCollapsed() {
         >
           Aller au contenu principal
         </a>
+
+        <div
+          className="screen-reader-only"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          Page affichée : {routeAnnouncement}
+        </div>
 
         <Topbar compact={isTopbarCompact} />
         <WebMobileBanner />
@@ -5382,23 +5406,23 @@ function DaySpine({
   const heroImages = React.useMemo(function buildHeroImages() {
     return [
       {
-        url: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=2200&q=90',
+        url: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1600&q=82',
         label: 'Lac alpin au lever du soleil'
       },
       {
-        url: 'https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=2200&q=90',
+        url: 'https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=1600&q=82',
         label: 'Côte amalfitaine, Italie'
       },
       {
-        url: 'https://images.unsplash.com/photo-1528164344705-47542687000d?auto=format&fit=crop&w=2200&q=90',
+        url: 'https://images.unsplash.com/photo-1528164344705-47542687000d?auto=format&fit=crop&w=1600&q=82',
         label: 'Kyoto, Japon'
       },
       {
-        url: 'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=2200&q=90',
+        url: 'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=1600&q=82',
         label: 'Désert et lumière dorée'
       },
       {
-        url: 'https://images.unsplash.com/photo-1504893524553-b855bce32c67?auto=format&fit=crop&w=2200&q=90',
+        url: 'https://images.unsplash.com/photo-1504893524553-b855bce32c67?auto=format&fit=crop&w=1600&q=82',
         label: 'Cascade et grands espaces'
       }
     ];
@@ -5406,11 +5430,11 @@ function DaySpine({
 
   const tripImages = React.useMemo(function buildTripImages() {
     return [
-      'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=1200&q=86',
-      'https://images.unsplash.com/photo-1528164344705-47542687000d?auto=format&fit=crop&w=1200&q=86',
-      'https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=1200&q=86',
-      'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=1200&q=86',
-      'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=1200&q=86'
+      'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=900&q=82',
+      'https://images.unsplash.com/photo-1528164344705-47542687000d?auto=format&fit=crop&w=900&q=82',
+      'https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=900&q=82',
+      'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=900&q=82',
+      'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=900&q=82'
     ];
   }, []);
 
@@ -5548,11 +5572,43 @@ const featuredCover =
   encodeURIComponent(androidApkUrl);
 
   React.useEffect(function rotateHeroImage() {
-    const timer = window.setInterval(function nextImage() {
-      setImageIndex(function updateIndex(current) {
-        return (current + 1) % heroImages.length;
-      });
-    }, 7000);
+    const connection =
+      navigator.connection ||
+      navigator.mozConnection ||
+      navigator.webkitConnection;
+
+    const saveData =
+      Boolean(connection?.saveData);
+
+    const reducedMotion =
+      window.matchMedia?.(
+        '(prefers-reduced-motion: reduce)'
+      ).matches;
+
+    const slowConnection =
+      ['slow-2g', '2g'].includes(
+        connection?.effectiveType
+      );
+
+    if (
+      saveData ||
+      reducedMotion ||
+      slowConnection ||
+      heroImages.length < 2
+    ) {
+      return undefined;
+    }
+
+    const timer = window.setInterval(
+      function nextImage() {
+        setImageIndex(function updateIndex(current) {
+          return (
+            current + 1
+          ) % heroImages.length;
+        });
+      },
+      7000
+    );
 
     return function cleanupHeroImageRotation() {
       window.clearInterval(timer);

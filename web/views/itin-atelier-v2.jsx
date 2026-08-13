@@ -1596,7 +1596,13 @@
                   onClick={() => choosePhoto(photo)}
                   disabled={saving}
                 >
-                  <img src={photo.imageUrl} alt={photo.alt || query} />
+                  <img
+                    src={photo.imageUrl}
+                    alt={photo.alt || query}
+                    loading="lazy"
+                    decoding="async"
+                    fetchPriority="low"
+                  />
                   <span className="atelier-v2-cover-option-info">
                     <strong>Choisir cette photo</strong>
                     <small>Photo par {photo.photographer || 'Pexels'}</small>
@@ -2082,6 +2088,9 @@ return {
                 src={day.coverImageUrl}
                 alt={day.coverImageAlt || 'Photo de couverture du voyage'}
                 style={{ objectPosition: `center ${coverPositionY}%` }}
+                loading="eager"
+                decoding="async"
+                fetchPriority="high"
                 draggable="false"
               />
             )}

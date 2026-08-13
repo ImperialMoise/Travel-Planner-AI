@@ -82,6 +82,72 @@ button {
   min-height: 100dvh;
 }
 
+.mobile-network-status {
+  position: fixed;
+  z-index: 5000;
+  top: max(
+    10px,
+    env(safe-area-inset-top, 10px)
+  );
+  left: 12px;
+  right: 12px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 11px;
+  padding: 11px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 16px;
+  color: #fffbf4;
+  background: rgba(21, 48, 42, 0.96);
+  box-shadow: 0 12px 34px rgba(21, 48, 42, 0.3);
+  backdrop-filter: blur(12px);
+}
+
+.mobile-network-status > span:nth-child(2) {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.mobile-network-status strong {
+  font-size: 13px;
+}
+
+.mobile-network-status small {
+  color: rgba(255, 251, 244, 0.74);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.mobile-network-status button {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 12px;
+  color: var(--petrol-dark);
+  background: #fffbf4;
+}
+
+.mobile-network-status button
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+.material-symbols-outlined {
+  font-size: 20px;
+}
+
 .mobile-shell {
   position: relative;
   width: 100%;
@@ -501,7 +567,42 @@ button {
   color: var(--primary);
 }
 
-.welcome-mini-symbol .material-symbols-outlined {
+.welcome-mini-symbol :where(
+  button,
+  a,
+  input,
+  select,
+  textarea,
+  [role="button"],
+  [tabindex]
+):focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 3px;
+}
+
+.mobile-screen-reader-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+:where(
+  button,
+  input,
+  select,
+  textarea
+):disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.material-symbols-outlined {
   font-size: 17px;
 }
 
@@ -11431,8 +11532,8 @@ button {
 
 .mobile-reminder-actions button {
   display: grid;
-  width: 38px;
-  height: 38px;
+  width: 44px;
+  height: 44px;
   padding: 0;
   place-items: center;
   border: 1px solid rgba(150, 100, 13, 0.18);

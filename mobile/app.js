@@ -278,6 +278,86 @@ async function syncMobileTripReminders({
 
 const app = document.getElementById('app');
 
+function installMobileNetworkStatus() {
+  const bannerId =
+    'mobile-network-status';
+
+  function updateMobileNetworkStatus() {
+    let banner =
+      document.getElementById(bannerId);
+
+    if (navigator.onLine) {
+      banner?.remove();
+      return;
+    }
+
+    if (banner) return;
+
+    banner =
+      document.createElement('aside');
+
+    banner.id = bannerId;
+    banner.className =
+      'mobile-network-status';
+
+    banner.setAttribute(
+      'role',
+      'status'
+    );
+
+    banner.innerHTML = `
+      <span
+        class="material-symbols-outlined"
+        aria-hidden="true"
+      >
+        cloud_off
+      </span>
+
+      <span>
+        <strong>Mode hors ligne</strong>
+        <small>
+          Les données ne peuvent pas être
+          synchronisées pour le moment.
+        </small>
+      </span>
+
+      <button
+        type="button"
+        aria-label="Réessayer la connexion"
+      >
+        <span class="material-symbols-outlined">
+          refresh
+        </span>
+      </button>
+    `;
+
+    banner
+      .querySelector('button')
+      ?.addEventListener(
+        'click',
+        function retryMobileConnection() {
+          window.location.reload();
+        }
+      );
+
+    document.body.appendChild(banner);
+  }
+
+  window.addEventListener(
+    'online',
+    updateMobileNetworkStatus
+  );
+
+  window.addEventListener(
+    'offline',
+    updateMobileNetworkStatus
+  );
+
+  updateMobileNetworkStatus();
+}
+
+installMobileNetworkStatus();
+
 let mobileSB = null;
 let mobileUser = null;
 let mobileTrips = [];
@@ -294,6 +374,7 @@ let mobileItineraryDayIndex = 0;
 let mobileShareMembers = [];
 let mobileShareActivity = [];
 let mobileShareLoading = false;
+let mobileReminderBusy = false;
 let pendingMobileNotificationTripId = null;
 let pendingMobileNotificationReminderId = null;
 let mobileWorkspaceMode =
@@ -1489,6 +1570,7 @@ function topbar() {
   const personalPage = [
     '#account',
     '#settings',
+    '#reminders',
     '#share'
   ].includes(window.location.hash);
 
@@ -1798,7 +1880,11 @@ function mobileInspirationSection() {
             <img
               src="${escapeHtml(item.image)}"
               alt="${escapeHtml(item.name + ', ' + item.country)}"
+              width="800"
+              height="1000"
               loading="lazy"
+              decoding="async"
+              fetchpriority="low"
             >
 
             <span class="mobile-inspiration-shade"></span>
@@ -5198,7 +5284,11 @@ async function renderReminders() {
         </header>
 
         <section class="mobile-personal-card">
-          <div class="mobile-reminder-loading">
+          <div
+            class="mobile-reminder-loading"
+            role="status"
+            aria-live="polite"
+          >
             <span class="material-symbols-outlined">
               progress_activity
             </span>
@@ -5366,7 +5456,10 @@ async function renderReminders() {
           </header>
 
           ${loadingError ? `
-            <div class="mobile-reminder-empty danger">
+            <div
+              class="mobile-reminder-empty danger"
+              role="alert"
+            >
               <span class="material-symbols-outlined">
                 error
               </span>
@@ -5537,6 +5630,12 @@ async function handleCreateMobileReminder() {
     return;
   }
 
+  if (mobileReminderBusy) {
+    return;
+  }
+
+  mobileReminderBusy = true;
+
   if (button) {
     button.disabled = true;
     button.textContent = 'Création…';
@@ -5574,6 +5673,8 @@ async function handleCreateMobileReminder() {
         Créer le rappel
       `;
     }
+  } finally {
+    mobileReminderBusy = false;
   }
 }
 
@@ -5581,7 +5682,14 @@ async function handleToggleMobileReminder(
   reminderId,
   completed
 ) {
-  if (!reminderId) return;
+  if (
+    !reminderId ||
+    mobileReminderBusy
+  ) {
+    return;
+  }
+
+  mobileReminderBusy = true;
 
   try {
     await window.SB.setReminderCompleted(
@@ -5599,6 +5707,8 @@ async function handleToggleMobileReminder(
       'Impossible de modifier le rappel : ' +
       (error.message || error)
     );
+  } finally {
+    mobileReminderBusy = false;
   }
 }
 
@@ -5607,10 +5717,13 @@ async function handleDeleteMobileReminder(
 ) {
   if (
     !reminderId ||
+    mobileReminderBusy ||
     !confirm('Supprimer définitivement ce rappel ?')
   ) {
     return;
   }
+
+  mobileReminderBusy = true;
 
   try {
     await window.SB.deleteReminder(
@@ -5627,6 +5740,8 @@ async function handleDeleteMobileReminder(
       'Impossible de supprimer le rappel : ' +
       (error.message || error)
     );
+  } finally {
+    mobileReminderBusy = false;
   }
 }
 
@@ -8127,6 +8242,8 @@ async function renderDocDetail() {
       class="doc-preview-image"
       src="${documentUrl}"
       alt="${escapeHtml(documentItem.name)}"
+      loading="eager"
+      decoding="async"
       onerror="this.closest('.doc-detail-viewer').querySelector('.doc-preview-error').hidden = false"
     >
     <div class="doc-preview-error" hidden>
@@ -9049,7 +9166,71 @@ async function handleAddStepToProgram() {
   navigate('itinerary');
 }
 
+function getMobileRouteLabel(route) {
+  return {
+    home: 'Accueil',
+    auth: 'Connexion',
+    account: 'Mon compte',
+    settings: 'Paramètres',
+    reminders: 'Mes rappels',
+    share: 'Partage du voyage',
+    'create-trip': 'Créer un voyage',
+    itinerary: 'Itinéraire',
+    travel: 'Mode Voyager',
+    map: 'Carte',
+    budget: 'Budget',
+    'budget-overview': 'Vue générale du budget',
+    'budget-balance': 'Équilibre du budget',
+    'new-expense': 'Nouvelle dépense',
+    'new-step': 'Nouvelle étape',
+    'activity-detail': 'Détail de l’étape',
+    docs: 'Documents',
+    'doc-scanner': 'Ajouter un document',
+    'doc-detail': 'Détail du document'
+  }[route] || 'La Fabrique à Voyages';
+}
+
+function announceMobileRoute(route) {
+  let announcer =
+    document.getElementById(
+      'mobile-route-announcer'
+    );
+
+  if (!announcer) {
+    announcer =
+      document.createElement('div');
+
+    announcer.id =
+      'mobile-route-announcer';
+
+    announcer.className =
+      'mobile-screen-reader-only';
+
+    announcer.setAttribute(
+      'role',
+      'status'
+    );
+
+    announcer.setAttribute(
+      'aria-live',
+      'polite'
+    );
+
+    announcer.setAttribute(
+      'aria-atomic',
+      'true'
+    );
+
+    document.body.appendChild(announcer);
+  }
+
+  announcer.textContent =
+    'Page affichée : ' +
+    getMobileRouteLabel(route);
+}
+
 function navigate(route) {
+  announceMobileRoute(route);
     if (route === 'invite') {
     window.location.hash = 'invite';
     renderInvite();
@@ -10345,6 +10526,13 @@ async function handleMobileNotificationAction(
 }
 
 function renderCurrentRoute() {
+  const currentRoute =
+    window.location.hash
+      .replace(/^#/, '') ||
+    'home';
+
+  announceMobileRoute(currentRoute);
+
   if (window.location.hash === '#invite') renderInvite();
   else if (window.location.hash === '#auth') renderAuth();
   else if (window.location.hash === '#account') renderAccount();

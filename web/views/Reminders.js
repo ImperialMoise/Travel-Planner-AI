@@ -155,6 +155,11 @@
       event
     ) {
       event.preventDefault();
+
+      if (busy) {
+        return;
+      }
+
       setError('');
 
       const cleanTitle =
@@ -451,6 +456,7 @@
         >
           <form
             onSubmit={createReminder}
+            aria-busy={busy}
             style={{
               display: 'flex',
               flexDirection: 'column',
@@ -478,6 +484,8 @@
 
                 <select
                   value={tripId}
+                  required
+                  disabled={busy}
                   onChange={event =>
                     setTripId(
                       event.target.value
@@ -520,6 +528,8 @@
                 <input
                   type="datetime-local"
                   value={remindAt}
+                  required
+                  disabled={busy}
                   onChange={event =>
                     setRemindAt(
                       event.target.value
@@ -546,6 +556,9 @@
               <input
                 value={title}
                 maxLength={160}
+                required
+                disabled={busy}
+                autoComplete="off"
                 onChange={event =>
                   setTitle(
                     event.target.value

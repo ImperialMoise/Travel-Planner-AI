@@ -443,7 +443,8 @@
     overflow:hidden;
   }
 
-  .web-mobile-banner{
+  .web-mobile-banner,
+  .mobile-workspace-nav{
     display:none;
   }
 
@@ -2908,8 +2909,7 @@
       display:grid;
       grid-template-columns:minmax(0,1fr) auto;
       grid-template-areas:
-        "left right"
-        "center center";
+        "left right";
       align-items:center;
       gap:8px;
       padding-top:8px;
@@ -2932,12 +2932,7 @@
     }
 
     .topbar-center{
-      grid-area:center;
-      width:100%;
-      min-width:0;
-      display:grid;
-      grid-template-columns:minmax(0,1fr);
-      gap:6px;
+      display:none;
     }
 
     .topbar-brand,
@@ -3010,6 +3005,74 @@
       min-height:44px;
       padding:7px 3px;
       font-size:12px;
+    }
+
+    .mobile-workspace-nav{
+      display:grid;
+      grid-template-columns:
+        repeat(5,minmax(0,1fr));
+      flex-shrink:0;
+      gap:3px;
+      padding:
+        6px max(
+          6px,
+          env(safe-area-inset-right)
+        )
+        max(
+          6px,
+          env(safe-area-inset-bottom)
+        )
+        max(
+          6px,
+          env(safe-area-inset-left)
+        );
+      border-top:
+        1px solid var(--outline-variant);
+      background:
+        rgba(255,253,249,.96);
+      box-shadow:
+        0 -8px 28px rgba(54,42,27,.08);
+      backdrop-filter:blur(14px);
+      -webkit-backdrop-filter:blur(14px);
+      z-index:650;
+    }
+
+    .mobile-workspace-nav-btn{
+      min-width:0;
+      min-height:52px;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap:3px;
+      padding:5px 2px;
+      border:0;
+      border-radius:11px;
+      background:transparent;
+      color:var(--muted);
+      cursor:pointer;
+      font-family:inherit;
+      font-size:10px;
+      font-weight:900;
+      line-height:1;
+      touch-action:manipulation;
+    }
+
+    .mobile-workspace-nav-btn.active{
+      background:var(--accent-soft);
+      color:var(--accent);
+    }
+
+    .mobile-workspace-nav-btn.travel.active{
+      background:var(--accent);
+      color:var(--accent-ink);
+      box-shadow:
+        0 5px 14px var(--accent-shadow);
+    }
+
+    .mobile-workspace-nav-btn:focus-visible{
+      outline:3px solid var(--accent-soft);
+      outline-offset:1px;
     }
 
     .places-control{
@@ -3125,8 +3188,12 @@
       display:none;
     }
 
-        .app-floating{
-      bottom:max(12px,env(safe-area-inset-bottom));
+    .app-floating{
+      bottom:
+        calc(
+          72px +
+          env(safe-area-inset-bottom)
+        );
       height:48px;
       min-width:48px;
       box-shadow:0 10px 28px rgba(21,48,42,.22);
@@ -4300,7 +4367,11 @@ function toggleToolboxCollapsed() {
         </div>
 
         <Topbar compact={isTopbarCompact} />
-        <WebMobileBanner />
+
+        {!activeTripId && (
+          <WebMobileBanner />
+        )}
+
         <NetworkStatusBanner />
 
                 <main
@@ -4415,6 +4486,10 @@ function toggleToolboxCollapsed() {
             </>
           )}
         </main>
+
+        {user && activeTripId && trip && (
+          <MobileWorkspaceNav />
+        )}
 
         {isTinyShell && user && activeTripId && trip && (
           <button
@@ -4620,6 +4695,159 @@ function toggleToolboxCollapsed() {
       </aside>
     );
   }
+  function MobileWorkspaceNav() {
+    const {
+      view,
+      appMode = 'plan',
+      trip
+    } = Store.useStore(function select(state) {
+      return {
+        view: state.view || 'itinerary',
+        appMode: state.appMode || 'plan',
+        trip: state.trip
+      };
+    });
+
+    const items = [
+      {
+        id: 'itinerary',
+        label: 'Plan',
+        icon: 'cal'
+      },
+      {
+        id: 'map',
+        label: 'Carte',
+        icon: 'map'
+      },
+      {
+        id: 'budget',
+        label: 'Budget',
+        icon: 'budget'
+      },
+      {
+        id: 'docs',
+        label: 'Docs',
+        icon: 'docs'
+      }
+    ];
+
+    function openPlanningView(nextView) {
+      localStorage.setItem(
+        'atelier_app_mode',
+        'plan'
+      );
+
+      Store.set({
+        appMode: 'plan',
+        view: nextView
+      });
+    }
+
+    function openTravelMode() {
+      const patch = {
+        appMode: 'travel'
+      };
+
+      if (Array.isArray(trip?.days)) {
+        const now = new Date();
+
+        const today = [
+          now.getFullYear(),
+          String(
+            now.getMonth() + 1
+          ).padStart(2, '0'),
+          String(
+            now.getDate()
+          ).padStart(2, '0')
+        ].join('-');
+
+        const todayIndex =
+          trip.days.findIndex(
+            day =>
+              day.dateISO === today
+          );
+
+        if (todayIndex >= 0) {
+          patch.selectedDayIndex =
+            todayIndex;
+        }
+      }
+
+      localStorage.setItem(
+        'atelier_app_mode',
+        'travel'
+      );
+
+      Store.set(patch);
+    }
+
+    return (
+      <nav
+        className="mobile-workspace-nav"
+        aria-label="Navigation du voyage"
+      >
+        {items.map(function renderMobileItem(
+          item
+        ) {
+          const active =
+            appMode !== 'travel' &&
+            view === item.id;
+
+          return (
+            <button
+              key={item.id}
+              type="button"
+              className={
+                'mobile-workspace-nav-btn' +
+                (active ? ' active' : '')
+              }
+              aria-current={
+                active
+                  ? 'page'
+                  : undefined
+              }
+              onClick={() =>
+                openPlanningView(item.id)
+              }
+            >
+              <Icon
+                name={item.icon}
+                size={18}
+              />
+
+              <span>{item.label}</span>
+            </button>
+          );
+        })}
+
+        <button
+          type="button"
+          className={
+            'mobile-workspace-nav-btn travel' +
+            (
+              appMode === 'travel'
+                ? ' active'
+                : ''
+            )
+          }
+          aria-current={
+            appMode === 'travel'
+              ? 'page'
+              : undefined
+          }
+          onClick={openTravelMode}
+        >
+          <Icon
+            name="pin"
+            size={18}
+          />
+
+          <span>Voyager</span>
+        </button>
+      </nav>
+    );
+  }
+
   function getCurrentView(view) {
     if (view === 'itinerary') return window.ItineraryView;
     if (view === 'map') return window.MapView;

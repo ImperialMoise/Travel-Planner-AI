@@ -2525,6 +2525,11 @@ function ShareSection({ trips, activeTripId, user }) {
     setRevokingInviteId
   ] = React.useState(null);
 
+  const [
+    updatingMemberId,
+    setUpdatingMemberId
+  ] = React.useState(null);
+
   const selectedTrip = trips.find(trip => trip.id === managedTripId) || null;
   const canManage = selectedTrip?.owner_id === user?.id;
 
@@ -2798,6 +2803,58 @@ function ShareSection({ trips, activeTripId, user }) {
       setRevokingInviteId(null);
     }
   }
+
+    async function changeMemberRole(
+    member,
+    nextRole
+  ) {
+    if (
+      !canManage ||
+      member.role === 'owner' ||
+      member.role === nextRole ||
+      updatingMemberId
+    ) {
+      return;
+    }
+
+    setUpdatingMemberId(member.id);
+
+    try {
+      await SB.updateTripMemberRole(
+        managedTripId,
+        member.id,
+        nextRole
+      );
+
+      setMembers(current =>
+        current.map(item =>
+          item.id === member.id
+            ? {
+                ...item,
+                role: nextRole
+              }
+            : item
+        )
+      );
+
+      Store.showToast(
+        nextRole === 'viewer'
+          ? 'Le membre est maintenant lecteur.'
+          : 'Le membre est maintenant éditeur.'
+      );
+    } catch (error) {
+      Store.showToast(
+        'Erreur : ' +
+          (
+            error.message ||
+            'Impossible de modifier le rôle.'
+          )
+      );
+    } finally {
+      setUpdatingMemberId(null);
+    }
+  }
+
 
   async function addToBudget(member) {
     try {
@@ -3270,13 +3327,52 @@ function ShareSection({ trips, activeTripId, user }) {
                   <strong style={{ display: 'block', fontSize: 13 }}>
                     {member.name || 'Membre'}
                   </strong>
-                  <span style={{ color: 'var(--muted)', fontSize: 12 }}>
-                    {member.role === 'owner'
-                      ? 'Propriétaire'
-                      : member.role === 'viewer'
-                        ? 'Lecteur'
-                        : 'Éditeur'}
-                  </span>
+                  {canManage && member.role !== 'owner' ? (
+                    <select
+                      aria-label={`Rôle de ${member.name || 'ce membre'}`}
+                      value={member.role}
+                      disabled={
+                        updatingMemberId ===
+                        member.id
+                      }
+                      onChange={event =>
+                        changeMemberRole(
+                          member,
+                          event.target.value
+                        )
+                      }
+                      style={{
+                        ...settingsInputStyle,
+                        width: 'auto',
+                        minWidth: 110,
+                        marginTop: 4,
+                        padding:
+                          '7px 30px 7px 9px',
+                        fontSize: 12
+                      }}
+                    >
+                      <option value="editor">
+                        Éditeur
+                      </option>
+
+                      <option value="viewer">
+                        Lecteur
+                      </option>
+                    </select>
+                  ) : (
+                    <span
+                      style={{
+                        color: 'var(--muted)',
+                        fontSize: 12
+                      }}
+                    >
+                      {member.role === 'owner'
+                        ? 'Propriétaire'
+                        : member.role === 'viewer'
+                          ? 'Lecteur'
+                          : 'Éditeur'}
+                    </span>
+                  )}
                 </div>
 
                 {canManage && member.role !== 'owner' && (

@@ -1616,6 +1616,24 @@ export async function acceptInvite(token) {
   return tripId;
 }
 
+export async function updateTripMemberRole(
+  tripId,
+  memberId,
+  role
+) {
+  const { error } = await sb.rpc(
+    'update_trip_member_role',
+    {
+      p_trip_id: tripId,
+      p_member_id: memberId,
+      p_role: role
+    }
+  );
+
+  if (error) throw error;
+}
+
+
 export async function removeTripMember(tripId, memberId) {
   const { error } = await sb.rpc('remove_trip_member', {
     p_trip_id: tripId,
@@ -1876,6 +1894,7 @@ window.SB = {
   revokeTripInvite,
   getInvite,
   acceptInvite,
+  updateTripMemberRole,
   removeTripMember,
   listTripActivity,
 

@@ -5801,32 +5801,32 @@ async function renderTripLibrary({
             hidden
           >
 
-          <div class="mobile-trip-backup-actions">
-            <button
-              type="button"
-              data-action="trip-backup-import"
-            >
-              <span class="material-symbols-outlined">
-                upload
-              </span>
-              Importer
-            </button>
+<div class="mobile-trip-backup-actions">
+  <button
+    type="button"
+    data-action="trip-backup-import"
+  >
+    <span class="material-symbols-outlined">
+      upload
+    </span>
+    Importer JSON
+  </button>
 
-            <button
-              type="button"
-              data-action="trip-backup-export"
-            >
-              <span class="material-symbols-outlined">
-                download
-              </span>
-              Sauvegarder
-            </button>
-          </div>
+  <button
+    type="button"
+    data-action="trip-backup-export"
+  >
+    <span class="material-symbols-outlined">
+      download
+    </span>
+    Exporter JSON
+  </button>
+</div>
 
-          <p>
-            Les voyages existants ne seront jamais remplacés.
-            Les documents privés ne sont pas inclus.
-          </p>
+<p>
+  Les voyages existants ne seront jamais remplacés.
+  Les fichiers privés ne sont pas inclus.
+</p>
         </section>
 
         ${mobileTripLibraryError ? `
@@ -10233,8 +10233,8 @@ async function renderDocs() {
 
       <main class="docs-main-v2">
         <div class="docs-header">
-          <span class="kicker">Coffre-fort numérique</span>
-          <h2 class="docs-title">Documents de Voyage</h2>
+<span class="kicker">Documents de voyage</span>
+<h2 class="docs-title">Billets et fichiers</h2>
           <p class="docs-subtitle">${escapeHtml(activeTrip?.name || 'Aucun voyage sélectionné')} · ${totalFiles} document${totalFiles > 1 ? 's' : ''}</p>
         </div>
 

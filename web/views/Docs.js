@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════════════════════
-// Docs.js — Coffre-fort de documents, design Atelier v2
+// Docs.js — Documents de voyage, design Atelier v2
 // Deux onglets : Résumé (timeline) et Détail (explorateur)
 // ════════════════════════════════════════════════════════════
 
@@ -586,10 +586,10 @@ const renderDetail = () => (
         {/* ── En-tête ── */}
         <div className="web-docs-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12, marginBottom: 18 }}>
           <div>
-            <div style={kicker}>Coffre-fort</div>
-            <div style={{ fontFamily: serif, fontStyle: 'italic', fontSize: 26, color: 'var(--text)', marginTop: 3 }}>
-              Documents
-            </div>
+<div style={kicker}>Documents de voyage</div>
+<div style={{ fontFamily: serif, fontStyle: 'italic', fontSize: 26, color: 'var(--text)', marginTop: 3 }}>
+  Billets et fichiers
+</div>
             <p style={{ color: 'var(--muted)', fontSize: 13, margin: '4px 0 0' }}>
               {trip?.name || 'Mon voyage'} · {total} document{total > 1 ? 's' : ''}
             </p>

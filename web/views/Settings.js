@@ -2173,7 +2173,7 @@ function TripsSection({
               fontSize: 11
             }}
           >
-            Télécharge une copie de tes données.
+Télécharge une copie JSON de tes données. Les fichiers privés ne sont pas inclus.
           </span>
         </div>
 
@@ -2194,41 +2194,41 @@ function TripsSection({
             }
           />
 
-          <SettingsButton
-            icon="upload"
-            disabled={
-              backupBusy ||
-              restoreBusy
-            }
-            onClick={() =>
-              backupInputRef
-                .current
-                ?.click()
-            }
-          >
-            {
-              restoreBusy
-                ? 'Restauration…'
-                : 'Restaurer'
-            }
-          </SettingsButton>
+<SettingsButton
+  icon="upload"
+  disabled={
+    backupBusy ||
+    restoreBusy
+  }
+  onClick={() =>
+    backupInputRef
+      .current
+      ?.click()
+  }
+>
+  {
+    restoreBusy
+      ? 'Importation…'
+      : 'Importer JSON'
+  }
+</SettingsButton>
 
-          <SettingsButton
-            icon="download"
-            disabled={
-              backupBusy ||
-              restoreBusy
-            }
-            onClick={
-              downloadBackup
-            }
-          >
-            {
-              backupBusy
-                ? 'Sauvegarde…'
-                : 'Sauvegarder'
-            }
-          </SettingsButton>
+<SettingsButton
+  icon="download"
+  disabled={
+    backupBusy ||
+    restoreBusy
+  }
+  onClick={
+    downloadBackup
+  }
+>
+  {
+    backupBusy
+      ? 'Exportation…'
+      : 'Exporter JSON'
+  }
+</SettingsButton>
         </div>
       </div>
 

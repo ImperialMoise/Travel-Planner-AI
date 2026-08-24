@@ -2136,6 +2136,10 @@ function normalizeTripIdea(row) {
     note: row.note || '',
     link: row.link || '',
     status: row.status || 'idea',
+    plannedDayId:
+      row.planned_day_id || null,
+    plannedStepId:
+      row.planned_step_id || null,
     sortIndex: Number(row.sort_index) || 0,
     createdBy: row.created_by,
     createdAt: row.created_at,
@@ -2229,6 +2233,20 @@ export async function updateTripIdea(ideaId, input) {
     }
 
     row.status = input.status;
+  }
+
+  if (
+    input?.plannedDayId !== undefined
+  ) {
+    row.planned_day_id =
+      input.plannedDayId || null;
+  }
+
+  if (
+    input?.plannedStepId !== undefined
+  ) {
+    row.planned_step_id =
+      input.plannedStepId || null;
   }
 
   if (input?.sortIndex !== undefined) {

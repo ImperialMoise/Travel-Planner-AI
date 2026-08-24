@@ -338,6 +338,37 @@
       }
     }
 
+    function openPlannedIdea(idea) {
+      const days =
+        Array.isArray(trip?.days)
+          ? trip.days
+          : [];
+
+      const targetDayIndex =
+        days.findIndex(
+          day =>
+            String(day.id) ===
+            String(idea.plannedDayId)
+        );
+
+      if (targetDayIndex < 0) {
+        setError(
+          'La journée liée à cette idée n’existe plus.'
+        );
+        return;
+      }
+
+      Store.set({
+        view: 'itinerary',
+        selectedDayIndex:
+          targetDayIndex,
+        selectedStepId:
+          idea.plannedStepId || null,
+        pendingEditStepId:
+          idea.plannedStepId || null
+      });
+    }
+
     async function planIdea(
       idea,
       targetDayId
@@ -374,25 +405,32 @@
             ? targetDay.steps
             : [];
 
-        await window.SB.saveStep(
-          trip.id,
-          targetDay.id,
-          {
-            type: 'activite',
-            label: idea.title || 'Nouvelle étape',
-            lieu: '',
-            note: idea.note || '',
-            link: idea.link || '',
-            important: false,
-            stepIndex: steps.length
-          }
-        );
+        const savedStep =
+          await window.SB.saveStep(
+            trip.id,
+            targetDay.id,
+            {
+              type: 'activite',
+              label:
+                idea.title ||
+                'Nouvelle étape',
+              lieu: '',
+              note: idea.note || '',
+              link: idea.link || '',
+              important: false,
+              stepIndex: steps.length
+            }
+          );
 
         const savedIdea =
           await window.SB.updateTripIdea(
             idea.id,
             {
-              status: 'planned'
+              status: 'planned',
+              plannedDayId:
+                targetDay.id,
+              plannedStepId:
+                savedStep.id
             }
           );
 
@@ -884,7 +922,38 @@
                     )}
                   </select>
 
-                  {Array.isArray(trip.days) &&
+                  {idea.plannedDayId &&
+                  idea.plannedStepId ? (
+                    <button
+                      type="button"
+                      disabled={disabled}
+                      onClick={() =>
+                        openPlannedIdea(idea)
+                      }
+                      style={{
+                        width: '100%',
+                        minHeight: 34,
+                        marginTop: 7,
+                        border:
+                          '1px solid var(--accent)',
+                        borderRadius: 10,
+                        background:
+                          'var(--accent-soft)',
+                        color: 'var(--accent)',
+                        padding: '6px 10px',
+                        cursor:
+                          disabled
+                            ? 'wait'
+                            : 'pointer',
+                        font: 'inherit',
+                        fontSize: 11.5,
+                        fontWeight: 800
+                      }}
+                    >
+                      Voir dans l’itinéraire
+                    </button>
+                  ) : (
+                    Array.isArray(trip.days) &&
                     trip.days.length > 0 && (
                       <select
                         defaultValue=""
@@ -951,7 +1020,8 @@
                           }
                         )}
                       </select>
-                    )}
+                    )
+                  )}
 
                   {idea.note && (
                     <p

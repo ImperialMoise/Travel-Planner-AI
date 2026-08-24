@@ -615,6 +615,7 @@ function InlineButton({
 
     return (
       <window.RailCard
+        compact
         onClick={() => onEditStep && onEditStep(stay.sourceDay || day, step)}
       >
         <div style={{
@@ -637,10 +638,10 @@ function InlineButton({
 
             <div style={{
               fontFamily: 'var(--font-serif)',
-              fontSize: 21,
-              lineHeight: '27px',
+              fontSize: 17,
+              lineHeight: '22px',
               color: 'var(--text)',
-              marginTop: 8
+              marginTop: 5
             }}>
               {title}
             </div>
@@ -694,10 +695,10 @@ function InlineButton({
         </div>
 
         <div style={{
-          marginTop: 12,
+          marginTop: 8,
           display: 'grid',
           gridTemplateColumns: '1fr 1fr',
-          gap: 8
+          gap: 6
         }}>
           <div style={{
             borderRadius: 10,
@@ -788,7 +789,7 @@ function InlineButton({
         onClick={onAdd}
         style={{
           width: '100%',
-          minHeight: 196,
+          minHeight: 124,
           border: '1px dashed var(--accent)',
           borderRadius: 14,
           background: 'var(--inset)',
@@ -796,12 +797,12 @@ function InlineButton({
           boxShadow: 'var(--shadow)',
           cursor: 'pointer',
           fontFamily: 'inherit',
-          padding: 18,
+          padding: 12,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: 10,
+          gap: 6,
           textAlign: 'center'
         }}
       >
@@ -960,7 +961,7 @@ function InlineButton({
     const [openSections, setOpenSections] = React.useState({
       restaurants: true,
       lodging: true,
-      weather: true
+      weather: false
     });
 
     const restaurants = getRestaurants(day);
@@ -1007,7 +1008,7 @@ function InlineButton({
       <aside
         className="web-meal-rail"
         style={{
-          width: 320,
+          width: 292,
           flexShrink: 0,
           height: '100%',
           minHeight: 0,
@@ -1026,19 +1027,23 @@ function InlineButton({
             overflowY: 'auto',
             overflowX: 'hidden',
             scrollbarGutter: 'stable',
-            padding: '22px 18px 26px',
+            padding: '16px 14px 22px',
             display: 'flex',
             flexDirection: 'column',
-            gap: 18
+            gap: 12
           }}
         >
           <window.RailSection
             noBorder
             kicker="Hébergement"
-            title="Nuit du jour"
+            title="Hébergement"
             subtitle={stay
-              ? 'Hébergement actif sur cette journée.'
-              : 'Réserve cet espace pour choisir où dormir.'}
+              ? lodgingName(stay.step) +
+                ' · ' +
+                stay.nights +
+                ' nuit' +
+                (stay.nights > 1 ? 's' : '')
+              : 'Aucun hébergement pour cette nuit.'}
             icon="bed"
             open={openSections.lodging}
             onToggle={() => toggleSection('lodging')}
@@ -1105,9 +1110,9 @@ function InlineButton({
           </window.RailSection>
 
           <window.RailSection
-            kicker="Météo"
-            title="Préparer la journée"
-            subtitle="Prévision connectée ou tendance générale."
+            kicker="Conditions"
+            title="Météo"
+            subtitle="Prévision ou tendance pour cette journée."
             icon="sparkle"
             open={openSections.weather}
             onToggle={() => toggleSection('weather')}

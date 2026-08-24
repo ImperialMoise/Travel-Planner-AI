@@ -610,7 +610,7 @@
             endISO,
             nights,
             status,
-            nightNumber: Math.max(1, sel - startIndex)
+            nightNumber: Math.min(  nights,  Math.max(1, sel - startIndex + 1))
           };
         }
       }

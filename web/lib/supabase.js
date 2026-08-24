@@ -2128,7 +2128,15 @@ export async function markReminderNotified(
 }
 
 // ─── Idées de voyage ───────────────────────────────────────
-function normalizeTripIdea(row) {
+function normalizeTripIdea(
+  row,
+  currentUserId
+) {
+  const votes =
+    Array.isArray(row.trip_idea_votes)
+      ? row.trip_idea_votes
+      : [];
+
   return {
     id: row.id,
     tripId: row.trip_id,
@@ -2142,6 +2150,11 @@ function normalizeTripIdea(row) {
       row.planned_step_id || null,
     assignedTo:
       row.assigned_to || null,
+    voteCount: votes.length,
+    votedByMe: votes.some(
+      vote =>
+        vote.user_id === currentUserId
+    ),
     sortIndex: Number(row.sort_index) || 0,
     createdBy: row.created_by,
     createdAt: row.created_at,
@@ -2150,16 +2163,26 @@ function normalizeTripIdea(row) {
 }
 
 export async function listTripIdeas(tripId) {
+  const user = await getUser();
+
   const { data, error } = await sb
     .from('trip_ideas')
-    .select('*')
+    .select(
+      '*, trip_idea_votes(user_id)'
+    )
     .eq('trip_id', tripId)
     .order('sort_index', { ascending: true })
     .order('created_at', { ascending: false });
 
   if (error) throw error;
 
-  return (data || []).map(normalizeTripIdea);
+  return (data || []).map(
+    row =>
+      normalizeTripIdea(
+        row,
+        user?.id
+      )
+  );
 }
 
 export async function createTripIdea(tripId, input) {
@@ -2197,15 +2220,21 @@ export async function createTripIdea(tripId, input) {
       sort_index: Number(input?.sortIndex) || 0,
       created_by: user.id
     })
-    .select('*')
+    .select(
+      '*, trip_idea_votes(user_id)'
+    )
     .single();
 
   if (error) throw error;
 
-  return normalizeTripIdea(data);
+  return normalizeTripIdea(
+    data,
+    user?.id
+  );
 }
 
 export async function updateTripIdea(ideaId, input) {
+  const user = await getUser();
   const row = {};
 
   if (input?.title !== undefined) {
@@ -2273,12 +2302,59 @@ export async function updateTripIdea(ideaId, input) {
     .from('trip_ideas')
     .update(row)
     .eq('id', ideaId)
-    .select('*')
+    .select(
+      '*, trip_idea_votes(user_id)'
+    )
     .single();
 
   if (error) throw error;
 
-  return normalizeTripIdea(data);
+  return normalizeTripIdea(
+    data,
+    user?.id
+  );
+}
+
+export async function setTripIdeaVote(
+  ideaId,
+  shouldVote
+) {
+  const user = await getUser();
+
+  if (!user) {
+    throw new Error(
+      'Tu dois être connecté pour voter.'
+    );
+  }
+
+  if (shouldVote) {
+    const { error } = await sb
+      .from('trip_idea_votes')
+      .upsert(
+        {
+          idea_id: ideaId,
+          user_id: user.id
+        },
+        {
+          onConflict:
+            'idea_id,user_id',
+          ignoreDuplicates: true
+        }
+      );
+
+    if (error) throw error;
+    return true;
+  }
+
+  const { error } = await sb
+    .from('trip_idea_votes')
+    .delete()
+    .eq('idea_id', ideaId)
+    .eq('user_id', user.id);
+
+  if (error) throw error;
+
+  return false;
 }
 
 export async function deleteTripIdea(ideaId) {
@@ -2415,6 +2491,7 @@ window.SB = {
   listTripIdeas,
   createTripIdea,
   updateTripIdea,
+  setTripIdeaVote,
   deleteTripIdea,
 
   listDocuments,

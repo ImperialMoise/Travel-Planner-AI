@@ -330,6 +330,61 @@
       }
     }
 
+    async function toggleIdeaVote(idea) {
+      if (
+        !idea?.id ||
+        busyId === idea.id
+      ) {
+        return;
+      }
+
+      const shouldVote =
+        !idea.votedByMe;
+
+      setBusyId(idea.id);
+      setError('');
+      setNotice('');
+
+      try {
+        await window.SB.setTripIdeaVote(
+          idea.id,
+          shouldVote
+        );
+
+        setIdeas(function update(current) {
+          return current.map(
+            function mapIdea(item) {
+              if (item.id !== idea.id) {
+                return item;
+              }
+
+              return {
+                ...item,
+                votedByMe: shouldVote,
+                voteCount: Math.max(
+                  0,
+                  Number(item.voteCount || 0) +
+                    (shouldVote ? 1 : -1)
+                )
+              };
+            }
+          );
+        });
+
+        setNotice(
+          shouldVote
+            ? 'Vote ajouté.'
+            : 'Vote retiré.'
+        );
+      } catch (voteError) {
+        setError(
+          friendlyError(voteError)
+        );
+      } finally {
+        setBusyId(null);
+      }
+    }
+
     async function assignIdea(
       idea,
       userId
@@ -1219,10 +1274,60 @@
                   <div
                     style={{
                       display: 'flex',
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
                       gap: 10,
                       marginTop: 8
                     }}
                   >
+                    <button
+                      type="button"
+                      disabled={disabled}
+                      aria-pressed={
+                        !!idea.votedByMe
+                      }
+                      aria-label={
+                        idea.votedByMe
+                          ? 'Retirer mon vote'
+                          : 'Voter pour cette idée'
+                      }
+                      onClick={() =>
+                        toggleIdeaVote(idea)
+                      }
+                      style={{
+                        minHeight: 30,
+                        border:
+                          idea.votedByMe
+                            ? '1px solid var(--accent)'
+                            : '1px solid var(--outline-variant)',
+                        borderRadius: 999,
+                        background:
+                          idea.votedByMe
+                            ? 'var(--accent-soft)'
+                            : 'transparent',
+                        color:
+                          idea.votedByMe
+                            ? 'var(--accent)'
+                            : 'var(--muted)',
+                        padding: '4px 9px',
+                        cursor:
+                          disabled
+                            ? 'wait'
+                            : 'pointer',
+                        font: 'inherit',
+                        fontSize: 11.5,
+                        fontWeight: 850
+                      }}
+                    >
+                      {idea.votedByMe
+                        ? '♥'
+                        : '♡'}
+                      {' '}
+                      {Number(
+                        idea.voteCount || 0
+                      )}
+                    </button>
+
                     <button
                       type="button"
                       disabled={disabled}

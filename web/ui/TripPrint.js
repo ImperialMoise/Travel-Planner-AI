@@ -317,6 +317,22 @@
             content="width=device-width, initial-scale=1"
           >
 
+          <link
+            rel="preconnect"
+            href="https://fonts.googleapis.com"
+          >
+
+          <link
+            rel="preconnect"
+            href="https://fonts.gstatic.com"
+            crossorigin
+          >
+
+          <link
+            href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300..700&family=DM+Serif+Display:ital@0;1&family=JetBrains+Mono:wght@400;700&display=swap"
+            rel="stylesheet"
+          >
+
           <title>
             ${escapeHtml(trip.name || 'Mon voyage')}
           </title>
@@ -334,6 +350,8 @@
 
             * {
               box-sizing: border-box;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
             }
 
             body {
@@ -341,7 +359,7 @@
               color: var(--ink);
               background: #ebe7df;
               font-family:
-                Inter,
+                "DM Sans",
                 Arial,
                 sans-serif;
               line-height: 1.5;
@@ -381,7 +399,7 @@
               );
               min-height: 297mm;
               margin: 24px auto;
-              padding: 18mm;
+              padding: 14mm 13mm 15mm;
               background: var(--paper);
               box-shadow:
                 0 16px 60px
@@ -406,6 +424,7 @@
             .trip-header h1 {
               margin: 0;
               font-family:
+                "DM Serif Display",
                 Georgia,
                 serif;
               font-size: 34px;
@@ -463,6 +482,7 @@
             .day-header h2 {
               margin: 0;
               font-family:
+                "DM Serif Display",
                 Georgia,
                 serif;
               font-size: 25px;
@@ -599,30 +619,100 @@
             }
 
             @page {
-              size: A4;
-              margin: 12mm;
+              size: A4 portrait;
+              margin: 14mm 13mm 15mm;
             }
 
             @media print {
+              html,
               body {
-                background: white;
+                margin: 0;
+                padding: 0;
+                color: var(--ink) !important;
+                background: var(--paper) !important;
+              }
+
+              body {
+                font-family:
+                  "DM Sans",
+                  Arial,
+                  sans-serif;
+                font-size: 10.5pt;
+                line-height: 1.45;
               }
 
               .toolbar {
-                display: none;
+                display: none !important;
               }
 
               .sheet {
-                width: auto;
+                width: 100%;
                 min-height: 0;
                 margin: 0;
                 padding: 0;
+                background: var(--paper) !important;
                 box-shadow: none;
               }
 
+              .trip-header {
+                break-after: avoid-page;
+                page-break-after: avoid;
+              }
+
+              .day {
+                padding-top: 9mm;
+              }
+
+              .day + .day {
+                break-before: page;
+                page-break-before: always;
+              }
+
+              .day-header,
+              .day-note,
+              .step,
+              .checklist,
+              .empty {
+                break-inside: avoid-page;
+                page-break-inside: avoid;
+              }
+
+              .step {
+                grid-template-columns:
+                  19mm minmax(0, 1fr);
+              }
+
+              h1,
+              h2,
+              h3 {
+                break-after: avoid-page;
+                page-break-after: avoid;
+              }
+
+              p,
+              li {
+                orphans: 3;
+                widows: 3;
+              }
+
+              .day-number,
+              .global-note,
+              .day-note,
+              .checklist,
+              .empty,
+              .important {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+              }
+
               a {
-                color: inherit;
+                color: var(--accent) !important;
                 text-decoration: none;
+              }
+
+              .print-footer {
+                break-inside: avoid-page;
+                page-break-inside: avoid;
               }
             }
 
@@ -651,7 +741,7 @@
           <div class="toolbar">
             <button
               type="button"
-              onclick="window.print()"
+              onclick="printDocument(this)"
             >
               Imprimer / Enregistrer en PDF
             </button>
@@ -688,6 +778,48 @@
               Les documents privés ne sont pas inclus.
             </footer>
           </main>
+          <script>
+            async function printDocument(button) {
+              const originalText =
+                button.textContent;
+
+              button.disabled = true;
+              button.textContent =
+                'Préparation du PDF…';
+
+              try {
+                if (
+                  document.fonts &&
+                  document.fonts.ready
+                ) {
+                  await document.fonts.ready;
+                }
+
+                await new Promise(
+                  function waitForLayout(resolve) {
+                    requestAnimationFrame(
+                      function firstFrame() {
+                        requestAnimationFrame(
+                          resolve
+                        );
+                      }
+                    );
+                  }
+                );
+
+                window.print();
+              } finally {
+                window.setTimeout(
+                  function restoreButton() {
+                    button.disabled = false;
+                    button.textContent =
+                      originalText;
+                  },
+                  300
+                );
+              }
+            }
+          </script>
         </body>
       </html>
     `;

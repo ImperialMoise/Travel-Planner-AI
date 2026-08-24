@@ -1,5 +1,6 @@
 (function initTripIdeasWidget() {
   const Icon = window.Icon;
+  const Store = window.Store;
 
   const IDEA_STATUSES = [
     {
@@ -100,60 +101,6 @@
 
     const loadIdeas = React.useCallback(
       async function loadIdeas(silent) {
-    async function changeIdeaStatus(
-      idea,
-      status
-    ) {
-      if (
-        !idea?.id ||
-        busyId === idea.id ||
-        status === idea.status
-      ) {
-        return;
-      }
-
-      setBusyId(idea.id);
-      setError('');
-      setNotice('');
-
-      try {
-        const saved =
-          await window.SB.updateTripIdea(
-            idea.id,
-            {
-              status
-            }
-          );
-
-        setIdeas(function update(current) {
-          return current.map(
-            function mapIdea(item) {
-              return item.id === saved.id
-                ? saved
-                : item;
-            }
-          );
-        });
-
-        const statusLabel =
-          IDEA_STATUSES.find(
-            item => item.value === status
-          )?.label || 'mis à jour';
-
-        setNotice(
-          'Idée déplacée vers « ' +
-          statusLabel +
-          ' ».'
-        );
-      } catch (statusError) {
-        setError(
-          friendlyError(statusError)
-        );
-      } finally {
-        setBusyId(null);
-      }
-    }
-
     if (!trip?.id) {
           setIdeas([]);
           setLoading(false);
@@ -334,6 +281,153 @@
         );
       } finally {
         setSaving(false);
+      }
+    }
+
+    async function changeIdeaStatus(
+      idea,
+      status
+    ) {
+      if (
+        !idea?.id ||
+        busyId === idea.id ||
+        status === idea.status
+      ) {
+        return;
+      }
+
+      setBusyId(idea.id);
+      setError('');
+      setNotice('');
+
+      try {
+        const saved =
+          await window.SB.updateTripIdea(
+            idea.id,
+            {
+              status
+            }
+          );
+
+        setIdeas(function update(current) {
+          return current.map(
+            function mapIdea(item) {
+              return item.id === saved.id
+                ? saved
+                : item;
+            }
+          );
+        });
+
+        const statusLabel =
+          IDEA_STATUSES.find(
+            item => item.value === status
+          )?.label || 'mis à jour';
+
+        setNotice(
+          'Idée déplacée vers « ' +
+          statusLabel +
+          ' ».'
+        );
+      } catch (statusError) {
+        setError(
+          friendlyError(statusError)
+        );
+      } finally {
+        setBusyId(null);
+      }
+    }
+
+    async function planIdea(
+      idea,
+      targetDayId
+    ) {
+      const days = Array.isArray(trip?.days)
+        ? trip.days
+        : [];
+
+      const targetDayIndex =
+        days.findIndex(
+          day =>
+            String(day.id) ===
+            String(targetDayId)
+        );
+
+      const targetDay =
+        days[targetDayIndex];
+
+      if (
+        !idea?.id ||
+        !targetDay ||
+        busyId === idea.id
+      ) {
+        return;
+      }
+
+      setBusyId(idea.id);
+      setError('');
+      setNotice('');
+
+      try {
+        const steps =
+          Array.isArray(targetDay.steps)
+            ? targetDay.steps
+            : [];
+
+        await window.SB.saveStep(
+          trip.id,
+          targetDay.id,
+          {
+            type: 'activite',
+            label: idea.title || 'Nouvelle étape',
+            lieu: '',
+            note: idea.note || '',
+            link: idea.link || '',
+            important: false,
+            stepIndex: steps.length
+          }
+        );
+
+        const savedIdea =
+          await window.SB.updateTripIdea(
+            idea.id,
+            {
+              status: 'planned'
+            }
+          );
+
+        const refreshedTrip =
+          await window.SB.loadTrip(
+            trip.id
+          );
+
+        setIdeas(function update(current) {
+          return current.map(
+            function mapIdea(item) {
+              return item.id === savedIdea.id
+                ? savedIdea
+                : item;
+            }
+          );
+        });
+
+        Store.set({
+          trip: refreshedTrip,
+          selectedDayIndex:
+            targetDayIndex
+        });
+
+        setNotice(
+          'Idée ajoutée au jour ' +
+          (targetDayIndex + 1) +
+          ' de l’itinéraire.'
+        );
+      } catch (planError) {
+        setError(
+          friendlyError(planError)
+        );
+      } finally {
+        setBusyId(null);
       }
     }
 
@@ -789,6 +883,75 @@
                       }
                     )}
                   </select>
+
+                  {Array.isArray(trip.days) &&
+                    trip.days.length > 0 && (
+                      <select
+                        defaultValue=""
+                        disabled={disabled}
+                        aria-label={
+                          'Ajouter ' +
+                          idea.title +
+                          ' à une journée'
+                        }
+                        onChange={event => {
+                          const targetDayId =
+                            event.target.value;
+
+                          event.target.value = '';
+
+                          if (targetDayId) {
+                            planIdea(
+                              idea,
+                              targetDayId
+                            );
+                          }
+                        }}
+                        style={{
+                          display: 'block',
+                          width: '100%',
+                          minHeight: 34,
+                          marginTop: 7,
+                          border:
+                            '1px solid var(--outline-variant)',
+                          borderRadius: 10,
+                          background: 'var(--card)',
+                          color: 'var(--text)',
+                          padding: '5px 9px',
+                          cursor:
+                            disabled
+                              ? 'wait'
+                              : 'pointer',
+                          font: 'inherit',
+                          fontSize: 11.5,
+                          fontWeight: 750
+                        }}
+                      >
+                        <option value="">
+                          Ajouter à l’itinéraire…
+                        </option>
+
+                        {trip.days.map(
+                          function renderDayOption(
+                            targetDay,
+                            targetDayIndex
+                          ) {
+                            return (
+                              <option
+                                key={targetDay.id}
+                                value={targetDay.id}
+                              >
+                                Jour {targetDayIndex + 1}
+                                {' — '}
+                                {targetDay.title ||
+                                  targetDay.dateISO ||
+                                  'Journée'}
+                              </option>
+                            );
+                          }
+                        )}
+                      </select>
+                    )}
 
                   {idea.note && (
                     <p

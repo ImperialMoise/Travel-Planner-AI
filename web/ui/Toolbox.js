@@ -51,6 +51,13 @@ globalNote: {
   icon: 'file',
   defaultOpen: true
 },
+    ideas: {
+      id: 'ideas',
+      label: 'Boîte à idées',
+      description: 'Lieux, activités et liens à étudier.',
+      icon: 'sparkle',
+      defaultOpen: true
+    },
     currency: {
       id: 'currency',
       label: 'Convertisseur',
@@ -85,6 +92,7 @@ globalNote: {
     'checklist',
     'dayNote',
     'globalNote',
+    'ideas',
     'around',
     'score',
     'currency'
@@ -128,7 +136,18 @@ globalNote: {
   function createInitialState() {
     const saved = readStorage();
 
-    const tools = normalizeToolIds(saved && saved.tools);
+    let tools = normalizeToolIds(saved && saved.tools);
+
+    if (
+      saved &&
+      saved.ideasIntroduced !== true &&
+      !tools.includes('ideas')
+    ) {
+      tools = [
+        'ideas',
+        ...tools
+      ];
+    }
 
     const open = {};
 
@@ -575,7 +594,8 @@ function PlaceholderWidget({ children }) {
     React.useEffect(function persistToolbox() {
       writeStorage({
         tools,
-        open: openMap
+        open: openMap,
+        ideasIntroduced: true
       });
     }, [tools, openMap]);
 
@@ -671,6 +691,18 @@ function PlaceholderWidget({ children }) {
         ) : (
           <PlaceholderWidget>
             Le widget Carnet n’est pas chargé.
+          </PlaceholderWidget>
+        );
+      }
+
+      if (id === 'ideas') {
+        return window.TripIdeasWidget ? (
+          <window.TripIdeasWidget
+            trip={trip}
+          />
+        ) : (
+          <PlaceholderWidget>
+            Le widget Boîte à idées n’est pas chargé.
           </PlaceholderWidget>
         );
       }

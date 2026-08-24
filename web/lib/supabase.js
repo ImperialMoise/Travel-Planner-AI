@@ -2127,6 +2127,111 @@ export async function markReminderNotified(
   if (error) throw error;
 }
 
+// ─── Idées de voyage ───────────────────────────────────────
+function normalizeTripIdea(row) {
+  return {
+    id: row.id,
+    tripId: row.trip_id,
+    title: row.title || '',
+    note: row.note || '',
+    link: row.link || '',
+    sortIndex: Number(row.sort_index) || 0,
+    createdBy: row.created_by,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  };
+}
+
+export async function listTripIdeas(tripId) {
+  const { data, error } = await sb
+    .from('trip_ideas')
+    .select('*')
+    .eq('trip_id', tripId)
+    .order('sort_index', { ascending: true })
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+
+  return (data || []).map(normalizeTripIdea);
+}
+
+export async function createTripIdea(tripId, input) {
+  const user = await getUser();
+
+  if (!user) {
+    throw new Error('Tu dois être connecté pour ajouter une idée.');
+  }
+
+  const title = String(input?.title || '').trim();
+  const note = String(input?.note || '').trim();
+  const link = String(input?.link || '').trim();
+
+  if (!title) {
+    throw new Error('Donne un titre à cette idée.');
+  }
+
+  const { data, error } = await sb
+    .from('trip_ideas')
+    .insert({
+      trip_id: tripId,
+      title,
+      note,
+      link,
+      sort_index: Number(input?.sortIndex) || 0,
+      created_by: user.id
+    })
+    .select('*')
+    .single();
+
+  if (error) throw error;
+
+  return normalizeTripIdea(data);
+}
+
+export async function updateTripIdea(ideaId, input) {
+  const row = {};
+
+  if (input?.title !== undefined) {
+    row.title = String(input.title || '').trim();
+  }
+
+  if (input?.note !== undefined) {
+    row.note = String(input.note || '').trim();
+  }
+
+  if (input?.link !== undefined) {
+    row.link = String(input.link || '').trim();
+  }
+
+  if (input?.sortIndex !== undefined) {
+    row.sort_index = Number(input.sortIndex) || 0;
+  }
+
+  if (!row.title) {
+    throw new Error('Donne un titre à cette idée.');
+  }
+
+  const { data, error } = await sb
+    .from('trip_ideas')
+    .update(row)
+    .eq('id', ideaId)
+    .select('*')
+    .single();
+
+  if (error) throw error;
+
+  return normalizeTripIdea(data);
+}
+
+export async function deleteTripIdea(ideaId) {
+  const { error } = await sb
+    .from('trip_ideas')
+    .delete()
+    .eq('id', ideaId);
+
+  if (error) throw error;
+}
+
 // ─── Realtime ──────────────────────────────────────────────
 let _channel = null;
 export function subscribeTrip(tripId, onChange) {
@@ -2248,6 +2353,11 @@ window.SB = {
   deleteReminder,
   listDueReminders,
   markReminderNotified,
+
+  listTripIdeas,
+  createTripIdea,
+  updateTripIdea,
+  deleteTripIdea,
 
   listDocuments,
   uploadDocument,

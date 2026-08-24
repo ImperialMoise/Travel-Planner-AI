@@ -153,6 +153,7 @@ const requiredAppFeatures = [
   ['couvertures de journée', 'mobile-day-cover-backdrop'],
   ['réorganisation des étapes', 'move-step-up'],
   ['thèmes de voyage', 'MOBILE_TRIP_ACCENTS'],
+  ['bilan statistique du voyage', 'renderMobileSummary'],
   ['gestion des rôles', 'toggle-trip-member-role'],
   ['transfert de propriété', 'transfer-trip-ownership'],
   ['départ d’un voyage partagé', 'leave-shared-trip'],

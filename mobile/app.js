@@ -1972,10 +1972,16 @@ function bottomNav(active = 'plan') {
       label: 'Budget'
     },
     {
+      route: 'summary',
+      id: 'summary',
+      icon: 'auto_awesome',
+      label: 'Bilan'
+    },
+    {
       route: 'docs',
       id: 'docs',
       icon: 'description',
-      label: 'Documents'
+      label: 'Docs'
     }
   ];
 
@@ -10221,6 +10227,822 @@ function renderBudgetBalance() {
   `;
 }
 
+function formatMobileSummaryDate(value) {
+  if (!value) return '';
+
+  const date = new Date(
+    String(value) + 'T12:00:00'
+  );
+
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+
+  return new Intl.DateTimeFormat(
+    'fr-FR',
+    {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    }
+  ).format(date);
+}
+
+function formatMobileSummaryMoney(value) {
+  return new Intl.NumberFormat(
+    'fr-FR',
+    {
+      style: 'currency',
+      currency: 'EUR',
+      maximumFractionDigits: 0
+    }
+  ).format(Number(value) || 0);
+}
+
+function getMobileLodgingNights(step) {
+  if (step?.dateStart && step?.dateEnd) {
+    const start = new Date(
+      String(step.dateStart) +
+      'T12:00:00'
+    );
+
+    const end = new Date(
+      String(step.dateEnd) +
+      'T12:00:00'
+    );
+
+    const difference =
+      Math.round(
+        (end - start) / 86400000
+      );
+
+    if (
+      Number.isFinite(difference) &&
+      difference > 0
+    ) {
+      return difference;
+    }
+  }
+
+  return Math.max(
+    0,
+    Number(
+      step?.nuits ||
+      step?.nights ||
+      0
+    )
+  );
+}
+
+function getMobileTripSummary() {
+  const days =
+    Array.isArray(activeTrip?.days)
+      ? activeTrip.days
+      : [];
+
+  const steps =
+    days.flatMap(function readDay(day) {
+      return (
+        Array.isArray(day.steps)
+          ? day.steps
+          : []
+      );
+    });
+
+  const transports =
+    steps.filter(
+      step =>
+        String(
+          step?.type || ''
+        ).toLowerCase() ===
+        'transport'
+    );
+
+  const lodgings =
+    steps.filter(
+      step =>
+        String(
+          step?.type || ''
+        ).toLowerCase() ===
+        'logement'
+    );
+
+  const budget =
+    Array.isArray(activeTrip?.budget)
+      ? activeTrip.budget
+      : [];
+
+  const participants =
+    Array.isArray(
+      activeTrip?.participants
+    )
+      ? activeTrip.participants
+      : [];
+
+  const locations =
+    new Map();
+
+  steps.forEach(function collectPlaces(
+    step
+  ) {
+    [
+      step?.lieu,
+      step?.depart,
+      step?.arrivee
+    ]
+      .map(value =>
+        String(value || '').trim()
+      )
+      .filter(Boolean)
+      .forEach(function addPlace(place) {
+        const key =
+          place.toLocaleLowerCase(
+            'fr-FR'
+          );
+
+        if (!locations.has(key)) {
+          locations.set(key, place);
+        }
+      });
+  });
+
+  const totalBudget =
+    budget.reduce(
+      function addAmount(total, item) {
+        return (
+          total +
+          (Number(item?.amount) || 0)
+        );
+      },
+      0
+    );
+
+  const totalNights =
+    lodgings.reduce(
+      function addNights(total, step) {
+        return (
+          total +
+          getMobileLodgingNights(step)
+        );
+      },
+      0
+    );
+
+  const transportCounts =
+    new Map();
+
+  transports.forEach(
+    function countTransport(step) {
+      const type =
+        String(
+          step?.transportType ||
+          'autre'
+        ).toLowerCase();
+
+      transportCounts.set(
+        type,
+        (
+          transportCounts.get(type) ||
+          0
+        ) + 1
+      );
+    }
+  );
+
+  const transportLabels = {
+    train: 'Train',
+    avion: 'Avion',
+    bus: 'Bus',
+    voiture: 'Voiture',
+    ferry: 'Ferry',
+    metro: 'Métro',
+    pied: 'À pied',
+    taxi: 'Taxi',
+    autre: 'Autre'
+  };
+
+  const transportIcons = {
+    train: 'train',
+    avion: 'flight',
+    bus: 'directions_bus',
+    voiture: 'directions_car',
+    ferry: 'directions_boat',
+    metro: 'subway',
+    pied: 'directions_walk',
+    taxi: 'local_taxi',
+    autre: 'route'
+  };
+
+  const transportBreakdown =
+    Array
+      .from(
+        transportCounts.entries()
+      )
+      .map(function createTransport(
+        entry
+      ) {
+        return {
+          id: entry[0],
+          label:
+            transportLabels[
+              entry[0]
+            ] || 'Autre',
+          icon:
+            transportIcons[
+              entry[0]
+            ] || 'route',
+          value: entry[1]
+        };
+      })
+      .sort(
+        (first, second) =>
+          second.value - first.value
+      );
+
+  const budgetCounts =
+    new Map();
+
+  budget.forEach(
+    function countBudget(item) {
+      const category =
+        String(
+          item?.cat || 'Divers'
+        ).trim() || 'Divers';
+
+      budgetCounts.set(
+        category,
+        (
+          budgetCounts.get(category) ||
+          0
+        ) +
+        (Number(item?.amount) || 0)
+      );
+    }
+  );
+
+  const budgetBreakdown =
+    Array
+      .from(budgetCounts.entries())
+      .map(function createBudget(
+        entry
+      ) {
+        return {
+          id: entry[0],
+          label: entry[0],
+          value: entry[1]
+        };
+      })
+      .sort(
+        (first, second) =>
+          second.value - first.value
+      );
+
+  const lodgingCounts =
+    new Map();
+
+  lodgings.forEach(
+    function countLodging(step) {
+      const name =
+        String(
+          step?.label ||
+          step?.lieu ||
+          'Hébergement'
+        ).trim() ||
+        'Hébergement';
+
+      const key =
+        name.toLocaleLowerCase(
+          'fr-FR'
+        );
+
+      const current =
+        lodgingCounts.get(key) || {
+          name,
+          nights: 0
+        };
+
+      current.nights +=
+        getMobileLodgingNights(step);
+
+      lodgingCounts.set(
+        key,
+        current
+      );
+    }
+  );
+
+  const lodgingBreakdown =
+    Array
+      .from(lodgingCounts.values())
+      .sort(
+        (first, second) =>
+          second.nights -
+          first.nights
+      );
+
+  const today =
+    new Date()
+      .toISOString()
+      .slice(0, 10);
+
+  const datedDays =
+    days.filter(day => day?.dateISO);
+
+  const elapsedDays =
+    datedDays.filter(
+      day => day.dateISO <= today
+    ).length;
+
+  const progress =
+    datedDays.length
+      ? Math.round(
+          (
+            elapsedDays /
+            datedDays.length
+          ) *
+          100
+        )
+      : 0;
+
+  const plannedDays =
+    days.filter(
+      day =>
+        Array.isArray(day?.steps) &&
+        day.steps.length > 0
+    ).length;
+
+  const startDate =
+    activeTrip?.startDate ||
+    days[0]?.dateISO ||
+    '';
+
+  const endDate =
+    activeTrip?.endDate ||
+    days[days.length - 1]
+      ?.dateISO ||
+    '';
+
+  let status =
+    'Voyage en préparation';
+
+  if (
+    startDate &&
+    endDate &&
+    today > endDate
+  ) {
+    status = 'Voyage terminé';
+  } else if (
+    startDate &&
+    endDate &&
+    today >= startDate &&
+    today <= endDate
+  ) {
+    status = 'Voyage en cours';
+  } else if (
+    startDate &&
+    today < startDate
+  ) {
+    status = 'Prochain départ';
+  }
+
+  return {
+    days,
+    steps,
+    transports,
+    participants,
+    locations:
+      Array.from(locations.values()),
+    totalBudget,
+    totalNights,
+    transportBreakdown,
+    budgetBreakdown,
+    lodgingBreakdown,
+    progress,
+    plannedDays,
+    startDate,
+    endDate,
+    status
+  };
+}
+
+function renderMobileSummaryBars(
+  items,
+  formatter
+) {
+  if (!items.length) {
+    return `
+      <p class="mobile-summary-empty">
+        Pas encore assez de données.
+      </p>
+    `;
+  }
+
+  const maximum =
+    Math.max(
+      1,
+      ...items.map(
+        item =>
+          Number(item.value) || 0
+      )
+    );
+
+  return items.map(function renderBar(
+    item
+  ) {
+    const percent =
+      Math.max(
+        5,
+        (
+          Number(item.value) /
+          maximum
+        ) *
+        100
+      );
+
+    const value =
+      formatter
+        ? formatter(item.value)
+        : String(item.value);
+
+    return `
+      <div class="mobile-summary-bar">
+        <div>
+          <span>
+            ${
+              item.icon
+                ? `
+                  <span
+                    class="material-symbols-outlined"
+                    aria-hidden="true"
+                  >
+                    ${escapeHtml(item.icon)}
+                  </span>
+                `
+                : ''
+            }
+
+            ${escapeHtml(item.label)}
+          </span>
+
+          <strong>
+            ${escapeHtml(value)}
+          </strong>
+        </div>
+
+        <span class="mobile-summary-bar-track">
+          <span
+            style="width:${percent}%"
+          ></span>
+        </span>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderMobileSummary() {
+  if (!activeTrip) {
+    navigate('home');
+    return;
+  }
+
+  const summary =
+    getMobileTripSummary();
+
+  const coverUrl =
+    getMobileTripCoverUrl(
+      activeTrip
+    );
+
+  const dateRange =
+    [
+      formatMobileSummaryDate(
+        summary.startDate
+      ),
+      formatMobileSummaryDate(
+        summary.endDate
+      )
+    ]
+      .filter(Boolean)
+      .join(' — ');
+
+  const perTraveler =
+    summary.participants.length
+      ? summary.totalBudget /
+        summary.participants.length
+      : 0;
+
+  app.innerHTML = `
+    <div class="mobile-shell mobile-summary-shell">
+      ${topbar()}
+
+      <main class="mobile-summary-main">
+        <section
+          class="mobile-summary-hero ${
+            coverUrl
+              ? 'has-cover'
+              : ''
+          }"
+        >
+          ${
+            coverUrl
+              ? `
+                <img
+                  src="${escapeHtml(coverUrl)}"
+                  alt=""
+                >
+              `
+              : ''
+          }
+
+          <div
+            class="mobile-summary-hero-overlay"
+            aria-hidden="true"
+          ></div>
+
+          <div class="mobile-summary-hero-copy">
+            <span class="kicker">
+              <span
+                class="material-symbols-outlined"
+                aria-hidden="true"
+              >
+                auto_awesome
+              </span>
+
+              Bilan du voyage
+            </span>
+
+            <h1>
+              ${escapeHtml(
+                activeTrip.name ||
+                'Mon voyage'
+              )}
+            </h1>
+
+            ${
+              dateRange
+                ? `
+                  <p>
+                    ${escapeHtml(dateRange)}
+                  </p>
+                `
+                : ''
+            }
+
+            <span class="mobile-summary-status">
+              ${escapeHtml(summary.status)}
+            </span>
+          </div>
+        </section>
+
+        <section
+          class="mobile-summary-progress"
+          aria-label="Progression du voyage : ${summary.progress}%"
+        >
+          <div>
+            <span>
+              Progression temporelle
+            </span>
+
+            <strong>
+              ${summary.progress} %
+            </strong>
+          </div>
+
+          <span class="mobile-summary-progress-track">
+            <span
+              style="width:${summary.progress}%"
+            ></span>
+          </span>
+        </section>
+
+        <section class="mobile-summary-stats">
+          <article>
+            <span class="material-symbols-outlined">
+              calendar_month
+            </span>
+
+            <strong>
+              ${summary.days.length}
+            </strong>
+
+            <span>jours</span>
+
+            <small>
+              ${summary.plannedDays}
+              organisé${
+                summary.plannedDays > 1
+                  ? 's'
+                  : ''
+              }
+            </small>
+          </article>
+
+          <article>
+            <span class="material-symbols-outlined">
+              dark_mode
+            </span>
+
+            <strong>
+              ${summary.totalNights}
+            </strong>
+
+            <span>nuits</span>
+
+            <small>
+              ${summary.lodgingBreakdown.length}
+              hébergement${
+                summary.lodgingBreakdown
+                  .length > 1
+                  ? 's'
+                  : ''
+              }
+            </small>
+          </article>
+
+          <article>
+            <span class="material-symbols-outlined">
+              location_on
+            </span>
+
+            <strong>
+              ${summary.steps.length}
+            </strong>
+
+            <span>étapes</span>
+
+            <small>
+              ${summary.locations.length}
+              lieux différents
+            </small>
+          </article>
+
+          <article>
+            <span class="material-symbols-outlined">
+              route
+            </span>
+
+            <strong>
+              ${summary.transports.length}
+            </strong>
+
+            <span>trajets</span>
+
+            <small>
+              ${summary.transportBreakdown.length}
+              mode${
+                summary.transportBreakdown
+                  .length > 1
+                  ? 's'
+                  : ''
+              }
+            </small>
+          </article>
+
+          <article class="wide">
+            <span class="material-symbols-outlined">
+              payments
+            </span>
+
+            <strong>
+              ${escapeHtml(
+                formatMobileSummaryMoney(
+                  summary.totalBudget
+                )
+              )}
+            </strong>
+
+            <span>budget saisi</span>
+
+            <small>
+              ${
+                summary.participants.length
+                  ? escapeHtml(
+                      formatMobileSummaryMoney(
+                        perTraveler
+                      )
+                    ) +
+                    ' par voyageur'
+                  : 'Aucun voyageur renseigné'
+              }
+            </small>
+          </article>
+        </section>
+
+        <section class="mobile-summary-panel">
+          <header>
+            <span
+              class="material-symbols-outlined"
+              aria-hidden="true"
+            >
+              commute
+            </span>
+
+            <div>
+              <h2>Transports</h2>
+              <p>Nombre de trajets prévus</p>
+            </div>
+          </header>
+
+          <div class="mobile-summary-bars">
+            ${renderMobileSummaryBars(
+              summary.transportBreakdown
+            )}
+          </div>
+        </section>
+
+        <section class="mobile-summary-panel">
+          <header>
+            <span
+              class="material-symbols-outlined"
+              aria-hidden="true"
+            >
+              account_balance_wallet
+            </span>
+
+            <div>
+              <h2>Budget</h2>
+              <p>Dépenses par catégorie</p>
+            </div>
+          </header>
+
+          <div class="mobile-summary-bars">
+            ${renderMobileSummaryBars(
+              summary.budgetBreakdown,
+              formatMobileSummaryMoney
+            )}
+          </div>
+        </section>
+
+        <section class="mobile-summary-panel">
+          <header>
+            <span
+              class="material-symbols-outlined"
+              aria-hidden="true"
+            >
+              hotel
+            </span>
+
+            <div>
+              <h2>Hébergements</h2>
+              <p>Les nuits du voyage</p>
+            </div>
+          </header>
+
+          <div class="mobile-summary-lodgings">
+            ${
+              summary.lodgingBreakdown
+                .length
+                ? summary.lodgingBreakdown
+                    .map(
+                      function renderLodging(
+                        lodging
+                      ) {
+                        return `
+                          <div>
+                            <span
+                              class="material-symbols-outlined"
+                              aria-hidden="true"
+                            >
+                              bed
+                            </span>
+
+                            <span>
+                              <strong>
+                                ${escapeHtml(
+                                  lodging.name
+                                )}
+                              </strong>
+
+                              <small>
+                                ${lodging.nights}
+                                nuit${
+                                  lodging.nights >
+                                  1
+                                    ? 's'
+                                    : ''
+                                }
+                              </small>
+                            </span>
+                          </div>
+                        `;
+                      }
+                    )
+                    .join('')
+                : `
+                  <p class="mobile-summary-empty">
+                    Aucun hébergement renseigné.
+                  </p>
+                `
+            }
+          </div>
+        </section>
+      </main>
+
+      ${bottomNav('summary')}
+    </div>
+  `;
+}
+
 async function renderDocs() {
   await refreshMobileDocuments();
 
@@ -11505,6 +12327,7 @@ function getMobileRouteLabel(route) {
     travel: 'Mode Voyager',
     map: 'Carte',
     budget: 'Budget',
+    summary: 'Bilan du voyage',
     'budget-overview': 'Vue générale du budget',
     'budget-balance': 'Équilibre du budget',
     'new-expense': 'Nouvelle dépense',
@@ -11671,6 +12494,9 @@ function navigate(route) {
   } else if (route === 'map') {
     window.location.hash = 'map';
     renderMap();
+  } else if (route === 'summary') {
+    window.location.hash = 'summary';
+    renderMobileSummary();
   } else if (route === 'docs') {
     window.location.hash = 'docs';
     renderDocs();
@@ -13347,6 +14173,7 @@ function renderCurrentRoute() {
   else if (window.location.hash === '#new-expense') renderNewExpense();
   else if (window.location.hash === '#map') renderMap();
   else if (window.location.hash === '#activity-detail') renderActivityDetail();
+  else if (window.location.hash === '#summary') renderMobileSummary();
   else if (window.location.hash === '#docs') renderDocs();
   else if (window.location.hash === '#travel') renderTravelMode();
   else if (window.location.hash === '#itinerary') renderItinerary();

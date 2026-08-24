@@ -2357,6 +2357,85 @@ export async function setTripIdeaVote(
   return false;
 }
 
+function normalizeTripIdeaComment(row) {
+  return {
+    id: row.id,
+    ideaId: row.idea_id,
+    userId: row.user_id,
+    body: row.body || '',
+    createdAt: row.created_at
+  };
+}
+
+export async function listTripIdeaComments(
+  ideaId
+) {
+  const { data, error } = await sb
+    .from('trip_idea_comments')
+    .select(
+      'id, idea_id, user_id, body, created_at'
+    )
+    .eq('idea_id', ideaId)
+    .order('created_at', {
+      ascending: true
+    });
+
+  if (error) throw error;
+
+  return (data || []).map(
+    normalizeTripIdeaComment
+  );
+}
+
+export async function createTripIdeaComment(
+  ideaId,
+  body
+) {
+  const user = await getUser();
+
+  if (!user) {
+    throw new Error(
+      'Tu dois être connecté pour commenter.'
+    );
+  }
+
+  const cleanBody =
+    String(body || '').trim();
+
+  if (!cleanBody) {
+    throw new Error(
+      'Écris un commentaire.'
+    );
+  }
+
+  const { data, error } = await sb
+    .from('trip_idea_comments')
+    .insert({
+      idea_id: ideaId,
+      user_id: user.id,
+      body: cleanBody
+    })
+    .select(
+      'id, idea_id, user_id, body, created_at'
+    )
+    .single();
+
+  if (error) throw error;
+
+  return normalizeTripIdeaComment(data);
+}
+
+export async function deleteTripIdeaComment(
+  commentId
+) {
+  const { error } = await sb
+    .from('trip_idea_comments')
+    .delete()
+    .eq('id', commentId);
+
+  if (error) throw error;
+}
+
 export async function deleteTripIdea(ideaId) {
   const { error } = await sb
     .from('trip_ideas')
@@ -2492,6 +2571,9 @@ window.SB = {
   createTripIdea,
   updateTripIdea,
   setTripIdeaVote,
+  listTripIdeaComments,
+  createTripIdeaComment,
+  deleteTripIdeaComment,
   deleteTripIdea,
 
   listDocuments,

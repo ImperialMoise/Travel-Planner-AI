@@ -100,7 +100,61 @@
     const [members, setMembers] =
       React.useState([]);
 
+    const [statusFilter, setStatusFilter] =
+      React.useState('all');
+
+    const [sortMode, setSortMode] =
+      React.useState('newest');
+
     const requestRef = React.useRef(0);
+
+    const visibleIdeas =
+      React.useMemo(
+        function prepareVisibleIdeas() {
+          const nextIdeas =
+            ideas.filter(
+              idea =>
+                statusFilter === 'all' ||
+                idea.status ===
+                  statusFilter
+            );
+
+          return nextIdeas
+            .slice()
+            .sort(function sortIdeas(
+              first,
+              second
+            ) {
+              if (sortMode === 'popular') {
+                const voteDifference =
+                  Number(
+                    second.voteCount || 0
+                  ) -
+                  Number(
+                    first.voteCount || 0
+                  );
+
+                if (voteDifference) {
+                  return voteDifference;
+                }
+              }
+
+              return (
+                new Date(
+                  second.createdAt || 0
+                ).getTime() -
+                new Date(
+                  first.createdAt || 0
+                ).getTime()
+              );
+            });
+        },
+        [
+          ideas,
+          statusFilter,
+          sortMode
+        ]
+      );
 
     const loadIdeas = React.useCallback(
       async function loadIdeas(silent) {
@@ -732,6 +786,84 @@
           )}
         </div>
 
+        {ideas.length > 0 && (
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns:
+                'minmax(0, 1fr) minmax(0, 1fr)',
+              gap: 7
+            }}
+          >
+            <select
+              value={statusFilter}
+              onChange={event =>
+                setStatusFilter(
+                  event.target.value
+                )
+              }
+              aria-label="Filtrer les idées"
+              style={{
+                minWidth: 0,
+                minHeight: 34,
+                border:
+                  '1px solid var(--outline-variant)',
+                borderRadius: 10,
+                background: 'var(--card)',
+                color: 'var(--text)',
+                padding: '5px 8px',
+                font: 'inherit',
+                fontSize: 11.5
+              }}
+            >
+              <option value="all">
+                Tous les statuts
+              </option>
+              <option value="idea">
+                Idées
+              </option>
+              <option value="planned">
+                Planifiées
+              </option>
+              <option value="booked">
+                Réservées
+              </option>
+              <option value="done">
+                Terminées
+              </option>
+            </select>
+
+            <select
+              value={sortMode}
+              onChange={event =>
+                setSortMode(
+                  event.target.value
+                )
+              }
+              aria-label="Trier les idées"
+              style={{
+                minWidth: 0,
+                minHeight: 34,
+                border:
+                  '1px solid var(--outline-variant)',
+                borderRadius: 10,
+                background: 'var(--card)',
+                color: 'var(--text)',
+                padding: '5px 8px',
+                font: 'inherit',
+                fontSize: 11.5
+              }}
+            >
+              <option value="newest">
+                Plus récentes
+              </option>
+              <option value="popular">
+                Plus populaires
+              </option>
+            </select>
+          </div>
+        )}
+
         {formOpen && (
           <form
             onSubmit={submitIdea}
@@ -939,6 +1071,24 @@
           </div>
         )}
 
+        {!loading &&
+          ideas.length > 0 &&
+          visibleIdeas.length === 0 && (
+            <div
+              style={{
+                padding: 12,
+                border:
+                  '1px dashed var(--outline-variant)',
+                borderRadius: 12,
+                color: 'var(--muted)',
+                fontSize: 12,
+                textAlign: 'center'
+              }}
+            >
+              Aucune idée ne correspond à ce filtre.
+            </div>
+          )}
+
         {loading ? (
           <div
             role="status"
@@ -989,7 +1139,7 @@
               gap: 8
             }}
           >
-            {ideas.map(function renderIdea(
+            {visibleIdeas.map(function renderIdea(
               idea
             ) {
               const safeLink =
@@ -1269,6 +1419,13 @@
                     >
                       Ouvrir le lien
                     </a>
+                  )}
+
+                  {window.TripIdeaComments && (
+                    <window.TripIdeaComments
+                      idea={idea}
+                      members={members}
+                    />
                   )}
 
                   <div

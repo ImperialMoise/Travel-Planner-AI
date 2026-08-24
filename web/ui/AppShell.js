@@ -2940,7 +2940,7 @@
       order:2;
       width:100%;
       display:grid;
-      grid-template-columns:repeat(4,minmax(0,1fr));
+      grid-template-columns:repeat(5,minmax(0,1fr));
       gap:4px;
     }
 
@@ -2956,7 +2956,7 @@
     .mobile-workspace-nav{
       display:grid;
       grid-template-columns:
-        repeat(5,minmax(0,1fr));
+        repeat(6,minmax(0,1fr));
       flex-shrink:0;
       gap:3px;
       padding:
@@ -4246,6 +4246,7 @@
                 itinerary: 'Itinéraire du voyage',
                 map: 'Carte du voyage',
                 budget: 'Budget du voyage',
+                summary: 'Bilan du voyage',
                 docs: 'Documents du voyage'
               }[view] ||
               'Voyage';
@@ -4688,6 +4689,11 @@ function toggleToolboxCollapsed() {
         icon: 'budget'
       },
       {
+        id: 'summary',
+        label: 'Bilan',
+        icon: 'sparkle'
+      },
+      {
         id: 'docs',
         label: 'Docs',
         icon: 'docs'
@@ -4815,6 +4821,7 @@ function toggleToolboxCollapsed() {
     if (view === 'itinerary') return window.ItineraryView;
     if (view === 'map') return window.MapView;
     if (view === 'budget') return window.BudgetView;
+    if (view === 'summary') return window.TripSummaryView;
     if (view === 'docs') return window.DocsView;
 
     return window.ItineraryView;
@@ -4903,6 +4910,10 @@ const navItems = [
   {
     id: 'budget',
     label: compact ? '€' : 'Budget'
+  },
+  {
+    id: 'summary',
+    label: 'Bilan'
   },
   {
     id: 'docs',

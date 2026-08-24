@@ -7664,6 +7664,9 @@ async function submit() {
     const [days, setDays] = React.useState(7);
     const [busy, setBusy] = React.useState(false);
     const [error, setError] = React.useState('');
+    const [guidedOpen, setGuidedOpen] = React.useState(false);
+    const [guidedText, setGuidedText] = React.useState('');
+    const [guidedPlan, setGuidedPlan] = React.useState(null);
 
     function diffDaysInclusive(startISO, endISO) {
       if (U.diffDaysInclusive) return U.diffDaysInclusive(startISO, endISO);
@@ -7714,6 +7717,45 @@ async function submit() {
       }
     }
 
+    function analyzeGuidedText() {
+      if (!window.TripDraftParser) {
+        setError(
+          'Le créateur guidé n’est pas chargé.'
+        );
+        return;
+      }
+
+      const plan =
+        window.TripDraftParser.parse(
+          guidedText
+        );
+
+      if (plan.errors.length) {
+        setGuidedPlan(null);
+        setError(plan.errors[0]);
+        return;
+      }
+
+      setGuidedPlan(plan);
+      setError('');
+
+      if (plan.name) {
+        setName(plan.name);
+      }
+
+      if (plan.startDate) {
+        setStartDate(plan.startDate);
+      }
+
+      if (plan.endDate) {
+        setEndDate(plan.endDate);
+      }
+
+      if (plan.days) {
+        setDays(plan.days);
+      }
+    }
+
 async function submit() {
   const cleanName = name.trim();
 
@@ -7738,8 +7780,78 @@ async function submit() {
       days: Math.max(1, Number(days) || 1)
     });
 
-    const nextTrips = await window.SB.listMyTrips();
-    const fullTrip = await window.SB.loadTrip(created.id);
+    let fullTrip =
+      await window.SB.loadTrip(
+        created.id
+      );
+
+    if (guidedPlan) {
+      const daysByDate = new Map(
+        (fullTrip.days || []).map(day => [
+          day.dateISO,
+          day
+        ])
+      );
+
+      const titleEntries =
+        Object.entries(
+          guidedPlan.dayTitles || {}
+        );
+
+      await Promise.all(
+        titleEntries.map(
+          async function saveDayTitle(
+            entry
+          ) {
+            const date = entry[0];
+            const title = entry[1];
+            const day = daysByDate.get(date);
+
+            if (!day || !title) return;
+
+            await window.SB.updateDay(
+              day.id,
+              { title }
+            );
+          }
+        )
+      );
+
+      const stepIndexes = {};
+
+      for (
+        const item of
+        guidedPlan.items || []
+      ) {
+        const day =
+          daysByDate.get(item.date);
+
+        if (!day) continue;
+
+        const stepIndex =
+          stepIndexes[item.date] || 0;
+
+        await window.SB.saveStep(
+          created.id,
+          day.id,
+          {
+            ...item,
+            stepIndex
+          }
+        );
+
+        stepIndexes[item.date] =
+          stepIndex + 1;
+      }
+
+      fullTrip =
+        await window.SB.loadTrip(
+          created.id
+        );
+    }
+
+    const nextTrips =
+      await window.SB.listMyTrips();
 
     Store.set({
       trips: nextTrips,
@@ -7814,6 +7926,266 @@ async function submit() {
             onChange={event => updateDays(event.target.value)}
           />
         </Field>
+
+        <div
+          style={{
+            marginTop: 12,
+            border:
+              '1px solid var(--outline-variant)',
+            borderRadius: 14,
+            background:
+              'var(--surface-container-low, var(--inset))',
+            overflow: 'hidden'
+          }}
+        >
+          <button
+            type="button"
+            onClick={() =>
+              setGuidedOpen(current =>
+                !current
+              )
+            }
+            aria-expanded={guidedOpen}
+            style={{
+              width: '100%',
+              minHeight: 46,
+              border: 0,
+              background: 'transparent',
+              color: 'var(--text)',
+              padding: '10px 12px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent:
+                'space-between',
+              gap: 12,
+              cursor: 'pointer',
+              font: 'inherit',
+              fontWeight: 850,
+              textAlign: 'left'
+            }}
+          >
+            <span>
+              Créer depuis une description
+            </span>
+
+            <span aria-hidden="true">
+              {guidedOpen ? '−' : '+'}
+            </span>
+          </button>
+
+          {guidedOpen && (
+            <div
+              style={{
+                padding: '0 12px 12px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 10
+              }}
+            >
+              <p
+                style={{
+                  margin: 0,
+                  color: 'var(--muted)',
+                  fontSize: 12.5,
+                  lineHeight: 1.5
+                }}
+              >
+                Décris ton voyage librement ou utilise le modèle. Tu pourras vérifier et modifier toutes les informations avant et après la création.
+              </p>
+
+              <textarea
+                rows={8}
+                value={guidedText}
+                onChange={event => {
+                  setGuidedText(
+                    event.target.value
+                  );
+                  setGuidedPlan(null);
+                  setError('');
+                }}
+                placeholder="Je pars en Corée du Sud du 1 au 12 octobre 2026, les cinq premières nuits à Séoul, ensuite à Gyeongju."
+                style={{
+                  width: '100%',
+                  resize: 'vertical',
+                  minHeight: 150,
+                  border:
+                    '1px solid var(--outline-variant)',
+                  borderRadius: 12,
+                  background: 'var(--card)',
+                  color: 'var(--text)',
+                  padding: 11,
+                  font: 'inherit',
+                  fontSize: 13,
+                  lineHeight: 1.5
+                }}
+              />
+
+              <div
+                style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: 8
+                }}
+              >
+                <AppButton
+                  type="button"
+                  variant="ghost"
+                  onClick={() => {
+                    setGuidedText(
+                      window.TripDraftParser
+                        ?.example || ''
+                    );
+                    setGuidedPlan(null);
+                    setError('');
+                  }}
+                >
+                  Utiliser le modèle
+                </AppButton>
+
+                <AppButton
+                  type="button"
+                  variant="primary"
+                  onClick={
+                    analyzeGuidedText
+                  }
+                  disabled={
+                    !guidedText.trim()
+                  }
+                >
+                  Analyser le texte
+                </AppButton>
+              </div>
+
+              {guidedPlan && (
+                <div
+                  role="status"
+                  aria-live="polite"
+                  style={{
+                    border:
+                      '1px solid rgba(61, 126, 94, .3)',
+                    borderRadius: 12,
+                    background:
+                      'rgba(61, 126, 94, .08)',
+                    padding: 11,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 7
+                  }}
+                >
+                  <strong
+                    style={{
+                      color: 'var(--text)',
+                      fontSize: 13
+                    }}
+                  >
+                    Aperçu prêt
+                  </strong>
+
+                  <div
+                    style={{
+                      color: 'var(--muted)',
+                      fontSize: 12.5,
+                      lineHeight: 1.5
+                    }}
+                  >
+                    {guidedPlan.name ||
+                      'Destination à compléter'}
+                    {' · '}
+                    {guidedPlan.days}
+                    {' jour'}
+                    {guidedPlan.days > 1
+                      ? 's'
+                      : ''}
+                    {' · '}
+                    {guidedPlan.items.length}
+                    {' élément'}
+                    {guidedPlan.items.length > 1
+                      ? 's'
+                      : ''}
+                  </div>
+
+                  {guidedPlan.items.map(
+                    function renderPlanItem(
+                      item,
+                      index
+                    ) {
+                      const typeLabel =
+                        item.type ===
+                        'logement'
+                          ? 'Hébergement'
+                          : item.type ===
+                              'transport'
+                            ? 'Transport'
+                            : item.type ===
+                                'restaurant'
+                              ? 'Restaurant'
+                              : 'Activité';
+
+                      const label =
+                        item.label ||
+                        [
+                          item.depart,
+                          item.arrivee
+                        ]
+                          .filter(Boolean)
+                          .join(' → ');
+
+                      return (
+                        <div
+                          key={
+                            item.date +
+                            '-' +
+                            index
+                          }
+                          style={{
+                            display: 'grid',
+                            gridTemplateColumns:
+                              '82px minmax(0, 1fr)',
+                            gap: 8,
+                            color: 'var(--text)',
+                            fontSize: 12,
+                            lineHeight: 1.4
+                          }}
+                        >
+                          <strong>
+                            {item.date}
+                          </strong>
+
+                          <span>
+                            {typeLabel}
+                            {' · '}
+                            {label}
+                          </span>
+                        </div>
+                      );
+                    }
+                  )}
+
+                  {guidedPlan.warnings.map(
+                    function renderWarning(
+                      warning,
+                      index
+                    ) {
+                      return (
+                        <div
+                          key={index}
+                          style={{
+                            color:
+                              'var(--muted)',
+                            fontSize: 11.5,
+                            lineHeight: 1.4
+                          }}
+                        >
+                          À vérifier : {warning}
+                        </div>
+                      );
+                    }
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
         {error && (
           <div

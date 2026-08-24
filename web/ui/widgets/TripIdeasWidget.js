@@ -97,11 +97,14 @@
     const [notice, setNotice] =
       React.useState('');
 
+    const [members, setMembers] =
+      React.useState([]);
+
     const requestRef = React.useRef(0);
 
     const loadIdeas = React.useCallback(
       async function loadIdeas(silent) {
-    if (!trip?.id) {
+        if (!trip?.id) {
           setIdeas([]);
           setLoading(false);
           return;
@@ -156,6 +159,49 @@
         };
       },
       [loadIdeas]
+    );
+
+    React.useEffect(
+      function refreshMembers() {
+        let active = true;
+
+        if (!trip?.id) {
+          setMembers([]);
+          return function cleanup() {
+            active = false;
+          };
+        }
+
+        window.SB.listTripMembers(
+          trip.id
+        )
+          .then(function applyMembers(
+            nextMembers
+          ) {
+            if (active) {
+              setMembers(
+                Array.isArray(nextMembers)
+                  ? nextMembers
+                  : []
+              );
+            }
+          })
+          .catch(function handleMemberError(
+            memberError
+          ) {
+            if (active) {
+              setMembers([]);
+              setError(
+                friendlyError(memberError)
+              );
+            }
+          });
+
+        return function cleanup() {
+          active = false;
+        };
+      },
+      [trip?.id]
     );
 
     function openCreateForm() {
@@ -281,6 +327,63 @@
         );
       } finally {
         setSaving(false);
+      }
+    }
+
+    async function assignIdea(
+      idea,
+      userId
+    ) {
+      if (
+        !idea?.id ||
+        busyId === idea.id
+      ) {
+        return;
+      }
+
+      setBusyId(idea.id);
+      setError('');
+      setNotice('');
+
+      try {
+        const saved =
+          await window.SB.updateTripIdea(
+            idea.id,
+            {
+              assignedTo:
+                userId || null
+            }
+          );
+
+        setIdeas(function update(current) {
+          return current.map(
+            function mapIdea(item) {
+              return item.id === saved.id
+                ? saved
+                : item;
+            }
+          );
+        });
+
+        const assignedMember =
+          members.find(
+            member =>
+              member.userId === userId
+          );
+
+        setNotice(
+          assignedMember
+            ? 'Idée attribuée à ' +
+                assignedMember.name +
+                '.'
+            : 'Responsable retiré.'
+        );
+      } catch (assignError) {
+        setError(
+          friendlyError(assignError)
+        );
+      } finally {
+        setBusyId(null);
       }
     }
 
@@ -921,6 +1024,63 @@
                       }
                     )}
                   </select>
+
+                  {members.length > 0 && (
+                    <select
+                      value={
+                        idea.assignedTo || ''
+                      }
+                      disabled={disabled}
+                      aria-label={
+                        'Responsable de ' +
+                        idea.title
+                      }
+                      onChange={event =>
+                        assignIdea(
+                          idea,
+                          event.target.value
+                        )
+                      }
+                      style={{
+                        display: 'block',
+                        width: '100%',
+                        minHeight: 34,
+                        marginTop: 7,
+                        border:
+                          '1px solid var(--outline-variant)',
+                        borderRadius: 10,
+                        background: 'var(--card)',
+                        color: 'var(--text)',
+                        padding: '5px 9px',
+                        cursor:
+                          disabled
+                            ? 'wait'
+                            : 'pointer',
+                        font: 'inherit',
+                        fontSize: 11.5,
+                        fontWeight: 750
+                      }}
+                    >
+                      <option value="">
+                        Aucun responsable
+                      </option>
+
+                      {members.map(
+                        function renderMember(
+                          member
+                        ) {
+                          return (
+                            <option
+                              key={member.id}
+                              value={member.userId}
+                            >
+                              Responsable : {member.name}
+                            </option>
+                          );
+                        }
+                      )}
+                    </select>
+                  )}
 
                   {idea.plannedDayId &&
                   idea.plannedStepId ? (

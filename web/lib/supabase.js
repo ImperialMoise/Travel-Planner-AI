@@ -2140,6 +2140,8 @@ function normalizeTripIdea(row) {
       row.planned_day_id || null,
     plannedStepId:
       row.planned_step_id || null,
+    assignedTo:
+      row.assigned_to || null,
     sortIndex: Number(row.sort_index) || 0,
     createdBy: row.created_by,
     createdAt: row.created_at,
@@ -2247,6 +2249,13 @@ export async function updateTripIdea(ideaId, input) {
   ) {
     row.planned_step_id =
       input.plannedStepId || null;
+  }
+
+  if (
+    input?.assignedTo !== undefined
+  ) {
+    row.assigned_to =
+      input.assignedTo || null;
   }
 
   if (input?.sortIndex !== undefined) {

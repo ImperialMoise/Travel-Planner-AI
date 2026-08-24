@@ -2135,6 +2135,7 @@ function normalizeTripIdea(row) {
     title: row.title || '',
     note: row.note || '',
     link: row.link || '',
+    status: row.status || 'idea',
     sortIndex: Number(row.sort_index) || 0,
     createdBy: row.created_by,
     createdAt: row.created_at,
@@ -2166,6 +2167,15 @@ export async function createTripIdea(tripId, input) {
   const note = String(input?.note || '').trim();
   const link = String(input?.link || '').trim();
 
+  const status = [
+    'idea',
+    'planned',
+    'booked',
+    'done'
+  ].includes(input?.status)
+    ? input.status
+    : 'idea';
+
   if (!title) {
     throw new Error('Donne un titre à cette idée.');
   }
@@ -2177,6 +2187,7 @@ export async function createTripIdea(tripId, input) {
       title,
       note,
       link,
+      status,
       sort_index: Number(input?.sortIndex) || 0,
       created_by: user.id
     })
@@ -2203,11 +2214,31 @@ export async function updateTripIdea(ideaId, input) {
     row.link = String(input.link || '').trim();
   }
 
+  if (input?.status !== undefined) {
+    const allowedStatuses = [
+      'idea',
+      'planned',
+      'booked',
+      'done'
+    ];
+
+    if (!allowedStatuses.includes(input.status)) {
+      throw new Error(
+        'Le statut de cette idée n’est pas valide.'
+      );
+    }
+
+    row.status = input.status;
+  }
+
   if (input?.sortIndex !== undefined) {
     row.sort_index = Number(input.sortIndex) || 0;
   }
 
-  if (!row.title) {
+  if (
+    input?.title !== undefined &&
+    !row.title
+  ) {
     throw new Error('Donne un titre à cette idée.');
   }
 

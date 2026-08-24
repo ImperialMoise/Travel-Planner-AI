@@ -1,6 +1,25 @@
 (function initTripIdeasWidget() {
   const Icon = window.Icon;
 
+  const IDEA_STATUSES = [
+    {
+      value: 'idea',
+      label: 'Idée'
+    },
+    {
+      value: 'planned',
+      label: 'Planifiée'
+    },
+    {
+      value: 'booked',
+      label: 'Réservée'
+    },
+    {
+      value: 'done',
+      label: 'Terminée'
+    }
+  ];
+
   function emptyDraft() {
     return {
       title: '',
@@ -81,7 +100,61 @@
 
     const loadIdeas = React.useCallback(
       async function loadIdeas(silent) {
-        if (!trip?.id) {
+    async function changeIdeaStatus(
+      idea,
+      status
+    ) {
+      if (
+        !idea?.id ||
+        busyId === idea.id ||
+        status === idea.status
+      ) {
+        return;
+      }
+
+      setBusyId(idea.id);
+      setError('');
+      setNotice('');
+
+      try {
+        const saved =
+          await window.SB.updateTripIdea(
+            idea.id,
+            {
+              status
+            }
+          );
+
+        setIdeas(function update(current) {
+          return current.map(
+            function mapIdea(item) {
+              return item.id === saved.id
+                ? saved
+                : item;
+            }
+          );
+        });
+
+        const statusLabel =
+          IDEA_STATUSES.find(
+            item => item.value === status
+          )?.label || 'mis à jour';
+
+        setNotice(
+          'Idée déplacée vers « ' +
+          statusLabel +
+          ' ».'
+        );
+      } catch (statusError) {
+        setError(
+          friendlyError(statusError)
+        );
+      } finally {
+        setBusyId(null);
+      }
+    }
+
+    if (!trip?.id) {
           setIdeas([]);
           setLoading(false);
           return;
@@ -340,8 +413,8 @@
             {ideas.length
               ? ideas.length +
                 (ideas.length > 1
-                  ? ' idées à explorer'
-                  : ' idée à explorer')
+                  ? ' idées enregistrées'
+                  : ' idée enregistrée')
               : 'Garde ici les lieux et activités à étudier.'}
           </div>
 
@@ -661,6 +734,61 @@
                   >
                     {idea.title}
                   </strong>
+
+                  <select
+                    value={
+                      idea.status || 'idea'
+                    }
+                    disabled={disabled}
+                    aria-label={
+                      'Statut de ' + idea.title
+                    }
+                    onChange={event =>
+                      changeIdeaStatus(
+                        idea,
+                        event.target.value
+                      )
+                    }
+                    style={{
+                      marginTop: 7,
+                      minHeight: 32,
+                      maxWidth: '100%',
+                      border:
+                        '1px solid var(--outline-variant)',
+                      borderRadius: 999,
+                      background:
+                        idea.status === 'done'
+                          ? 'rgba(61, 133, 90, .12)'
+                          : 'var(--accent-soft)',
+                      color:
+                        idea.status === 'done'
+                          ? '#397a53'
+                          : 'var(--accent)',
+                      padding: '4px 10px',
+                      cursor:
+                        disabled
+                          ? 'wait'
+                          : 'pointer',
+                      font: 'inherit',
+                      fontSize: 11.5,
+                      fontWeight: 800
+                    }}
+                  >
+                    {IDEA_STATUSES.map(
+                      function renderStatus(
+                        status
+                      ) {
+                        return (
+                          <option
+                            key={status.value}
+                            value={status.value}
+                          >
+                            {status.label}
+                          </option>
+                        );
+                      }
+                    )}
+                  </select>
 
                   {idea.note && (
                     <p

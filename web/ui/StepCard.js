@@ -457,7 +457,7 @@
         onClick={selectStep}
         style={{
                    borderRadius: 18,
-          padding: '18px 18px',
+          padding: '15px 16px',
           boxShadow: selected
             ? '0 0 0 3px rgba(150,100,13,.16), 0 16px 34px rgba(54,42,27,.13)'
             : '0 7px 22px rgba(54,42,27,.075)',
@@ -468,14 +468,14 @@
             ? 'linear-gradient(135deg, var(--card), var(--accent-soft))'
             : 'var(--card)',
           display: 'flex',
-          gap: 16,
+          gap: 12,
           position: 'relative',
           overflow: 'hidden',
           cursor: 'pointer',
           transition:
             'box-shadow .2s ease, border-color .2s ease, background .2s ease, transform .2s ease',
           flexShrink: 0,
-          minHeight: 128
+          minHeight: 104
         }}
       >
         <div style={{
@@ -506,67 +506,64 @@
           ✎
         </IconButton>
 
-        <div
+<div
           className="web-step-time-column"
           style={{
-          display: 'grid',
-          gridTemplateRows: 'auto 1fr auto',
-          justifyItems: 'center',
-          minWidth: 62,
-          paddingTop: 2,
-          paddingBottom: 2
-        }}>
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            minWidth: 64,
+            gap: 6,
+            paddingTop: 2
+          }}
+        >
           <div style={{
-            fontFamily: 'var(--font-mono, ui-monospace)',
-            fontSize: 11,
-            lineHeight: '14px',
-            fontWeight: 900,
-            color: tone.accent,
+            minWidth: 58,
+            border: '1px solid var(--outline-variant)',
+            borderRadius: 11,
+            background: 'var(--inset)',
+            padding: '7px 6px',
             textAlign: 'center'
           }}>
-            {startTime || '—'}
-          </div>
+            <div style={{
+              fontFamily: 'var(--font-mono, ui-monospace)',
+              fontSize: startTime ? 11 : 9.5,
+              lineHeight: '14px',
+              fontWeight: 900,
+              color: startTime ? tone.accent : 'var(--muted)'
+            }}>
+              {startTime || 'Horaire libre'}
+            </div>
 
-          <div style={{
-            position: 'relative',
-            width: 1,
-            minHeight: 76,
-            background: 'var(--outline-variant)',
-            margin: '8px 0'
-          }}>
-            {duration && (
-              <span style={{
-                position: 'absolute',
-                left: '50%',
-                top: '50%',
-                transform: 'translate(-50%, -50%)',
-                border: '1px solid var(--outline-variant)',
-                borderRadius: 999,
-                background: 'var(--card)',
-                color: 'var(--muted)',
-                boxShadow: '0 2px 8px rgba(82,98,91,.08)',
+            {endTime && (
+              <div style={{
+                marginTop: 2,
                 fontFamily: 'var(--font-mono, ui-monospace)',
                 fontSize: 10,
-                fontWeight: 900,
-                lineHeight: '14px',
-                padding: '3px 7px',
-                whiteSpace: 'nowrap'
+                lineHeight: '13px',
+                fontWeight: 800,
+                color: 'var(--muted)'
               }}>
-                {duration}
-              </span>
+                → {endTime}
+              </div>
             )}
           </div>
 
-          <div style={{
-            fontFamily: 'var(--font-mono, ui-monospace)',
-            fontSize: 11,
-            lineHeight: '14px',
-            fontWeight: 900,
-            color: endTime ? tone.accent : 'var(--faint)',
-            textAlign: 'center'
-          }}>
-            {endTime || '—'}
-          </div>
+          {duration && (
+            <span style={{
+              borderRadius: 999,
+              background: tone.soft,
+              color: tone.accent,
+              fontFamily: 'var(--font-mono, ui-monospace)',
+              fontSize: 9.5,
+              fontWeight: 900,
+              lineHeight: '13px',
+              padding: '3px 6px',
+              whiteSpace: 'nowrap'
+            }}>
+              {duration}
+            </span>
+          )}
         </div>
 
         <div

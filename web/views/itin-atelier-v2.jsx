@@ -2172,9 +2172,25 @@ return {
             <section className="atelier-v2-content">
               <div className="atelier-v2-plan-card">
                 <div className="atelier-v2-plan-head">
-                  <div className="atelier-v2-plan-title">
-                    <span aria-hidden="true">☷</span>
-                    Plan d’action
+<div>
+                    <div className="atelier-v2-plan-title">
+                      <span aria-hidden="true">☷</span>
+                      Plan d’action
+                    </div>
+
+                    <div style={{
+                      marginTop: 2,
+                      color: 'var(--muted)',
+                      fontSize: 11.5,
+                      lineHeight: '16px'
+                    }}>
+                      {timelineSteps.length
+                        ? timelineSteps.length +
+                          ' étape' +
+                          (timelineSteps.length > 1 ? 's' : '') +
+                          ' dans cette journée'
+                        : 'Journée à construire'}
+                    </div>
                   </div>
 
                   <div className="atelier-v2-plan-actions">
@@ -2195,10 +2211,42 @@ return {
 
                 <div className="atelier-v2-timeline">
                 {!timelineSteps.length && (
-                  <div className="atelier-v2-empty">
-                    Aucune étape visible dans la timeline pour cette journée.
-                    <br />
-                    Les restaurants et hébergements sont affichés à droite.
+<div
+                    className="atelier-v2-empty"
+                    role="status"
+                    aria-live="polite"
+                    style={{
+                      display: 'grid',
+                      justifyItems: 'center',
+                      gap: 6,
+                      textAlign: 'center'
+                    }}
+                  >
+                    <span
+                      aria-hidden="true"
+                      style={{
+                        width: 34,
+                        height: 34,
+                        borderRadius: 11,
+                        background: 'var(--accent-soft)',
+                        color: 'var(--accent)',
+                        display: 'grid',
+                        placeItems: 'center',
+                        fontSize: 17
+                      }}
+                    >
+                      ✦
+                    </span>
+
+                    <strong style={{ color: 'var(--text)' }}>
+                      Cette journée est encore libre
+                    </strong>
+
+                    <span>
+                      Utilise « + Ajouter » pour prévoir une activité ou un
+                      transport. Les repas et hébergements restent disponibles
+                      dans la colonne de droite.
+                    </span>
                   </div>
                 )}
 

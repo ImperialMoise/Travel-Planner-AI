@@ -1666,6 +1666,13 @@ return {
     const [dragIndex, setDragIndex] = React.useState(null);
     const [dragOverIndex, setDragOverIndex] = React.useState(null);
     const [reorderingSteps, setReorderingSteps] = React.useState(false);
+    const [quickAdd, setQuickAdd] = React.useState({
+      open: false,
+      type: 'activite',
+      label: '',
+      time: ''
+    });
+    const [quickAddBusy, setQuickAddBusy] = React.useState(false);
     const canUseNativeDrag =
       typeof window.matchMedia !== 'function' ||
       window.matchMedia(
@@ -1848,7 +1855,7 @@ return {
       }
     }
 
-    function openAddStep(type, preset) {
+function openAddStep(type, preset) {
       if (!day) return;
 
       setEditor({
@@ -1856,6 +1863,105 @@ return {
         dayId: day.id,
         step: buildNewStepPreset(type, preset, day)
       });
+    }
+
+    function closeQuickAdd() {
+      setQuickAdd({
+        open: false,
+        type: 'activite',
+        label: '',
+        time: ''
+      });
+    }
+
+    function openQuickAddInEditor() {
+      openAddStep(quickAdd.type, {
+        label: quickAdd.label.trim(),
+        time: quickAdd.time
+      });
+
+      closeQuickAdd();
+    }
+
+    async function saveQuickStep(event) {
+      event.preventDefault();
+
+      const label = quickAdd.label.trim();
+
+      if (!label || quickAddBusy) {
+        if (!label) {
+          Store.showToast(
+            'Donne un nom à cette étape.'
+          );
+        }
+
+        return;
+      }
+
+      if (
+        !trip ||
+        !trip.id ||
+        !day ||
+        !day.id ||
+        !window.SB?.saveStep
+      ) {
+        Store.showToast(
+          'Ajout rapide indisponible.'
+        );
+
+        return;
+      }
+
+      const payload = {
+        ...buildNewStepPreset(
+          quickAdd.type,
+          {
+            label,
+            time: quickAdd.time
+          },
+          day
+        ),
+        stepIndex: allSteps.length
+      };
+
+      if (quickAdd.type === 'transport') {
+        Object.assign(payload, {
+          transportType: 'train',
+          depart: '',
+          arrivee: '',
+          timeEnd: '',
+          nextDay: false,
+          duree: '',
+          ref: '',
+          escales: []
+        });
+      } else {
+        payload.dureeEstimee = '';
+      }
+
+      setQuickAddBusy(true);
+
+      try {
+        await window.SB.saveStep(
+          trip.id,
+          day.id,
+          payload
+        );
+
+        await reloadTrip();
+        closeQuickAdd();
+
+        Store.showToast(
+          'Étape ajoutée au programme.'
+        );
+      } catch (error) {
+        Store.showToast(
+          'Ajout impossible : ' +
+          (error.message || error)
+        );
+      } finally {
+        setQuickAddBusy(false);
+      }
     }
 
     function closeEditor() {
@@ -2194,7 +2300,7 @@ return {
                   </div>
 
                   <div className="atelier-v2-plan-actions">
-                    <button
+<button
                       type="button"
                       className="atelier-v2-btn primary"
                       style={{
@@ -2202,12 +2308,171 @@ return {
                         borderRadius: 8,
                         padding: '0 12px'
                       }}
-                      onClick={() => openAddStep('activite')}
+                      aria-expanded={quickAdd.open}
+                      onClick={() => {
+                        setQuickAdd(function toggleQuickAdd(previous) {
+                          return {
+                            ...previous,
+                            open: !previous.open
+                          };
+                        });
+                      }}
                     >
-                      + Ajouter
+                      {quickAdd.open ? 'Fermer' : '+ Ajouter'}
                     </button>
                   </div>
                 </div>
+
+                {quickAdd.open && (
+                  <form
+                    onSubmit={saveQuickStep}
+                    style={{
+                      margin: '12px 14px 0',
+                      border: '1px solid var(--outline-variant)',
+                      borderRadius: 13,
+                      background: 'var(--inset)',
+                      padding: 10,
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      alignItems: 'center',
+                      gap: 7
+                    }}
+                  >
+                    <div style={{
+                      display: 'flex',
+                      gap: 5
+                    }}>
+                      {[
+                        ['activite', 'Activité'],
+                        ['transport', 'Transport']
+                      ].map(function renderQuickType(option) {
+                        const selected =
+                          quickAdd.type === option[0];
+
+                        return (
+                          <button
+                            key={option[0]}
+                            type="button"
+                            aria-pressed={selected}
+                            disabled={quickAddBusy}
+                            onClick={() => {
+                              setQuickAdd(function selectType(previous) {
+                                return {
+                                  ...previous,
+                                  type: option[0]
+                                };
+                              });
+                            }}
+                            style={{
+                              minHeight: 34,
+                              border: selected
+                                ? '1px solid var(--accent)'
+                                : '1px solid var(--outline-variant)',
+                              borderRadius: 9,
+                              background: selected
+                                ? 'var(--accent-soft)'
+                                : 'var(--card)',
+                              color: selected
+                                ? 'var(--accent)'
+                                : 'var(--text)',
+                              padding: '0 10px',
+                              fontFamily: 'inherit',
+                              fontSize: 11.5,
+                              fontWeight: 900,
+                              cursor: 'pointer'
+                            }}
+                          >
+                            {option[1]}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <input
+                      autoFocus
+                      type="text"
+                      aria-label="Nom de la nouvelle étape"
+                      placeholder={
+                        quickAdd.type === 'transport'
+                          ? 'Ex. Train vers Kyoto'
+                          : 'Ex. Visiter le musée'
+                      }
+                      value={quickAdd.label}
+                      disabled={quickAddBusy}
+                      onChange={event => {
+                        setQuickAdd(function updateLabel(previous) {
+                          return {
+                            ...previous,
+                            label: event.target.value
+                          };
+                        });
+                      }}
+                      style={{
+                        flex: '1 1 190px',
+                        minWidth: 0,
+                        minHeight: 36,
+                        border: '1px solid var(--outline-variant)',
+                        borderRadius: 9,
+                        background: 'var(--card)',
+                        color: 'var(--text)',
+                        padding: '0 10px',
+                        fontFamily: 'inherit',
+                        fontSize: 13
+                      }}
+                    />
+
+                    <input
+                      type="time"
+                      aria-label="Heure de la nouvelle étape"
+                      value={quickAdd.time}
+                      disabled={quickAddBusy}
+                      onChange={event => {
+                        setQuickAdd(function updateTime(previous) {
+                          return {
+                            ...previous,
+                            time: event.target.value
+                          };
+                        });
+                      }}
+                      style={{
+                        flex: '0 0 108px',
+                        minHeight: 36,
+                        border: '1px solid var(--outline-variant)',
+                        borderRadius: 9,
+                        background: 'var(--card)',
+                        color: 'var(--text)',
+                        padding: '0 8px',
+                        fontFamily: 'inherit',
+                        fontSize: 12
+                      }}
+                    />
+
+                    <button
+                      type="submit"
+                      className="atelier-v2-btn primary"
+                      disabled={quickAddBusy}
+                      style={{
+                        minHeight: 36,
+                        borderRadius: 9
+                      }}
+                    >
+                      {quickAddBusy ? 'Ajout…' : 'Ajouter'}
+                    </button>
+
+                    <button
+                      type="button"
+                      className="atelier-v2-btn"
+                      disabled={quickAddBusy}
+                      onClick={openQuickAddInEditor}
+                      style={{
+                        minHeight: 36,
+                        borderRadius: 9
+                      }}
+                    >
+                      Plus de détails
+                    </button>
+                  </form>
+                )}
 
                 <div className="atelier-v2-timeline">
                 {!timelineSteps.length && (
@@ -2386,7 +2651,7 @@ return {
                   onClick={() => openAddStep('activite')}
                 >
                   <Icon name="plus" size={16} />
-                  Ajouter une étape
+                  Ajouter avec tous les détails
                 </button>
                 </div>
               </div>

@@ -7944,6 +7944,37 @@ async function submit() {
       }
     }
 
+    function removeGuidedItem(
+      indexToRemove
+    ) {
+      setGuidedPlan(
+        function updatePlan(
+          currentPlan
+        ) {
+          if (!currentPlan) {
+            return currentPlan;
+          }
+
+          return {
+            ...currentPlan,
+            items: (
+              currentPlan.items || []
+            ).filter(
+              function keepItem(
+                item,
+                index
+              ) {
+                return (
+                  index !==
+                  indexToRemove
+                );
+              }
+            )
+          };
+        }
+      );
+    }
+
 async function submit() {
   const cleanName = name.trim();
 
@@ -8400,6 +8431,42 @@ async function submit() {
                       )}
                   </div>
 
+                  <div
+                    style={{
+                      color: 'var(--muted)',
+                      fontSize: 11.5,
+                      lineHeight: 1.4
+                    }}
+                  >
+                    Vérifie les éléments détectés.
+                    Tu peux retirer ceux que tu
+                    ne souhaites pas importer.
+                  </div>
+
+                  {guidedPlan.items.length ===
+                    0 && (
+                    <div
+                      style={{
+                        border:
+                          '1px dashed var(--outline-variant)',
+                        borderRadius: 10,
+                        background:
+                          'var(--card)',
+                        color:
+                          'var(--muted)',
+                        padding: 10,
+                        fontSize: 12,
+                        lineHeight: 1.4
+                      }}
+                    >
+                      Aucun élément ne sera
+                      ajouté automatiquement.
+                      Tu peux modifier la
+                      description puis relancer
+                      l’analyse.
+                    </div>
+                  )}
+
                   {guidedPlan.items.map(
                     function renderPlanItem(
                       item,
@@ -8436,9 +8503,17 @@ async function submit() {
                           style={{
                             display: 'grid',
                             gridTemplateColumns:
-                              '82px minmax(0, 1fr)',
+                              '82px minmax(0, 1fr) 32px',
+                            alignItems: 'center',
                             gap: 8,
-                            color: 'var(--text)',
+                            border:
+                              '1px solid rgba(61, 126, 94, .18)',
+                            borderRadius: 10,
+                            background:
+                              'var(--card)',
+                            color:
+                              'var(--text)',
+                            padding: '7px 8px',
                             fontSize: 12,
                             lineHeight: 1.4
                           }}
@@ -8452,6 +8527,39 @@ async function submit() {
                             {' · '}
                             {label}
                           </span>
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              removeGuidedItem(
+                                index
+                              )
+                            }
+                            aria-label={
+                              'Retirer ' +
+                              typeLabel +
+                              ' ' +
+                              label
+                            }
+                            title="Retirer cet élément"
+                            style={{
+                              width: 30,
+                              height: 30,
+                              border:
+                                '1px solid var(--outline-variant)',
+                              borderRadius: 8,
+                              background:
+                                'transparent',
+                              color:
+                                'var(--muted)',
+                              cursor:
+                                'pointer',
+                              fontSize: 18,
+                              lineHeight: 1
+                            }}
+                          >
+                            ×
+                          </button>
                         </div>
                       );
                     }

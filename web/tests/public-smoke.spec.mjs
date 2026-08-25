@@ -919,6 +919,72 @@ test(
 );
 
 test(
+  'le créateur guidé comprend les éléments écrits naturellement',
+  async function runTest({ page }) {
+    await page.goto('/', {
+      waitUntil: 'load'
+    });
+
+    const plan =
+      await page.evaluate(
+        function parseNaturalItems() {
+          return window.TripDraftParser.parse(
+            [
+              'Je pars en Corée du Sud du 1 au 12 octobre 2026, cinq nuits à Séoul, trois nuits à Gyeongju, puis trois nuits à Busan.',
+              'Le 6 octobre 2026, train de Séoul à Gyeongju à 08:30.',
+              'Le 7 octobre 2026, visite du temple Bulguksa à Gyeongju à 10:00.',
+              'Le 10 octobre 2026, dîner chez Jagalchi à Busan à 19:30.'
+            ].join('\n')
+          );
+        }
+      );
+
+    expect(plan.errors).toEqual([]);
+
+    expect(
+      plan.items
+        .find(
+          (item) =>
+            item.type === 'transport'
+        )
+    ).toMatchObject({
+      date: '2026-10-06',
+      depart: 'Séoul',
+      arrivee: 'Gyeongju',
+      transportType: 'train',
+      time: '08:30'
+    });
+
+    expect(
+      plan.items
+        .find(
+          (item) =>
+            item.type === 'activite'
+        )
+    ).toMatchObject({
+      date: '2026-10-07',
+      label: 'temple Bulguksa',
+      lieu: 'Gyeongju',
+      time: '10:00'
+    });
+
+    expect(
+      plan.items
+        .find(
+          (item) =>
+            item.type === 'restaurant'
+        )
+    ).toMatchObject({
+      date: '2026-10-10',
+      label: 'Jagalchi',
+      lieu: 'Busan',
+      time: '19:30'
+    });
+  }
+);
+
+
+test(
   'le diagnostic contient les mesures de performance',
   async function performanceDiagnostic({
     page

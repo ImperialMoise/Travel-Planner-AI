@@ -58,8 +58,12 @@
     'Étape : 10/10/2026 | Village culturel de Gamcheon | Busan | 09:30'
   ].join('\n');
 
-  const NATURAL_EXAMPLE =
-    'Je pars en Corée du Sud du 1 au 12 octobre 2026, cinq nuits à Séoul, trois nuits à Gyeongju, puis trois nuits à Busan.';
+  const NATURAL_EXAMPLE = [
+    'Je pars en Corée du Sud du 1 au 12 octobre 2026, cinq nuits à Séoul, trois nuits à Gyeongju, puis trois nuits à Busan.',
+    'Le 6 octobre 2026, train de Séoul à Gyeongju à 08:30.',
+    'Le 7 octobre 2026, visite du temple Bulguksa à Gyeongju à 10:00.',
+    'Le 10 octobre 2026, dîner chez Jagalchi à Busan à 19:30.'
+  ].join('\n');
 
   function normalize(value) {
     return String(value || '')
@@ -219,6 +223,41 @@
     return NUMBER_WORDS[normalized] || 0;
   }
 
+    function normalizeClockTime(value) {
+    const match =
+      String(value || '')
+        .trim()
+        .match(
+          /^(\d{1,2})(?::(\d{2})|h(\d{0,2}))$/i
+        );
+
+    if (!match) return '';
+
+    const hour =
+      Number(match[1]);
+
+    const minute =
+      Number(
+        match[2] ||
+        match[3] ||
+        0
+      );
+
+    if (
+      hour > 23 ||
+      minute > 59
+    ) {
+      return '';
+    }
+
+    return (
+      pad(hour) +
+      ':' +
+      pad(minute)
+    );
+  }
+
+
   function transportType(value) {
     const key = normalize(value);
 
@@ -276,6 +315,193 @@
       }
     }
   }
+
+    function parseNaturalItems(
+    text,
+    plan,
+    fallbackYear
+  ) {
+    let recognizedItems = 0;
+
+    const sentences =
+      String(text || '')
+        .split(/\r?\n|[.!?]\s+/)
+        .map(function cleanSentence(
+          sentence
+        ) {
+          return sentence
+            .trim()
+            .replace(/[.!?]+$/g, '');
+        })
+        .filter(Boolean);
+
+    sentences.forEach(
+      function readNaturalItem(
+        sentence
+      ) {
+        const dateMatch =
+          sentence.match(
+            /^(?:le\s+)?(\d{1,2}\s+[a-zA-ZÀ-ÿ-]+(?:\s+\d{4})?)\s*[,;:-]\s*(.+)$/i
+          );
+
+        if (!dateMatch) return;
+
+        const date =
+          parseDate(
+            dateMatch[1],
+            fallbackYear
+          );
+
+        if (!date) return;
+
+        if (
+          plan.startDate &&
+          plan.endDate &&
+          (
+            date < plan.startDate ||
+            date > plan.endDate
+          )
+        ) {
+          plan.warnings.push(
+            'Élément ignoré le ' +
+            dateMatch[1] +
+            ' : cette date est hors du voyage.'
+          );
+          return;
+        }
+
+        let content =
+          dateMatch[2].trim();
+
+        const timeMatch =
+          content.match(
+            /\s+(?:a|à)\s+(\d{1,2}(?::\d{2}|h\d{0,2}))$/i
+          );
+
+        const time =
+          timeMatch
+            ? normalizeClockTime(
+                timeMatch[1]
+              )
+            : '';
+
+        if (timeMatch) {
+          content =
+            content
+              .slice(
+                0,
+                timeMatch.index
+              )
+              .trim();
+        }
+
+        const transportMatch =
+          content.match(
+            /^(?:prendre\s+)?(?:le\s+|un\s+)?(train|avion|vol|bus|car|voiture|taxi|ferry|bateau|metro|métro)\s+(?:de|depuis)\s+(.+?)\s+(?:a|à|vers|jusqu['’]a|jusqu['’]à)\s+(.+)$/i
+          );
+
+        if (transportMatch) {
+          plan.items.push({
+            date,
+            type: 'transport',
+            label: '',
+            depart:
+              transportMatch[2].trim(),
+            arrivee:
+              transportMatch[3].trim(),
+            transportType:
+              transportType(
+                transportMatch[1]
+              ),
+            duree: '',
+            time
+          });
+
+          recognizedItems += 1;
+          return;
+        }
+
+        const activityMatch =
+          content.match(
+            /^(?:visite|visiter|activite|activité|decouverte|découverte)\s+(.+)$/i
+          );
+
+        if (activityMatch) {
+          let activityLabel =
+            activityMatch[1]
+              .trim()
+              .replace(
+                /^(?:de |du |de la |des |la |le |l['’])/i,
+                ''
+              );
+
+          let activityLocation = '';
+
+          const locationMatch =
+            activityLabel.match(
+              /^(.+)\s+(?:a|à|au|aux)\s+([^,]+)$/i
+            );
+
+          if (locationMatch) {
+            activityLabel =
+              locationMatch[1].trim();
+
+            activityLocation =
+              locationMatch[2].trim();
+          }
+
+          plan.items.push({
+            date,
+            type: 'activite',
+            label: activityLabel,
+            lieu: activityLocation,
+            time
+          });
+
+          recognizedItems += 1;
+          return;
+        }
+
+        const restaurantMatch =
+          content.match(
+            /^(?:diner|dîner|dejeuner|déjeuner|restaurant|repas)\s+(?:chez|au restaurant|a|à)\s+(.+)$/i
+          );
+
+        if (restaurantMatch) {
+          let restaurantLabel =
+            restaurantMatch[1].trim();
+
+          let restaurantLocation = '';
+
+          const locationMatch =
+            restaurantLabel.match(
+              /^(.+)\s+(?:a|à|au|aux)\s+([^,]+)$/i
+            );
+
+          if (locationMatch) {
+            restaurantLabel =
+              locationMatch[1].trim();
+
+            restaurantLocation =
+              locationMatch[2].trim();
+          }
+
+          plan.items.push({
+            date,
+            type: 'restaurant',
+            label: restaurantLabel,
+            lieu: restaurantLocation,
+            time
+          });
+
+          recognizedItems += 1;
+        }
+      }
+    );
+
+    return recognizedItems;
+  }
+
 
   function parseNaturalSentence(
     text,
@@ -526,6 +752,13 @@
       plan.items = [];
       plan.dayTitles = {};
     }
+
+    plan.recognizedLines +=
+      parseNaturalItems(
+        source,
+        plan,
+        fallbackYear
+      );
 
     lines.forEach(function readItem(line) {
       const match = line.match(

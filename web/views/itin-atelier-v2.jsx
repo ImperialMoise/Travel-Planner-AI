@@ -2118,6 +2118,186 @@ function openAddStep(type, preset) {
       }
     }
 
+    async function sortTimelineByTime() {
+      if (
+        reorderingSteps ||
+        timelineSteps.length < 2
+      ) {
+        return;
+      }
+
+      const timedStepCount =
+        timelineSteps.filter(
+          function hasTime(step) {
+            return Boolean(
+              String(
+                step?.time || ''
+              ).trim()
+            );
+          }
+        ).length;
+
+      if (timedStepCount < 2) {
+        Store.showToast(
+          'Ajoute au moins deux horaires pour effectuer le tri.'
+        );
+
+        return;
+      }
+
+      const sortedVisible =
+        timelineSteps
+          .map(function prepareStep(
+            step,
+            index
+          ) {
+            return {
+              step,
+              index,
+              time: String(
+                step?.time || ''
+              ).trim()
+            };
+          })
+          .sort(function compareTimes(
+            first,
+            second
+          ) {
+            if (
+              first.time &&
+              second.time
+            ) {
+              return (
+                first.time.localeCompare(
+                  second.time
+                ) ||
+                first.index -
+                  second.index
+              );
+            }
+
+            if (first.time) return -1;
+            if (second.time) return 1;
+
+            return (
+              first.index -
+              second.index
+            );
+          })
+          .map(function getStep(item) {
+            return item.step;
+          });
+
+      const currentOrder =
+        timelineSteps
+          .map(step =>
+            String(step.id)
+          )
+          .join('|');
+
+      const sortedOrder =
+        sortedVisible
+          .map(step =>
+            String(step.id)
+          )
+          .join('|');
+
+      if (
+        currentOrder === sortedOrder
+      ) {
+        Store.showToast(
+          'La journée est déjà classée par heure.'
+        );
+
+        return;
+      }
+
+      const hiddenSteps =
+        allSteps.filter(
+          function keepHidden(step) {
+            return !isVisibleTimelineStep(
+              step
+            );
+          }
+        );
+
+      const nextSteps =
+        sortedVisible
+          .concat(hiddenSteps)
+          .map(function assignIndex(
+            step,
+            index
+          ) {
+            return {
+              ...step,
+              stepIndex: index
+            };
+          });
+
+      setDragIndex(null);
+      setDragOverIndex(null);
+      setReorderingSteps(true);
+
+      Store.set({
+        trip: {
+          ...trip,
+          days: days.map(
+            function updateDay(
+              currentDay,
+              index
+            ) {
+              if (
+                index !== safeDayIndex
+              ) {
+                return currentDay;
+              }
+
+              return {
+                ...currentDay,
+                steps: nextSteps
+              };
+            }
+          )
+        }
+      });
+
+      try {
+        if (
+          !window.SB
+            ?.reorderSteps
+        ) {
+          throw new Error(
+            'Tri chronologique indisponible.'
+          );
+        }
+
+        await window.SB
+          .reorderSteps(
+            nextSteps
+          );
+
+        await reloadTrip();
+
+        Store.showToast(
+          'Journée classée par heure.'
+        );
+      } catch (error) {
+        console.error(
+          'Chronological sort failed:',
+          error
+        );
+
+        await reloadTrip();
+
+        Store.showToast(
+          error.message ||
+          'Le tri n’a pas pu être enregistré.'
+        );
+      } finally {
+        setReorderingSteps(false);
+      }
+    }
+
     function selectMapForDay() {
       Store.set({
         view: 'map',
@@ -2300,7 +2480,35 @@ function openAddStep(type, preset) {
                   </div>
 
                   <div className="atelier-v2-plan-actions">
-<button
+                    {timelineSteps.filter(
+                      step =>
+                        String(
+                          step?.time || ''
+                        ).trim()
+                    ).length > 1 && (
+                      <button
+                        type="button"
+                        className="atelier-v2-btn"
+                        disabled={
+                          reorderingSteps
+                        }
+                        title="Classer les étapes renseignées par heure"
+                        onClick={
+                          sortTimelineByTime
+                        }
+                        style={{
+                          minHeight: 32,
+                          borderRadius: 8,
+                          padding: '0 10px'
+                        }}
+                      >
+                        {reorderingSteps
+                          ? 'Tri…'
+                          : '↕ Par heure'}
+                      </button>
+                    )}
+
+                    <button
                       type="button"
                       className="atelier-v2-btn primary"
                       style={{

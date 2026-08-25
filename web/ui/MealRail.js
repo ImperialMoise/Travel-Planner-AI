@@ -835,58 +835,47 @@ function InlineButton({
     );
   }
 
-  function EmptyLodgingCard({ onAdd }) {
+function EmptyLodgingCard({ onAdd }) {
     return (
       <button
         type="button"
         onClick={onAdd}
         style={{
           width: '100%',
-          minHeight: 124,
+          minHeight: 48,
           border: '1px dashed var(--accent)',
-          borderRadius: 14,
+          borderRadius: 12,
           background: 'var(--inset)',
           color: 'var(--accent)',
-          boxShadow: 'var(--shadow)',
           cursor: 'pointer',
           fontFamily: 'inherit',
-          padding: 12,
+          padding: '8px 12px',
           display: 'flex',
-          flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: 6,
+          gap: 8,
           textAlign: 'center'
         }}
       >
         <span style={{
-          width: 42,
-          height: 42,
-          borderRadius: 14,
+          width: 28,
+          height: 28,
+          borderRadius: 9,
           background: 'var(--accent-soft)',
           color: 'var(--accent)',
           display: 'grid',
-          placeItems: 'center'
+          placeItems: 'center',
+          flexShrink: 0
         }}>
-          <Icon name="bed" size={19} />
+          <Icon name="bed" size={15} />
         </span>
 
         <span style={{
-          fontFamily: 'var(--font-serif)',
-          fontSize: 21,
-          lineHeight: '26px',
-          color: 'var(--text)'
+          fontSize: 13,
+          lineHeight: '18px',
+          fontWeight: 900
         }}>
           Ajouter un hébergement
-        </span>
-
-        <span style={{
-          maxWidth: 220,
-          color: 'var(--muted)',
-          fontSize: 12.5,
-          lineHeight: '18px'
-        }}>
-          Renseigne l’adresse, les horaires de check-in/check-out et le nombre de nuits.
         </span>
       </button>
     );
@@ -921,39 +910,18 @@ function InlineButton({
       <div style={{
         border: '1px solid var(--outline-variant)',
         background: 'var(--surface-container-lowest,#fff)',
-        borderRadius: 14,
-        padding: 14
+        borderRadius: 12,
+        padding: 11
       }}>
         <div style={{
           display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 10,
-          marginBottom: 10
+          alignItems: 'flex-start',
+          gap: 9
         }}>
-          <div>
-            <div style={{
-              fontSize: 13,
-              fontWeight: 900,
-              color: 'var(--text)',
-              marginBottom: 3
-            }}>
-              {weather.title}
-            </div>
-
-            <div style={{
-              fontSize: 12.5,
-              lineHeight: '18px',
-              color: 'var(--muted)'
-            }}>
-              {weather.text}
-            </div>
-          </div>
-
           <div style={{
-            width: 38,
-            height: 38,
-            borderRadius: 13,
+            width: 30,
+            height: 30,
+            borderRadius: 10,
             background: 'var(--accent-soft)',
             color: 'var(--accent)',
             display: 'grid',
@@ -962,39 +930,59 @@ function InlineButton({
           }}>
             ☁
           </div>
+
+          <div style={{ minWidth: 0 }}>
+            <div style={{
+              fontSize: 12.5,
+              fontWeight: 900,
+              color: 'var(--text)'
+            }}>
+              {weather.title}
+            </div>
+
+            <div style={{
+              marginTop: 2,
+              fontSize: 12,
+              lineHeight: '17px',
+              color: 'var(--muted)'
+            }}>
+              {weather.text}
+            </div>
+          </div>
         </div>
 
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 6
-        }}>
-          {weather.details.map(function renderDetail(item, index) {
-            return (
-              <div
-                key={index}
-                style={{
-                  display: 'flex',
-                  gap: 7,
-                  color: 'var(--muted)',
-                  fontSize: 12.5,
-                  lineHeight: '18px'
-                }}
-              >
-                <span style={{ color: 'var(--accent)', fontWeight: 900 }}>•</span>
-                <span>{item}</span>
-              </div>
-            );
-          })}
-        </div>
+        {weather.details.length > 0 && (
+          <div style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: 5,
+            marginTop: 9
+          }}>
+            {weather.details.map(function renderDetail(item, index) {
+              return (
+                <span
+                  key={index}
+                  style={{
+                    borderRadius: 999,
+                    background: 'var(--inset)',
+                    color: 'var(--muted)',
+                    fontSize: 10.5,
+                    lineHeight: '15px',
+                    padding: '4px 7px'
+                  }}
+                >
+                  {item}
+                </span>
+              );
+            })}
+          </div>
+        )}
 
         <div style={{
-          marginTop: 10,
-          paddingTop: 10,
-          borderTop: '1px solid var(--outline-variant)',
+          marginTop: 8,
           color: 'var(--faint)',
-          fontSize: 10.5,
-          lineHeight: '15px',
+          fontSize: 9.5,
+          lineHeight: '14px',
           fontFamily: 'var(--font-mono, ui-monospace)'
         }}>
           {weather.source}
@@ -1011,8 +999,8 @@ function InlineButton({
     onAddStep,
     onReload
   }) {
-    const [openSections, setOpenSections] = React.useState({
-      restaurants: true,
+const [openSections, setOpenSections] = React.useState({
+      restaurants: false,
       lodging: true,
       weather: false
     });

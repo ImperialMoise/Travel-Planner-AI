@@ -519,6 +519,57 @@
         ) + 1
       );
 
+    const dailyBreakdown =
+      days
+        .map(function createDailyItem(
+          day,
+          index
+        ) {
+          return {
+            id:
+              day?.id ||
+              day?.dateISO ||
+              String(index),
+            label:
+              'Jour ' + (index + 1),
+            value:
+              safeArray(day?.steps).length,
+            icon: 'cal'
+          };
+        })
+        .filter(
+          item => item.value > 0
+        );
+
+    const freeDays =
+      Math.max(
+        0,
+        dayCount - plannedDays
+      );
+
+    const averageStepsPerPlannedDay =
+      plannedDays
+        ? steps.length / plannedDays
+        : 0;
+
+    const busiestDay =
+      dailyBreakdown.reduce(
+        function selectBusiest(
+          current,
+          item
+        ) {
+          if (
+            !current ||
+            item.value > current.value
+          ) {
+            return item;
+          }
+
+          return current;
+        },
+        null
+      );
+
     return {
       days,
       steps,
@@ -543,7 +594,11 @@
       startDate,
       endDate,
       statusLabel,
-      dayCount
+      dayCount,
+      dailyBreakdown,
+      freeDays,
+      averageStepsPerPlannedDay,
+      busiestDay
     };
   }
 
@@ -783,17 +838,19 @@
               label="jours"
               detail={
                 summary.plannedDays +
-                ' jour' +
-                (
-                  summary.plannedDays > 1
-                    ? 's'
-                    : ''
-                ) +
                 ' organisé' +
                 (
-                  summary.plannedDays > 1
-                    ? 's'
-                    : ''
+                  summary.plannedDays === 1
+                    ? ''
+                    : 's'
+                ) +
+                ' · ' +
+                summary.freeDays +
+                ' libre' +
+                (
+                  summary.freeDays === 1
+                    ? ''
+                    : 's'
                 )
               }
             />
@@ -889,6 +946,32 @@
                 summary.transportBreakdown
               }
               emptyText="Ajoute des transports à l’itinéraire pour obtenir ces statistiques."
+            />
+
+            <Breakdown
+              title="Rythme de l’itinéraire"
+              subtitle={
+                summary.busiestDay
+                  ? (
+                      'Moyenne : ' +
+                      new Intl.NumberFormat(
+                        'fr-FR',
+                        {
+                          maximumFractionDigits: 1
+                        }
+                      ).format(
+                        summary.averageStepsPerPlannedDay
+                      ) +
+                      ' étapes par jour organisé · ' +
+                      summary.busiestDay.label +
+                      ' est le plus dense'
+                    )
+                  : 'La répartition apparaîtra avec les premières étapes.'
+              }
+              items={
+                summary.dailyBreakdown
+              }
+              emptyText="Ajoute des étapes pour visualiser le rythme du voyage."
             />
 
             <Breakdown

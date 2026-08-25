@@ -10571,6 +10571,59 @@ function getMobileTripSummary() {
         day.steps.length > 0
     ).length;
 
+  const dailyBreakdown =
+    days
+      .map(function createDailyItem(
+        day,
+        index
+      ) {
+        return {
+          id:
+            day?.id ||
+            day?.dateISO ||
+            String(index),
+          label:
+            'Jour ' + (index + 1),
+          value:
+            Array.isArray(day?.steps)
+              ? day.steps.length
+              : 0,
+          icon: 'calendar_month'
+        };
+      })
+      .filter(
+        item => item.value > 0
+      );
+
+  const freeDays =
+    Math.max(
+      0,
+      days.length - plannedDays
+    );
+
+  const averageStepsPerPlannedDay =
+    plannedDays
+      ? steps.length / plannedDays
+      : 0;
+
+  const busiestDay =
+    dailyBreakdown.reduce(
+      function selectBusiest(
+        current,
+        item
+      ) {
+        if (
+          !current ||
+          item.value > current.value
+        ) {
+          return item;
+        }
+
+        return current;
+      },
+      null
+    );
+
   const startDate =
     activeTrip?.startDate ||
     days[0]?.dateISO ||
@@ -10619,6 +10672,10 @@ function getMobileTripSummary() {
     lodgingBreakdown,
     progress,
     plannedDays,
+    dailyBreakdown,
+    freeDays,
+    averageStepsPerPlannedDay,
+    busiestDay,
     startDate,
     endDate,
     status
@@ -10830,9 +10887,16 @@ function renderMobileSummary() {
             <small>
               ${summary.plannedDays}
               organisé${
-                summary.plannedDays > 1
-                  ? 's'
-                  : ''
+                summary.plannedDays === 1
+                  ? ''
+                  : 's'
+              }
+              ·
+              ${summary.freeDays}
+              libre${
+                summary.freeDays === 1
+                  ? ''
+                  : 's'
               }
             </small>
           </article>
@@ -10946,6 +11010,44 @@ function renderMobileSummary() {
           <div class="mobile-summary-bars">
             ${renderMobileSummaryBars(
               summary.transportBreakdown
+            )}
+          </div>
+        </section>
+
+        <section class="mobile-summary-panel">
+          <header>
+            <span
+              class="material-symbols-outlined"
+              aria-hidden="true"
+            >
+              timeline
+            </span>
+
+            <div>
+              <h2>Rythme de l’itinéraire</h2>
+              <p>
+                ${summary.averageStepsPerPlannedDay.toLocaleString(
+                  'fr-FR',
+                  {
+                    maximumFractionDigits: 1
+                  }
+                )}
+                étapes par jour organisé${
+                  summary.busiestDay
+                    ? ' · ' +
+                      escapeHtml(
+                        summary.busiestDay.label
+                      ) +
+                      ' est le plus dense'
+                    : ''
+                }
+              </p>
+            </div>
+          </header>
+
+          <div class="mobile-summary-bars">
+            ${renderMobileSummaryBars(
+              summary.dailyBreakdown
             )}
           </div>
         </section>

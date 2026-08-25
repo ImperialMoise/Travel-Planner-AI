@@ -16,6 +16,13 @@
   --accent: #96640d;
   --accent-soft: rgba(150, 100, 13, 0.12);
   --accent-ink: #fffaf0;
+  --accent-text: #7f540e;
+  --accent-text:
+    color-mix(
+      in srgb,
+      var(--accent) 80%,
+      var(--text)
+    );
 
   /* Accents secondaires */
   --tan: #d3ad73;
@@ -918,9 +925,9 @@ body.is-dragging-day * {
     overflow-wrap: anywhere;
   }
 
-  .web-step-action-button {
-    min-height: 40px !important;
-    padding: 8px 11px !important;
+  .web-meal-rail button {
+    min-width: 44px;
+    min-height: 44px;
     touch-action: manipulation;
   }
 
@@ -953,6 +960,20 @@ body.is-dragging-day * {
     text-overflow: clip !important;
     overflow-wrap: anywhere;
   }
+
+  .atelier-v2-plan-actions button {
+    min-height: 44px !important;
+  }
+
+  .atelier-v2-hero:not(.has-cover)
+    .atelier-v2-hero-badge {
+    color: var(--accent-text) !important;
+  }
+
+  .atelier-v2-reminder
+    > span:last-child {
+    color: var(--accent-text) !important;
+  }
 }
 
 /* =========================================================
@@ -981,7 +1002,8 @@ body.is-dragging-day * {
   }
 
   .web-budget-page button {
-    min-height: 40px;
+    min-width: 44px;
+    min-height: 44px;
   }
 
   .web-budget-total {

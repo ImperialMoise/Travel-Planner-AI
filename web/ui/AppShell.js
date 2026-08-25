@@ -3006,7 +3006,7 @@
 
     .mobile-workspace-nav-btn.active{
       background:var(--accent-soft);
-      color:var(--accent);
+      color:var(--accent-text);
     }
 
     .mobile-workspace-nav-btn.travel.active{
@@ -3023,6 +3023,12 @@
 
     .topbar-settings-btn{
       display:none;
+    }
+
+    .topbar-settings-btn.topbar-print-btn{
+      display:grid;
+      width:44px;
+      height:44px;
     }
 
     .topbar-account{
@@ -5088,28 +5094,59 @@ function toggleFocusMode() {
 
 {trip && (
   <div className="topbar-center">
-    <div className="workspace-mode" aria-label="Mode d’utilisation">
+    <div
+      className="workspace-mode"
+      role="group"
+      aria-label="Mode d’utilisation"
+    >
       <button
         type="button"
-        className={'workspace-mode-btn' + (appMode === 'plan' ? ' active' : '')}
-        onClick={() => setAppMode('plan')}
->
+        className={
+          'workspace-mode-btn' +
+          (
+            appMode === 'plan'
+              ? ' active'
+              : ''
+          )
+        }
+        aria-pressed={
+          appMode === 'plan'
+        }
+        onClick={() =>
+          setAppMode('plan')
+        }
+      >
   <Icon name="cal" size={13} />
   Préparer
 </button>
 
       <button
         type="button"
-        className={'workspace-mode-btn' + (appMode === 'travel' ? ' active' : '')}
-        onClick={() => setAppMode('travel')}
->
+        className={
+          'workspace-mode-btn' +
+          (
+            appMode === 'travel'
+              ? ' active'
+              : ''
+          )
+        }
+        aria-pressed={
+          appMode === 'travel'
+        }
+        onClick={() =>
+          setAppMode('travel')
+        }
+      >
   <Icon name="pin" size={13} />
   Voyager
 </button>
     </div>
 
     {appMode !== 'travel' && (
-      <nav className="topbar-nav">
+      <nav
+        className="topbar-nav"
+        aria-label="Sections du voyage"
+      >
         {navItems.map(function renderNavItem(item) {
           const active = view === item.id;
 
@@ -5117,8 +5154,20 @@ function toggleFocusMode() {
             <button
               key={item.id}
               type="button"
-              className={'topbar-nav-btn' + (active ? ' active' : '')}
-              onClick={() => Store.set({ view: item.id })}
+              className={
+                'topbar-nav-btn' +
+                (active ? ' active' : '')
+              }
+              aria-current={
+                active
+                  ? 'page'
+                  : undefined
+              }
+              onClick={() =>
+                Store.set({
+                  view: item.id
+                })
+              }
             >
               {item.label}
             </button>

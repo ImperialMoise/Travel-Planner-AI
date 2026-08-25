@@ -381,6 +381,9 @@ let mobileTripLibrary = [];
 let mobileTripLibraryBusy = false;
 let mobileTripLibraryError = '';
 let mobileItineraryReorderBusy = false;
+let mobileQuickAddOpen = false;
+let mobileQuickAddType = 'activity';
+let mobileQuickAddBusy = false;
 let mobileDayCoverBusy = false;
 let pendingMobileNotificationTripId = null;
 let pendingMobileNotificationReminderId = null;
@@ -8777,6 +8780,195 @@ async function sortMobileDayByTime() {
   }
 }
 
+function getMobileQuickStepDraft() {
+  return {
+    label:
+      document
+        .querySelector(
+          '#mobile-quick-step-title'
+        )
+        ?.value.trim() || '',
+    time:
+      document
+        .querySelector(
+          '#mobile-quick-step-time'
+        )
+        ?.value || ''
+  };
+}
+
+function updateMobileQuickStepStatus(
+  message = '',
+  isError = false
+) {
+  const status =
+    document.querySelector(
+      '[data-mobile-quick-status]'
+    );
+
+  if (!status) return;
+
+  status.textContent = message;
+  status.classList.toggle(
+    'danger',
+    isError
+  );
+}
+
+async function saveMobileQuickStep() {
+  if (mobileQuickAddBusy) return;
+
+  const activeDay =
+    getActiveItineraryDay();
+
+  const draft =
+    getMobileQuickStepDraft();
+
+  if (!draft.label) {
+    updateMobileQuickStepStatus(
+      'Indique un intitulé pour cette étape.',
+      true
+    );
+
+    document
+      .querySelector(
+        '#mobile-quick-step-title'
+      )
+      ?.focus();
+
+    return;
+  }
+
+  if (
+    !activeTrip?.id ||
+    !activeDay?.id ||
+    !window.SB?.saveStep
+  ) {
+    updateMobileQuickStepStatus(
+      'Cette journée ne peut pas être modifiée.',
+      true
+    );
+    return;
+  }
+
+  const saveButton =
+    document.querySelector(
+      '[data-action="mobile-quick-save"]'
+    );
+
+  mobileQuickAddBusy = true;
+
+  if (saveButton) {
+    saveButton.disabled = true;
+  }
+
+  updateMobileQuickStepStatus(
+    'Ajout en cours…'
+  );
+
+  try {
+    const isTransport =
+      mobileQuickAddType ===
+      'transport';
+
+    await window.SB.saveStep(
+      activeTrip.id,
+      activeDay.id,
+      {
+        id: null,
+        stepIndex:
+          Array.isArray(activeDay.steps)
+            ? activeDay.steps.length
+            : 0,
+        type: mobileQuickAddType,
+        label: draft.label,
+        lieu: '',
+        time:
+          draft.time ||
+          (isTransport
+            ? '08:00'
+            : '09:00'),
+        timeEnd: '',
+        transportType:
+          isTransport
+            ? 'train'
+            : '',
+        depart: '',
+        arrivee: '',
+        duree: '',
+        nextDay: false,
+        escales: [],
+        ref: '',
+        note: '',
+        timeCheckIn: '',
+        timeCheckOut: '',
+        amount: 0,
+        paidBy: '',
+        lat: null,
+        lng: null
+      }
+    );
+
+    await refreshMobileTrips(
+      activeTrip.id
+    );
+
+    mobileQuickAddOpen = false;
+    mobileQuickAddType = 'activity';
+
+    renderItinerary();
+  } catch (error) {
+    updateMobileQuickStepStatus(
+      'Impossible d’ajouter cette étape : ' +
+        (error.message || error),
+      true
+    );
+  } finally {
+    mobileQuickAddBusy = false;
+
+    if (saveButton?.isConnected) {
+      saveButton.disabled = false;
+    }
+  }
+}
+
+function openMobileQuickStepDetails() {
+  const draft =
+    getMobileQuickStepDraft();
+
+  editingStepDraft = null;
+
+  selectedStepCategory =
+    mobileQuickAddType;
+
+  mapStepDraft = {
+    source: 'quick',
+    dayIndex:
+      mobileItineraryDayIndex,
+    type: mobileQuickAddType,
+    title:
+      mobileQuickAddType ===
+      'activity'
+        ? draft.label
+        : '',
+    label:
+      mobileQuickAddType ===
+      'activity'
+        ? draft.label
+        : '',
+    notes:
+      mobileQuickAddType ===
+      'transport'
+        ? draft.label
+        : '',
+    time: draft.time
+  };
+
+  mobileQuickAddOpen = false;
+
+  navigate('new-step');
+}
+
 function renderItinerary() {
   setMobileWorkspaceMode('prepare');
   renderTripDayMode(true);
@@ -9253,11 +9445,116 @@ function renderTripDayMode(editable = false) {
         ` : ''}
 
         ${editable ? `
-  <button type="button" class="travel-add-step" data-action="new-step">
-    <span class="material-symbols-outlined">add</span>
-    Ajouter une étape
-  </button>
-` : ''}
+          <section
+            class="mobile-quick-step ${mobileQuickAddOpen ? 'is-open' : ''}"
+            aria-label="Ajouter une étape"
+          >
+            <button
+              class="mobile-quick-step-toggle"
+              type="button"
+              data-action="mobile-quick-toggle"
+              aria-expanded="${mobileQuickAddOpen ? 'true' : 'false'}"
+            >
+              <span class="material-symbols-outlined">
+                add
+              </span>
+
+              <span>
+                <strong>Ajouter une étape</strong>
+                <small>
+                  Rapidement ou avec tous les détails
+                </small>
+              </span>
+
+              <span class="material-symbols-outlined">
+                ${mobileQuickAddOpen ? 'expand_less' : 'expand_more'}
+              </span>
+            </button>
+
+            ${mobileQuickAddOpen ? `
+              <div class="mobile-quick-step-form">
+                <div
+                  class="mobile-quick-step-types"
+                  role="group"
+                  aria-label="Type d’étape"
+                >
+                  <button
+                    type="button"
+                    data-action="mobile-quick-type"
+                    data-quick-type="activity"
+                    aria-pressed="${mobileQuickAddType === 'activity' ? 'true' : 'false'}"
+                  >
+                    <span class="material-symbols-outlined">
+                      attractions
+                    </span>
+                    Activité
+                  </button>
+
+                  <button
+                    type="button"
+                    data-action="mobile-quick-type"
+                    data-quick-type="transport"
+                    aria-pressed="${mobileQuickAddType === 'transport' ? 'true' : 'false'}"
+                  >
+                    <span class="material-symbols-outlined">
+                      directions_transit
+                    </span>
+                    Transport
+                  </button>
+                </div>
+
+                <label class="mobile-quick-step-field">
+                  <span>Intitulé</span>
+
+                  <input
+                    id="mobile-quick-step-title"
+                    type="text"
+                    placeholder="${mobileQuickAddType === 'transport'
+                      ? 'Ex. Train Paris → Lyon'
+                      : 'Ex. Visite du musée'}"
+                    autocomplete="off"
+                  >
+                </label>
+
+                <label class="mobile-quick-step-field">
+                  <span>Heure</span>
+
+                  <input
+                    id="mobile-quick-step-time"
+                    type="time"
+                    value="${mobileQuickAddType === 'transport' ? '08:00' : '09:00'}"
+                  >
+                </label>
+
+                <p
+                  class="mobile-quick-step-status"
+                  data-mobile-quick-status
+                  role="status"
+                  aria-live="polite"
+                ></p>
+
+                <div class="mobile-quick-step-actions">
+                  <button
+                    type="button"
+                    data-action="mobile-quick-save"
+                  >
+                    <span class="material-symbols-outlined">
+                      add
+                    </span>
+                    Ajouter
+                  </button>
+
+                  <button
+                    type="button"
+                    data-action="mobile-quick-details"
+                  >
+                    Tous les détails
+                  </button>
+                </div>
+              </div>
+            ` : ''}
+          </section>
+        ` : ''}
 
         <section class="travel-tools">
           <div class="travel-section-heading">
@@ -13965,6 +14262,100 @@ if (
   'mobile-sort-day-by-time'
 ) {
   await sortMobileDayByTime();
+  return;
+}
+
+if (action === 'mobile-quick-toggle') {
+  mobileQuickAddOpen =
+    !mobileQuickAddOpen;
+
+  renderItinerary();
+
+  if (mobileQuickAddOpen) {
+    requestAnimationFrame(() => {
+      document
+        .querySelector(
+          '#mobile-quick-step-title'
+        )
+        ?.focus();
+    });
+  }
+
+  return;
+}
+
+if (action === 'mobile-quick-type') {
+  const button =
+    event.target.closest(
+      '[data-quick-type]'
+    );
+
+  const nextType =
+    button?.dataset.quickType;
+
+  if (
+    nextType !== 'activity' &&
+    nextType !== 'transport'
+  ) {
+    return;
+  }
+
+  mobileQuickAddType = nextType;
+
+  document
+    .querySelectorAll(
+      '[data-quick-type]'
+    )
+    .forEach(typeButton => {
+      typeButton.setAttribute(
+        'aria-pressed',
+        typeButton.dataset
+          .quickType === nextType
+          ? 'true'
+          : 'false'
+      );
+    });
+
+  const titleInput =
+    document.querySelector(
+      '#mobile-quick-step-title'
+    );
+
+  const timeInput =
+    document.querySelector(
+      '#mobile-quick-step-time'
+    );
+
+  if (titleInput) {
+    titleInput.placeholder =
+      nextType === 'transport'
+        ? 'Ex. Train Paris → Lyon'
+        : 'Ex. Visite du musée';
+  }
+
+  if (
+    timeInput &&
+    !timeInput.value
+  ) {
+    timeInput.value =
+      nextType === 'transport'
+        ? '08:00'
+        : '09:00';
+  }
+
+  return;
+}
+
+if (action === 'mobile-quick-save') {
+  await saveMobileQuickStep();
+  return;
+}
+
+if (
+  action ===
+  'mobile-quick-details'
+) {
+  openMobileQuickStepDetails();
   return;
 }
 

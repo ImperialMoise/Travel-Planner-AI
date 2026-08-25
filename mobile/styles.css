@@ -12812,3 +12812,232 @@ form button {
     width: 100%;
   }
 }
+
+/* Ajout rapide d’une étape */
+
+.mobile-quick-step {
+  display: grid;
+  gap: 0;
+  margin: 0 16px 16px;
+  border: 1px solid var(--outline-variant);
+  border-radius: 18px;
+  overflow: hidden;
+  background: var(--surface-container-lowest);
+  box-shadow: var(--shadow-card);
+}
+
+.mobile-quick-step-toggle {
+  width: 100%;
+  min-height: 58px;
+  display: grid;
+  grid-template-columns:
+    auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 11px;
+  border: 0;
+  background: transparent;
+  color: var(--on-surface);
+  padding: 10px 13px;
+  font: inherit;
+  text-align: left;
+}
+
+.mobile-quick-step-toggle
+> .material-symbols-outlined:first-child {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border-radius: 12px;
+  color: var(--on-primary);
+  background: var(--primary);
+}
+
+.mobile-quick-step-toggle
+> .material-symbols-outlined:last-child {
+  color: var(--on-surface-variant);
+}
+
+.mobile-quick-step-toggle strong,
+.mobile-quick-step-toggle small {
+  display: block;
+}
+
+.mobile-quick-step-toggle strong {
+  font-size: 13px;
+}
+
+.mobile-quick-step-toggle small {
+  margin-top: 3px;
+  color: var(--on-surface-variant);
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.mobile-quick-step-form {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1fr) 105px;
+  gap: 11px;
+  padding: 13px;
+  border-top: 1px solid
+    var(--outline-variant);
+  background: var(--surface-container);
+}
+
+.mobile-quick-step-types,
+.mobile-quick-step-actions,
+.mobile-quick-step-status {
+  grid-column: 1 / -1;
+}
+
+.mobile-quick-step-types {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.mobile-quick-step-types button {
+  min-width: 0;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid var(--outline-variant);
+  border-radius: 12px;
+  background: var(--surface-container-lowest);
+  color: var(--on-surface-variant);
+  padding: 7px 10px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.mobile-quick-step-types
+button[aria-pressed="true"] {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-fixed);
+}
+
+.mobile-quick-step-types
+.material-symbols-outlined {
+  font-size: 18px;
+}
+
+.mobile-quick-step-field {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+
+.mobile-quick-step-field > span {
+  color: var(--on-surface-variant);
+  font-size: 10px;
+  font-weight: 850;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.mobile-quick-step-field input {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  box-sizing: border-box;
+  border: 1px solid var(--outline-variant);
+  border-radius: 12px;
+  outline: none;
+  background: var(--surface-container-lowest);
+  color: var(--on-surface);
+  padding: 0 11px;
+  font: inherit;
+  font-size: 16px;
+}
+
+.mobile-quick-step-field input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px
+    color-mix(
+      in srgb,
+      var(--primary) 18%,
+      transparent
+    );
+}
+
+.mobile-quick-step-status {
+  min-height: 0;
+  margin: 0;
+  color: var(--on-surface-variant);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.mobile-quick-step-status:empty {
+  display: none;
+}
+
+.mobile-quick-step-status.danger {
+  color: var(--error);
+}
+
+.mobile-quick-step-actions {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(0, 1fr);
+  gap: 8px;
+}
+
+.mobile-quick-step-actions button {
+  min-height: 44px;
+  border: 1px solid var(--primary);
+  border-radius: 12px;
+  padding: 8px 10px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.mobile-quick-step-actions
+button:first-child {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: var(--primary);
+  color: var(--on-primary);
+}
+
+.mobile-quick-step-actions
+button:last-child {
+  background: transparent;
+  color: var(--primary);
+}
+
+.mobile-quick-step-actions
+button:disabled {
+  opacity: 0.55;
+}
+
+@media (max-width: 350px) {
+  .mobile-quick-step {
+    margin-right: 10px;
+    margin-left: 10px;
+  }
+
+  .mobile-quick-step-form {
+    grid-template-columns: 1fr;
+  }
+
+  .mobile-quick-step-types,
+  .mobile-quick-step-actions,
+  .mobile-quick-step-status {
+    grid-column: 1;
+  }
+
+  .mobile-quick-step-actions {
+    grid-template-columns: 1fr;
+  }
+}

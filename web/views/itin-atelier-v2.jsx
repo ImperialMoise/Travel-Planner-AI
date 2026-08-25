@@ -1186,6 +1186,207 @@
     return !!(step && step.important);
   }
 
+  function timeToMinutes(value) {
+    const match = String(
+      value || ''
+    ).trim().match(
+      /^(\d{1,2}):(\d{2})/
+    );
+
+    if (!match) return null;
+
+    const hours = Number(match[1]);
+    const minutes = Number(match[2]);
+
+    if (
+      !Number.isFinite(hours) ||
+      !Number.isFinite(minutes) ||
+      hours < 0 ||
+      hours > 23 ||
+      minutes < 0 ||
+      minutes > 59
+    ) {
+      return null;
+    }
+
+    return hours * 60 + minutes;
+  }
+
+  function analyzeDayPlan(steps) {
+    const visibleSteps =
+      Array.isArray(steps)
+        ? steps
+        : [];
+
+    if (!visibleSteps.length) {
+      return [];
+    }
+
+    const warnings = [];
+
+    const missingTimes =
+      visibleSteps.filter(
+        function hasNoTime(step) {
+          return (
+            timeToMinutes(
+              step?.time
+            ) === null
+          );
+        }
+      ).length;
+
+    const missingPlaces =
+      visibleSteps.filter(
+        function hasNoPlace(step) {
+          const hasCoordinates =
+            step?.lat != null &&
+            step?.lng != null;
+
+          if (hasCoordinates) {
+            return false;
+          }
+
+          if (
+            step?.type ===
+            'transport'
+          ) {
+            return !(
+              safeString(
+                step.depart
+              ) &&
+              safeString(
+                step.arrivee
+              )
+            );
+          }
+
+          return !safeString(
+            step?.lieu ||
+            step?.place
+          );
+        }
+      ).length;
+
+    const timedSteps =
+      visibleSteps
+        .map(function prepareStep(
+          step,
+          index
+        ) {
+          return {
+            step,
+            index,
+            start:
+              timeToMinutes(
+                step?.time
+              ),
+            end:
+              timeToMinutes(
+                step?.timeEnd
+              )
+          };
+        })
+        .filter(function keepTimed(
+          item
+        ) {
+          return item.start !== null;
+        })
+        .sort(function sortTimed(
+          first,
+          second
+        ) {
+          return (
+            first.start -
+              second.start ||
+            first.index -
+              second.index
+          );
+        });
+
+    let overlaps = 0;
+    let tightConnections = 0;
+
+    for (
+      let index = 1;
+      index < timedSteps.length;
+      index += 1
+    ) {
+      const previous =
+        timedSteps[index - 1];
+
+      const current =
+        timedSteps[index];
+
+      if (
+        previous.end === null
+      ) {
+        continue;
+      }
+
+      const gap =
+        current.start -
+        previous.end;
+
+      if (gap < 0) {
+        overlaps += 1;
+      } else if (gap < 30) {
+        tightConnections += 1;
+      }
+    }
+
+    if (visibleSteps.length >= 6) {
+      warnings.push(
+        'Journée dense : ' +
+        visibleSteps.length +
+        ' étapes prévues.'
+      );
+    }
+
+    if (overlaps > 0) {
+      warnings.push(
+        overlaps +
+        ' chevauchement' +
+        (overlaps > 1 ? 's' : '') +
+        ' horaire' +
+        (overlaps > 1 ? 's' : '') +
+        ' à vérifier.'
+      );
+    }
+
+    if (tightConnections > 0) {
+      warnings.push(
+        tightConnections +
+        ' enchaînement' +
+        (
+          tightConnections > 1
+            ? 's'
+            : ''
+        ) +
+        ' avec moins de 30 minutes de marge.'
+      );
+    }
+
+    if (missingTimes > 0) {
+      warnings.push(
+        missingTimes +
+        ' étape' +
+        (missingTimes > 1 ? 's' : '') +
+        ' sans horaire.'
+      );
+    }
+
+    if (missingPlaces > 0) {
+      warnings.push(
+        missingPlaces +
+        ' étape' +
+        (missingPlaces > 1 ? 's' : '') +
+        ' à localiser.'
+      );
+    }
+
+    return warnings.slice(0, 4);
+  }
+
   function getLodgingTimelineReminders(days, index) {
     if (U.getLodgingTimelineReminders) {
       return U.getLodgingTimelineReminders(days, index);
@@ -1795,6 +1996,10 @@ return {
         return 0;
       });
     const counts = countStepTypes(day);
+    const dayPlanWarnings =
+      analyzeDayPlan(
+        timelineSteps
+      );
 
     React.useEffect(function keepSelectedDayValid() {
       if (!days.length) return;
@@ -2680,6 +2885,71 @@ function openAddStep(type, preset) {
                       Plus de détails
                     </button>
                   </form>
+                )}
+
+                {dayPlanWarnings.length > 0 && (
+                  <div
+                    role="status"
+                    aria-label="Points à vérifier dans cette journée"
+                    style={{
+                      margin: '10px 14px 0',
+                      border: '1px solid rgba(150,100,13,.22)',
+                      borderRadius: 11,
+                      background: 'var(--accent-soft)',
+                      padding: '8px 10px',
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      flexWrap: 'wrap',
+                      gap: 7
+                    }}
+                  >
+                    <span style={{
+                      borderRadius: 999,
+                      background: 'var(--accent)',
+                      color: 'var(--accent-ink)',
+                      padding: '3px 7px',
+                      fontSize: 9.5,
+                      lineHeight: '14px',
+                      fontWeight: 900,
+                      textTransform: 'uppercase',
+                      letterSpacing: '.08em',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      À vérifier
+                    </span>
+
+                    <div style={{
+                      flex: '1 1 220px',
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      gap: '4px 12px',
+                      color: 'var(--muted)',
+                      fontSize: 11.5,
+                      lineHeight: '17px'
+                    }}>
+                      {dayPlanWarnings.map(
+                        function renderWarning(
+                          warning,
+                          index
+                        ) {
+                          return (
+                            <span key={index}>
+                              <span
+                                aria-hidden="true"
+                                style={{
+                                  color: 'var(--accent)',
+                                  fontWeight: 900
+                                }}
+                              >
+                                •
+                              </span>{' '}
+                              {warning}
+                            </span>
+                          );
+                        }
+                      )}
+                    </div>
+                  </div>
                 )}
 
                 <div className="atelier-v2-timeline">

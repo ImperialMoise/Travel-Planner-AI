@@ -346,6 +346,7 @@ test(
       '/playwright.config.mjs',
       '/scripts/build.mjs',
       '/tests/public-smoke.spec.mjs',
+      '/views/image-slot.js',
       '/.env'
     ];
 

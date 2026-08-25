@@ -27,7 +27,8 @@ const excludedFiles = new Set([
   'playwright.config.mjs',
   'vercel.json',
   'README.md',
-  'npm-debug.log'
+  'npm-debug.log',
+  'image-slot.js'
 ]);
 
 const babelScriptPattern = /<script\s+type="text\/babel"\s+src="([^"]+)"><\/script>/g;
@@ -103,7 +104,17 @@ for (const relativePath of babelSources) {
     );
 
   const result = await transformFileAsync(sourceFile, {
-    presets: [['@babel/preset-react', { runtime: 'classic' }]],
+    presets: [
+      [
+        '@babel/preset-react',
+        {
+          runtime: 'classic'
+        }
+      ]
+    ],
+    comments: false,
+    compact: true,
+    minified: true,
     sourceMaps: false
   });
 

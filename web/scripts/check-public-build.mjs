@@ -39,7 +39,8 @@ const forbiddenPaths = [
   'tests/',
   'playwright-report/',
   'test-results/',
-  'blob-report/'
+  'blob-report/',
+  'views/image-slot.js'
 ];
 
 const textExtensions = new Set([

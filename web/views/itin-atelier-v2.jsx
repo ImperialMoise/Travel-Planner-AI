@@ -1224,7 +1224,7 @@
 
     const warnings = [];
 
-    const missingTimes =
+    const missingTimeSteps =
       visibleSteps.filter(
         function hasNoTime(step) {
           return (
@@ -1233,9 +1233,9 @@
             ) === null
           );
         }
-      ).length;
+      );
 
-    const missingPlaces =
+    const missingPlaceSteps =
       visibleSteps.filter(
         function hasNoPlace(step) {
           const hasCoordinates =
@@ -1265,7 +1265,7 @@
             step?.place
           );
         }
-      ).length;
+      );
 
     const timedSteps =
       visibleSteps
@@ -1305,6 +1305,8 @@
 
     let overlaps = 0;
     let tightConnections = 0;
+    let overlapStep = null;
+    let tightStep = null;
 
     for (
       let index = 1;
@@ -1329,59 +1331,100 @@
 
       if (gap < 0) {
         overlaps += 1;
+
+        if (!overlapStep) {
+          overlapStep =
+            current.step;
+        }
       } else if (gap < 30) {
         tightConnections += 1;
+
+        if (!tightStep) {
+          tightStep =
+            current.step;
+        }
       }
     }
 
     if (visibleSteps.length >= 6) {
-      warnings.push(
-        'Journée dense : ' +
-        visibleSteps.length +
-        ' étapes prévues.'
-      );
+      warnings.push({
+        id: 'dense',
+        label:
+          'Journée dense : ' +
+          visibleSteps.length +
+          ' étapes prévues.',
+        stepId: null
+      });
     }
 
     if (overlaps > 0) {
-      warnings.push(
-        overlaps +
-        ' chevauchement' +
-        (overlaps > 1 ? 's' : '') +
-        ' horaire' +
-        (overlaps > 1 ? 's' : '') +
-        ' à vérifier.'
-      );
+      warnings.push({
+        id: 'overlap',
+        label:
+          overlaps +
+          ' chevauchement' +
+          (overlaps > 1 ? 's' : '') +
+          ' horaire' +
+          (overlaps > 1 ? 's' : '') +
+          ' à vérifier.',
+        stepId:
+          overlapStep?.id ||
+          null
+      });
     }
 
     if (tightConnections > 0) {
-      warnings.push(
-        tightConnections +
-        ' enchaînement' +
-        (
-          tightConnections > 1
-            ? 's'
-            : ''
-        ) +
-        ' avec moins de 30 minutes de marge.'
-      );
+      warnings.push({
+        id: 'tight',
+        label:
+          tightConnections +
+          ' enchaînement' +
+          (
+            tightConnections > 1
+              ? 's'
+              : ''
+          ) +
+          ' avec moins de 30 minutes de marge.',
+        stepId:
+          tightStep?.id ||
+          null
+      });
     }
 
-    if (missingTimes > 0) {
-      warnings.push(
-        missingTimes +
-        ' étape' +
-        (missingTimes > 1 ? 's' : '') +
-        ' sans horaire.'
-      );
+    if (missingTimeSteps.length > 0) {
+      warnings.push({
+        id: 'missing-time',
+        label:
+          missingTimeSteps.length +
+          ' étape' +
+          (
+            missingTimeSteps.length > 1
+              ? 's'
+              : ''
+          ) +
+          ' sans horaire.',
+        stepId:
+          missingTimeSteps[0]?.id ||
+          null
+      });
     }
 
-    if (missingPlaces > 0) {
-      warnings.push(
-        missingPlaces +
-        ' étape' +
-        (missingPlaces > 1 ? 's' : '') +
-        ' à localiser.'
-      );
+    if (missingPlaceSteps.length > 0) {
+      warnings.push({
+        id: 'missing-place',
+        label:
+          missingPlaceSteps.length +
+          ' étape' +
+          (
+            missingPlaceSteps.length > 1
+              ? 's'
+              : ''
+          ) +
+          ' à localiser.',
+        stepId:
+          missingPlaceSteps[0]?.id ||
+          null
+      });
     }
 
     return warnings.slice(0, 4);
@@ -1887,6 +1930,20 @@ return {
     );
 
     const day = days[safeDayIndex] || null;
+
+    React.useEffect(
+      function resetQuickAddWhenDayChanges() {
+        setQuickAdd({
+          open: false,
+          type: 'activite',
+          label: '',
+          time: ''
+        });
+
+        setQuickAddBusy(false);
+      },
+      [day?.id]
+    );
         const savedCoverPositionY = Number.isFinite(Number(day?.coverPositionY))
       ? Number(day.coverPositionY)
       : 50;
@@ -2737,8 +2794,17 @@ function openAddStep(type, preset) {
                 </div>
 
                 {quickAdd.open && (
-                  <form
+                    <form
                     onSubmit={saveQuickStep}
+                    onKeyDown={event => {
+                      if (
+                        event.key === 'Escape' &&
+                        !quickAddBusy
+                      ) {
+                        event.preventDefault();
+                        closeQuickAdd();
+                      }
+                    }}
                     style={{
                       margin: '12px 14px 0',
                       border: '1px solid var(--outline-variant)',
@@ -2927,13 +2993,12 @@ function openAddStep(type, preset) {
                       fontSize: 11.5,
                       lineHeight: '17px'
                     }}>
-                      {dayPlanWarnings.map(
+{dayPlanWarnings.map(
                         function renderWarning(
-                          warning,
-                          index
+                          warning
                         ) {
-                          return (
-                            <span key={index}>
+                          const content = (
+                            <>
                               <span
                                 aria-hidden="true"
                                 style={{
@@ -2943,8 +3008,61 @@ function openAddStep(type, preset) {
                               >
                                 •
                               </span>{' '}
-                              {warning}
-                            </span>
+                              {warning.label}
+                            </>
+                          );
+
+                          if (!warning.stepId) {
+                            return (
+                              <span
+                                key={warning.id}
+                              >
+                                {content}
+                              </span>
+                            );
+                          }
+
+                          return (
+                            <button
+                              key={warning.id}
+                              type="button"
+                              title="Modifier la première étape concernée"
+                              onClick={() => {
+                                const targetStep =
+                                  timelineSteps.find(
+                                    step =>
+                                      String(
+                                        step.id
+                                      ) ===
+                                      String(
+                                        warning.stepId
+                                      )
+                                  );
+
+                                if (targetStep) {
+                                  openEditorForStep(
+                                    day,
+                                    targetStep
+                                  );
+                                }
+                              }}
+                              style={{
+                                border: 0,
+                                background: 'transparent',
+                                color: 'var(--muted)',
+                                padding: 0,
+                                fontFamily: 'inherit',
+                                fontSize: 'inherit',
+                                lineHeight: 'inherit',
+                                textAlign: 'left',
+                                textDecoration: 'underline',
+                                textDecorationStyle: 'dotted',
+                                textUnderlineOffset: 3,
+                                cursor: 'pointer'
+                              }}
+                            >
+                              {content}
+                            </button>
                           );
                         }
                       )}

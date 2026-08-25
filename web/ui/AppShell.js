@@ -7833,42 +7833,114 @@ async function submit() {
       }
     }
 
-    function analyzeGuidedText() {
-      if (!window.TripDraftParser) {
-        setError(
-          'Le créateur guidé n’est pas chargé.'
-        );
+    async function analyzeGuidedText() {
+      if (
+        busy ||
+        !guidedText.trim()
+      ) {
         return;
       }
 
-      const plan =
-        window.TripDraftParser.parse(
-          guidedText
-        );
-
-      if (plan.errors.length) {
-        setGuidedPlan(null);
-        setError(plan.errors[0]);
-        return;
-      }
-
-      setGuidedPlan(plan);
       setError('');
+      setGuidedPlan(null);
+      setBusy(true);
 
-      if (plan.name) {
-        setName(plan.name);
-      }
+      try {
+        let plan = null;
 
-      if (plan.startDate) {
-        setStartDate(plan.startDate);
-      }
+        try {
+          if (
+            !window.SB
+              ?.analyzeTripWithAI
+          ) {
+            throw new Error(
+              'Service IA non chargé.'
+            );
+          }
 
-      if (plan.endDate) {
-        setEndDate(plan.endDate);
-      }
+          plan =
+            await window.SB
+              .analyzeTripWithAI(
+                guidedText
+              );
+        } catch (aiError) {
+          console.warn(
+            'Analyse IA indisponible :',
+            aiError
+          );
 
-      if (plan.days) {
-        setDays(plan.days);
+          if (
+            !window.TripDraftParser
+          ) {
+            throw aiError;
+          }
+
+          const localPlan =
+            window.TripDraftParser
+              .parse(
+                guidedText
+              );
+
+          plan = {
+            ...localPlan,
+            source: 'local',
+            warnings: [
+              'L’analyse IA est indisponible. Ce brouillon a été préparé par l’analyseur local.',
+              ...(
+                localPlan.warnings ||
+                []
+              )
+            ]
+          };
+        }
+
+        if (
+          !plan ||
+          (
+            Array.isArray(
+              plan.errors
+            ) &&
+            plan.errors.length
+          )
+        ) {
+          setGuidedPlan(null);
+          setError(
+            plan?.errors?.[0] ||
+            'La description n’a pas pu être analysée.'
+          );
+          return;
+        }
+
+        setGuidedPlan(plan);
+        setError('');
+
+        if (plan.name) {
+          setName(plan.name);
+        }
+
+        if (plan.startDate) {
+          setStartDate(
+            plan.startDate
+          );
+        }
+
+        if (plan.endDate) {
+          setEndDate(
+            plan.endDate
+          );
+        }
+
+        if (plan.days) {
+          setDays(plan.days);
+        }
+      } catch (error) {
+        setGuidedPlan(null);
+        setError(
+          error?.message ||
+          'Analyse impossible.'
+        );
+      } finally {
+        setBusy(false);
       }
     }
 
@@ -8117,7 +8189,7 @@ async function submit() {
                   lineHeight: 1.5
                 }}
               >
-                Décris ton voyage librement ou utilise un exemple. Pour ajouter un transport, une activité ou un restaurant, commence la phrase par une date : « Le 6 octobre, train de Séoul à Busan à 08:30 ».
+                Raconte ton voyage naturellement, comme tu le ferais à quelqu’un. L’IA préparera les dates, villes, hébergements, transports et activités détectés. Vérifie toujours l’aperçu avant de créer le voyage. Évite d’écrire des numéros de passeport ou des données sensibles.
               </p>
 
               <textarea
@@ -8191,10 +8263,13 @@ async function submit() {
                     analyzeGuidedText
                   }
                   disabled={
+                    busy ||
                     !guidedText.trim()
                   }
                 >
-                  Analyser le texte
+                  {busy
+                    ? 'Analyse en cours…'
+                    : 'Analyser avec l’IA'}
                 </AppButton>
               </div>
 
@@ -8220,7 +8295,10 @@ async function submit() {
                       fontSize: 13
                     }}
                   >
-                    Aperçu prêt
+                    {guidedPlan.source ===
+                    'groq'
+                      ? 'Aperçu préparé par l’IA'
+                      : 'Aperçu préparé localement'}
                   </strong>
 
                   <div

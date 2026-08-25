@@ -1904,6 +1904,87 @@ export async function searchPlaces(params = {}) {
   };
 }
 
+export async function analyzeTripWithAI(
+  text
+) {
+  const cleanDescription =
+    String(text || '').trim();
+
+  if (
+    cleanDescription.length < 10
+  ) {
+    throw new Error(
+      'Décris un peu plus ton voyage.'
+    );
+  }
+
+  const session =
+    await getSession();
+
+  if (!session?.access_token) {
+    throw new Error(
+      'Connecte-toi pour utiliser l’analyse IA.'
+    );
+  }
+
+  const {
+    data,
+    error
+  } =
+    await sb.functions.invoke(
+      'parse-trip-ai',
+      {
+        body: {
+          text: cleanDescription
+        }
+      }
+    );
+
+  if (error) {
+    let message =
+      error.message ||
+      'Analyse IA indisponible.';
+
+    try {
+      const response =
+        error.context;
+
+      if (
+        response &&
+        typeof response.clone ===
+          'function'
+      ) {
+        const payload =
+          await response
+            .clone()
+            .json();
+
+        if (payload?.error) {
+          message =
+            payload.error;
+        }
+      }
+    } catch {
+      // Le message Supabase initial sera utilisé.
+    }
+
+    throw new Error(message);
+  }
+
+  if (data?.error) {
+    throw new Error(data.error);
+  }
+
+  if (!data?.plan) {
+    throw new Error(
+      'L’IA n’a pas renvoyé de brouillon.'
+    );
+  }
+
+  return data.plan;
+}
+
+
 // ─── Rappels personnels ────────────────────────────────────
 
 function normalizeReminder(reminder) {
@@ -2582,6 +2663,8 @@ window.SB = {
   deleteDocument,
 
   searchPlaces,
+  analyzeTripWithAI,
+
     async getPlacesUsage() {
     const { data, error } = await sb.functions.invoke("places-search", {
       body: { action: "usage" }

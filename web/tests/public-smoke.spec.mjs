@@ -983,6 +983,53 @@ test(
   }
 );
 
+test(
+  'le service IA reste sécurisé derrière Supabase',
+  async function runTest({
+    page,
+    request
+  }) {
+    await page.goto('/', {
+      waitUntil: 'load'
+    });
+
+    const helperAvailable =
+      await page.evaluate(
+        function checkAIHelper() {
+          return (
+            typeof window.SB
+              ?.analyzeTripWithAI ===
+            'function'
+          );
+        }
+      );
+
+    expect(
+      helperAvailable
+    ).toBe(true);
+
+    const bundleResponse =
+      await request.get(
+        '/app.bundle.js'
+      );
+
+    const bundleSource =
+      await bundleResponse.text();
+
+    expect(
+      bundleSource
+    ).not.toContain(
+      'GROQ_API_KEY'
+    );
+
+    expect(
+      bundleSource
+    ).not.toContain(
+      'api.groq.com'
+    );
+  }
+);
+
 
 test(
   'le diagnostic contient les mesures de performance',

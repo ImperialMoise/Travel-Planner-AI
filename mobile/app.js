@@ -1619,23 +1619,54 @@ function getActiveItineraryDay() {
 }
 
 function getCurrentTimelineSteps() {
-  const activeDay = getActiveItineraryDay();
+  const activeDay =
+    getActiveItineraryDay();
 
   if (activeDay?.steps?.length) {
-    return activeDay.steps.map((step, stepIndex) => ({
-      id: step.id,
-      dayId: activeDay.id,
-      dayIndex: mobileItineraryDayIndex,
-      stepIndex: step.stepIndex ?? stepIndex,
-      rawStep: step,
-      time: step.time || '09:00',
-      type: getStepTypeLabel(step.type),
-      title: getStepDisplayTitle(step),
-      description: getStepDisplayDescription(step) || 'Détail à compléter',
-      icon: getStepTimelineIcon(step.type),
-      tone: getStepTimelineTone(step.type),
-      synced: true
-    }));
+    return activeDay.steps
+      .slice()
+      .sort(
+        (first, second) =>
+          Number(
+            first.stepIndex ?? 0
+          ) -
+          Number(
+            second.stepIndex ?? 0
+          )
+      )
+      .map((step, stepIndex) => ({
+        id: step.id,
+        dayId: activeDay.id,
+        dayIndex:
+          mobileItineraryDayIndex,
+        stepIndex:
+          step.stepIndex ??
+          stepIndex,
+        rawStep: step,
+        time: step.time || '',
+        type:
+          getStepTypeLabel(
+            step.type
+          ),
+        title:
+          getStepDisplayTitle(
+            step
+          ),
+        description:
+          getStepDisplayDescription(
+            step
+          ) ||
+          'Détail à compléter',
+        icon:
+          getStepTimelineIcon(
+            step.type
+          ),
+        tone:
+          getStepTimelineTone(
+            step.type
+          ),
+        synced: true
+      }));
   }
 
   return [];
@@ -8341,6 +8372,411 @@ function openMobileDayCoverPicker() {
   searchPhotos();
 }
 
+function mobileTimeToMinutes(value) {
+  const match = String(
+    value || ''
+  ).trim().match(
+    /^(\d{1,2}):(\d{2})/
+  );
+
+  if (!match) return null;
+
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+
+  if (
+    !Number.isFinite(hours) ||
+    !Number.isFinite(minutes) ||
+    hours < 0 ||
+    hours > 23 ||
+    minutes < 0 ||
+    minutes > 59
+  ) {
+    return null;
+  }
+
+  return hours * 60 + minutes;
+}
+
+function analyzeMobileDayPlan(
+  steps
+) {
+  const safeSteps =
+    Array.isArray(steps)
+      ? steps
+      : [];
+
+  if (!safeSteps.length) {
+    return [];
+  }
+
+  const warnings = [];
+
+  const missingTimeSteps =
+    safeSteps.filter(
+      step =>
+        mobileTimeToMinutes(
+          step.time
+        ) === null
+    );
+
+  const missingPlaceSteps =
+    safeSteps.filter(
+      function missingPlace(step) {
+        const raw =
+          step.rawStep || step;
+
+        if (
+          raw.lat != null &&
+          raw.lng != null
+        ) {
+          return false;
+        }
+
+        if (
+          raw.type === 'transport'
+        ) {
+          return !(
+            String(
+              raw.depart || ''
+            ).trim() &&
+            String(
+              raw.arrivee || ''
+            ).trim()
+          );
+        }
+
+        return !String(
+          raw.lieu ||
+          raw.place ||
+          ''
+        ).trim();
+      }
+    );
+
+  const timedSteps =
+    safeSteps
+      .map(function prepareStep(
+        step,
+        index
+      ) {
+        const raw =
+          step.rawStep || step;
+
+        return {
+          step,
+          index,
+          start:
+            mobileTimeToMinutes(
+              step.time
+            ),
+          end:
+            mobileTimeToMinutes(
+              raw.timeEnd
+            )
+        };
+      })
+      .filter(
+        item =>
+          item.start !== null
+      )
+      .sort(
+        (first, second) =>
+          first.start -
+            second.start ||
+          first.index -
+            second.index
+      );
+
+  let overlaps = 0;
+  let tightConnections = 0;
+  let overlapIndex = null;
+  let tightIndex = null;
+
+  for (
+    let index = 1;
+    index < timedSteps.length;
+    index += 1
+  ) {
+    const previous =
+      timedSteps[index - 1];
+
+    const current =
+      timedSteps[index];
+
+    if (
+      previous.end === null
+    ) {
+      continue;
+    }
+
+    const gap =
+      current.start -
+      previous.end;
+
+    if (gap < 0) {
+      overlaps += 1;
+
+      if (
+        overlapIndex === null
+      ) {
+        overlapIndex =
+          current.index;
+      }
+    } else if (gap < 30) {
+      tightConnections += 1;
+
+      if (
+        tightIndex === null
+      ) {
+        tightIndex =
+          current.index;
+      }
+    }
+  }
+
+  if (safeSteps.length >= 6) {
+    warnings.push({
+      id: 'dense',
+      label:
+        'Journée dense : ' +
+        safeSteps.length +
+        ' étapes prévues.',
+      stepIndex: null
+    });
+  }
+
+  if (overlaps > 0) {
+    warnings.push({
+      id: 'overlap',
+      label:
+        overlaps +
+        ' chevauchement' +
+        (overlaps > 1 ? 's' : '') +
+        ' horaire' +
+        (overlaps > 1 ? 's' : '') +
+        '.',
+      stepIndex:
+        overlapIndex
+    });
+  }
+
+  if (tightConnections > 0) {
+    warnings.push({
+      id: 'tight',
+      label:
+        tightConnections +
+        ' enchaînement' +
+        (
+          tightConnections > 1
+            ? 's'
+            : ''
+        ) +
+        ' avec moins de 30 minutes.',
+      stepIndex:
+        tightIndex
+    });
+  }
+
+  if (missingTimeSteps.length) {
+    warnings.push({
+      id: 'missing-time',
+      label:
+        missingTimeSteps.length +
+        ' étape' +
+        (
+          missingTimeSteps.length > 1
+            ? 's'
+            : ''
+        ) +
+        ' sans horaire.',
+      stepIndex:
+        safeSteps.indexOf(
+          missingTimeSteps[0]
+        )
+    });
+  }
+
+  if (missingPlaceSteps.length) {
+    warnings.push({
+      id: 'missing-place',
+      label:
+        missingPlaceSteps.length +
+        ' étape' +
+        (
+          missingPlaceSteps.length > 1
+            ? 's'
+            : ''
+        ) +
+        ' à localiser.',
+      stepIndex:
+        safeSteps.indexOf(
+          missingPlaceSteps[0]
+        )
+    });
+  }
+
+  return warnings.slice(0, 4);
+}
+
+async function sortMobileDayByTime() {
+  if (
+    mobileItineraryReorderBusy ||
+    !activeTrip?.id
+  ) {
+    return;
+  }
+
+  const activeDay =
+    getActiveItineraryDay();
+
+  const orderedSteps = (
+    Array.isArray(
+      activeDay?.steps
+    )
+      ? activeDay.steps
+      : []
+  )
+    .slice()
+    .sort(
+      (first, second) =>
+        Number(
+          first.stepIndex ?? 0
+        ) -
+        Number(
+          second.stepIndex ?? 0
+        )
+    );
+
+  const timedCount =
+    orderedSteps.filter(
+      step =>
+        mobileTimeToMinutes(
+          step.time
+        ) !== null
+    ).length;
+
+  if (timedCount < 2) {
+    alert(
+      'Ajoutez au moins deux horaires pour effectuer le tri.'
+    );
+
+    return;
+  }
+
+  const sortedSteps =
+    orderedSteps
+      .map(
+        (step, index) => ({
+          step,
+          index,
+          time:
+            mobileTimeToMinutes(
+              step.time
+            )
+        })
+      )
+      .sort(
+        (first, second) => {
+          if (
+            first.time !== null &&
+            second.time !== null
+          ) {
+            return (
+              first.time -
+                second.time ||
+              first.index -
+                second.index
+            );
+          }
+
+          if (
+            first.time !== null
+          ) {
+            return -1;
+          }
+
+          if (
+            second.time !== null
+          ) {
+            return 1;
+          }
+
+          return (
+            first.index -
+            second.index
+          );
+        }
+      )
+      .map(item => item.step);
+
+  const currentOrder =
+    orderedSteps
+      .map(
+        (step, index) =>
+          String(
+            step.id || index
+          )
+      )
+      .join('|');
+
+  const nextOrder =
+    sortedSteps
+      .map(
+        (step, index) =>
+          String(
+            step.id || index
+          )
+      )
+      .join('|');
+
+  if (
+    currentOrder === nextOrder
+  ) {
+    alert(
+      'La journée est déjà classée par heure.'
+    );
+
+    return;
+  }
+
+  if (
+    !window.SB?.reorderSteps
+  ) {
+    alert(
+      'Le tri chronologique est indisponible.'
+    );
+
+    return;
+  }
+
+  mobileItineraryReorderBusy = true;
+
+  try {
+    await window.SB.reorderSteps(
+      sortedSteps.map(
+        (step, index) => ({
+          ...step,
+          stepIndex: index
+        })
+      )
+    );
+
+    await refreshMobileTrips(
+      activeTrip.id
+    );
+
+    renderItinerary();
+  } catch (error) {
+    alert(
+      'Impossible de trier la journée : ' +
+      (error.message || error)
+    );
+  } finally {
+    mobileItineraryReorderBusy = false;
+  }
+}
+
 function renderItinerary() {
   setMobileWorkspaceMode('prepare');
   renderTripDayMode(true);
@@ -8355,8 +8791,26 @@ function renderTripDayMode(editable = false) {
 
   const days = activeTrip?.days || [];
   const activeDay = getActiveItineraryDay();
-  const steps = getCurrentTimelineSteps();
-  const dayNumber = mobileItineraryDayIndex + 1;
+  const steps =
+    getCurrentTimelineSteps();
+
+  const dayDiagnostics =
+    editable
+      ? analyzeMobileDayPlan(
+          steps
+        )
+      : [];
+
+  const timedStepCount =
+    steps.filter(
+      step =>
+        mobileTimeToMinutes(
+          step.time
+        ) !== null
+    ).length;
+
+  const dayNumber =
+    mobileItineraryDayIndex + 1;
 
   const todayISO = new Date().toISOString().slice(0, 10);
   const isToday = activeDay?.dateISO === todayISO;
@@ -8545,11 +8999,74 @@ function renderTripDayMode(editable = false) {
           </div>
         </section>
 
+        ${editable && (
+          dayDiagnostics.length ||
+          timedStepCount > 1
+        ) ? `
+          <section
+            class="mobile-day-assist"
+            aria-label="Vérification du programme"
+          >
+            <header>
+              <div>
+                <span class="material-symbols-outlined">
+                  rule
+                </span>
+
+                <strong>
+                  Vérification rapide
+                </strong>
+              </div>
+
+              ${timedStepCount > 1 ? `
+                <button
+                  type="button"
+                  data-action="mobile-sort-day-by-time"
+                >
+                  <span class="material-symbols-outlined">
+                    sort
+                  </span>
+                  Par heure
+                </button>
+              ` : ''}
+            </header>
+
+            ${dayDiagnostics.length ? `
+              <div class="mobile-day-diagnostics">
+                ${dayDiagnostics.map(
+                  warning =>
+                    warning.stepIndex != null
+                      ? `
+                        <button
+                          type="button"
+                          data-action="edit-step"
+                          data-step-index="${warning.stepIndex}"
+                        >
+                          <span aria-hidden="true">•</span>
+                          ${escapeHtml(warning.label)}
+                        </button>
+                      `
+                      : `
+                        <span>
+                          <span aria-hidden="true">•</span>
+                          ${escapeHtml(warning.label)}
+                        </span>
+                      `
+                ).join('')}
+              </div>
+            ` : `
+              <p>
+                Les principales informations de cette journée sont renseignées.
+              </p>
+            `}
+          </section>
+        ` : ''}
+
         ${nextStep ? `
           <section class="travel-next-step">
             <div class="travel-section-heading">
               <span>Prochaine étape</span>
-              <time>${escapeHtml(nextStep.time)}</time>
+              <time>${escapeHtml(nextStep.time || 'Horaire libre')}</time>
             </div>
 
             <article>
@@ -8674,7 +9191,7 @@ function renderTripDayMode(editable = false) {
                         : 'show-step-on-map'}"
                       data-step-index="${realIndex}"
                     >
-                      <time>${escapeHtml(step.time)}</time>
+                      <time>${escapeHtml(step.time || 'Libre')}</time>
 
                       <span class="travel-later-icon ${step.tone}">
                         <span class="material-symbols-outlined">
@@ -13440,6 +13957,14 @@ if (action === 'move-day-down') {
   await moveMobileItineraryDay(
     'down'
   );
+  return;
+}
+
+if (
+  action ===
+  'mobile-sort-day-by-time'
+) {
+  await sortMobileDayByTime();
   return;
 }
 

@@ -7753,6 +7753,37 @@ async function submit() {
     const [guidedText, setGuidedText] = React.useState('');
     const [guidedPlan, setGuidedPlan] = React.useState(null);
 
+    const guidedCounts =
+      React.useMemo(
+        function countGuidedItems() {
+          const counts = {
+            logement: 0,
+            transport: 0,
+            activite: 0,
+            restaurant: 0
+          };
+
+          (
+            guidedPlan?.items || []
+          ).forEach(
+            function countItem(item) {
+              if (
+                Object.prototype
+                  .hasOwnProperty.call(
+                    counts,
+                    item.type
+                  )
+              ) {
+                counts[item.type] += 1;
+              }
+            }
+          );
+
+          return counts;
+        },
+        [guidedPlan]
+      );
+
     function diffDaysInclusive(startISO, endISO) {
       if (U.diffDaysInclusive) return U.diffDaysInclusive(startISO, endISO);
 
@@ -7843,6 +7874,17 @@ async function submit() {
 
 async function submit() {
   const cleanName = name.trim();
+
+  if (
+    guidedOpen &&
+    guidedText.trim() &&
+    !guidedPlan
+  ) {
+    setError(
+      'Analyse d’abord ta description pour vérifier les informations détectées.'
+    );
+    return;
+  }
 
   if (!cleanName) {
     setError('Donne un nom à ton voyage.');
@@ -8075,7 +8117,7 @@ async function submit() {
                   lineHeight: 1.5
                 }}
               >
-                Décris ton voyage librement ou utilise le modèle. Tu pourras vérifier et modifier toutes les informations avant et après la création.
+                Décris ton voyage librement ou utilise un exemple. Pour ajouter un transport, une activité ou un restaurant, commence la phrase par une date : « Le 6 octobre, train de Séoul à Busan à 08:30 ».
               </p>
 
               <textarea
@@ -8088,7 +8130,7 @@ async function submit() {
                   setGuidedPlan(null);
                   setError('');
                 }}
-                placeholder="Je pars en Corée du Sud du 1 au 12 octobre 2026, les cinq premières nuits à Séoul, ensuite à Gyeongju."
+                placeholder={'Je pars en Corée du Sud du 1 au 12 octobre 2026, cinq nuits à Séoul, puis six nuits à Busan.\nLe 6 octobre, train de Séoul à Busan à 08:30.\nLe 7 octobre, visite du temple Haedong Yonggungsa à Busan à 10:00.'}
                 style={{
                   width: '100%',
                   resize: 'vertical',
@@ -8202,6 +8244,82 @@ async function submit() {
                     {guidedPlan.items.length > 1
                       ? 's'
                       : ''}
+                  </div>
+
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      gap: 6
+                    }}
+                  >
+                    {[
+                      {
+                        key: 'logement',
+                        label: 'Hébergement'
+                      },
+                      {
+                        key: 'transport',
+                        label: 'Transport'
+                      },
+                      {
+                        key: 'activite',
+                        label: 'Activité'
+                      },
+                      {
+                        key: 'restaurant',
+                        label: 'Restaurant'
+                      }
+                    ]
+                      .filter(
+                        function keepCount(
+                          category
+                        ) {
+                          return (
+                            guidedCounts[
+                              category.key
+                            ] > 0
+                          );
+                        }
+                      )
+                      .map(
+                        function renderCount(
+                          category
+                        ) {
+                          const count =
+                            guidedCounts[
+                              category.key
+                            ];
+
+                          return (
+                            <span
+                              key={
+                                category.key
+                              }
+                              style={{
+                                border:
+                                  '1px solid rgba(61, 126, 94, .25)',
+                                borderRadius: 999,
+                                background:
+                                  'var(--card)',
+                                color:
+                                  'var(--text)',
+                                padding:
+                                  '4px 8px',
+                                fontSize: 11.5,
+                                fontWeight: 700
+                              }}
+                            >
+                              {count}
+                              {' '}
+                              {category.label}
+                              {count > 1
+                                ? 's'
+                                : ''}
+                            </span>
+                          );
+                        }
+                      )}
                   </div>
 
                   {guidedPlan.items.map(

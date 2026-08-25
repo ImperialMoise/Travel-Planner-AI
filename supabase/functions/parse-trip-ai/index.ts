@@ -558,9 +558,12 @@ Règles :
 - Un hébergement couvrant plusieurs nuits doit être un seul élément logement avec dateStart et dateEnd.
 - Utilise les types activite, transport, logement ou restaurant.
 - Utilise uniquement les transports train, avion, bus, voiture, ferry, metro, pied ou taxi.
-- Préserve les accents et les noms propres.
+- Rédige exclusivement en français tous les textes destinés à l'utilisateur : name, dayTitles.title, items.label, items.note et warnings.
+- Les noms de villes, lieux, hôtels, compagnies et autres noms propres doivent conserver leur graphie d'origine.
+- Les labels doivent être courts, naturels et directement compréhensibles en français.
+- Les avertissements doivent être des phrases complètes en français. N'utilise jamais l'anglais dans warnings.
 - Les champs inconnus doivent rester vides ou null.
-- Résume toute ambiguïté dans warnings.
+- Résume toute ambiguïté dans warnings sans inventer l'information manquante.
 - Ne crée aucune donnée en dehors du schéma demandé.
 `;
 

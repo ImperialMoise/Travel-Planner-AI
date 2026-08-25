@@ -7858,11 +7858,80 @@ async function submit() {
             );
           }
 
-          plan =
-            await window.SB
-              .analyzeTripWithAI(
-                guidedText
+          let lastAIError =
+            null;
+
+          for (
+            let attempt = 0;
+            attempt < 2;
+            attempt += 1
+          ) {
+            try {
+              plan =
+                await window.SB
+                  .analyzeTripWithAI(
+                    guidedText
+                  );
+
+              lastAIError =
+                null;
+
+              break;
+            } catch (
+              currentAIError
+            ) {
+              lastAIError =
+                currentAIError;
+
+              const message =
+                String(
+                  currentAIError
+                    ?.message ||
+                    ''
+                );
+
+              const canRetry =
+                attempt === 0 &&
+                !(
+                  /quota/i.test(
+                    message
+                  ) ||
+                  /connecte-toi/i.test(
+                    message
+                  ) ||
+                  /session invalide/i.test(
+                    message
+                  ) ||
+                  /expirée/i.test(
+                    message
+                  )
+                );
+
+              if (!canRetry) {
+                break;
+              }
+
+              await new Promise(
+                function waitBeforeRetry(
+                  resolve
+                ) {
+                  window.setTimeout(
+                    resolve,
+                    800
+                  );
+                }
               );
+            }
+          }
+
+          if (!plan) {
+            throw (
+              lastAIError ||
+              new Error(
+                'Analyse IA indisponible.'
+              )
+            );
+          }
         } catch (aiError) {
           console.warn(
             'Analyse IA indisponible :',
@@ -7872,7 +7941,9 @@ async function submit() {
           if (
             !window.TripDraftParser
           ) {
-            throw aiError;
+            throw new Error(
+              'L’analyse IA est momentanément indisponible. Réessaie dans quelques secondes.'
+            );
           }
 
           const localPlan =
@@ -7881,11 +7952,36 @@ async function submit() {
                 guidedText
               );
 
+          if (
+            !localPlan ||
+            (
+              Array.isArray(
+                localPlan.errors
+              ) &&
+              localPlan.errors
+                .length
+            )
+          ) {
+            const aiMessage =
+              String(
+                aiError?.message ||
+                ''
+              );
+
+            throw new Error(
+              /quota/i.test(
+                aiMessage
+              )
+                ? aiMessage
+                : 'L’analyse IA est momentanément indisponible. Réessaie dans quelques secondes.'
+            );
+          }
+
           plan = {
             ...localPlan,
             source: 'local',
             warnings: [
-              'L’analyse IA est indisponible. Ce brouillon a été préparé par l’analyseur local.',
+              'L’analyse IA est momentanément indisponible. Ce brouillon a été préparé par l’analyseur local : vérifie-le attentivement.',
               ...(
                 localPlan.warnings ||
                 []

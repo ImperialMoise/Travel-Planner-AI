@@ -2794,7 +2794,8 @@ function openAddStep(type, preset) {
                 </div>
 
                 {quickAdd.open && (
-                    <form
+<form
+                    className="atelier-v2-quick-add"
                     onSubmit={saveQuickStep}
                     onKeyDown={event => {
                       if (
@@ -2817,10 +2818,13 @@ function openAddStep(type, preset) {
                       gap: 7
                     }}
                   >
-                    <div style={{
-                      display: 'flex',
-                      gap: 5
-                    }}>
+                    <div
+                      className="atelier-v2-quick-types"
+                      style={{
+                        display: 'flex',
+                        gap: 5
+                      }}
+                    >
                       {[
                         ['activite', 'Activité'],
                         ['transport', 'Transport']
@@ -2868,6 +2872,7 @@ function openAddStep(type, preset) {
                     </div>
 
                     <input
+                      className="atelier-v2-quick-label"
                       autoFocus
                       type="text"
                       aria-label="Nom de la nouvelle étape"
@@ -2901,6 +2906,7 @@ function openAddStep(type, preset) {
                     />
 
                     <input
+                      className="atelier-v2-quick-time"
                       type="time"
                       aria-label="Heure de la nouvelle étape"
                       value={quickAdd.time}
@@ -2954,7 +2960,8 @@ function openAddStep(type, preset) {
                 )}
 
                 {dayPlanWarnings.length > 0 && (
-                  <div
+<div
+                    className="atelier-v2-diagnostics"
                     role="status"
                     aria-label="Points à vérifier dans cette journée"
                     style={{
@@ -2984,15 +2991,18 @@ function openAddStep(type, preset) {
                       À vérifier
                     </span>
 
-                    <div style={{
-                      flex: '1 1 220px',
-                      display: 'flex',
-                      flexWrap: 'wrap',
-                      gap: '4px 12px',
-                      color: 'var(--muted)',
-                      fontSize: 11.5,
-                      lineHeight: '17px'
-                    }}>
+                    <div
+                      className="atelier-v2-diagnostic-items"
+                      style={{
+                        flex: '1 1 220px',
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: '4px 12px',
+                        color: 'var(--muted)',
+                        fontSize: 11.5,
+                        lineHeight: '17px'
+                      }}
+                    >
 {dayPlanWarnings.map(
                         function renderWarning(
                           warning

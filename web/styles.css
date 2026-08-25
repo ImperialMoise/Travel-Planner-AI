@@ -900,17 +900,24 @@ body.is-dragging-day * {
   .web-step-time-column {
     width: 100% !important;
     min-width: 0 !important;
-    grid-template-columns: auto minmax(24px, 1fr) auto !important;
-    grid-template-rows: auto !important;
+    flex-direction: row !important;
     align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 7px !important;
     padding: 2px 88px 2px 2px !important;
   }
 
-  .web-step-time-column > div:nth-child(2) {
+  .web-step-time-column > div:first-child {
+    flex: 0 0 auto;
+    min-width: 62px !important;
+  }
+
+  .web-step-time-column > span {
+    flex: 0 0 auto;
     width: auto !important;
-    height: 1px !important;
-    min-height: 1px !important;
-    margin: 0 9px !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
   }
 
   .web-step-card-content {
@@ -961,8 +968,80 @@ body.is-dragging-day * {
     overflow-wrap: anywhere;
   }
 
+  .atelier-v2-plan-actions {
+    flex-wrap: wrap;
+  }
+
   .atelier-v2-plan-actions button {
     min-height: 44px !important;
+    touch-action: manipulation;
+  }
+
+  .atelier-v2-quick-add {
+    margin: 10px 8px 0 !important;
+    padding: 9px !important;
+    display: grid !important;
+    grid-template-columns:
+      minmax(0, 1fr)
+      108px;
+    align-items: stretch !important;
+    gap: 8px !important;
+  }
+
+  .atelier-v2-quick-types {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .atelier-v2-quick-types button {
+    flex: 1;
+    min-width: 0;
+    min-height: 44px !important;
+    touch-action: manipulation;
+  }
+
+  .atelier-v2-quick-label {
+    grid-column: 1;
+    width: 100%;
+    min-width: 0 !important;
+    min-height: 44px !important;
+    box-sizing: border-box;
+    font-size: 16px !important;
+  }
+
+  .atelier-v2-quick-time {
+    grid-column: 2;
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 44px !important;
+    box-sizing: border-box;
+    font-size: 16px !important;
+  }
+
+  .atelier-v2-quick-add > .atelier-v2-btn {
+    width: 100%;
+    min-width: 0;
+    min-height: 44px !important;
+    touch-action: manipulation;
+  }
+
+  .atelier-v2-diagnostics {
+    margin: 9px 8px 0 !important;
+    align-items: stretch !important;
+  }
+
+  .atelier-v2-diagnostic-items {
+    flex-basis: 100% !important;
+    display: grid !important;
+    gap: 2px !important;
+  }
+
+  .atelier-v2-diagnostic-items button {
+    width: 100%;
+    min-height: 36px;
+    padding: 6px 0 !important;
+    text-align: left !important;
+    touch-action: manipulation;
   }
 
   .atelier-v2-hero:not(.has-cover)
@@ -973,6 +1052,42 @@ body.is-dragging-day * {
   .atelier-v2-reminder
     > span:last-child {
     color: var(--accent-text) !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .atelier-v2-plan-actions {
+    display: grid !important;
+    grid-template-columns:
+      minmax(0, 1fr)
+      minmax(0, 1fr);
+  }
+
+  .atelier-v2-plan-actions .atelier-v2-btn {
+    width: 100%;
+    min-width: 0;
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+  }
+
+  .atelier-v2-quick-add {
+    grid-template-columns: 1fr !important;
+  }
+
+  .atelier-v2-quick-types,
+  .atelier-v2-quick-label,
+  .atelier-v2-quick-time,
+  .atelier-v2-quick-add > .atelier-v2-btn {
+    grid-column: 1 !important;
+    width: 100% !important;
+  }
+
+  .web-step-time-column {
+    padding-right: 82px !important;
+  }
+
+  .web-step-time-column > div:first-child {
+    min-width: 58px !important;
   }
 }
 

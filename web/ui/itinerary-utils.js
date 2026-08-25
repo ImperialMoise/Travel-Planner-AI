@@ -554,69 +554,204 @@
     return Math.max(1, diffDays(startISO, endISO));
   }
 
-  function findActiveLodgingStay(days, selectedDayIndex) {
-    const safeDays = Array.isArray(days) ? days : [];
-    const sel = Number(selectedDayIndex) || 0;
+  function findLodgingStaysForDay(
+    days,
+    selectedDayIndex
+  ) {
+    const safeDays =
+      Array.isArray(days)
+        ? days
+        : [];
 
-    if (!safeDays.length || !safeDays[sel]) return null;
+    const selectedIndex =
+      Number(selectedDayIndex) || 0;
 
-    for (let dayIndex = 0; dayIndex < safeDays.length; dayIndex += 1) {
-      const sourceDay = safeDays[dayIndex];
-      const lodgings = (sourceDay.steps || []).filter(isLodgingStep);
+    const stays = [];
 
-      for (let lodgingIndex = 0; lodgingIndex < lodgings.length; lodgingIndex += 1) {
-        const step = lodgings[lodgingIndex];
-        const nights = lodgingNightCount(step);
-
-        const startISO = lodgingDateStart(step, sourceDay.dateISO);
-        const endISO = lodgingDateEnd(step, startISO);
-
-        let startIndex = dayIndex;
-        let endIndex = dayIndex + nights;
-
-        if (startISO) {
-          const foundStart = safeDays.findIndex(function findStart(day) {
-            return day.dateISO === startISO;
-          });
-
-          if (foundStart >= 0) startIndex = foundStart;
-        }
-
-        if (endISO) {
-          const foundEnd = safeDays.findIndex(function findEnd(day) {
-            return day.dateISO === endISO;
-          });
-
-          if (foundEnd >= 0) {
-            endIndex = foundEnd;
-          } else {
-            endIndex = startIndex + nights;
-          }
-        }
-
-        if (sel >= startIndex && sel <= endIndex) {
-          let status = 'stay';
-
-          if (sel === startIndex) status = 'checkin';
-          else if (sel === endIndex) status = 'checkout';
-
-          return {
-            step,
-            sourceDay,
-            sourceDayIndex: dayIndex,
-            startIndex,
-            endIndex,
-            startISO,
-            endISO,
-            nights,
-            status,
-            nightNumber: Math.min(  nights,  Math.max(1, sel - startIndex + 1))
-          };
-        }
-      }
+    if (
+      !safeDays.length ||
+      !safeDays[selectedIndex]
+    ) {
+      return stays;
     }
 
-    return null;
+    safeDays.forEach(
+      function inspectSourceDay(
+        sourceDay,
+        sourceDayIndex
+      ) {
+        const lodgings =
+          (
+            sourceDay.steps || []
+          ).filter(
+            isLodgingStep
+          );
+
+        lodgings.forEach(
+          function inspectLodging(
+            step
+          ) {
+            const nights =
+              lodgingNightCount(step);
+
+            const startISO =
+              lodgingDateStart(
+                step,
+                sourceDay.dateISO
+              );
+
+            const endISO =
+              lodgingDateEnd(
+                step,
+                startISO
+              );
+
+            let startIndex =
+              sourceDayIndex;
+
+            let endIndex =
+              sourceDayIndex +
+              nights;
+
+            if (startISO) {
+              const foundStart =
+                safeDays.findIndex(
+                  function findStart(
+                    day
+                  ) {
+                    return (
+                      day.dateISO ===
+                      startISO
+                    );
+                  }
+                );
+
+              if (foundStart >= 0) {
+                startIndex =
+                  foundStart;
+              }
+            }
+
+            if (endISO) {
+              const foundEnd =
+                safeDays.findIndex(
+                  function findEnd(
+                    day
+                  ) {
+                    return (
+                      day.dateISO ===
+                      endISO
+                    );
+                  }
+                );
+
+              if (foundEnd >= 0) {
+                endIndex =
+                  foundEnd;
+              }
+            }
+
+            if (
+              selectedIndex <
+                startIndex ||
+              selectedIndex >
+                endIndex
+            ) {
+              return;
+            }
+
+            let status = 'stay';
+
+            if (
+              selectedIndex ===
+              startIndex
+            ) {
+              status = 'checkin';
+            } else if (
+              selectedIndex ===
+              endIndex
+            ) {
+              status = 'checkout';
+            }
+
+            stays.push({
+              step,
+              sourceDay,
+              sourceDayIndex,
+              startIndex,
+              endIndex,
+              startISO,
+              endISO,
+              nights,
+              status,
+              nightNumber:
+                Math.min(
+                  nights,
+                  Math.max(
+                    1,
+                    selectedIndex -
+                      startIndex +
+                      1
+                  )
+                )
+            });
+          }
+        );
+      }
+    );
+
+    return stays.sort(
+      function sortStays(
+        firstStay,
+        secondStay
+      ) {
+        function eventTime(stay) {
+          if (
+            stay.status ===
+            'checkout'
+          ) {
+            return (
+              stay.step
+                .timeCheckOut ||
+              stay.step.checkout ||
+              '11:00'
+            );
+          }
+
+          if (
+            stay.status ===
+            'checkin'
+          ) {
+            return (
+              stay.step
+                .timeCheckIn ||
+              stay.step.checkin ||
+              '15:00'
+            );
+          }
+
+          return '12:00';
+        }
+
+        return eventTime(
+          firstStay
+        ).localeCompare(
+          eventTime(secondStay)
+        );
+      }
+    );
+  }
+
+  function findActiveLodgingStay(
+    days,
+    selectedDayIndex
+  ) {
+    return (
+      findLodgingStaysForDay(
+        days,
+        selectedDayIndex
+      )[0] || null
+    );
   }
 
   function getLodgingTimelineReminders(days, selectedDayIndex) {
@@ -753,6 +888,7 @@
     lodgingDateStart,
     lodgingDateEnd,
     lodgingDiffNights,
+    findLodgingStaysForDay,
     findActiveLodgingStay,
     getLodgingTimelineReminders
   };

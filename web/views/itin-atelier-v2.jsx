@@ -1787,7 +1787,6 @@ return {
 
         return 0;
       });
-    const reminders = getLodgingTimelineReminders(days, safeDayIndex);
     const counts = countStepTypes(day);
 
     React.useEffect(function keepSelectedDayValid() {
@@ -2195,18 +2194,6 @@ return {
                 </div>
 
                 <div className="atelier-v2-timeline">
-                {(reminders.length ? reminders : [null]).map(function renderReminder(reminder, reminderIndex) {
-                  return (
-                    <LodgingReminderCard
-                      key={reminder ? reminder.key : 'empty-lodging-slot'}
-                      reminder={reminder}
-                      dayIndex={safeDayIndex}
-                      onEdit={openEditorForStep}
-                      onAddLodging={() => openAddStep('logement')}
-                    />
-                  );
-                })}
-
                 {!timelineSteps.length && (
                   <div className="atelier-v2-empty">
                     Aucune étape visible dans la timeline pour cette journée.

@@ -159,6 +159,31 @@
     };
   }
 
+    function findLodgingStaysForDay(
+    days,
+    selectedDayIndex
+  ) {
+    if (
+      U.findLodgingStaysForDay
+    ) {
+      return (
+        U.findLodgingStaysForDay(
+          days,
+          selectedDayIndex
+        )
+      );
+    }
+
+    const stay =
+      findActiveLodgingStay(
+        days,
+        selectedDayIndex
+      );
+
+    return stay ? [stay] : [];
+  }
+
+
   function formatDate(iso) {
     if (U.formatDayDate) return U.formatDayDate(iso);
 
@@ -364,7 +389,18 @@ function InlineButton({
     onReload
   }) {
     const important = stepImportant(step);
-    const documentUrl = stepDocumentUrl(step);
+    const documentUrl =
+      stepDocumentUrl(step);
+
+    const checkInDate =
+      formatDate(
+        stay.startISO
+      );
+
+    const checkOutDate =
+      formatDate(
+        stay.endISO
+      );
     const title = stepDisplayName(step, 'Restaurant');
     const subtitle = stepSubtitle(step);
     const time = stepRangeLabel(step);
@@ -714,6 +750,10 @@ function InlineButton({
               marginBottom: 3
             }}>
               Arrivée
+              {checkInDate
+                ? ' · ' +
+                  checkInDate
+                : ''}
             </div>
 
             <div style={{
@@ -739,6 +779,10 @@ function InlineButton({
               marginBottom: 3
             }}>
               Départ
+              {checkOutDate
+                ? ' · ' +
+                  checkOutDate
+                : ''}
             </div>
 
             <div style={{
@@ -965,10 +1009,14 @@ function InlineButton({
     });
 
     const restaurants = getRestaurants(day);
-    const stay = findActiveLodgingStay(
-      trip && trip.days,
-      dayIndex || 0
-    );
+    const stays =
+      findLodgingStaysForDay(
+        trip && trip.days,
+        dayIndex || 0
+      );
+
+    const stay =
+      stays[0] || null;
 
     function toggleSection(key) {
       setOpenSections(function update(prev) {
@@ -1037,26 +1085,72 @@ function InlineButton({
             noBorder
             kicker="Hébergement"
             title="Hébergement"
-            subtitle={stay
-              ? lodgingName(stay.step) +
-                ' · ' +
-                stay.nights +
-                ' nuit' +
-                (stay.nights > 1 ? 's' : '')
-              : 'Aucun hébergement pour cette nuit.'}
+            subtitle={
+              stays.length === 1
+                ? lodgingName(
+                    stay.step
+                  ) +
+                  ' · ' +
+                  stay.nights +
+                  ' nuit' +
+                  (
+                    stay.nights > 1
+                      ? 's'
+                      : ''
+                  )
+                : stays.length > 1
+                  ? stays.length +
+                    ' hébergements concernés aujourd’hui'
+                  : 'Aucun hébergement pour cette nuit.'
+            }
             icon="bed"
             open={openSections.lodging}
             onToggle={() => toggleSection('lodging')}
           >
-            {stay ? (
-              <LodgingCard
-                stay={stay}
-                day={day}
-                trip={trip}
-                onEditStep={onEditStep}
-              />
+            {stays.length ? (
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection:
+                    'column',
+                  gap: 8
+                }}
+              >
+                {stays.map(
+                  function renderStay(
+                    currentStay,
+                    index
+                  ) {
+                    return (
+                      <LodgingCard
+                        key={
+                          String(
+                            currentStay
+                              .step
+                              ?.id ||
+                              index
+                          ) +
+                          '-' +
+                          currentStay
+                            .status
+                        }
+                        stay={
+                          currentStay
+                        }
+                        day={day}
+                        trip={trip}
+                        onEditStep={
+                          onEditStep
+                        }
+                      />
+                    );
+                  }
+                )}
+              </div>
             ) : (
-              <EmptyLodgingCard onAdd={addLodging} />
+              <EmptyLodgingCard
+                onAdd={addLodging}
+              />
             )}
           </window.RailSection>
 

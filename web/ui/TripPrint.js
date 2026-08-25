@@ -295,6 +295,30 @@
         }
       ).format(new Date());
 
+    const pdfFilename =
+      (
+        String(
+          trip.name ||
+          'mon-voyage'
+        )
+          .normalize('NFD')
+          .replace(
+            /[\u0300-\u036f]/g,
+            ''
+          )
+          .toLowerCase()
+          .replace(
+            /[^a-z0-9]+/g,
+            '-'
+          )
+          .replace(
+            /^-+|-+$/g,
+            ''
+          ) ||
+        'mon-voyage'
+      ) +
+      '.pdf';
+
     const content = days.length
       ? days
           .map(renderDay)
@@ -370,7 +394,9 @@
               top: 0;
               z-index: 10;
               display: flex;
-              justify-content: center;
+              flex-direction: column;
+              align-items: center;
+              gap: 7px;
               padding: 12px;
               background: rgba(
                 32,
@@ -378,18 +404,52 @@
                 50,
                 0.96
               );
+              backdrop-filter: blur(12px);
+              -webkit-backdrop-filter: blur(12px);
+            }
+
+            .toolbar-actions {
+              display: flex;
+              flex-wrap: wrap;
+              justify-content: center;
+              gap: 10px;
             }
 
             .toolbar button {
               min-height: 44px;
               padding: 0 20px;
-              border: 0;
+              border: 1px solid transparent;
               border-radius: 999px;
               color: white;
               background: var(--accent);
               font: inherit;
               font-weight: 800;
               cursor: pointer;
+            }
+
+            .toolbar button.secondary {
+              border-color:
+                rgba(255, 255, 255, 0.4);
+              color: white;
+              background: transparent;
+            }
+
+            .toolbar button:hover:not(:disabled) {
+              transform: translateY(-1px);
+            }
+
+            .toolbar button:disabled {
+              cursor: wait;
+              opacity: 0.65;
+            }
+
+            .toolbar-status {
+              min-height: 18px;
+              color:
+                rgba(255, 255, 255, 0.78);
+              font-size: 11px;
+              line-height: 18px;
+              text-align: center;
             }
 
             .sheet {
@@ -404,6 +464,27 @@
               box-shadow:
                 0 16px 60px
                 rgba(32, 56, 50, 0.14);
+            }
+
+            body.pdf-exporting {
+              background: var(--paper);
+            }
+
+            body.pdf-exporting .toolbar {
+              display: none;
+            }
+
+            body.pdf-exporting .sheet {
+              width: 210mm !important;
+              min-height: 297mm !important;
+              margin: 0 !important;
+              padding:
+                14mm
+                13mm
+                15mm !important;
+              background:
+                var(--paper) !important;
+              box-shadow: none !important;
             }
 
             .trip-header {
@@ -454,7 +535,11 @@
             }
 
             .day + .day {
-              break-before: page;
+              margin-top: 10px;
+              border-top:
+                2px solid var(--ink);
+              break-before: auto;
+              page-break-before: auto;
             }
 
             .day-header {
@@ -624,12 +709,28 @@
             }
 
             @media print {
+              :root {
+                --ink: #111111;
+                --muted: #3f3f3f;
+                --line: #c9c9c9;
+                --paper: #ffffff;
+                --accent: #111111;
+                --soft: #f4f4f4;
+              }
+
+              * {
+                -webkit-print-color-adjust:
+                  economy !important;
+                print-color-adjust:
+                  economy !important;
+              }
+
               html,
               body {
                 margin: 0;
                 padding: 0;
-                color: var(--ink) !important;
-                background: var(--paper) !important;
+                color: #111111 !important;
+                background: #ffffff !important;
               }
 
               body {
@@ -664,8 +765,11 @@
               }
 
               .day + .day {
-                break-before: page;
-                page-break-before: always;
+                margin-top: 4mm;
+                border-top:
+                  1px solid #b7b7b7;
+                break-before: auto;
+                page-break-before: auto;
               }
 
               .day-header,
@@ -695,19 +799,44 @@
                 widows: 3;
               }
 
-              .day-number,
+              .day-number {
+                border:
+                  1px solid #111111 !important;
+                color: #111111 !important;
+                background:
+                  #ffffff !important;
+              }
+
               .global-note,
               .day-note,
               .checklist,
-              .empty,
+              .empty {
+                border-color:
+                  #b7b7b7 !important;
+                color: #111111 !important;
+                background:
+                  #f4f4f4 !important;
+              }
+
               .important {
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
+                border:
+                  1px solid #777777;
+                color: #111111 !important;
+                background:
+                  #ffffff !important;
+              }
+
+              .brand,
+              .step-time,
+              .step-link,
+              a {
+                color: #111111 !important;
               }
 
               a {
-                color: var(--accent) !important;
-                text-decoration: none;
+                text-decoration: underline;
+                text-decoration-thickness:
+                  0.5px;
               }
 
               .print-footer {
@@ -739,12 +868,30 @@
 
         <body>
           <div class="toolbar">
-            <button
-              type="button"
-              onclick="printDocument(this)"
+            <div class="toolbar-actions">
+              <button
+                type="button"
+                class="secondary"
+                onclick="printDocument(this)"
+              >
+                Imprimer
+              </button>
+
+              <button
+                type="button"
+                onclick="downloadPdf(this)"
+              >
+                Télécharger le PDF
+              </button>
+            </div>
+
+            <span
+              id="export-status"
+              class="toolbar-status"
+              aria-live="polite"
             >
-              Imprimer / Enregistrer en PDF
-            </button>
+              Le PDF conserve les couleurs de cet aperçu.
+            </span>
           </div>
 
           <main class="sheet">
@@ -779,34 +926,157 @@
             </footer>
           </main>
           <script>
-            async function printDocument(button) {
-              const originalText =
-                button.textContent;
+            var pdfLibraryPromise = null;
 
-              button.disabled = true;
-              button.textContent =
-                'Préparation du PDF…';
+            function setExportStatus(message) {
+              var status =
+                document.getElementById(
+                  'export-status'
+                );
 
-              try {
-                if (
-                  document.fonts &&
-                  document.fonts.ready
-                ) {
-                  await document.fonts.ready;
-                }
+              if (status) {
+                status.textContent =
+                  message || '';
+              }
+            }
 
-                await new Promise(
-                  function waitForLayout(resolve) {
-                    requestAnimationFrame(
-                      function firstFrame() {
-                        requestAnimationFrame(
-                          resolve
+            function ensurePdfLibrary() {
+              if (window.html2pdf) {
+                return Promise.resolve(
+                  window.html2pdf
+                );
+              }
+
+              if (pdfLibraryPromise) {
+                return pdfLibraryPromise;
+              }
+
+              pdfLibraryPromise =
+                new Promise(
+                  function loadPdfLibrary(
+                    resolve,
+                    reject
+                  ) {
+                    var script =
+                      document.createElement(
+                        'script'
+                      );
+
+                    script.src =
+                      'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+
+                    script.integrity =
+                      'sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==';
+
+                    script.crossOrigin =
+                      'anonymous';
+
+                    script.referrerPolicy =
+                      'no-referrer';
+
+                    script.onload =
+                      function pdfLibraryLoaded() {
+                        resolve(
+                          window.html2pdf
                         );
-                      }
+                      };
+
+                    script.onerror =
+                      function pdfLibraryFailed() {
+                        pdfLibraryPromise =
+                          null;
+
+                        reject(
+                          new Error(
+                            'Chargement du générateur PDF impossible.'
+                          )
+                        );
+                      };
+
+                    document.head.appendChild(
+                      script
                     );
                   }
                 );
 
+              return pdfLibraryPromise;
+            }
+
+            async function waitForDocument() {
+              if (
+                document.fonts &&
+                document.fonts.ready
+              ) {
+                await document.fonts.ready;
+              }
+
+              await Promise.all(
+                Array.from(
+                  document.images
+                ).map(
+                  function waitForImage(
+                    image
+                  ) {
+                    if (image.complete) {
+                      return Promise.resolve();
+                    }
+
+                    return new Promise(
+                      function imageReady(
+                        resolve
+                      ) {
+                        image.addEventListener(
+                          'load',
+                          resolve,
+                          {
+                            once: true
+                          }
+                        );
+
+                        image.addEventListener(
+                          'error',
+                          resolve,
+                          {
+                            once: true
+                          }
+                        );
+                      }
+                    );
+                  }
+                )
+              );
+
+              await new Promise(
+                function waitForLayout(
+                  resolve
+                ) {
+                  requestAnimationFrame(
+                    function firstFrame() {
+                      requestAnimationFrame(
+                        resolve
+                      );
+                    }
+                  );
+                }
+              );
+            }
+
+            async function printDocument(
+              button
+            ) {
+              var originalText =
+                button.textContent;
+
+              button.disabled = true;
+              button.textContent =
+                'Préparation…';
+
+              setExportStatus(
+                'Préparation de l’impression économique…'
+              );
+
+              try {
+                await waitForDocument();
                 window.print();
               } finally {
                 window.setTimeout(
@@ -814,9 +1084,116 @@
                     button.disabled = false;
                     button.textContent =
                       originalText;
+
+                    setExportStatus(
+                      'Le PDF conserve les couleurs de cet aperçu.'
+                    );
                   },
                   300
                 );
+              }
+            }
+
+            async function downloadPdf(
+              button
+            ) {
+              var originalText =
+                button.textContent;
+
+              button.disabled = true;
+              button.textContent =
+                'Création du PDF…';
+
+              setExportStatus(
+                'Mise en page A4 en cours…'
+              );
+
+              try {
+                await ensurePdfLibrary();
+
+                document.body.classList.add(
+                  'pdf-exporting'
+                );
+
+                await waitForDocument();
+
+                var sheet =
+                  document.querySelector(
+                    '.sheet'
+                  );
+
+                var filename =
+                  sheet.getAttribute(
+                    'data-pdf-filename'
+                  ) ||
+                  'mon-voyage.pdf';
+
+                await window
+                  .html2pdf()
+                  .set({
+                    margin: 0,
+                    filename: filename,
+                    enableLinks: true,
+                    image: {
+                      type: 'jpeg',
+                      quality: 0.98
+                    },
+                    html2canvas: {
+                      scale: 2,
+                      useCORS: true,
+                      logging: false,
+                      backgroundColor:
+                        '#fffdf9',
+                      scrollX: 0,
+                      scrollY: 0
+                    },
+                    jsPDF: {
+                      unit: 'mm',
+                      format: 'a4',
+                      orientation:
+                        'portrait',
+                      compress: true
+                    },
+                    pagebreak: {
+                      mode: [
+                        'css',
+                        'legacy'
+                      ],
+                      avoid: [
+                        '.day-header',
+                        '.step',
+                        '.checklist',
+                        '.empty'
+                      ]
+                    }
+                  })
+                  .from(sheet)
+                  .save();
+
+                setExportStatus(
+                  'PDF téléchargé.'
+                );
+              } catch (error) {
+                console.error(
+                  'PDF export error:',
+                  error
+                );
+
+                setExportStatus(
+                  'Le téléchargement a échoué.'
+                );
+
+                window.alert(
+                  'Impossible de créer le PDF. Réessaie ou utilise le bouton Imprimer.'
+                );
+              } finally {
+                document.body.classList.remove(
+                  'pdf-exporting'
+                );
+
+                button.disabled = false;
+                button.textContent =
+                  originalText;
               }
             }
           </script>

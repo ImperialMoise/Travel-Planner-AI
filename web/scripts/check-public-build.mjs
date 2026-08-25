@@ -296,6 +296,41 @@ for (
   }
 }
 
+const publicTripPrintJavaScript =
+  await readFile(
+    path.join(
+      distDirectory,
+      'ui',
+      'TripPrint.js'
+    ),
+    'utf8'
+  );
+
+const requiredTripPrintMarkers = [
+  'downloadPdf',
+  'printDocument',
+  'html2pdf.bundle.min.js',
+  "format: 'a4'",
+  'pdf-exporting'
+];
+
+for (
+  const tripPrintMarker
+  of requiredTripPrintMarkers
+) {
+  if (
+    !publicTripPrintJavaScript.includes(
+      tripPrintMarker
+    )
+  ) {
+    violations.push(
+      'TripPrint.js ne contient pas la fonction PDF : ' +
+      tripPrintMarker +
+      '.'
+    );
+  }
+}
+
 const forbiddenDevelopmentRuntimes = [
   'react.development.js',
   'react-dom.development.js',

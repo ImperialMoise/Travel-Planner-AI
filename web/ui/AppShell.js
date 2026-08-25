@@ -8118,13 +8118,28 @@ async function submit() {
                   onClick={() => {
                     setGuidedText(
                       window.TripDraftParser
+                        ?.naturalExample || ''
+                    );
+                    setGuidedPlan(null);
+                    setError('');
+                  }}
+                >
+                  Exemple rapide
+                </AppButton>
+
+                <AppButton
+                  type="button"
+                  variant="ghost"
+                  onClick={() => {
+                    setGuidedText(
+                      window.TripDraftParser
                         ?.example || ''
                     );
                     setGuidedPlan(null);
                     setError('');
                   }}
                 >
-                  Utiliser le modèle
+                  Modèle détaillé
                 </AppButton>
 
                 <AppButton

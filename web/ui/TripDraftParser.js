@@ -25,8 +25,27 @@
     sept: 7,
     huit: 8,
     neuf: 9,
-    dix: 10
+    dix: 10,
+    onze: 11,
+    douze: 12,
+    treize: 13,
+    quatorze: 14,
+    quinze: 15,
+    seize: 16,
+    'dix-sept': 17,
+    'dix-huit': 18,
+    'dix-neuf': 19,
+    vingt: 20
   };
+
+  const NUMBER_PATTERN =
+    '(?:\\d+|' +
+    Object.keys(NUMBER_WORDS)
+      .sort(function sortNumberWords(first, second) {
+        return second.length - first.length;
+      })
+      .join('|') +
+    ')';
 
   const EXAMPLE = [
     'Voyage : Corée du Sud',
@@ -38,6 +57,9 @@
     'Séjour : 09/10/2026 au 12/10/2026 | Busan | Hôtel à Busan',
     'Étape : 10/10/2026 | Village culturel de Gamcheon | Busan | 09:30'
   ].join('\n');
+
+  const NATURAL_EXAMPLE =
+    'Je pars en Corée du Sud du 1 au 12 octobre 2026, cinq nuits à Séoul, trois nuits à Gyeongju, puis trois nuits à Busan.';
 
   function normalize(value) {
     return String(value || '')
@@ -259,12 +281,12 @@
     text,
     plan
   ) {
-    const normalizedText =
-      normalize(text);
+    const naturalText =
+      String(text || '').trim();
 
     const tripMatch =
-      normalizedText.match(
-        /je pars\s+(?:en|a|au|aux)\s+(.+?)\s+du\s+(\d{1,2})\s+au\s+(\d{1,2})\s+([a-z]+)(?:\s+(\d{4}))?/i
+      naturalText.match(
+        /je pars\s+(?:en|a|à|au|aux)\s+(.+?)\s+du\s+(\d{1,2})\s+au\s+(\d{1,2})\s+([a-zA-ZÀ-ÿ-]+)(?:\s+(\d{4}))?/i
       );
 
     if (!tripMatch) {
@@ -275,16 +297,19 @@
       Number(tripMatch[5]) ||
       new Date().getFullYear();
 
-    const month =
-      MONTHS[tripMatch[4]];
+     const month =
+      MONTHS[
+        normalize(tripMatch[4])
+      ];
 
     if (!month) return 0;
 
-    plan.name = tripMatch[1]
-      .trim()
-      .replace(/\b\w/g, letter =>
-        letter.toUpperCase()
-      );
+    const destination =
+      tripMatch[1].trim();
+
+    plan.name =
+      destination.charAt(0).toUpperCase() +
+      destination.slice(1);
 
     plan.startDate = validISO(
       year,
@@ -306,55 +331,108 @@
       );
     }
 
-    const firstStay =
-      normalizedText.match(
-        /(?:les?\s+)?(\d+|une|un|deux|trois|quatre|cinq|six|sept|huit|neuf|dix)\s+(?:premieres?\s+)?nuits?\s+(?:a|au|aux)\s+([^,.;]+)/i
+    const stayPattern =
+      new RegExp(
+        '(?:les?\\s+)?(' +
+          NUMBER_PATTERN +
+        ')\\s+' +
+        '(?:premieres?\\s+)?' +
+        'nuits?\\s+' +
+        '(?:a|à|au|aux)\\s+' +
+        '([^,.;]+)',
+        'gi'
       );
 
-    let firstStayEnd = '';
+    const stayMatches = [
+      ...naturalText.matchAll(
+        stayPattern
+      )
+    ];
+
+    let stayCursor =
+      plan.startDate;
+
+    stayMatches.forEach(
+      function addNaturalStay(
+        stayMatch
+      ) {
+        const nights =
+          parseNumber(stayMatch[1]);
+
+        const location =
+          String(stayMatch[2] || '')
+            .trim();
+
+        if (
+          !nights ||
+          !location ||
+          !stayCursor ||
+          !plan.endDate ||
+          stayCursor >= plan.endDate
+        ) {
+          return;
+        }
+
+        const requestedEnd =
+          addDaysISO(
+            stayCursor,
+            nights
+          );
+
+        const stayEnd =
+          requestedEnd > plan.endDate
+            ? plan.endDate
+            : requestedEnd;
+
+        addStay(
+          plan,
+          {
+            start: stayCursor,
+            end: stayEnd
+          },
+          location,
+          ''
+        );
+
+        stayCursor =
+          stayEnd;
+      }
+    );
+
+    const remainingStay =
+      naturalText.match(
+        /(?:ensuite|puis)\s+(?:a|à|au|aux)\s+([^,.;]+)/i
+      );
 
     if (
-      firstStay &&
-      plan.startDate
-    ) {
-      const nights =
-        parseNumber(firstStay[1]);
-
-      firstStayEnd = addDaysISO(
-        plan.startDate,
-        nights
-      );
-
-      addStay(
-        plan,
-        {
-          start: plan.startDate,
-          end: firstStayEnd
-        },
-        firstStay[2],
-        ''
-      );
-    }
-
-    const nextStay =
-      normalizedText.match(
-        /ensuite\s+(?:a|au|aux)\s+([^,.;]+)/i
-      );
-
-    if (
-      nextStay &&
-      firstStayEnd &&
+      remainingStay &&
+      stayCursor &&
       plan.endDate &&
-      firstStayEnd < plan.endDate
+      stayCursor < plan.endDate
     ) {
       addStay(
         plan,
         {
-          start: firstStayEnd,
+          start: stayCursor,
           end: plan.endDate
         },
-        nextStay[1],
+        remainingStay[1],
         ''
+      );
+
+      stayCursor =
+        plan.endDate;
+    }
+
+    if (
+      stayMatches.length &&
+      stayCursor &&
+      plan.endDate &&
+      stayCursor < plan.endDate &&
+      !remainingStay
+    ) {
+      plan.warnings.push(
+        'Certaines nuits restent sans hébergement. Tu pourras les compléter après la création.'
       );
     }
 
@@ -632,6 +710,7 @@
 
   window.TripDraftParser = {
     parse,
-    example: EXAMPLE
+    example: EXAMPLE,
+    naturalExample: NATURAL_EXAMPLE
   };
 })();

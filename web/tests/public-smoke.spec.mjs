@@ -861,6 +861,64 @@ test(
 );
 
 test(
+  'le créateur guidé comprend plusieurs séjours successifs',
+  async ({ page }) => {
+    await page.goto('/', {
+      waitUntil: 'load'
+    });
+
+    const plan =
+      await page.evaluate(
+        function parseNaturalTrip() {
+          return window.TripDraftParser.parse(
+            'Je pars en Corée du Sud du 1 au 12 octobre 2026, cinq nuits à Séoul, trois nuits à Gyeongju, puis trois nuits à Busan.'
+          );
+        }
+      );
+
+    expect(plan.errors).toEqual([]);
+    expect(plan.name).toBe(
+      'Corée du Sud'
+    );
+    expect(plan.startDate).toBe(
+      '2026-10-01'
+    );
+    expect(plan.endDate).toBe(
+      '2026-10-12'
+    );
+
+    const stays =
+      plan.items
+        .filter((item) =>
+          item.type === 'logement'
+        )
+        .map((item) => ({
+          label: item.lieu,
+          start: item.dateStart,
+          end: item.dateEnd
+        }));
+
+    expect(stays).toEqual([
+      {
+        label: 'Séoul',
+        start: '2026-10-01',
+        end: '2026-10-06'
+      },
+      {
+        label: 'Gyeongju',
+        start: '2026-10-06',
+        end: '2026-10-09'
+      },
+      {
+        label: 'Busan',
+        start: '2026-10-09',
+        end: '2026-10-12'
+      }
+    ]);
+  }
+);
+
+test(
   'le diagnostic contient les mesures de performance',
   async function performanceDiagnostic({
     page

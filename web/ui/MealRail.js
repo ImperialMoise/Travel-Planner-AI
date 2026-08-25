@@ -159,7 +159,7 @@
     };
   }
 
-    function findLodgingStaysForDay(
+  function findLodgingStaysForDay(
     days,
     selectedDayIndex
   ) {
@@ -388,20 +388,17 @@ function InlineButton({
     onEditStep,
     onReload
   }) {
-    const important = stepImportant(step);
+    const important =
+      stepImportant(step);
+
     const documentUrl =
       stepDocumentUrl(step);
 
-    const checkInDate =
-      formatDate(
-        stay.startISO
+    const title =
+      stepDisplayName(
+        step,
+        'Restaurant'
       );
-
-    const checkOutDate =
-      formatDate(
-        stay.endISO
-      );
-    const title = stepDisplayName(step, 'Restaurant');
     const subtitle = stepSubtitle(step);
     const time = stepRangeLabel(step);
 
@@ -603,7 +600,19 @@ function InlineButton({
     const step = stay.step;
     const title = lodgingName(step);
     const subtitle = stepSubtitle(step);
-    const documentUrl = stepDocumentUrl(step);
+
+    const documentUrl =
+      stepDocumentUrl(step);
+
+    const checkInDate =
+      formatDate(
+        stay.startISO
+      );
+
+    const checkOutDate =
+      formatDate(
+        stay.endISO
+      );
 
     const statusLabel =
       stay.status === 'checkin'

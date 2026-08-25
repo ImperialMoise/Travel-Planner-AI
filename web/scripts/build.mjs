@@ -187,13 +187,17 @@ await writeFile(
 const bundledHtml =
   outputHtml
     .replace(
+      /(<script\s+src="https:\/\/unpkg\.com\/react(?:-dom)?@[^"]+"[^>]*)(><\/script>)/g,
+      '$1 defer$2'
+    )
+    .replace(
       localClassicScriptPattern,
       ''
     )
     .replace(
       '</body>',
       [
-        '  <script src="app.bundle.js"></script>',
+        '  <script src="app.bundle.js" defer></script>',
         '',
         '</body>'
       ].join('\n')

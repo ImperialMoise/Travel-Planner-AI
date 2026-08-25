@@ -286,6 +286,29 @@ if (
   );
 }
 
+const requiredDeferredScriptTags = [
+  '<script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin defer></script>',
+  '<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin defer></script>',
+  '<script src="app.bundle.js" defer></script>'
+];
+
+for (
+  const deferredScriptTag
+  of requiredDeferredScriptTags
+) {
+  if (
+    !publicIndexHtml.includes(
+      deferredScriptTag
+    )
+  ) {
+    violations.push(
+      'Script non différé dans index.html : ' +
+      deferredScriptTag +
+      '.'
+    );
+  }
+}
+
 const publicBundleJavaScript =
   await readFile(
     path.join(

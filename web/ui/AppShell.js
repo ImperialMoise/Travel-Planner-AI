@@ -5993,6 +5993,14 @@ function DaySpine({
   trips,
   onAuthOpen
 }) {
+  const heroImageWidth =
+    window.matchMedia &&
+    window.matchMedia(
+      '(max-width: 760px)'
+    ).matches
+      ? 960
+      : 1600;
+
   const heroImages = React.useMemo(function buildHeroImages() {
     return [
       {
@@ -6015,16 +6023,33 @@ function DaySpine({
         url: 'https://images.unsplash.com/photo-1504893524553-b855bce32c67?auto=format&fit=crop&w=1600&q=82',
         label: 'Cascade et grands espaces'
       }
-    ];
-  }, []);
+    ].map(
+      function optimizeHeroImage(
+        image
+      ) {
+        return {
+          ...image,
+          url: image.url
+            .replace(
+              'w=1600',
+              'w=' + heroImageWidth
+            )
+            .replace(
+              'q=82',
+              'q=78'
+            )
+        };
+      }
+    );
+  }, [heroImageWidth]);
 
   const tripImages = React.useMemo(function buildTripImages() {
     return [
-      'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=900&q=82',
-      'https://images.unsplash.com/photo-1528164344705-47542687000d?auto=format&fit=crop&w=900&q=82',
-      'https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=900&q=82',
-      'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=900&q=82',
-      'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=900&q=82'
+      'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=640&q=78',
+      'https://images.unsplash.com/photo-1528164344705-47542687000d?auto=format&fit=crop&w=640&q=78',
+      'https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=640&q=78',
+      'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=640&q=78',
+      'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=640&q=78'
     ];
   }, []);
 
@@ -6035,28 +6060,28 @@ function DaySpine({
       country: 'Japon',
       promise: 'Temples, ruelles et jardins',
       image:
-        'https://images.unsplash.com/photo-1528164344705-47542687000d?auto=format&fit=crop&w=1200&q=88'
+        'https://images.unsplash.com/photo-1528164344705-47542687000d?auto=format&fit=crop&w=720&q=78'
     },
     {
       name: 'Côte amalfitaine',
       country: 'Italie',
       promise: 'Villages suspendus et Méditerranée',
       image:
-        'https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=1200&q=88'
+        'https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=720&q=78'
     },
     {
       name: 'Paris',
       country: 'France',
       promise: 'Musées, quartiers et bonnes tables',
       image:
-        'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=1200&q=88'
+        'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=720&q=78'
     },
     {
       name: 'Dubaï',
       country: 'Émirats arabes unis',
       promise: 'Architecture, désert et démesure',
       image:
-        'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=1200&q=88'
+        'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=720&q=78'
     }
   ];
 }, []);

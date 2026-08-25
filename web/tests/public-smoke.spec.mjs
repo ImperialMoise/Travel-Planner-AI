@@ -569,6 +569,70 @@ test(
     expect(
       invalidImages
     ).toEqual([]);
+
+    const viewportWidth =
+      await page.evaluate(
+        function readViewportWidth() {
+          return window.innerWidth;
+        }
+      );
+
+    const expectedHeroWidth =
+      viewportWidth <= 760
+        ? 'w=960'
+        : 'w=1600';
+
+    const heroBackground =
+      await page
+        .locator('.home-hero-bg')
+        .evaluate(
+          function readHeroBackground(
+            element
+          ) {
+            return element.style
+              .backgroundImage;
+          }
+        );
+
+    expect(heroBackground).toContain(
+      expectedHeroWidth
+    );
+
+    expect(heroBackground).toContain(
+      'q=78'
+    );
+
+    const inspirationSources =
+      await page
+        .locator(
+          '.home-inspiration-item img'
+        )
+        .evaluateAll(
+          function readImageSources(
+            images
+          ) {
+            return images.map(
+              function readImageSource(
+                image
+              ) {
+                return image.src;
+              }
+            );
+          }
+        );
+
+    expect(
+      inspirationSources.every(
+        function imageIsOptimized(
+          source
+        ) {
+          return (
+            source.includes('w=720') &&
+            source.includes('q=78')
+          );
+        }
+      )
+    ).toBe(true);
   }
 );
 
@@ -595,6 +659,18 @@ test(
 
     expect(html).not.toContain(
       'src="ui/AppShell.js"'
+    );
+
+    expect(html).toContain(
+      '<script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin defer></script>'
+    );
+
+    expect(html).toContain(
+      '<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin defer></script>'
+    );
+
+    expect(html).toContain(
+      '<script src="app.bundle.js" defer></script>'
     );
 
     const bundleResponse =

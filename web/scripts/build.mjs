@@ -135,6 +135,83 @@ const outputHtml = sourceHtml
     'src="$1.js"'
   );
 
-await writeFile(path.join(outputDir, 'index.html'), outputHtml, 'utf8');
+const localClassicScriptPattern =
+  /<script(?![^>]*\btype="module")[^>]*\bsrc="(?!https?:\/\/|\/\/)([^"]+)"[^>]*><\/script>/g;
 
-console.log(`Build termine : ${babelSources.length} scripts JSX compiles.`);
+const bundleSources =
+  [...outputHtml.matchAll(
+    localClassicScriptPattern
+  )].map(
+    function readBundleSource(match) {
+      return match[1];
+    }
+  );
+
+if (!bundleSources.length) {
+  throw new Error(
+    'Aucun script local trouvé pour créer le bundle.'
+  );
+}
+
+const bundleJavaScript =
+  (
+    await Promise.all(
+      bundleSources.map(
+        function loadBundleSource(
+          relativePath
+        ) {
+          return readFile(
+            path.join(
+              outputDir,
+              relativePath.replace(
+                /^\.\//,
+                ''
+              )
+            ),
+            'utf8'
+          );
+        }
+      )
+    )
+  ).join('\n;\n');
+
+await writeFile(
+  path.join(
+    outputDir,
+    'app.bundle.js'
+  ),
+  bundleJavaScript + '\n',
+  'utf8'
+);
+
+const bundledHtml =
+  outputHtml
+    .replace(
+      localClassicScriptPattern,
+      ''
+    )
+    .replace(
+      '</body>',
+      [
+        '  <script src="app.bundle.js"></script>',
+        '',
+        '</body>'
+      ].join('\n')
+    );
+
+await writeFile(
+  path.join(
+    outputDir,
+    'index.html'
+  ),
+  bundledHtml,
+  'utf8'
+);
+
+console.log(
+  'Build termine : ' +
+  babelSources.length +
+  ' scripts JSX compiles, ' +
+  bundleSources.length +
+  ' scripts regroupes.'
+);

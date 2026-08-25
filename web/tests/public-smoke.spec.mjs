@@ -573,39 +573,60 @@ test(
 );
 
 test(
-  'les scripts JSX sont publiés comme JavaScript',
+  'les scripts applicatifs sont regroupés dans le bundle public',
   async function runTest({ request }) {
     const indexResponse =
       await request.get('/');
 
-    expect(indexResponse.status()).toBe(200);
+    expect(
+      indexResponse.status()
+    ).toBe(200);
 
     const html =
       await indexResponse.text();
 
     expect(html).toContain(
-      'views/itin-atelier-v2.js'
+      'src="app.bundle.js"'
     );
 
     expect(html).not.toContain(
       '.jsx'
     );
 
-    const compiledScript =
+    expect(html).not.toContain(
+      'src="ui/AppShell.js"'
+    );
+
+    const bundleResponse =
       await request.get(
-        '/views/itin-atelier-v2.js'
+        '/app.bundle.js'
       );
 
     expect(
-      compiledScript.status()
+      bundleResponse.status()
     ).toBe(200);
 
     expect(
-      compiledScript.headers()[
+      bundleResponse.headers()[
         'content-type'
       ] || ''
     ).toMatch(
       /javascript/i
+    );
+
+    const bundleSource =
+      await bundleResponse.text();
+
+    expect(bundleSource).toContain(
+      'initAppShell'
+    );
+
+    expect(bundleSource).toContain(
+      'initTripPrint'
+    );
+
+    expect(bundleSource).toContain(
+      'initAtelierV2'
     );
 
     const rawJsx =
@@ -613,7 +634,9 @@ test(
         '/views/itin-atelier-v2.jsx'
       );
 
-    expect(rawJsx.status()).toBe(404);
+    expect(
+      rawJsx.status()
+    ).toBe(404);
   }
 );
 

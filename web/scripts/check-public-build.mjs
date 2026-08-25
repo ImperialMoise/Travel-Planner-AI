@@ -263,6 +263,61 @@ for (
   }
 }
 
+const localPublishedScripts =
+  [
+    ...publicIndexHtml.matchAll(
+      /<script[^>]+src="(?!https?:\/\/|\/\/)([^"]+)"[^>]*><\/script>/g
+    )
+  ].map(
+    function readPublishedScript(
+      match
+    ) {
+      return match[1];
+    }
+  );
+
+if (
+  localPublishedScripts.length !== 1 ||
+  localPublishedScripts[0] !==
+    'app.bundle.js'
+) {
+  violations.push(
+    'index.html doit charger uniquement app.bundle.js comme script local.'
+  );
+}
+
+const publicBundleJavaScript =
+  await readFile(
+    path.join(
+      distDirectory,
+      'app.bundle.js'
+    ),
+    'utf8'
+  );
+
+const requiredBundleMarkers = [
+  'initAppShell',
+  'initTripPrint',
+  'initAtelierV2'
+];
+
+for (
+  const bundleMarker
+  of requiredBundleMarkers
+) {
+  if (
+    !publicBundleJavaScript.includes(
+      bundleMarker
+    )
+  ) {
+    violations.push(
+      'app.bundle.js ne contient pas : ' +
+      bundleMarker +
+      '.'
+    );
+  }
+}
+
 const publicAppShellJavaScript =
   await readFile(
     path.join(

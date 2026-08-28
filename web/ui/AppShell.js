@@ -1574,6 +1574,22 @@
   background:linear-gradient(180deg,rgba(31,27,22,.08),rgba(31,27,22,.48));
 }
 
+.home-trip-archive-badge{
+  position:absolute;
+  right:12px;
+  top:12px;
+  z-index:2;
+  border:1px solid rgba(255,255,255,.44);
+  border-radius:999px;
+  background:rgba(47,42,35,.78);
+  color:#fff;
+  padding:5px 8px;
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+  
 .home-trip-chip{
   position:absolute;
   left:12px;
@@ -7363,7 +7379,14 @@ async function createTripFromHero() {
                 return (
                   <article
                     key={trip.id || index}
-                    className="home-trip-card"
+                    className={
+                      'home-trip-card' +
+                      (
+                        trip.archived_at
+                          ? ' archived'
+                          : ''
+                      )
+                    }
                   >
                     <div className="home-trip-cover">
                       <img
@@ -7380,6 +7403,12 @@ async function createTripFromHero() {
                       <div className="home-trip-chip">
                         {tripDateRange(trip)}
                       </div>
+
+                      {trip.archived_at && (
+                        <div className="home-trip-archive-badge">
+                          Archivé
+                        </div>
+                      )}
                     </div>
 
                     <div className="home-trip-card-body">

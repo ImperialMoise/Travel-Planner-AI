@@ -266,7 +266,7 @@ for (
 const localPublishedScripts =
   [
     ...publicIndexHtml.matchAll(
-      /<script[^>]+src="(?!https?:\/\/|\/\/)([^"]+)"[^>]*><\/script>/g
+   /<script[^>]+src="(?!https?:\/\/|\/\/|\/_vercel\/)([^"]+)"[^>]*><\/script>/g
     )
   ].map(
     function readPublishedScript(

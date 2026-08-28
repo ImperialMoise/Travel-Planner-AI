@@ -107,26 +107,60 @@
       font-size:13px;
     }
 
+        .initial-loading-bar{
+      width:min(260px,80vw);
+      height:6px;
+      overflow:hidden;
+      border-radius:999px;
+      background:#e4d9c6;
+    }
+
+    .initial-loading-bar span{
+      display:block;
+      width:42%;
+      height:100%;
+      border-radius:inherit;
+      background:#9d680c;
+      animation:initial-loading-slide 1.25s ease-in-out infinite;
+    }
+
+    @keyframes initial-loading-slide{
+      0%{transform:translateX(-130%)}
+      100%{transform:translateX(320%)}
+    }
+
     @keyframes initial-loading-pulse{
       0%,100%{transform:scale(.92);opacity:.72}
       50%{transform:scale(1);opacity:1}
     }
 
     @media(prefers-reduced-motion:reduce){
-      .initial-loading-mark{
+      .initial-loading-mark,
+      .initial-loading-bar span{
         animation:none;
       }
     }
   </style>
-  
+
 </head>
 <body>
 
 <div id="root">
-  <div class="initial-loading" role="status" aria-live="polite">
+    <div class="initial-loading" role="status" aria-live="polite">
     <div class="initial-loading-mark">✦</div>
     <strong>La Fabrique à Voyages</strong>
-    <span>Préparation de ton espace…</span>
+    <span>Chargement de ton espace…</span>
+    <small>La première ouverture peut prendre quelques secondes.</small>
+
+    <div
+      class="initial-loading-bar"
+      role="progressbar"
+      aria-label="Chargement en cours"
+      aria-valuemin="0"
+      aria-valuemax="100"
+    >
+      <span></span>
+    </div>
   </div>
 </div>
 

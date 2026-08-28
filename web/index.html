@@ -71,10 +71,64 @@
   src="https://js-de.sentry-cdn.com/c2a32c7fc57b78e908a55bd818775b90.min.js"
   crossorigin="anonymous"
   ></script>
+
+    <style>
+    .initial-loading{
+      min-height:100vh;
+      display:grid;
+      place-items:center;
+      align-content:center;
+      gap:10px;
+      padding:24px;
+      background:#f7f3eb;
+      color:#15302a;
+      text-align:center;
+      font-family:Arial,sans-serif;
+    }
+
+    .initial-loading-mark{
+      width:46px;
+      height:46px;
+      display:grid;
+      place-items:center;
+      border-radius:50%;
+      background:#9d680c;
+      color:#fffaf1;
+      font-size:24px;
+      animation:initial-loading-pulse 1.2s ease-in-out infinite;
+    }
+
+    .initial-loading strong{
+      font-size:18px;
+    }
+
+    .initial-loading span{
+      color:#6e756f;
+      font-size:13px;
+    }
+
+    @keyframes initial-loading-pulse{
+      0%,100%{transform:scale(.92);opacity:.72}
+      50%{transform:scale(1);opacity:1}
+    }
+
+    @media(prefers-reduced-motion:reduce){
+      .initial-loading-mark{
+        animation:none;
+      }
+    }
+  </style>
+  
 </head>
 <body>
 
-  <div id="root"></div>
+<div id="root">
+  <div class="initial-loading" role="status" aria-live="polite">
+    <div class="initial-loading-mark">✦</div>
+    <strong>La Fabrique à Voyages</strong>
+    <span>Préparation de ton espace…</span>
+  </div>
+</div>
 
   <!-- ════════════════════════════════════════════════════════
        COUCHE 1 — Données brutes + état global (JS pur, pas Babel)

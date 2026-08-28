@@ -818,7 +818,14 @@
               </strong>
             </div>
 
-            <div className="trip-summary-progress-track">
+            <div
+              className="trip-summary-progress-track"
+              role="progressbar"
+              aria-label="Progression du voyage"
+              aria-valuemin="0"
+              aria-valuemax="100"
+              aria-valuenow={summary.progress}
+            >
               <span
                 style={{
                   width:

@@ -6606,6 +6606,36 @@ async function createTripFromHero() {
   }
 }
 
+  async function duplicateTripFromHome(trip) {
+    if (!trip?.id) return;
+
+    try {
+      Store.showToast('Duplication du voyage en cours…');
+
+      const copied = await window.SB.duplicateTrip(trip.id, {
+        name: `Copie de ${trip.name || 'Voyage sans titre'}`
+      });
+
+      const nextTrips = await window.SB.listMyTrips();
+
+      Store.set({
+        trips: nextTrips,
+        activeTripId: copied.id,
+        trip: copied,
+        selectedDayIndex: 0,
+        selectedStepId: null,
+        view: 'itinerary'
+      });
+
+      Store.showToast(`Voyage « ${copied.name} » créé ✓`);
+    } catch (error) {
+      Store.showToast(
+        error?.message || 'Impossible de dupliquer ce voyage.'
+      );
+    }
+  }
+
+
   function openTrip(tripId) {
     if (!tripId) return;
     selectTrip(tripId);
@@ -7429,6 +7459,15 @@ async function createTripFromHero() {
                       <div className="home-trip-card-meta">
                         Reprendre la planification, compléter les étapes et préparer les détails du voyage.
                       </div>
+
+                        <button
+                          type="button"
+                          className="home-trip-resume"
+                          onClick={() => duplicateTripFromHome(trip)}
+                          title="Dupliquer ce voyage"
+                        >
+                          Dupliquer
+                        </button>
 
                         <button
                           type="button"

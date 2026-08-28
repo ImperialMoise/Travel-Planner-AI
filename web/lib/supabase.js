@@ -645,6 +645,72 @@ export async function duplicateTrip(
   }
 }
 
+export async function duplicateTrip(tripId, options = {}) {
+  const source = await loadTrip(tripId);
+
+  if (!source) {
+    throw new Error('Voyage source introuvable');
+  }
+
+  const copiedName =
+    String(options.name || '').trim() ||
+    `Copie de ${source.name || 'Voyage sans titre'}`;
+
+  const created = await createTrip({
+    name: copiedName,
+    startDate: source.startDate || null,
+    endDate: source.endDate || null,
+    days: Math.max(1, source.days?.length || 1)
+  });
+
+  await updateTrip(created.id, {
+    globalNote: source.globalNote || '',
+    accentTheme: source.accentTheme || 'ochre'
+  });
+
+  const target = await loadTrip(created.id);
+  const dayMap = new Map();
+  const stepMap = new Map();
+
+  for (const sourceDay of source.days || []) {
+    const targetDay = target.days?.[sourceDay.index];
+
+    if (!targetDay) continue;
+
+    dayMap.set(sourceDay.id, targetDay.id);
+
+    await updateDay(targetDay.id, {
+      title: sourceDay.title || '',
+      note: sourceDay.note || '',
+      dateLabel: sourceDay.dateLabel || '',
+      dateISO: sourceDay.dateISO || null,
+      todo: Array.isArray(sourceDay.todo) ? sourceDay.todo : []
+    });
+
+    for (const sourceStep of sourceDay.steps || []) {
+      const copiedStep = await saveStep(created.id, targetDay.id, {
+        ...sourceStep,
+        id: null,
+        stepIndex: sourceStep.stepIndex ?? 0
+      });
+
+      if (sourceStep.id && copiedStep?.id) {
+        stepMap.set(sourceStep.id, copiedStep.id);
+      }
+    }
+  }
+
+  for (const sourceBudget of source.budget || []) {
+    await saveBudgetItem(created.id, {
+      ...sourceBudget,
+      id: null,
+      stepId: stepMap.get(sourceBudget.stepId) || null
+    });
+  }
+
+  return loadTrip(created.id);
+}
+
 export async function loadTrip(tripId) {
   const [
     { data: trip, error: e1 },

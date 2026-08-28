@@ -6201,6 +6201,7 @@ function DaySpine({
 
         return safeTrips.filter(
           function keepMatchingTrip(trip) {
+
             const matchesText =
               !query ||
               [
@@ -6227,6 +6228,22 @@ function DaySpine({
               trip.end_date ||
               trip.endDate ||
               '';
+
+            const isArchived =
+              Boolean(trip.archived_at);
+
+            if (
+              tripStatus === 'archived'
+            ) {
+              return (
+                matchesText &&
+                isArchived
+              );
+            }
+
+            if (isArchived) {
+              return false;
+            }
 
             const status =
               end && end < todayISO
@@ -6536,7 +6553,9 @@ async function createTripFromHero() {
       days: daysBetweenInclusive(requestedStartDate, requestedEndDate)
     });
 
-    const nextTrips = await window.SB.listMyTrips();
+    const nextTrips = await window.SB.listMyTrips({
+  includeArchived: true
+});
     const fullTrip = await window.SB.loadTrip(created.id);
 
     Store.set({
@@ -6563,6 +6582,37 @@ async function createTripFromHero() {
   function openTrip(tripId) {
     if (!tripId) return;
     selectTrip(tripId);
+  }
+
+    async function toggleTripArchive(trip) {
+    if (!trip?.id) return;
+
+    try {
+      await window.SB.setTripArchived(
+        trip.id,
+        !trip.archived_at
+      );
+
+      const nextTrips =
+        await window.SB.listMyTrips({
+          includeArchived: true
+        });
+
+      Store.set({
+        trips: nextTrips
+      });
+
+      Store.showToast(
+        trip.archived_at
+          ? 'Voyage restauré ✓'
+          : 'Voyage archivé ✓'
+      );
+    } catch (error) {
+      Store.showToast(
+        'Impossible de modifier l’archivage : ' +
+        (error.message || error)
+      );
+    }
   }
   
   function openTripInMode(tripId, nextMode) {
@@ -7249,7 +7299,7 @@ async function createTripFromHero() {
                 }}
               />
 
-                            <select
+              <select
                 value={tripStatus}
                 onChange={event =>
                   setTripStatus(event.target.value)
@@ -7266,7 +7316,7 @@ async function createTripFromHero() {
                 }}
               >
                 <option value="all">
-                  Tous
+                  Tous les voyages actifs
                 </option>
                 <option value="upcoming">
                   À venir
@@ -7276,6 +7326,9 @@ async function createTripFromHero() {
                 </option>
                 <option value="completed">
                   Terminés
+                </option>
+                <option value="archived">
+                  Archivés
                 </option>
               </select>
 
@@ -7334,6 +7387,33 @@ async function createTripFromHero() {
                       <div className="home-trip-card-meta">
                         Reprendre la planification, compléter les étapes et préparer les détails du voyage.
                       </div>
+
+                        <button
+                          type="button"
+                          className="home-trip-map"
+                          onClick={() =>
+                            toggleTripArchive(trip)
+                          }
+                          aria-label={
+                            trip.archived_at
+                              ? 'Restaurer le voyage'
+                              : 'Archiver le voyage'
+                          }
+                          title={
+                            trip.archived_at
+                              ? 'Restaurer'
+                              : 'Archiver'
+                          }
+                        >
+                          <Icon
+                            name={
+                              trip.archived_at
+                                ? 'rotate-ccw'
+                                : 'archive'
+                            }
+                            size={17}
+                          />
+                        </button>
 
                       <div className="home-trip-card-actions">
                         <button
@@ -8423,7 +8503,9 @@ async function submit() {
     }
 
     const nextTrips =
-      await window.SB.listMyTrips();
+      await window.SB.listMyTrips({
+  includeArchived: true
+})window.SB.listMyTrips();
 
     Store.set({
       trips: nextTrips,

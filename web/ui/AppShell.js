@@ -7176,6 +7176,7 @@ async function createTripFromHero() {
               height="900"
               loading="lazy"
               decoding="async"
+              sizes="(max-width: 760px) 45vw, (max-width: 1180px) 23vw, 180px"
               draggable="false"
             />
 

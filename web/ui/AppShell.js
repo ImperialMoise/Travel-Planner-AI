@@ -4494,11 +4494,16 @@ function toggleToolboxCollapsed() {
           <window.SettingsModal />
         )}
 
-        {toast && (
-          <div className="toast show">
-            {toast.msg}
-          </div>
-        )}
+{toast && (
+  <div
+    className="toast show"
+    role="status"
+    aria-live="polite"
+    aria-atomic="true"
+  >
+    {toast.msg}
+  </div>
+)}
       </div>
     );
   }

@@ -136,7 +136,7 @@ const outputHtml = sourceHtml
   );
 
 const localClassicScriptPattern =
-  /<script(?![^>]*\btype="module")[^>]*\bsrc="(?!https?:\/\/|\/\/)([^"]+)"[^>]*><\/script>/g;
+  /<script(?![^>]*\btype="module")[^>]*\bsrc="(?!https?:\/\/|\/\/|\/_vercel\/)([^"]+)"[^>]*><\/script>/g;
 
 const bundleSources =
   [...outputHtml.matchAll(

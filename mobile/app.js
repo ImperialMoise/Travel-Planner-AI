@@ -12389,7 +12389,28 @@ function renderMobileSummary() {
             </small>
           </article>
 
-          
+                    <article class="wide">
+            <span class="material-symbols-outlined">
+              insights
+            </span>
+
+            <strong>
+              ${Number(
+                summary.averageStepsPerPlannedDay || 0
+              ).toFixed(1)}
+            </strong>
+
+            <span>étapes / jour</span>
+
+            <small>
+              Journée la plus chargée :
+              ${
+                summary.busiestDay?.label ||
+                'Aucune'
+              }
+            </small>
+          </article>
+
           <article class="wide">
             <span class="material-symbols-outlined">
               payments

@@ -7390,14 +7390,6 @@ async function createTripFromHero() {
               </div>
             </div>
           )}
-              </div>
-
-              <div>
-                Crée ton premier itinéraire avec la barre au-dessus.
-                Il apparaîtra ici automatiquement.
-              </div>
-            </div>
-          )}
         </div>
       </section>
 

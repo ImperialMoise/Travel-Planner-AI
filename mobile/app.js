@@ -384,6 +384,11 @@ let mobileItineraryReorderBusy = false;
 let mobileQuickAddOpen = false;
 let mobileQuickAddType = 'activity';
 let mobileQuickAddBusy = false;
+let mobileGuidedOpen = false;
+let mobileGuidedText = '';
+let mobileGuidedPlan = null;
+let mobileGuidedBusy = false;
+let mobileGuidedError = '';
 let mobileDayCoverBusy = false;
 let pendingMobileNotificationTripId = null;
 let pendingMobileNotificationReminderId = null;
@@ -7779,6 +7784,413 @@ async function renderShare() {
   `;
 }
 
+function normalizeMobileGuidedItem(
+  item = {}
+) {
+  const rawType = String(
+    item.type || ''
+  )
+    .trim()
+    .toLowerCase();
+
+  const typeMap = {
+    logement: 'lodging',
+    hébergement: 'lodging',
+    hebergement: 'lodging',
+    lodging: 'lodging',
+    activite: 'activity',
+    activité: 'activity',
+    activity: 'activity',
+    restaurant: 'restaurant',
+    transport: 'transport'
+  };
+
+  return {
+    ...item,
+    date:
+      item.date ||
+      item.dateStart ||
+      item.date_start ||
+      null,
+    type:
+      typeMap[rawType] ||
+      rawType ||
+      'activity',
+    label:
+      item.label ||
+      item.title ||
+      item.name ||
+      '',
+    lieu:
+      item.lieu ||
+      item.location ||
+      item.place ||
+      '',
+    time:
+      item.time ||
+      '',
+    timeEnd:
+      item.timeEnd ||
+      item.time_end ||
+      '',
+    transportType:
+      item.transportType ||
+      item.transport_type ||
+      item.mode ||
+      '',
+    depart:
+      item.depart ||
+      item.departure ||
+      '',
+    arrivee:
+      item.arrivee ||
+      item.arrival ||
+      '',
+    duree:
+      item.duree ||
+      item.duration ||
+      '',
+    nextDay:
+      Boolean(
+        item.nextDay ||
+        item.next_day
+      ),
+    escales:
+      item.escales ||
+      item.stopovers ||
+      [],
+    ref:
+      item.ref ||
+      item.reference ||
+      '',
+    dateStart:
+      item.dateStart ||
+      item.date_start ||
+      null,
+    dateEnd:
+      item.dateEnd ||
+      item.date_end ||
+      null,
+    nuits:
+      Number(
+        item.nuits ||
+        item.nights ||
+        0
+      ),
+    timeCheckIn:
+      item.timeCheckIn ||
+      item.time_check_in ||
+      '15:00',
+    timeCheckOut:
+      item.timeCheckOut ||
+      item.time_check_out ||
+      '11:00',
+    dureeEstimee:
+      item.dureeEstimee ||
+      item.duree_estimee ||
+      '',
+    link:
+      item.link ||
+      '',
+    note:
+      item.note ||
+      item.notes ||
+      '',
+    lat:
+      item.lat ??
+      null,
+    lng:
+      item.lng ??
+      null,
+    amount:
+      Number(item.amount || 0),
+    paidBy:
+      item.paidBy ||
+      item.paid_by ||
+      ''
+  };
+}
+
+function renderMobileGuidedPreview() {
+  if (
+    !mobileGuidedPlan
+  ) {
+    return '';
+  }
+
+  const items =
+    Array.isArray(
+      mobileGuidedPlan.items
+    )
+      ? mobileGuidedPlan.items
+      : [];
+
+  return `
+    <section
+      class="mobile-guided-preview"
+      data-mobile-guided-preview
+      role="status"
+      aria-live="polite"
+    >
+      <header>
+        <div>
+          <strong>
+            Aperçu préparé par l’IA
+          </strong>
+
+          <small>
+            Vérifie les éléments avant de créer le voyage.
+          </small>
+        </div>
+
+        <span class="material-symbols-outlined">
+          auto_awesome
+        </span>
+      </header>
+
+      <div class="mobile-guided-summary">
+        <strong>
+          ${escapeHtml(
+            mobileGuidedPlan.name ||
+            'Destination à compléter'
+          )}
+        </strong>
+
+        <span>
+          ${Number(
+            mobileGuidedPlan.days ||
+            1
+          )}
+          jour${Number(
+            mobileGuidedPlan.days ||
+            1
+          ) > 1 ? 's' : ''}
+          ·
+          ${items.length}
+          élément${items.length > 1 ? 's' : ''}
+        </span>
+      </div>
+
+      <div class="mobile-guided-items">
+        ${
+          items.length
+            ? items.map(
+                (item, index) => `
+                  <article>
+                    <div>
+                      <strong>
+                        ${escapeHtml(
+                          item.label ||
+                          item.title ||
+                          'Étape sans titre'
+                        )}
+                      </strong>
+
+                      <small>
+                        ${escapeHtml(
+                          item.date ||
+                          'Date à compléter'
+                        )}
+                        ·
+                        ${escapeHtml(
+                          item.type ||
+                          'étape'
+                        )}
+                        ${
+                          item.lieu
+                            ? ' · ' +
+                              escapeHtml(
+                                item.lieu
+                              )
+                            : ''
+                        }
+                      </small>
+                    </div>
+
+                    <button
+                      type="button"
+                      data-action="mobile-guided-remove"
+                      data-guided-index="${index}"
+                      aria-label="Retirer cette étape"
+                    >
+                      ×
+                    </button>
+                  </article>
+                `
+              ).join('')
+            : `
+              <p>
+                Aucun élément détecté.
+              </p>
+            `
+        }
+      </div>
+    </section>
+  `;
+}
+
+async function analyzeMobileGuidedText() {
+  if (
+    mobileGuidedBusy ||
+    !mobileGuidedText.trim()
+  ) {
+    return;
+  }
+
+  if (
+    !window.SB?.analyzeTripWithAI
+  ) {
+    mobileGuidedError =
+      'Le service IA n’est pas disponible.';
+    renderCreateTrip();
+    return;
+  }
+
+  mobileGuidedBusy = true;
+  mobileGuidedError = '';
+  mobileGuidedPlan = null;
+  renderCreateTrip();
+
+  try {
+    if (!mobileUser) {
+      mobileUser =
+        await window.SB.startGuestSession();
+    }
+
+    let plan = null;
+    let lastError = null;
+
+    for (
+      let attempt = 0;
+      attempt < 2;
+      attempt += 1
+    ) {
+      try {
+        plan =
+          await window.SB
+            .analyzeTripWithAI(
+              mobileGuidedText
+            );
+
+        lastError = null;
+        break;
+      } catch (error) {
+        lastError = error;
+
+        const message =
+          String(
+            error?.message || ''
+          );
+
+        const retryable =
+          attempt === 0 &&
+          !/quota/i.test(message) &&
+          !/connecte-toi/i.test(message) &&
+          !/session invalide/i.test(message) &&
+          !/expirée/i.test(message);
+
+        if (!retryable) {
+          break;
+        }
+
+        await new Promise(
+          resolve =>
+            window.setTimeout(
+              resolve,
+              800
+            )
+        );
+      }
+    }
+
+    if (!plan) {
+      throw (
+        lastError ||
+        new Error(
+          'L’analyse IA est indisponible.'
+        )
+      );
+    }
+
+    if (
+      Array.isArray(plan.errors) &&
+      plan.errors.length
+    ) {
+      throw new Error(
+        plan.errors[0]
+      );
+    }
+
+    mobileGuidedPlan = {
+      ...plan,
+      items: (
+        Array.isArray(plan.items)
+          ? plan.items
+          : []
+      ).map(
+        normalizeMobileGuidedItem
+      )
+    };
+
+    const currentDraft =
+      getTripDraft();
+
+    saveTripDraft({
+      ...currentDraft,
+      destination:
+        plan.name ||
+        currentDraft.destination ||
+        '',
+      startDate:
+        plan.startDate ||
+        currentDraft.startDate ||
+        '',
+      endDate:
+        plan.endDate ||
+        currentDraft.endDate ||
+        ''
+    });
+
+    mobileGuidedError = '';
+    renderCreateTrip();
+  } catch (error) {
+    console.warn(
+      'Analyse IA mobile impossible :',
+      error
+    );
+
+    mobileGuidedPlan = null;
+    mobileGuidedError =
+      error?.message ||
+      'Impossible d’analyser cette description.';
+    renderCreateTrip();
+  } finally {
+    mobileGuidedBusy = false;
+  }
+}
+
+function removeMobileGuidedItem(
+  indexToRemove
+) {
+  if (
+    !mobileGuidedPlan
+  ) {
+    return;
+  }
+
+  mobileGuidedPlan = {
+    ...mobileGuidedPlan,
+    items: (
+      mobileGuidedPlan.items || []
+    ).filter(
+      (_item, index) =>
+        index !== indexToRemove
+    )
+  };
+
+  renderCreateTrip();
+}
+
 function renderCreateTrip() {
   const draft = getTripDraft();
   const companions = draft.companions || [];
@@ -7798,7 +8210,116 @@ function renderCreateTrip() {
         </section>
 
         <form class="create-form" data-create-form>
+          <section
+            class="mobile-guided-card ${mobileGuidedOpen ? 'is-open' : ''}"
+            aria-label="Créer un voyage avec une description"
+          >
+            <button
+              type="button"
+              class="mobile-guided-toggle"
+              data-action="mobile-guided-toggle"
+              aria-expanded="${mobileGuidedOpen ? 'true' : 'false'}"
+            >
+              <span>
+                <span class="material-symbols-outlined">
+                  auto_awesome
+                </span>
+
+                <span>
+                  <strong>
+                    Créer depuis une description
+                  </strong>
+
+                  <small>
+                    Décris ton voyage naturellement.
+                  </small>
+                </span>
+              </span>
+
+              <span class="material-symbols-outlined">
+                ${mobileGuidedOpen
+                  ? 'expand_less'
+                  : 'expand_more'}
+              </span>
+            </button>
+
+            ${mobileGuidedOpen ? `
+              <div class="mobile-guided-content">
+                <p>
+                  Exemple : « Je pars à Tokyo du 1er au
+                  12 décembre. Les cinq premières nuits
+                  à Tokyo, puis deux nuits à Kyoto. »
+                </p>
+
+                <textarea
+                  id="mobile-guided-text"
+                  rows="7"
+                  placeholder="Raconte ton voyage comme tu le ferais à un ami…"
+                >${escapeHtml(
+                  mobileGuidedText
+                )}</textarea>
+
+                <div class="mobile-guided-examples">
+                  <button
+                    type="button"
+                    data-action="mobile-guided-example"
+                    data-example="short"
+                  >
+                    Exemple rapide
+                  </button>
+
+                  <button
+                    type="button"
+                    data-action="mobile-guided-example"
+                    data-example="detailed"
+                  >
+                    Modèle détaillé
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  class="mobile-guided-analyze"
+                  data-action="mobile-guided-analyze"
+                  ${mobileGuidedBusy || !mobileGuidedText.trim()
+                    ? 'disabled'
+                    : ''}
+                >
+                  <span class="material-symbols-outlined">
+                    ${mobileGuidedBusy
+                      ? 'progress_activity'
+                      : 'auto_awesome'}
+                  </span>
+
+                  ${
+                    mobileGuidedBusy
+                      ? 'Analyse en cours…'
+                      : 'Analyser avec l’IA'
+                  }
+                </button>
+
+                ${
+                  mobileGuidedError
+                    ? `
+                      <p
+                        class="mobile-guided-error"
+                        role="alert"
+                      >
+                        ${escapeHtml(
+                          mobileGuidedError
+                        )}
+                      </p>
+                    `
+                    : ''
+                }
+
+                ${renderMobileGuidedPreview()}
+              </div>
+            ` : ''}
+          </section>
+
           <div class="field-group">
+
             <label class="kicker" for="destination">Destination</label>
             <div class="input-shell">
               <span class="material-symbols-outlined form-icon" aria-hidden="true">location_on</span>
@@ -7855,6 +8376,36 @@ function renderCreateTrip() {
 
 function initCreateTripControls() {
   initAutocompleteOnPage();
+
+  const guidedTextarea =
+    document.querySelector(
+      '#mobile-guided-text'
+    );
+
+  if (guidedTextarea) {
+    guidedTextarea.addEventListener(
+      'input',
+      event => {
+        mobileGuidedText =
+          event.target.value;
+
+        mobileGuidedPlan = null;
+        mobileGuidedError = '';
+
+        document
+          .querySelector(
+            '[data-mobile-guided-preview]'
+          )
+          ?.remove();
+
+        document
+          .querySelector(
+            '.mobile-guided-error'
+          )
+          ?.remove();
+      }
+    );
+  }
 
   document.querySelectorAll('.interactive-date').forEach(card => {
     const input = card.querySelector('input[type="date"]');
@@ -12789,44 +13340,157 @@ function daysBetweenInclusive(startDate, endDate) {
 }
 
 async function handleCreateBoard() {
-  const draft = getCreateTripFormData();
+  const draft =
+    getCreateTripFormData();
+
   saveTripDraft(draft);
 
-  const destination = String(
-    draft.destination || ''
-  ).trim();
+  const destination =
+    String(
+      draft.destination || ''
+    ).trim();
+
+  if (
+    mobileGuidedOpen &&
+    mobileGuidedText.trim() &&
+    !mobileGuidedPlan
+  ) {
+    mobileGuidedError =
+      'Analyse d’abord ta description avant de créer le voyage.';
+    renderCreateTrip();
+    return;
+  }
 
   if (!destination) {
-    alert('Indique une destination pour commencer.');
+    alert(
+      'Indique une destination pour commencer.'
+    );
     return;
   }
 
   if (!window.SB) {
     alert(
-      "Le service de sauvegarde n'est pas disponible."
+      'Le service de sauvegarde n’est pas disponible.'
     );
     return;
   }
 
   try {
     if (!mobileUser) {
-      mobileUser = await window.SB.startGuestSession();
+      mobileUser =
+        await window.SB.startGuestSession();
     }
 
-    const trip = await window.SB.createTrip({
-      name: destination,
-      startDate: draft.startDate || null,
-      endDate: draft.endDate || null,
-      days: daysBetweenInclusive(
-        draft.startDate,
-        draft.endDate
-      )
-    });
+    const trip =
+      await window.SB.createTrip({
+        name: destination,
+        startDate:
+          draft.startDate ||
+          null,
+        endDate:
+          draft.endDate ||
+          null,
+        days:
+          daysBetweenInclusive(
+            draft.startDate,
+            draft.endDate
+          )
+      });
 
-    await refreshMobileTrips(trip.id);
+    let fullTrip =
+      await window.SB.loadTrip(
+        trip.id
+      );
+
+    if (mobileGuidedPlan) {
+      const daysByDate =
+        new Map(
+          (fullTrip.days || [])
+            .map(day => [
+              day.dateISO,
+              day
+            ])
+        );
+
+      for (
+        const [
+          date,
+          title
+        ] of Object.entries(
+          mobileGuidedPlan.dayTitles || {}
+        )
+      ) {
+        const day =
+          daysByDate.get(date);
+
+        if (
+          day &&
+          title
+        ) {
+          await window.SB.updateDay(
+            day.id,
+            { title }
+          );
+        }
+      }
+
+      const stepIndexes = {};
+
+      for (
+        const rawItem of
+        mobileGuidedPlan.items || []
+      ) {
+        const item =
+          normalizeMobileGuidedItem(
+            rawItem
+          );
+
+        const day =
+          daysByDate.get(
+            item.date
+          );
+
+        if (!day) {
+          continue;
+        }
+
+        const stepIndex =
+          stepIndexes[item.date] || 0;
+
+        await window.SB.saveStep(
+          trip.id,
+          day.id,
+          {
+            ...item,
+            stepIndex
+          }
+        );
+
+        stepIndexes[item.date] =
+          stepIndex + 1;
+      }
+
+      fullTrip =
+        await window.SB.loadTrip(
+          trip.id
+        );
+    }
+
+    await refreshMobileTrips(
+      trip.id
+    );
+
+    mobileGuidedOpen = false;
+    mobileGuidedText = '';
+    mobileGuidedPlan = null;
+    mobileGuidedError = '';
+
     navigate('itinerary');
   } catch (error) {
-    console.error(error);
+    console.error(
+      'Création du voyage impossible :',
+      error
+    );
 
     alert(
       error.message ||
@@ -14356,6 +15020,94 @@ if (
   'mobile-quick-details'
 ) {
   openMobileQuickStepDetails();
+  return;
+}
+
+if (
+  action ===
+  'mobile-guided-toggle'
+) {
+  mobileGuidedOpen =
+    !mobileGuidedOpen;
+
+  renderCreateTrip();
+
+  if (mobileGuidedOpen) {
+    requestAnimationFrame(() => {
+      document
+        .querySelector(
+          '#mobile-guided-text'
+        )
+        ?.focus();
+    });
+  }
+
+  return;
+}
+
+if (
+  action ===
+  'mobile-guided-example'
+) {
+  const button =
+    event.target.closest(
+      '[data-example]'
+    );
+
+  const example =
+    button?.dataset.example;
+
+  mobileGuidedText =
+    example === 'detailed'
+      ? 'Je pars en Corée du Sud du 1er au 12 octobre 2026. Je passe cinq nuits à Séoul, puis quatre nuits à Busan. Le 6 octobre, je prends le train de Séoul à Busan à 9h. Je veux visiter le palais Gyeongbokgung à Séoul et le temple Haedong Yonggungsa à Busan.'
+      : 'Je pars à Tokyo du 1er au 7 décembre 2026. Je dors cinq nuits à Tokyo puis une nuit à Kyoto.';
+
+  mobileGuidedPlan = null;
+  mobileGuidedError = '';
+  renderCreateTrip();
+
+  requestAnimationFrame(() => {
+    document
+      .querySelector(
+        '#mobile-guided-text'
+      )
+      ?.focus();
+  });
+
+  return;
+}
+
+if (
+  action ===
+  'mobile-guided-analyze'
+) {
+  mobileGuidedText =
+    document
+      .querySelector(
+        '#mobile-guided-text'
+      )
+      ?.value ||
+    mobileGuidedText;
+
+  await analyzeMobileGuidedText();
+  return;
+}
+
+if (
+  action ===
+  'mobile-guided-remove'
+) {
+  const button =
+    event.target.closest(
+      '[data-guided-index]'
+    );
+
+  removeMobileGuidedItem(
+    Number(
+      button?.dataset.guidedIndex
+    )
+  );
+
   return;
 }
 

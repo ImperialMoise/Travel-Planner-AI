@@ -12276,7 +12276,14 @@ function renderMobileSummary() {
             </strong>
           </div>
 
-          <span class="mobile-summary-progress-track">
+          <span
+            class="mobile-summary-progress-track"
+            role="progressbar"
+            aria-label="Progression du voyage"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow="${summary.progress}"
+          >
             <span
               style="width:${summary.progress}%"
             ></span>

@@ -1526,6 +1526,12 @@
   text-transform:uppercase;
 }
 
+.home-library-tools input:focus-visible,
+.home-library-tools select:focus-visible{
+  outline:3px solid var(--accent-soft);
+  outline-offset:2px;
+}
+  
 .home-trip-grid{
   contain:layout paint;
   display:grid;
@@ -1589,7 +1595,7 @@
   letter-spacing:.08em;
   text-transform:uppercase;
 }
-  
+
 .home-trip-chip{
   position:absolute;
   left:12px;

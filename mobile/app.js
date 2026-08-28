@@ -2701,6 +2701,28 @@ const nextTripCover =
           <p class="kicker">Votre Carnet</p>
           <h2 class="hero-title">Où commence votre prochaine escale ?</h2>
           <p class="mobile-sync-status">${syncStatus}</p>
+                  <section class="mobile-desktop-cta" aria-label="Version ordinateur">
+          <div class="mobile-desktop-cta-icon" aria-hidden="true">
+            <span class="material-symbols-outlined">laptop_mac</span>
+          </div>
+
+          <div class="mobile-desktop-cta-copy">
+            <strong>Prépare aussi ton voyage sur ordinateur</strong>
+            <span>
+              La version web est plus confortable pour organiser un long itinéraire.
+              Tes voyages restent synchronisés.
+            </span>
+          </div>
+
+          <a
+            class="mobile-desktop-cta-link"
+            href="https://travel-planner-ai-chi.vercel.app/"
+            target="_blank"
+            rel="noopener"
+          >
+            Ouvrir
+          </a>
+        </section>
         </section>
 
 ${nextTrip ? `
@@ -12520,7 +12542,7 @@ function renderMobileSummary() {
               moyenne estimée sur la durée du voyage
             </small>
           </article>
-          
+
         </section>
 
         <section class="mobile-summary-panel">

@@ -6185,7 +6185,37 @@ function DaySpine({
 
   const loggedOut = mode === 'loggedOut';
   const safeTrips = Array.isArray(trips) ? trips : [];
-  const [featuredTrip, setFeaturedTrip] = React.useState(null);
+  const [tripQuery, setTripQuery] =
+    React.useState('');
+  const [featuredTrip, setFeaturedTrip] =
+    React.useState(null);
+
+  const filteredTrips =
+    React.useMemo(
+      function filterTrips() {
+        const query =
+          tripQuery.trim().toLocaleLowerCase();
+
+        if (!query) {
+          return safeTrips;
+        }
+
+        return safeTrips.filter(
+          function keepMatchingTrip(trip) {
+            return [
+              trip.name,
+              trip.destination,
+              trip.country
+            ]
+              .filter(Boolean)
+              .join(' ')
+              .toLocaleLowerCase()
+              .includes(query);
+          }
+        );
+      },
+      [safeTrips, tripQuery]
+    );
 
 const featuredTripMeta = React.useMemo(function pickFeaturedTrip() {
   if (!safeTrips.length) return null;
@@ -7145,10 +7175,51 @@ async function createTripFromHero() {
               </p>
             </div>
 
-            <div className="home-library-count">
-              {safeTrips.length
-                ? safeTrips.length + ' voyage' + (safeTrips.length > 1 ? 's' : '')
-                : 'Aucun voyage'}
+            <div
+              className="home-library-tools"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                flexWrap: 'wrap',
+                justifyContent: 'flex-end'
+              }}
+            >
+              <label
+                htmlFor="home-trip-search"
+                className="sr-only"
+              >
+                Rechercher un voyage
+              </label>
+
+              <input
+                id="home-trip-search"
+                type="search"
+                value={tripQuery}
+                onChange={event =>
+                  setTripQuery(event.target.value)
+                }
+                placeholder="Rechercher…"
+                aria-label="Rechercher un voyage"
+                style={{
+                  minHeight: 38,
+                  width: 190,
+                  padding: '8px 11px',
+                  border: '1px solid var(--outline-variant)',
+                  borderRadius: 10,
+                  background: 'var(--card)',
+                  color: 'var(--text)',
+                  font: 'inherit'
+                }}
+              />
+
+              <div className="home-library-count">
+                {safeTrips.length
+                  ? safeTrips.length +
+                    ' voyage' +
+                    (safeTrips.length > 1 ? 's' : '')
+                  : 'Aucun voyage'}
+              </div>
             </div>
           </div>
 
@@ -7162,9 +7233,9 @@ async function createTripFromHero() {
                 Tes itinéraires sauvegardés apparaîtront ici une fois connecté.
               </div>
             </div>
-          ) : safeTrips.length ? (
+          ) : filteredTrips.length ? (
             <div className="home-trip-grid">
-              {safeTrips.map(function renderTripCard(trip, index) {
+              {filteredTrips.map(function renderTripCard(trip, index) {
                 const image =  trip.cover_image_url ||  trip.coverImageUrl ||  tripImages[index % tripImages.length];
 
                 return (
@@ -7231,7 +7302,16 @@ async function createTripFromHero() {
           ) : (
             <div className="home-trip-empty">
               <div className="home-trip-empty-title">
-                Aucun voyage pour le moment.
+                Aucun voyage correspondant.
+                              {tripQuery && (
+                <button
+                  type="button"
+                  className="home-trip-resume"
+                  onClick={() => setTripQuery('')}
+                >
+                  Effacer la recherche
+                </button>
+              )}
               </div>
 
               <div>

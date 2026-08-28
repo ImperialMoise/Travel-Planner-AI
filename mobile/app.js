@@ -2828,6 +2828,16 @@ ${nextTrip ? `
                     ${trip.start_date ? formatDateLabel(trip.start_date, '') : 'Sans date'}
                   </div>
 
+                  <button
+  type="button"
+  class="trip-duplicate"
+  data-action="duplicate-trip"
+  data-trip-id="${trip.id}"
+>
+  <span class="material-symbols-outlined">content_copy</span>
+  Dupliquer
+</button>
+
                   </div>
               </article>
             `).join('') : `
@@ -15058,6 +15068,41 @@ if (action === 'remove-trip-member') {
     handleCreateBoard();
     return;
   }
+
+  if (action === 'duplicate-trip') {
+  const tripId = event.target
+    .closest('[data-trip-id]')
+    ?.dataset.tripId;
+
+  const sourceTrip = mobileTrips.find(
+    trip => String(trip.id) === String(tripId)
+  );
+
+  if (!sourceTrip || !window.SB?.duplicateTrip) {
+    alert('Impossible de dupliquer ce voyage.');
+    return;
+  }
+
+  try {
+    const copied = await window.SB.duplicateTrip(sourceTrip.id, {
+      name: `Copie de ${sourceTrip.name || 'Voyage sans titre'}`
+    });
+
+    mobileTrips = await window.SB.listMyTrips();
+    activeTrip = copied;
+    renderHome();
+
+    alert(`Voyage « ${copied.name} » créé.`);
+  } catch (error) {
+    console.error('Mobile duplicate trip error:', error);
+    alert(
+      error?.message || 'Impossible de dupliquer ce voyage.'
+    );
+  }
+
+  return;
+}
+
 
 if (action === 'open-trip-travel') {
   const tripId = event.target

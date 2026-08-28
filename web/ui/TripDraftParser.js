@@ -662,6 +662,97 @@
       );
     }
 
+    if (
+      plan.items.every(function keepExistingItem(item) {
+        return item.type !== 'transport';
+      })
+    ) {
+      const routePattern =
+        /\b(?:de|depuis)\s+([^,.]+?)\s+(?:pour aller|pour|vers|à)\s+([^,.]+?)\s+en\s+(train|avion|vol|bus|car|voiture|taxi|ferry|bateau|métro|metro)\b/gi;
+
+      let routeMatch;
+      let routeIndex = 0;
+
+      while (
+        (routeMatch = routePattern.exec(naturalText))
+      ) {
+        const routeDate =
+          addDaysISO(
+            plan.startDate,
+            routeIndex
+          );
+
+        plan.items.push({
+          date:
+            routeDate <= plan.endDate
+              ? routeDate
+              : plan.endDate,
+          type: 'transport',
+          label: '',
+          depart: routeMatch[1].trim(),
+          arrivee: routeMatch[2].trim(),
+          transportType: transportType(
+            routeMatch[3]
+          ),
+          duree: '',
+          time: ''
+        });
+
+        routeIndex += 1;
+      }
+
+      const chainedPattern =
+        /\b(?:puis|ensuite|après)\s+en\s+(train|avion|vol|bus|car|voiture|taxi|ferry|bateau|métro|metro)\s+(?:je\s+)?(?:vais|pars|me rends)\s+(?:à|vers)\s+([^,.]+)/gi;
+
+      let chainedMatch;
+      let previousArrival = '';
+
+      while (
+        (chainedMatch =
+          chainedPattern.exec(naturalText))
+      ) {
+        const previousTransport =
+          plan.items
+            .filter(function keepTransport(item) {
+              return item.type === 'transport';
+            })
+            .at(-1);
+
+        previousArrival =
+          previousTransport?.arrivee || '';
+
+        const routeDate =
+          addDaysISO(
+            plan.startDate,
+            routeIndex
+          );
+
+        plan.items.push({
+          date:
+            routeDate <= plan.endDate
+              ? routeDate
+              : plan.endDate,
+          type: 'transport',
+          label: '',
+          depart: previousArrival,
+          arrivee: chainedMatch[2].trim(),
+          transportType: transportType(
+            chainedMatch[1]
+          ),
+          duree: '',
+          time: ''
+        });
+
+        routeIndex += 1;
+      }
+
+      if (routeIndex > 0) {
+        plan.warnings.push(
+          'Les dates des transports détectés dans une phrase libre ont été estimées. Vérifie-les avant de créer le voyage.'
+        );
+      }
+    }
+
     return 1;
   }
 

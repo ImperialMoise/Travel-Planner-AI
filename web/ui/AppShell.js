@@ -1531,7 +1531,7 @@
   outline:3px solid var(--accent-soft);
   outline-offset:2px;
 }
-  
+
 .home-trip-grid{
   contain:layout paint;
   display:grid;
@@ -7402,6 +7402,7 @@ async function createTripFromHero() {
                         height="340"
                         loading="lazy"
                         decoding="async"
+                        sizes="(max-width: 760px) 92vw, (max-width: 1180px) 45vw, 30vw"
                         draggable="false"
                         aria-hidden="true"
                       />

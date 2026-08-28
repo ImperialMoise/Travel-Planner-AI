@@ -8545,7 +8545,7 @@ async function submit() {
     const nextTrips =
       await window.SB.listMyTrips({
   includeArchived: true
-})window.SB.listMyTrips();
+});
 
     Store.set({
       trips: nextTrips,

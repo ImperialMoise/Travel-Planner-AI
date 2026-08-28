@@ -999,6 +999,63 @@
             </div>
           </section>
 
+          {summary.statusLabel === 'Voyage terminé' && (
+            <section className="trip-summary-panel">
+              <header className="trip-summary-panel-heading">
+                <div>
+                  <h2>Bilan du voyage</h2>
+                  <p>Les chiffres clés de ton voyage terminé.</p>
+                </div>
+              </header>
+
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns:
+                    'repeat(4, minmax(0, 1fr))',
+                  gap: 12,
+                  padding: 16
+                }}
+              >
+                <div>
+                  <strong>
+                    {formatNumber(
+                      summary.days.length
+                    )}
+                  </strong>
+                  <div>jours parcourus</div>
+                </div>
+
+                <div>
+                  <strong>
+                    {formatNumber(
+                      summary.totalNights
+                    )}
+                  </strong>
+                  <div>nuits</div>
+                </div>
+
+                <div>
+                  <strong>
+                    {formatNumber(
+                      summary.transports.length
+                    )}
+                  </strong>
+                  <div>trajets</div>
+                </div>
+
+                <div>
+                  <strong>
+                    {formatNumber(
+                      summary.locations.length
+                    )}
+                  </strong>
+                  <div>lieux visités</div>
+                </div>
+              </div>
+            </section>
+          )}
+
           <div className="trip-summary-grid">
             <Breakdown
               title="Modes de transport"

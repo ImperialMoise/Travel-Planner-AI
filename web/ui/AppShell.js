@@ -4862,9 +4862,37 @@ function toggleToolboxCollapsed() {
 
     const [authOpen, setAuthOpen] = React.useState(false);
     const [tripMenuOpen, setTripMenuOpen] = React.useState(false);
-    const [newTripOpen, setNewTripOpen] = React.useState(false);
+    const [newTripOpen, setNewTripOpen] =
+      React.useState(false);
+
+    const [
+      newTripGuidedOpen,
+      setNewTripGuidedOpen
+    ] = React.useState(false);
 
     const menuRef = React.useRef(null);
+
+    React.useEffect(
+      function listenGuidedTripRequest() {
+        function openGuidedTripModal() {
+          setNewTripGuidedOpen(true);
+          setNewTripOpen(true);
+        }
+
+        window.addEventListener(
+          'open-guided-trip-modal',
+          openGuidedTripModal
+        );
+
+        return function cleanup() {
+          window.removeEventListener(
+            'open-guided-trip-modal',
+            openGuidedTripModal
+          );
+        };
+      },
+      []
+    );
 
     React.useEffect(function openInviteAuth() {
       if (!user && localStorage.getItem('pendingTripInvite')) {
@@ -5294,7 +5322,15 @@ function toggleFocusMode() {
         )}
 
         {newTripOpen && (
-          <NewTripModal onClose={() => setNewTripOpen(false)} />
+          <NewTripModal
+            initialGuidedOpen={
+              newTripGuidedOpen
+            }
+            onClose={() => {
+              setNewTripOpen(false);
+              setNewTripGuidedOpen(false);
+            }}
+          />
         )}
       </header>
     );
@@ -6560,6 +6596,24 @@ async function createTripFromHero() {
             </button>
           </div>
 
+          <button
+            type="button"
+            className="home-guided-action"
+            onClick={() =>
+              window.dispatchEvent(
+                new Event(
+                  'open-guided-trip-modal'
+                )
+              )
+            }
+          >
+            <Icon
+              name="sparkles"
+              size={17}
+            />
+            Décrire mon voyage
+          </button>
+
           {error && (
             <div className="home-hero-error">
               {error}
@@ -7742,14 +7796,20 @@ async function submit() {
     );
   }
 
-  function NewTripModal({ onClose }) {
+  function NewTripModal({
+    onClose,
+    initialGuidedOpen = false
+  }) {
     const [name, setName] = React.useState('');
     const [startDate, setStartDate] = React.useState('');
     const [endDate, setEndDate] = React.useState('');
     const [days, setDays] = React.useState(7);
     const [busy, setBusy] = React.useState(false);
     const [error, setError] = React.useState('');
-    const [guidedOpen, setGuidedOpen] = React.useState(false);
+    const [guidedOpen, setGuidedOpen] =
+      React.useState(
+        initialGuidedOpen
+      );
     const [guidedText, setGuidedText] = React.useState('');
     const [guidedPlan, setGuidedPlan] = React.useState(null);
 

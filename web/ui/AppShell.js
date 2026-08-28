@@ -1381,7 +1381,9 @@
 @media(max-width:820px){
   .home-hero{
     min-height:calc(100dvh - 56px);
-    padding:56px 0;
+    align-items:flex-start;
+    justify-content:flex-start;
+    padding:clamp(28px, 8vh, 64px) 0 56px;
   }
 
   .home-hero-inner{

@@ -12498,6 +12498,29 @@ function renderMobileSummary() {
               }
             </small>
           </article>
+                    <article class="wide">
+            <span class="material-symbols-outlined">
+              calendar_today
+            </span>
+
+            <strong>
+              ${escapeHtml(
+                formatMobileSummaryMoney(
+                  summary.days.length
+                    ? summary.totalBudget /
+                      summary.days.length
+                    : 0
+                )
+              )}
+            </strong>
+
+            <span>budget / jour</span>
+
+            <small>
+              moyenne estimée sur la durée du voyage
+            </small>
+          </article>
+          
         </section>
 
         <section class="mobile-summary-panel">

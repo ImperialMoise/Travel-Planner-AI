@@ -953,6 +953,18 @@
             />
 
             <StatCard
+              icon="calendar"
+              value={formatMoney(
+                summary.dayCount
+                  ? summary.totalBudget /
+                    summary.dayCount
+                  : 0
+              )}
+              label="budget / jour"
+              detail="moyenne basée sur le budget saisi"
+            />
+            
+            <StatCard
               icon="ticket"
               value={formatNumber(
                 summary.reservationCount

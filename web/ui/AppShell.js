@@ -6187,6 +6187,9 @@ function DaySpine({
   const safeTrips = Array.isArray(trips) ? trips : [];
   const [tripQuery, setTripQuery] =
     React.useState('');
+
+  const [tripStatus, setTripStatus] =
+    React.useState('all');
   const [featuredTrip, setFeaturedTrip] =
     React.useState(null);
 
@@ -6196,25 +6199,58 @@ function DaySpine({
         const query =
           tripQuery.trim().toLocaleLowerCase();
 
-        if (!query) {
-          return safeTrips;
-        }
-
         return safeTrips.filter(
           function keepMatchingTrip(trip) {
-            return [
-              trip.name,
-              trip.destination,
-              trip.country
-            ]
-              .filter(Boolean)
-              .join(' ')
-              .toLocaleLowerCase()
-              .includes(query);
+            const matchesText =
+              !query ||
+              [
+                trip.name,
+                trip.destination,
+                trip.country
+              ]
+                .filter(Boolean)
+                .join(' ')
+                .toLocaleLowerCase()
+                .includes(query);
+
+            const todayISO =
+              new Date()
+                .toISOString()
+                .slice(0, 10);
+
+            const start =
+              trip.start_date ||
+              trip.startDate ||
+              '';
+
+            const end =
+              trip.end_date ||
+              trip.endDate ||
+              '';
+
+            const status =
+              end && end < todayISO
+                ? 'completed'
+                : start && start > todayISO
+                  ? 'upcoming'
+                  : 'current';
+
+            const matchesStatus =
+              tripStatus === 'all' ||
+              tripStatus === status;
+
+            return (
+              matchesText &&
+              matchesStatus
+            );
           }
         );
       },
-      [safeTrips, tripQuery]
+      [
+        safeTrips,
+        tripQuery,
+        tripStatus
+      ]
     );
 
 const featuredTripMeta = React.useMemo(function pickFeaturedTrip() {
@@ -7212,6 +7248,36 @@ async function createTripFromHero() {
                   font: 'inherit'
                 }}
               />
+
+                            <select
+                value={tripStatus}
+                onChange={event =>
+                  setTripStatus(event.target.value)
+                }
+                aria-label="Filtrer les voyages"
+                style={{
+                  minHeight: 38,
+                  padding: '8px 10px',
+                  border: '1px solid var(--outline-variant)',
+                  borderRadius: 10,
+                  background: 'var(--card)',
+                  color: 'var(--text)',
+                  font: 'inherit'
+                }}
+              >
+                <option value="all">
+                  Tous
+                </option>
+                <option value="upcoming">
+                  À venir
+                </option>
+                <option value="current">
+                  En cours
+                </option>
+                <option value="completed">
+                  Terminés
+                </option>
+              </select>
 
               <div className="home-library-count">
                 {safeTrips.length

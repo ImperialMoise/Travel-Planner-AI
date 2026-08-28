@@ -955,6 +955,43 @@
             />
           </section>
 
+          <section className="trip-summary-panel">
+            <header className="trip-summary-panel-heading">
+              <div>
+                <h2>Rythme du voyage</h2>
+                <p>Les chiffres clés de ton itinéraire.</p>
+              </div>
+            </header>
+
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns:
+                  'repeat(2, minmax(0, 1fr))',
+                gap: 12,
+                padding: 16
+              }}
+            >
+              <div>
+                <strong>
+                  {formatNumber(
+                    summary.averageStepsPerPlannedDay
+                  )}
+                </strong>
+                <div>étapes par jour organisé</div>
+              </div>
+
+              <div>
+                <strong>
+                  {summary.busiestDay
+                    ? summary.busiestDay.label
+                    : 'Aucune'}
+                </strong>
+                <div>journée la plus chargée</div>
+              </div>
+            </div>
+          </section>
+
           <div className="trip-summary-grid">
             <Breakdown
               title="Modes de transport"

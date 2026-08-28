@@ -7302,8 +7302,12 @@ async function createTripFromHero() {
           ) : (
             <div className="home-trip-empty">
               <div className="home-trip-empty-title">
-                Aucun voyage correspondant.
-                              {tripQuery && (
+                {tripQuery
+                  ? 'Aucun voyage correspondant.'
+                  : 'Aucun voyage pour le moment.'}
+              </div>
+
+              {tripQuery && (
                 <button
                   type="button"
                   className="home-trip-resume"
@@ -7312,6 +7316,14 @@ async function createTripFromHero() {
                   Effacer la recherche
                 </button>
               )}
+
+              <div>
+                {tripQuery
+                  ? 'Essaie un autre nom ou une autre destination.'
+                  : 'Crée ton premier itinéraire avec la barre au-dessus. Il apparaîtra ici automatiquement.'}
+              </div>
+            </div>
+          )}
               </div>
 
               <div>

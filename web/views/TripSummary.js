@@ -963,7 +963,7 @@
               label="budget / jour"
               detail="moyenne basée sur le budget saisi"
             />
-            
+
             <StatCard
               icon="ticket"
               value={formatNumber(
@@ -972,6 +972,31 @@
               label="réservations"
               detail="billets, hôtels et activités"
             />
+            
+            <StatCard
+              icon="local_activity"
+              value={formatNumber(
+                summary.stepBreakdown.find(
+                  item =>
+                    item.id === 'activite'
+                )?.value || 0
+              )}
+              label="activités"
+              detail="visites et découvertes"
+            />
+
+            <StatCard
+              icon="restaurant"
+              value={formatNumber(
+                summary.stepBreakdown.find(
+                  item =>
+                    item.id === 'restaurant'
+                )?.value || 0
+              )}
+              label="restaurants"
+              detail="repas planifiés"
+            />
+            
           </section>
 
           <section className="trip-summary-panel">

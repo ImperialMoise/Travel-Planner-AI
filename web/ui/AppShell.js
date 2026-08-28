@@ -4865,6 +4865,27 @@ function toggleToolboxCollapsed() {
     const [newTripOpen, setNewTripOpen] =
       React.useState(false);
 
+    React.useEffect(
+      function listenHomepageGuidedTrip() {
+        function openGuidedTrip() {
+          setNewTripOpen(true);
+        }
+
+        window.addEventListener(
+          'open-guided-trip-modal',
+          openGuidedTrip
+        );
+
+        return function cleanup() {
+          window.removeEventListener(
+            'open-guided-trip-modal',
+            openGuidedTrip
+          );
+        };
+      },
+      []
+    );
+
     const [
       newTripGuidedOpen,
       setNewTripGuidedOpen
@@ -8755,9 +8776,28 @@ async function submit() {
               )}
             </div>
           )}
-        </div>
+          </div>
 
-        {error && (
+          <button
+            type="button"
+            className="home-guided-action"
+            onClick={() =>
+              window.dispatchEvent(
+                new Event(
+                  'open-guided-trip-modal'
+                )
+              )
+            }
+          >
+            <Icon
+              name="sparkles"
+              size={17}
+            />
+
+            Décrire mon voyage
+          </button>
+
+          {error && (
           <div
             className="new-trip-form-error"
             role="alert"

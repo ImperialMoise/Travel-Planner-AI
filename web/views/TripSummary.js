@@ -936,6 +936,23 @@
                   : 'Aucun voyageur renseigné'
               }
             />
+            <StatCard
+              icon="note"
+              value={formatNumber(
+                summary.notesCount
+              )}
+              label="notes"
+              detail="à consulter pendant le voyage"
+            />
+
+            <StatCard
+              icon="ticket"
+              value={formatNumber(
+                summary.reservationCount
+              )}
+              label="réservations"
+              detail="billets, hôtels et activités"
+            />
           </section>
 
           <div className="trip-summary-grid">

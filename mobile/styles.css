@@ -13288,3 +13288,39 @@ button:disabled {
     grid-template-columns: 1fr;
   }
 }
+
+.mobile-guided-warnings {
+  display: grid;
+  gap: 6px;
+  padding: 9px 10px;
+  border: 1px solid
+    color-mix(
+      in srgb,
+      var(--primary) 28%,
+      transparent
+    );
+  border-radius: 11px;
+  background: var(--surface-container);
+}
+
+.mobile-guided-warnings strong {
+  color: var(--on-surface);
+  font-size: 11px;
+}
+
+.mobile-guided-warnings p {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0;
+  color: var(--on-surface-variant);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.mobile-guided-warnings
+.material-symbols-outlined {
+  flex-shrink: 0;
+  color: var(--primary);
+  font-size: 16px;
+}

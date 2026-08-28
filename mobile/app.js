@@ -7971,6 +7971,34 @@ function renderMobileGuidedPreview() {
         </span>
       </div>
 
+      ${
+        Array.isArray(
+          mobileGuidedPlan.warnings
+        ) &&
+        mobileGuidedPlan.warnings.length
+          ? `
+            <div class="mobile-guided-warnings">
+              <strong>
+                À vérifier
+              </strong>
+
+              ${mobileGuidedPlan.warnings
+                .map(
+                  warning => `
+                    <p>
+                      <span class="material-symbols-outlined">
+                        warning
+                      </span>
+                      ${escapeHtml(warning)}
+                    </p>
+                  `
+                )
+                .join('')}
+            </div>
+          `
+          : ''
+      }
+
       <div class="mobile-guided-items">
         ${
           items.length
@@ -8166,6 +8194,10 @@ async function analyzeMobileGuidedText() {
     renderCreateTrip();
   } finally {
     mobileGuidedBusy = false;
+
+    if (mobileGuidedOpen) {
+      renderCreateTrip();
+    }
   }
 }
 
@@ -14045,6 +14077,13 @@ function navigate(route) {
   renderShare();
   } else if (route === 'create-trip') {
     window.location.hash = 'create-trip';
+
+    mobileGuidedOpen = false;
+    mobileGuidedText = '';
+    mobileGuidedPlan = null;
+    mobileGuidedBusy = false;
+    mobileGuidedError = '';
+
     renderCreateTrip();
   } else if (route === 'budget-overview') {
     window.location.hash = 'budget-overview';

@@ -12262,6 +12262,58 @@ function renderMobileSummary() {
           </div>
         </section>
 
+        ${
+          summary.status === 'Voyage terminé'
+            ? `
+        <section class="mobile-summary-panel">
+          <header>
+            <span
+              class="material-symbols-outlined"
+              aria-hidden="true"
+            >
+              emoji_events
+            </span>
+
+            <div>
+              <h2>Bilan du voyage</h2>
+              <p>Les chiffres clés de ton voyage terminé.</p>
+            </div>
+          </header>
+
+          <div class="mobile-summary-stats">
+            <article>
+              <strong>
+                ${summary.days.length}
+              </strong>
+              <span>jours</span>
+            </article>
+
+            <article>
+              <strong>
+                ${summary.totalNights}
+              </strong>
+              <span>nuits</span>
+            </article>
+
+            <article>
+              <strong>
+                ${summary.transports.length}
+              </strong>
+              <span>trajets</span>
+            </article>
+
+            <article>
+              <strong>
+                ${summary.locations.length}
+              </strong>
+              <span>lieux</span>
+            </article>
+          </div>
+        </section>
+        `
+            : ''
+        }
+
         <section
           class="mobile-summary-progress"
           aria-label="Progression du voyage : ${summary.progress}%"

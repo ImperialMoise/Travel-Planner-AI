@@ -11724,6 +11724,19 @@ function getMobileTripSummary() {
         'logement'
     );
 
+      const notesCount =
+    (
+      activeTrip?.globalNote
+        ? 1
+        : 0
+    ) +
+    days.filter(function hasDayNote(day) {
+      return Boolean(day?.note);
+    }).length +
+    steps.filter(function hasStepNote(step) {
+      return Boolean(step?.note || step?.notes);
+    }).length;
+
   const budget =
     Array.isArray(activeTrip?.budget)
       ? activeTrip.budget
@@ -12064,6 +12077,7 @@ function getMobileTripSummary() {
       Array.from(locations.values()),
     totalBudget,
     totalNights,
+    notesCount,
     transportBreakdown,
     budgetBreakdown,
     lodgingBreakdown,
@@ -12359,6 +12373,23 @@ function renderMobileSummary() {
             </small>
           </article>
 
+                    <article>
+            <span class="material-symbols-outlined">
+              notes
+            </span>
+
+            <strong>
+              ${summary.notesCount}
+            </strong>
+
+            <span>notes</span>
+
+            <small>
+              détails à consulter
+            </small>
+          </article>
+
+          
           <article class="wide">
             <span class="material-symbols-outlined">
               payments

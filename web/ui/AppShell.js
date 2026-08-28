@@ -1527,12 +1527,15 @@
 }
 
 .home-trip-grid{
+  contain:layout paint;
   display:grid;
   grid-template-columns:repeat(3,minmax(0,1fr));
   gap:18px;
 }
 
 .home-trip-card{
+  content-visibility:auto;
+  contain-intrinsic-size:340px;
   border:1px solid var(--outline-variant);
   border-radius:18px;
   background:var(--card);

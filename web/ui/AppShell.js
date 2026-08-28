@@ -7846,6 +7846,16 @@ async function submit() {
       setBusy(true);
 
       try {
+        if (
+          !window.SB?.startGuestSession
+        ) {
+          throw new Error(
+            'Le service de session temporaire est indisponible.'
+          );
+        }
+
+        await window.SB.startGuestSession();
+
         let plan = null;
 
         try {

@@ -245,6 +245,46 @@
         .register(
           '/service-worker.js'
         )
+        .then(
+          function watchServiceWorkerUpdate(
+            registration
+          ) {
+            function notifyWhenInstalled(
+              worker
+            ) {
+              if (!worker) return;
+
+              worker.addEventListener(
+                'statechange',
+                function reportUpdateReady() {
+                  if (
+                    worker.state ===
+                      'installed' &&
+                    navigator.serviceWorker
+                      .controller
+                  ) {
+                    Store.showToast(
+                      'Une nouvelle version est disponible. Recharge la page quand tu as terminé.'
+                    );
+                  }
+                }
+              );
+            }
+
+            notifyWhenInstalled(
+              registration.installing
+            );
+
+            registration.addEventListener(
+              'updatefound',
+              function watchInstallingWorker() {
+                notifyWhenInstalled(
+                  registration.installing
+                );
+              }
+            );
+          }
+        )
         .catch(
           function reportWorkerError(
             error

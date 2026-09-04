@@ -341,6 +341,29 @@ for (
   }
 }
 
+const requiredServiceWorkerUpdateMarkers = [
+  'updatefound',
+  'Une nouvelle version est disponible.',
+  '/service-worker.js'
+];
+
+for (
+  const updateMarker
+  of requiredServiceWorkerUpdateMarkers
+) {
+  if (
+    !publicBundleJavaScript.includes(
+      updateMarker
+    )
+  ) {
+    violations.push(
+      'app.bundle.js ne prévient plus lors d’une mise à jour : ' +
+      updateMarker +
+      '.'
+    );
+  }
+}
+
 const publicAppShellJavaScript =
   await readFile(
     path.join(

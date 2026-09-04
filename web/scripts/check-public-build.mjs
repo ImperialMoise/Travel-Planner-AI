@@ -375,6 +375,61 @@ for (
   }
 }
 
+const publicStylesCss =
+  await readFile(
+    path.join(
+      distDirectory,
+      'styles.css'
+    ),
+    'utf8'
+  );
+
+const requiredAccessibilityStyleMarkers = [
+  'prefers-reduced-motion',
+  ':focus-visible',
+  '.screen-reader-only'
+];
+
+for (
+  const accessibilityMarker
+  of requiredAccessibilityStyleMarkers
+) {
+  if (
+    !publicStylesCss.includes(
+      accessibilityMarker
+    )
+  ) {
+    violations.push(
+      'styles.css ne garantit plus l’accessibilité : ' +
+      accessibilityMarker +
+      '.'
+    );
+  }
+}
+
+const requiredAccessibilityShellMarkers = [
+  'Aller au contenu principal',
+  'screen-reader-only',
+  'aria-live="polite"'
+];
+
+for (
+  const accessibilityMarker
+  of requiredAccessibilityShellMarkers
+) {
+  if (
+    !publicAppShellJavaScript.includes(
+      accessibilityMarker
+    )
+  ) {
+    violations.push(
+      'AppShell.js ne garantit plus l’accessibilité : ' +
+      accessibilityMarker +
+      '.'
+    );
+  }
+}
+
 const publicTripPrintJavaScript =
   await readFile(
     path.join(

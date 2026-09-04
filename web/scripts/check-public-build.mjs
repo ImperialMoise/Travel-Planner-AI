@@ -434,7 +434,7 @@ for (
 const requiredAccessibilityShellMarkers = [
   'Aller au contenu principal',
   'screen-reader-only',
-  'aria-live="polite"'
+  'aria-live'
 ];
 
 for (

@@ -575,6 +575,58 @@ async function handleUpdateMobileProfile() {
 
 applyMobileTheme();
 
+function withMobileTimeout(
+  promise,
+  timeout = 7000
+) {
+  return new Promise(
+    function waitWithTimeout(
+      resolve,
+      reject
+    ) {
+      let completed = false;
+
+      const timer =
+        window.setTimeout(
+          function rejectTimeout() {
+            if (completed) return;
+
+            completed = true;
+
+            reject(
+              new Error(
+                'Délai de connexion dépassé.'
+              )
+            );
+          },
+          timeout
+        );
+
+      Promise.resolve(promise)
+        .then(
+          function resolvePromise(value) {
+            if (completed) return;
+
+            completed = true;
+
+            window.clearTimeout(timer);
+            resolve(value);
+          }
+        )
+        .catch(
+          function rejectPromise(error) {
+            if (completed) return;
+
+            completed = true;
+
+            window.clearTimeout(timer);
+            reject(error);
+          }
+        );
+    }
+  );
+}
+
 async function bootMobileSupabase() {
   if (window.SB) {
     mobileSB = window.SB;
@@ -687,13 +739,17 @@ async function acceptPendingMobileInvite() {
 }
 
 async function initMobileData() {
-  const SB = await waitForSupabase();
-  
-    if (SB) {
-    await loadPendingMobileInvite();
-  }
-
   try {
+    const SB =
+      await withMobileTimeout(
+        waitForSupabase()
+      );
+
+    if (SB) {
+      await withMobileTimeout(
+        loadPendingMobileInvite()
+      );
+    }
     if (!SB) {
       mobileUser = null;
       mobileTrips = [];
@@ -701,7 +757,10 @@ async function initMobileData() {
       return;
     }
 
-    mobileUser = await SB.getUser();
+    mobileUser =
+      await withMobileTimeout(
+        SB.getUser()
+      );
 
     if (!mobileUser) {
       mobileTrips = [];
@@ -709,19 +768,27 @@ async function initMobileData() {
       return;
     }
 
-    await refreshMobileTrips();
-    if (mobileRemindersAreEnabled()) {
-  try {
-    await syncMobileTripReminders();
-  } catch (error) {
-    console.warn(
-      'Mobile reminder synchronization error:',
-      error
+    await withMobileTimeout(
+      refreshMobileTrips()
     );
-  }
-}
+    if (mobileRemindersAreEnabled()) {
+      try {
+        await withMobileTimeout(
+          syncMobileTripReminders()
+        );
+      } catch (error) {
+        console.warn(
+          'Mobile reminder synchronization error:',
+          error
+        );
+      }
+    }
   } catch (error) {
     console.warn('Mobile Supabase init error:', error);
+
+    mobileSupabaseError =
+      error.message ||
+      'La connexion aux voyages est indisponible.';
 
     mobileUser = null;
     mobileTrips = [];

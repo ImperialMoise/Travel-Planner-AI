@@ -1,11 +1,17 @@
 const CACHE_NAME =
-  'la-fabrique-static-v2';
+  'la-fabrique-static-v3';
 
 const OFFLINE_URL =
   '/offline.html';
 
+const HOME_URL =
+  '/';
+
 const PRECACHE_URLS = [
+  HOME_URL,
   OFFLINE_URL,
+  '/styles.css',
+  '/app.bundle.js',
   '/manifest.webmanifest',
   '/icons/app-icon-192.svg',
   '/icons/app-icon-512.svg'
@@ -77,13 +83,39 @@ self.addEventListener(
 
     if (request.mode === 'navigate') {
       event.respondWith(
-        fetch(request).catch(
-          function showOfflinePage() {
-            return caches.match(
-              OFFLINE_URL
-            );
+        (
+          async function serveNavigation() {
+            try {
+              const response =
+                await fetch(request);
+
+              if (response.ok) {
+                const cache =
+                  await caches.open(
+                    CACHE_NAME
+                  );
+
+                await cache.put(
+                  request,
+                  response.clone()
+                );
+              }
+
+              return response;
+            } catch (networkError) {
+              return (
+                await caches.match(
+                  request,
+                  {
+                    ignoreSearch: true
+                  }
+                ) ||
+                await caches.match(HOME_URL) ||
+                await caches.match(OFFLINE_URL)
+              );
+            }
           }
-        )
+        )()
       );
 
       return;
@@ -136,13 +168,13 @@ self.addEventListener(
 
             return response;
           } catch (networkError) {
-            const cachedResponse =
-              await caches.match(
-                request
-              );
-
             return (
-              cachedResponse ||
+              await caches.match(
+                request,
+                {
+                  ignoreSearch: true
+                }
+              ) ||
               Response.error()
             );
           }

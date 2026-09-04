@@ -62,13 +62,114 @@
     'Vérification de ta session.'
   );
 
-  // Attendre que window.SB soit dispo (chargé en module ES dans index.html)
-  if (!window.SB) {
-    await new Promise(resolve => {
-      const check = () => window.SB ? resolve() : setTimeout(check, 30);
-      window.addEventListener('sb-ready', resolve, { once: true });
-      check();
+  // Attendre Supabase sans laisser
+  // l’écran de chargement bloqué indéfiniment.
+  async function waitForSupabaseReady() {
+    if (window.SB) return true;
+
+    return new Promise(resolve => {
+      let completed = false;
+
+      const finish = ready => {
+        if (completed) return;
+
+        completed = true;
+
+        window.clearInterval(poller);
+        window.clearTimeout(timeout);
+
+        window.removeEventListener(
+          'sb-ready',
+          handleReady
+        );
+
+        resolve(ready);
+      };
+
+      const handleReady = () => {
+        finish(Boolean(window.SB));
+      };
+
+      const poller = window.setInterval(
+        () => {
+          if (window.SB) {
+            finish(true);
+          }
+        },
+        50
+      );
+
+      const timeout = window.setTimeout(
+        () => {
+          finish(false);
+        },
+        7000
+      );
+
+      window.addEventListener(
+        'sb-ready',
+        handleReady,
+        {
+          once: true
+        }
+      );
     });
+  }
+
+  const supabaseReady =
+    await waitForSupabaseReady();
+
+  if (!supabaseReady) {
+    updateInitialLoading(
+      'Connexion indisponible.',
+      100,
+      'Tes voyages ne sont pas modifiés.'
+    );
+
+    const root =
+      document.getElementById('root');
+
+    root.innerHTML = `
+      <div
+        class="initial-loading"
+        role="alert"
+      >
+        <div class="initial-loading-mark">
+          !
+        </div>
+
+        <strong>
+          Impossible de démarrer l’application
+        </strong>
+
+        <span>
+          Le service de synchronisation ne répond pas.
+        </span>
+
+        <small>
+          Vérifie ta connexion puis réessaie.
+          Tes voyages ne sont pas modifiés.
+        </small>
+
+        <button
+          id="retry-app-startup"
+          type="button"
+        >
+          Réessayer
+        </button>
+      </div>
+    `;
+
+    root
+      .querySelector(
+        '#retry-app-startup'
+      )
+      ?.addEventListener(
+        'click',
+        () => window.location.reload()
+      );
+
+    return;
   }
 
   updateInitialLoading(

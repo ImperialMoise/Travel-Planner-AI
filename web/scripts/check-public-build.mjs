@@ -321,7 +321,8 @@ const publicBundleJavaScript =
 const requiredBundleMarkers = [
   'initAppShell',
   'initTripPrint',
-  'initAtelierV2'
+  'initAtelierV2',
+  'Connexion indisponible.'
 ];
 
 for (

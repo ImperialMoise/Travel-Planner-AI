@@ -11761,6 +11761,72 @@ form button {
   }
 }
 
+/* === Carte mobile : contrôles hauts et adaptatifs === */
+
+.map-shell .mobile-map-search {
+  top: calc(
+    clamp(10px, 2dvh, 18px) +
+    env(safe-area-inset-top, 0px)
+  );
+}
+
+.map-shell .mobile-map-search:focus-within {
+  z-index: 40;
+}
+
+.map-shell .mobile-map-places-control,
+.map-shell .mobile-map-days-tool,
+.map-shell .mobile-map-actions-tool,
+.map-shell .mobile-map-tools {
+  top: calc(
+    clamp(64px, 9dvh, 82px) +
+    env(safe-area-inset-top, 0px)
+  );
+}
+
+.map-shell .mobile-route-calculator {
+  top: calc(
+    clamp(112px, 16dvh, 144px) +
+    env(safe-area-inset-top, 0px)
+  );
+
+  max-height: calc(
+    100dvh -
+    clamp(210px, 31dvh, 270px)
+  );
+}
+
+@media (max-height: 640px) {
+  .map-shell .mobile-map-search {
+    top: calc(
+      8px +
+      env(safe-area-inset-top, 0px)
+    );
+  }
+
+  .map-shell .mobile-map-places-control,
+  .map-shell .mobile-map-days-tool,
+  .map-shell .mobile-map-actions-tool,
+  .map-shell .mobile-map-tools {
+    top: calc(
+      60px +
+      env(safe-area-inset-top, 0px)
+    );
+  }
+
+  .map-shell .mobile-route-calculator {
+    top: calc(
+      104px +
+      env(safe-area-inset-top, 0px)
+    );
+
+    max-height: calc(
+      100dvh -
+      190px
+    );
+  }
+}
+
 /* === Budget mobile : couleurs et cohérence === */
 
 .budget-main,

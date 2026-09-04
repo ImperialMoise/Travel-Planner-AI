@@ -811,6 +811,60 @@ test(
         ).first()
       ).toBeVisible();
 
+      const copiedTripSnapshot =
+        await page.evaluate(
+          async function readDuplicatedTrip({
+            copiedName
+          }) {
+            const trips =
+              await window.SB.listMyTrips();
+
+            const copiedTrip = trips.find(
+              trip =>
+                trip.name === copiedName
+            );
+
+            if (!copiedTrip) {
+              throw new Error(
+                'Copie E2E introuvable.'
+              );
+            }
+
+            const loadedCopy =
+              await window.SB.loadTrip(
+                copiedTrip.id
+              );
+
+            return loadedCopy.days.map(
+              day => ({
+                note: day.note,
+                stepLabels: day.steps.map(
+                  step => step.label
+                )
+              })
+            );
+          },
+          {
+            copiedName: duplicateTripName
+          }
+        );
+
+      expect(
+        copiedTripSnapshot
+      ).toEqual([
+        {
+          note: SECOND_DAY_NOTE,
+          stepLabels: []
+        },
+        {
+          note: FIRST_DAY_NOTE,
+          stepLabels: [
+            SECOND_STEP_LABEL,
+            FIRST_STEP_LABEL
+          ]
+        }
+      ]);
+
       await page
         .getByRole('button', {
           name: 'Paramètres',

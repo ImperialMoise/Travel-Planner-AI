@@ -410,6 +410,40 @@ for (
   }
 }
 
+const publicServiceWorkerJavaScript =
+  await readFile(
+    path.join(
+      distDirectory,
+      'service-worker.js'
+    ),
+    'utf8'
+  );
+
+const requiredServiceWorkerMarkers = [
+  'la-fabrique-static-v3',
+  "'/'",
+  "'/styles.css'",
+  "'/app.bundle.js'",
+  'ignoreSearch: true'
+];
+
+for (
+  const serviceWorkerMarker
+  of requiredServiceWorkerMarkers
+) {
+  if (
+    !publicServiceWorkerJavaScript.includes(
+      serviceWorkerMarker
+    )
+  ) {
+    violations.push(
+      'service-worker.js ne garantit plus le cache hors ligne : ' +
+      serviceWorkerMarker +
+      '.'
+    );
+  }
+}
+
 const forbiddenDevelopmentRuntimes = [
   'react.development.js',
   'react-dom.development.js',

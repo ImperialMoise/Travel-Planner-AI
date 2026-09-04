@@ -1612,6 +1612,80 @@ test(
         editorAllowedNote
       );
 
+      const editorStepLabel =
+        'E2E — étape ajoutée par éditeur';
+
+      const createdEditorStep =
+        await collaboratorPage.evaluate(
+          async function addStepAsEditor({
+            selectedTripId,
+            label
+          }) {
+            const trip =
+              await window.SB.loadTrip(
+                selectedTripId
+              );
+
+            const firstDay =
+              trip?.days?.[0];
+
+            if (!firstDay) {
+              throw new Error(
+                'Journée de test introuvable.'
+              );
+            }
+
+            return window.SB.saveStep(
+              selectedTripId,
+              firstDay.id,
+              {
+                type: 'activite',
+                label,
+                time: '15:00',
+                stepIndex:
+                  firstDay.steps.length
+              }
+            );
+          },
+          {
+            selectedTripId: tripId,
+            label: editorStepLabel
+          }
+        );
+
+      expect(
+        createdEditorStep.label
+      ).toBe(editorStepLabel);
+
+      const ownerCanReadEditorStep =
+        await page.evaluate(
+          async function readEditorStep({
+            selectedTripId,
+            label
+          }) {
+            const trip =
+              await window.SB.loadTrip(
+                selectedTripId
+              );
+
+            return trip.days
+              .flatMap(day => day.steps)
+              .some(
+                step =>
+                  step.label === label
+              );
+          },
+          {
+            selectedTripId: tripId,
+            label: editorStepLabel
+          }
+        );
+
+      expect(
+        ownerCanReadEditorStep,
+        'Le propriétaire doit retrouver une étape ajoutée par un éditeur.'
+      ).toBe(true);
+
       await page.evaluate(
         async function transferOwnership({
           selectedTripId,

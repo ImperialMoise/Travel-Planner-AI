@@ -4,6 +4,64 @@
 // ════════════════════════════════════════════════════════════
 
 (async function main() {
+  function updateInitialLoading(
+    status,
+    progress,
+    detail
+  ) {
+    const root = document.getElementById('root');
+
+    const statusElement = root?.querySelector(
+      '#initial-loading-status'
+    );
+
+    const detailElement = root?.querySelector(
+      '#initial-loading-detail'
+    );
+
+    const progressElement = root?.querySelector(
+      '.initial-loading-bar span'
+    );
+
+    const progressBar = root?.querySelector(
+      '.initial-loading-bar'
+    );
+
+    const safeProgress = Math.max(
+      0,
+      Math.min(
+        100,
+        Number(progress) || 0
+      )
+    );
+
+    if (statusElement) {
+      statusElement.textContent = status;
+    }
+
+    if (detailElement && detail) {
+      detailElement.textContent = detail;
+    }
+
+    if (progressElement) {
+      progressElement.style.width =
+        safeProgress + '%';
+    }
+
+    if (progressBar) {
+      progressBar.setAttribute(
+        'aria-valuenow',
+        String(safeProgress)
+      );
+    }
+  }
+
+  updateInitialLoading(
+    'Connexion sécurisée…',
+    24,
+    'Vérification de ta session.'
+  );
+
   // Attendre que window.SB soit dispo (chargé en module ES dans index.html)
   if (!window.SB) {
     await new Promise(resolve => {
@@ -13,6 +71,12 @@
     });
   }
 
+  updateInitialLoading(
+    'Connexion établie.',
+    45,
+    'Préparation de l’interface.'
+  );
+
   // Vérifier que tous les composants sont prêts (les scripts type=text/babel se chargent dans l'ordre)
   function ready() {
     return window.Store && window.AppShell && window.ItineraryView
@@ -20,6 +84,12 @@
         && window.SettingsModal && window.TravelModeView && window.Icon;
   }
   while (!ready()) await new Promise(r => setTimeout(r, 40));
+
+  updateInitialLoading(
+    'Interface prête.',
+    68,
+    'Récupération de tes préférences.'
+  );
 
     async function handlePendingInvite(token, currentUser) {
     if (!token) return false;
@@ -61,6 +131,12 @@
   }
 
   // 1. Récupérer l'utilisateur courant
+  updateInitialLoading(
+    'Vérification de la session…',
+    78,
+    'Tu peux rester sur cette page.'
+  );
+
   let user = await SB.getUser();
 
   // Si pas immédiat, attendre la restauration de session
@@ -77,6 +153,16 @@
   }
 
   Store.set({ user, authReady: true });
+
+  updateInitialLoading(
+    user
+      ? 'Chargement de tes voyages…'
+      : 'Accueil prêt.',
+    90,
+    user
+      ? 'Préparation de ton espace personnel.'
+      : 'Tu peux commencer à préparer un voyage.'
+  );
 
     const inviteToken =
     new URLSearchParams(window.location.search).get('invite') ||
@@ -130,6 +216,12 @@
   });
 
   // 4. Monter React
+  updateInitialLoading(
+    'Ouverture de l’espace…',
+    100,
+    'Presque terminé.'
+  );
+
   const root = document.getElementById('root');
   root.innerHTML = '';
   const reactRoot =

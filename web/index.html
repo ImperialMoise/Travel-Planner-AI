@@ -60,6 +60,7 @@
   <link rel="preconnect" href="https://images.unsplash.com" crossorigin>
   <link rel="dns-prefetch" href="//images.unsplash.com">
   <link rel="preconnect" href="https://unpkg.com" crossorigin>
+  <link rel="preconnect" href="https://js-de.sentry-cdn.com" crossorigin>
   <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin></script>
@@ -68,8 +69,9 @@
     src="/_vercel/insights/script.js"
   ></script>
   <script
-  src="https://js-de.sentry-cdn.com/c2a32c7fc57b78e908a55bd818775b90.min.js"
-  crossorigin="anonymous"
+    async
+    src="https://js-de.sentry-cdn.com/c2a32c7fc57b78e908a55bd818775b90.min.js"
+    crossorigin="anonymous"
   ></script>
 
     <style>
@@ -117,11 +119,11 @@
 
     .initial-loading-bar span{
       display:block;
-      width:42%;
+      width:12%;
       height:100%;
       border-radius:inherit;
       background:#9d680c;
-      animation:initial-loading-slide 1.25s ease-in-out infinite;
+      transition:width .32s ease;
     }
 
     @keyframes initial-loading-slide{
@@ -149,8 +151,13 @@
     <div class="initial-loading" role="status" aria-live="polite">
     <div class="initial-loading-mark">✦</div>
     <strong>La Fabrique à Voyages</strong>
-    <span>Chargement de ton espace…</span>
-    <small>La première ouverture peut prendre quelques secondes.</small>
+    <span id="initial-loading-status">
+      Initialisation de l’application…
+    </span>
+
+    <small id="initial-loading-detail">
+      La première ouverture peut prendre quelques secondes.
+    </small>
 
     <div
       class="initial-loading-bar"

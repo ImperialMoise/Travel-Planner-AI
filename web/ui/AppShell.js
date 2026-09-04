@@ -6297,6 +6297,57 @@ function DaySpine({
       ]
     );
 
+      const orderedTrips = React.useMemo(
+    function orderTripsByTimeline() {
+      const statusOrder = {
+        current: 0,
+        upcoming: 1,
+        undated: 2,
+        completed: 3,
+        archived: 4
+      };
+
+      return filteredTrips
+        .slice()
+        .sort(function compareTrips(
+          firstTrip,
+          secondTrip
+        ) {
+          const firstStatus =
+            getHomeTripTimelineStatus(firstTrip);
+
+          const secondStatus =
+            getHomeTripTimelineStatus(secondTrip);
+
+          const statusDifference =
+            statusOrder[firstStatus] -
+            statusOrder[secondStatus];
+
+          if (statusDifference !== 0) {
+            return statusDifference;
+          }
+
+          const firstDate =
+            firstTrip.start_date ||
+            firstTrip.startDate ||
+            '';
+
+          const secondDate =
+            secondTrip.start_date ||
+            secondTrip.startDate ||
+            '';
+
+          if (firstStatus === 'completed') {
+            return secondDate.localeCompare(firstDate);
+          }
+
+          return firstDate.localeCompare(secondDate);
+        });
+    },
+    [filteredTrips]
+  );
+
+
 const featuredTripMeta = React.useMemo(function pickFeaturedTrip() {
   if (!safeTrips.length) return null;
 
@@ -6520,6 +6571,53 @@ function startFromPublicSection() {
     }
 
     return Math.max(1, Math.round((endTime - startTime) / 86400000) + 1);
+  }
+
+    function getHomeTripTimelineStatus(trip) {
+    if (trip?.archived_at) {
+      return 'archived';
+    }
+
+    const todayISO =
+      new Date()
+        .toISOString()
+        .slice(0, 10);
+
+    const start =
+      trip?.start_date ||
+      trip?.startDate ||
+      '';
+
+    const end =
+      trip?.end_date ||
+      trip?.endDate ||
+      start;
+
+    if (!start) {
+      return 'undated';
+    }
+
+    if (end && end < todayISO) {
+      return 'completed';
+    }
+
+    if (start > todayISO) {
+      return 'upcoming';
+    }
+
+    return 'current';
+  }
+
+  function getHomeTripTimelineLabel(trip) {
+    return {
+      upcoming: 'À venir',
+      current: 'En cours',
+      completed: 'Terminé',
+      archived: 'Archivé',
+      undated: 'Dates à définir'
+    }[
+      getHomeTripTimelineStatus(trip)
+    ] || 'Voyage';
   }
 
   function tripDateRange(trip) {
@@ -7391,10 +7489,10 @@ async function createTripFromHero() {
               </select>
 
               <div className="home-library-count">
-                {safeTrips.length
-                  ? safeTrips.length +
+                {orderedTrips.length
+                  ? orderedTrips.length +
                     ' voyage' +
-                    (safeTrips.length > 1 ? 's' : '')
+                    (orderedTrips.length > 1 ? 's' : '')
                   : 'Aucun voyage'}
               </div>
             </div>
@@ -7410,9 +7508,9 @@ async function createTripFromHero() {
                 Tes itinéraires sauvegardés apparaîtront ici une fois connecté.
               </div>
             </div>
-          ) : filteredTrips.length ? (
+          ) : orderedTrips.length ? (
             <div className="home-trip-grid">
-              {filteredTrips.map(function renderTripCard(trip, index) {
+              {orderedTrips.map(function renderTripCard(trip, index) {
                 const image =  trip.cover_image_url ||  trip.coverImageUrl ||  tripImages[index % tripImages.length];
 
                 return (
@@ -7457,6 +7555,10 @@ async function createTripFromHero() {
                       </h3>
 
                       <div className="home-trip-card-meta">
+                        <strong>
+                          {getHomeTripTimelineLabel(trip)}
+                        </strong>
+                        {' · '}
                         Reprendre la planification, compléter les étapes et préparer les détails du voyage.
                       </div>
 

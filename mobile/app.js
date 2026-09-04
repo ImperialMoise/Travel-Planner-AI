@@ -2738,8 +2738,61 @@ function renderHome() {
   renderMobileWelcome();
   return;
 }
-  const visibleTrips = realTrips;
-  const nextTrip = activeTrip || realTrips[0] || null;
+  const visibleTrips = realTrips
+    .slice()
+    .sort((firstTrip, secondTrip) => {
+      const statusOrder = {
+        current: 0,
+        upcoming: 1,
+        undated: 2,
+        past: 3,
+        archived: 4
+      };
+
+      const firstStatus =
+        getMobileTripLibraryStatus(firstTrip);
+
+      const secondStatus =
+        getMobileTripLibraryStatus(secondTrip);
+
+      const statusDifference =
+        statusOrder[firstStatus] -
+        statusOrder[secondStatus];
+
+      if (statusDifference !== 0) {
+        return statusDifference;
+      }
+
+      const firstDate =
+        firstTrip.start_date ||
+        firstTrip.startDate ||
+        '';
+
+      const secondDate =
+        secondTrip.start_date ||
+        secondTrip.startDate ||
+        '';
+
+      if (firstStatus === 'past') {
+        return secondDate.localeCompare(firstDate);
+      }
+
+      return firstDate.localeCompare(secondDate);
+    });
+
+  const nextTrip =
+    visibleTrips.find(trip => {
+      const status =
+        getMobileTripLibraryStatus(trip);
+
+      return (
+        status === 'current' ||
+        status === 'upcoming'
+      );
+    }) ||
+    activeTrip ||
+    visibleTrips[0] ||
+    null;
 
   const nextTripName = nextTrip?.name || 'Aucun voyage';
   const nextTripDate = nextTrip?.startDate || nextTrip?.start_date || '';
@@ -2877,16 +2930,22 @@ ${nextTrip ? `
             role="list"
             aria-label="Tous mes voyages"
           >
-            ${visibleTrips.length ? visibleTrips.map(trip => `
+            ${visibleTrips.length ? visibleTrips.map(trip => {
+              const tripStatus =
+                getMobileTripLibraryStatus(trip);
+
+              return `
               <article
-                class="trip-card"
+                class="trip-card ${tripStatus}"
                 role="listitem"
                 data-action="open-trip"
                 data-trip-id="${trip.id}"
                 style="cursor:pointer"
               >
                 <div  class="trip-image"  style="background-image: url('${escapeHtml(getMobileTripCoverUrl(trip))}')">
-                  <span class="trip-status">Synchronisé</span>
+                  <span class="trip-status">
+                    ${getMobileTripLibraryStatusLabel(tripStatus)}
+                  </span>
                 </div>
 
                 <div class="trip-body">
@@ -2907,7 +2966,8 @@ ${nextTrip ? `
 
                   </div>
               </article>
-            `).join('') : `
+              `;
+            }).join('') : `
               <p class="companion-empty">
                 ${mobileReady ? 'Aucun voyage pour le moment.' : 'Chargement de vos voyages...'}
               </p>

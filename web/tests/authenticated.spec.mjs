@@ -1843,9 +1843,39 @@ test(
                 tripId
             }
           );
+
+          tripId = '';
         } catch (cleanupError) {
           console.warn(
-            'Nettoyage du voyage collaboratif impossible :',
+            'Nettoyage collaborateur impossible :',
+            cleanupError
+          );
+        }
+      }
+
+      if (
+        tripId &&
+        ownerSignedIn
+      ) {
+        try {
+          await page.evaluate(
+            async function cleanupOwnerTrip({
+              selectedTripId
+            }) {
+              await window.SB.deleteTrip(
+                selectedTripId
+              );
+            },
+            {
+              selectedTripId:
+                tripId
+            }
+          );
+
+          tripId = '';
+        } catch (cleanupError) {
+          console.warn(
+            'Nettoyage propriétaire impossible :',
             cleanupError
           );
         }

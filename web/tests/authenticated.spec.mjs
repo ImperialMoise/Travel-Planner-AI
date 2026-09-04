@@ -1460,6 +1460,67 @@ test(
         'Un lecteur ne doit pas pouvoir modifier une journée.'
       ).toBe(true);
 
+      const viewerTripAttempt =
+        await collaboratorPage.evaluate(
+          async function tryViewerTripUpdate({
+            selectedTripId,
+            forbiddenNote
+          }) {
+            try {
+              await window.SB.updateTrip(
+                selectedTripId,
+                {
+                  globalNote: forbiddenNote
+                }
+              );
+
+              return {
+                blocked: false
+              };
+            } catch (error) {
+              return {
+                blocked: true,
+                message:
+                  error.message ||
+                  String(error)
+              };
+            }
+          },
+          {
+            selectedTripId: tripId,
+            forbiddenNote:
+              'E2E — modification voyage lecteur interdite'
+          }
+        );
+
+      expect(
+        viewerTripAttempt.blocked,
+        'Un lecteur ne doit pas pouvoir modifier le voyage.'
+      ).toBe(true);
+
+      const viewerTripNote =
+        await page.evaluate(
+          async function readTripNote({
+            selectedTripId
+          }) {
+            const trip =
+              await window.SB.loadTrip(
+                selectedTripId
+              );
+
+            return trip.globalNote;
+          },
+          {
+            selectedTripId: tripId
+          }
+        );
+
+      expect(
+        viewerTripNote
+      ).not.toBe(
+        'E2E — modification voyage lecteur interdite'
+      );
+
       const collaboratorMemberId =
         await page.evaluate(
           async function promoteCollaborator({

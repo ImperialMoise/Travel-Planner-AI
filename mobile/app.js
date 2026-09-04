@@ -15070,39 +15070,54 @@ if (action === 'remove-trip-member') {
   }
 
   if (action === 'duplicate-trip') {
-  const tripId = event.target
-    .closest('[data-trip-id]')
-    ?.dataset.tripId;
+    const duplicateButton = event.target.closest(
+      '[data-action="duplicate-trip"]'
+    );
 
-  const sourceTrip = mobileTrips.find(
-    trip => String(trip.id) === String(tripId)
-  );
+    const tripId = duplicateButton
+      ?.closest('[data-trip-id]')
+      ?.dataset.tripId;
 
-  if (!sourceTrip || !window.SB?.duplicateTrip) {
-    alert('Impossible de dupliquer ce voyage.');
+    const sourceTrip = mobileTrips.find(
+      trip => String(trip.id) === String(tripId)
+    );
+
+    if (!sourceTrip || !window.SB?.duplicateTrip) {
+      alert('Impossible de dupliquer ce voyage.');
+      return;
+    }
+
+    duplicateButton.disabled = true;
+    duplicateButton.setAttribute('aria-busy', 'true');
+
+    try {
+      const copied = await window.SB.duplicateTrip(
+        sourceTrip.id,
+        {
+          name: `Copie de ${
+            sourceTrip.name || 'Voyage sans titre'
+          }`
+        }
+      );
+
+      await refreshMobileTrips(copied.id);
+      await handleOpenTrip(copied.id);
+
+      alert(`Voyage « ${copied.name} » créé.`);
+    } catch (error) {
+      console.error('Mobile duplicate trip error:', error);
+
+      alert(
+        error?.message ||
+        'Impossible de dupliquer ce voyage.'
+      );
+    } finally {
+      duplicateButton.disabled = false;
+      duplicateButton.removeAttribute('aria-busy');
+    }
+
     return;
   }
-
-  try {
-    const copied = await window.SB.duplicateTrip(sourceTrip.id, {
-      name: `Copie de ${sourceTrip.name || 'Voyage sans titre'}`
-    });
-
-    mobileTrips = await window.SB.listMyTrips();
-    activeTrip = copied;
-    renderHome();
-
-    alert(`Voyage « ${copied.name} » créé.`);
-  } catch (error) {
-    console.error('Mobile duplicate trip error:', error);
-    alert(
-      error?.message || 'Impossible de dupliquer ce voyage.'
-    );
-  }
-
-  return;
-}
-
 
 if (action === 'open-trip-travel') {
   const tripId = event.target

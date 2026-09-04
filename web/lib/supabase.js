@@ -420,110 +420,73 @@ export async function createTrip({ name, startDate, endDate, days }) {
 
 export async function duplicateTrip(
   sourceTripId,
-  requestedName
+  nameOrOptions = {}
 ) {
   if (!sourceTripId) {
-    throw new Error(
-      'Voyage source introuvable.'
-    );
+    throw new Error('Voyage source introuvable.');
   }
 
-  const sourceTrip =
-    await loadTrip(sourceTripId);
+  const sourceTrip = await loadTrip(sourceTripId);
 
   if (!sourceTrip) {
-    throw new Error(
-      'Voyage source introuvable.'
-    );
+    throw new Error('Voyage source introuvable.');
   }
 
-  const cleanName =
-    String(requestedName || '')
-      .trim();
+  const requestedName =
+    typeof nameOrOptions === 'string'
+      ? nameOrOptions
+      : nameOrOptions?.name;
 
-  if (!cleanName) {
-    throw new Error(
-      'Donne un nom à la copie.'
-    );
+  const copiedName =
+    String(
+      requestedName ||
+      `Copie de ${sourceTrip.name || 'Voyage sans titre'}`
+    ).trim();
+
+  if (!copiedName) {
+    throw new Error('Donne un nom à la copie.');
   }
 
-  const sourceDays =
-    Array.isArray(sourceTrip.days)
-      ? sourceTrip.days
-      : [];
+  const sourceDays = Array.isArray(sourceTrip.days)
+    ? sourceTrip.days
+    : [];
 
   let createdTrip = null;
 
   try {
-    createdTrip =
-      await createTrip({
-        name: cleanName,
-        startDate:
-          sourceTrip.startDate ||
-          null,
-        endDate:
-          sourceTrip.endDate ||
-          null,
-        days: Math.max(
-          1,
-          sourceDays.length
-        )
+    createdTrip = await createTrip({
+      name: copiedName,
+      startDate: sourceTrip.startDate || null,
+      endDate: sourceTrip.endDate || null,
+      days: Math.max(1, sourceDays.length)
+    });
+
+    await updateTrip(createdTrip.id, {
+      globalNote: sourceTrip.globalNote || '',
+      accentTheme: sourceTrip.accentTheme || 'ochre'
+    });
+
+    if (sourceTrip.coverImageUrl) {
+      await saveTripCover(createdTrip.id, {
+        imageUrl: sourceTrip.coverImageUrl,
+        alt: sourceTrip.coverImageAlt,
+        photographer: sourceTrip.coverPhotographerName,
+        photographerUrl: sourceTrip.coverPhotographerUrl,
+        sourceUrl: sourceTrip.coverSourceUrl
       });
-
-    await updateTrip(
-      createdTrip.id,
-      {
-        globalNote:
-          sourceTrip.globalNote ||
-          '',
-        accentTheme:
-          sourceTrip.accentTheme ||
-          'ochre'
-      }
-    );
-
-    if (
-      sourceTrip.coverImageUrl
-    ) {
-      await saveTripCover(
-        createdTrip.id,
-        {
-          imageUrl:
-            sourceTrip.coverImageUrl,
-          alt:
-            sourceTrip.coverImageAlt,
-          photographer:
-            sourceTrip
-              .coverPhotographerName,
-          photographerUrl:
-            sourceTrip
-              .coverPhotographerUrl,
-          sourceUrl:
-            sourceTrip.coverSourceUrl
-        }
-      );
     }
 
-    const targetTrip =
-      await loadTrip(
-        createdTrip.id
+    const targetTrip = await loadTrip(createdTrip.id);
+    const targetDays = Array.isArray(targetTrip.days)
+      ? targetTrip.days
+      : [];
+
+    const stepMap = new Map();
+
+    for (const sourceDay of sourceDays) {
+      const targetDay = targetDays.find(
+        day => day.index === sourceDay.index
       );
-
-    const targetDays =
-      Array.isArray(targetTrip.days)
-        ? targetTrip.days
-        : [];
-
-    for (
-      let dayIndex = 0;
-      dayIndex < sourceDays.length;
-      dayIndex += 1
-    ) {
-      const sourceDay =
-        sourceDays[dayIndex];
-
-      const targetDay =
-        targetDays[dayIndex];
 
       if (!targetDay) {
         throw new Error(
@@ -531,109 +494,94 @@ export async function duplicateTrip(
         );
       }
 
-      await updateDay(
-        targetDay.id,
-        {
-          title:
-            sourceDay.title || '',
-          note:
-            sourceDay.note || '',
-          todo:
-            Array.isArray(
-              sourceDay.todo
-            )
-              ? sourceDay.todo
-              : []
-        }
-      );
+      await updateDay(targetDay.id, {
+        title: sourceDay.title || '',
+        note: sourceDay.note || '',
+        dateLabel: sourceDay.dateLabel || '',
+        dateISO: sourceDay.dateISO || null,
+        todo: Array.isArray(sourceDay.todo)
+          ? sourceDay.todo
+          : []
+      });
 
-      if (
-        sourceDay.coverImageUrl
-      ) {
-        await saveDayCover(
-          targetDay.id,
-          {
-            imageUrl:
-              sourceDay.coverImageUrl,
-            alt:
-              sourceDay.coverImageAlt,
-            photographer:
-              sourceDay
-                .coverPhotographerName,
-            photographerUrl:
-              sourceDay
-                .coverPhotographerUrl,
-            sourceUrl:
-              sourceDay.coverSourceUrl
-          }
-        );
+      if (sourceDay.coverImageUrl) {
+        await saveDayCover(targetDay.id, {
+          imageUrl: sourceDay.coverImageUrl,
+          alt: sourceDay.coverImageAlt,
+          photographer: sourceDay.coverPhotographerName,
+          photographerUrl: sourceDay.coverPhotographerUrl,
+          sourceUrl: sourceDay.coverSourceUrl
+        });
 
-        await updateDayCoverCrop(
-          targetDay.id,
-          {
-            positionY:
-              sourceDay
-                .coverPositionY,
-            locked:
-              sourceDay
-                .coverCropLocked
-          }
-        );
+        await updateDayCoverCrop(targetDay.id, {
+          positionY: sourceDay.coverPositionY,
+          locked: sourceDay.coverCropLocked
+        });
       }
 
-      const orderedSteps = (
-        Array.isArray(
-          sourceDay.steps
-        )
-          ? sourceDay.steps
-          : []
-      )
-        .slice()
-        .sort(
+      const orderedSteps = Array.isArray(sourceDay.steps)
+        ? [...sourceDay.steps].sort(
           (first, second) =>
-            Number(
-              first.stepIndex || 0
-            ) -
-            Number(
-              second.stepIndex || 0
-            )
-        );
+            Number(first.stepIndex || 0) -
+            Number(second.stepIndex || 0)
+        )
+        : [];
 
       for (
         let stepIndex = 0;
-        stepIndex <
-          orderedSteps.length;
+        stepIndex < orderedSteps.length;
         stepIndex += 1
       ) {
-        const sourceStep =
-          orderedSteps[stepIndex];
+        const sourceStep = orderedSteps[stepIndex];
 
-        await saveStep(
+        const copiedStep = await saveStep(
           createdTrip.id,
           targetDay.id,
           {
             ...sourceStep,
             id: null,
-            dayId:
-              targetDay.id,
+            dayId: targetDay.id,
             stepIndex
           }
+        );
+
+        if (sourceStep.id && copiedStep?.id) {
+          stepMap.set(sourceStep.id, copiedStep.id);
+        }
+      }
+    }
+
+    for (
+      let participantIndex = 0;
+      participantIndex < (sourceTrip.participants || []).length;
+      participantIndex += 1
+    ) {
+      const participant =
+        sourceTrip.participants[participantIndex];
+
+      if (participant?.name) {
+        await addParticipant(
+          createdTrip.id,
+          participant.name,
+          participantIndex
         );
       }
     }
 
-    return await loadTrip(
-      createdTrip.id
-    );
+    for (const sourceBudget of sourceTrip.budget || []) {
+      await saveBudgetItem(createdTrip.id, {
+        ...sourceBudget,
+        id: null,
+        stepId: stepMap.get(sourceBudget.stepId) || null
+      });
+    }
+
+    return await loadTrip(createdTrip.id);
   } catch (error) {
     if (createdTrip?.id) {
       try {
-        await deleteTrip(
-          createdTrip.id
-        );
-      } catch (
-        cleanupError
-      ) {
+        await deleteTrip(createdTrip.id);
+      } catch (cleanupError) {
         console.warn(
           'Duplicate cleanup failed:',
           cleanupError
@@ -643,72 +591,6 @@ export async function duplicateTrip(
 
     throw error;
   }
-}
-
-export async function duplicateTrip(tripId, options = {}) {
-  const source = await loadTrip(tripId);
-
-  if (!source) {
-    throw new Error('Voyage source introuvable');
-  }
-
-  const copiedName =
-    String(options.name || '').trim() ||
-    `Copie de ${source.name || 'Voyage sans titre'}`;
-
-  const created = await createTrip({
-    name: copiedName,
-    startDate: source.startDate || null,
-    endDate: source.endDate || null,
-    days: Math.max(1, source.days?.length || 1)
-  });
-
-  await updateTrip(created.id, {
-    globalNote: source.globalNote || '',
-    accentTheme: source.accentTheme || 'ochre'
-  });
-
-  const target = await loadTrip(created.id);
-  const dayMap = new Map();
-  const stepMap = new Map();
-
-  for (const sourceDay of source.days || []) {
-    const targetDay = target.days?.[sourceDay.index];
-
-    if (!targetDay) continue;
-
-    dayMap.set(sourceDay.id, targetDay.id);
-
-    await updateDay(targetDay.id, {
-      title: sourceDay.title || '',
-      note: sourceDay.note || '',
-      dateLabel: sourceDay.dateLabel || '',
-      dateISO: sourceDay.dateISO || null,
-      todo: Array.isArray(sourceDay.todo) ? sourceDay.todo : []
-    });
-
-    for (const sourceStep of sourceDay.steps || []) {
-      const copiedStep = await saveStep(created.id, targetDay.id, {
-        ...sourceStep,
-        id: null,
-        stepIndex: sourceStep.stepIndex ?? 0
-      });
-
-      if (sourceStep.id && copiedStep?.id) {
-        stepMap.set(sourceStep.id, copiedStep.id);
-      }
-    }
-  }
-
-  for (const sourceBudget of source.budget || []) {
-    await saveBudgetItem(created.id, {
-      ...sourceBudget,
-      id: null,
-      stepId: stepMap.get(sourceBudget.stepId) || null
-    });
-  }
-
-  return loadTrip(created.id);
 }
 
 export async function loadTrip(tripId) {

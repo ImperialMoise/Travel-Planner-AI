@@ -522,6 +522,40 @@ for (
   }
 }
 
+const publicTripBackupJavaScript =
+  await readFile(
+    path.join(
+      distDirectory,
+      'ui',
+      'TripBackup.js'
+    ),
+    'utf8'
+  );
+
+const requiredTripBackupMarkers = [
+  'restoreFile',
+  'Aucun voyage existant ne sera remplacé.',
+  'dateLabel:',
+  'dateISO:'
+];
+
+for (
+  const backupMarker
+  of requiredTripBackupMarkers
+) {
+  if (
+    !publicTripBackupJavaScript.includes(
+      backupMarker
+    )
+  ) {
+    violations.push(
+      'TripBackup.js ne restaure plus les données essentielles : ' +
+      backupMarker +
+      '.'
+    );
+  }
+}
+
 const forbiddenDevelopmentRuntimes = [
   'react.development.js',
   'react-dom.development.js',

@@ -526,6 +526,19 @@
                   ''
                 ),
 
+              dateLabel:
+                String(
+                  sourceDay
+                    .dateLabel ||
+                  ''
+                ),
+
+              dateISO:
+                safeDate(
+                  sourceDay
+                    .dateISO
+                ),
+
               todo:
                 Array.isArray(
                   sourceDay.todo

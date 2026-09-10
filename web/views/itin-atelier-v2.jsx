@@ -2136,6 +2136,16 @@ return {
     );
 
     const day = days[safeDayIndex] || null;
+    const dayNavRef = React.useRef(null);
+
+    React.useEffect(() => {
+      const nav = dayNavRef.current;
+      const button = nav?.querySelector('[aria-current="date"]');
+      if (!nav || !button) return;
+
+      nav.scrollLeft =
+        button.offsetLeft - (nav.clientWidth - button.offsetWidth) / 2;
+    }, [safeDayIndex, days.length, trip?.id]);
 
     React.useEffect(
       function resetQuickAddWhenDayChanges() {
@@ -2818,6 +2828,83 @@ function openAddStep(type, preset) {
     return (
       <div className="atelier-v2">
         <div className="atelier-v2-main">
+          <nav
+            ref={dayNavRef}
+            aria-label="Journées du voyage"
+            style={{
+              position: 'relative',
+              display: 'flex',
+              flexShrink: 0,
+              gap: 6,
+              width: '100%',
+              maxWidth: 1240,
+              minWidth: 0,
+              margin: '0 auto',
+              padding: 6,
+              overflowX: 'auto',
+              background: 'var(--card)',
+              border: '1px solid var(--line)',
+              borderRadius: 14,
+              scrollbarWidth: 'thin'
+            }}
+          >
+            {days.map((item, index) => {
+              const selected = index === safeDayIndex;
+              const dateLabel = item.dateISO
+                ? formatDayDate(item.dateISO)
+                : 'Date à définir';
+
+              return (
+                <button
+                  key={item.id || index}
+                  type="button"
+                  aria-current={selected ? 'date' : undefined}
+                  aria-label={
+                    'Jour ' + (index + 1) + ', ' + dateLabel +
+                    ', ' + getDisplayDayTitle(item)
+                  }
+                  onClick={() => Store.set({
+                    selectedDayIndex: index,
+                    selectedStepId: null
+                  })}
+                  style={{
+                    flex: '0 0 auto',
+                    minWidth: 112,
+                    minHeight: 60,
+                    padding: '10px 14px',
+                    border: '1px solid ' + (
+                      selected ? 'var(--accent)' : 'transparent'
+                    ),
+                    borderRadius: 10,
+                    background: selected
+                      ? 'var(--accent)'
+                      : 'transparent',
+                    color: selected
+                      ? 'var(--accent-ink, #fff)'
+                      : 'var(--text)',
+                    font: 'inherit',
+                    textAlign: 'left',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <span style={{
+                    display: 'block',
+                    fontSize: 14,
+                    fontWeight: 700
+                  }}>
+                    Jour {index + 1}
+                  </span>
+                  <span style={{
+                    display: 'block',
+                    marginTop: 4,
+                    fontSize: 12
+                  }}>
+                    {dateLabel}
+                  </span>
+                </button>
+              );
+            })}
+          </nav>
 
           {/* ── Hero ── */}
           <div

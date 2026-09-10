@@ -233,95 +233,120 @@ function RailCard({
     style
   }) {
     const isOpen = open !== false;
+    const contentId = React.useId();
+    const Header = onToggle ? 'button' : 'div';
 
     return (
-      <section
-        style={{
-          flexShrink: 0,
-          borderTop: noBorder ? 'none' : '1px solid var(--outline-variant)',
-          paddingTop: noBorder ? 0 : 16,
-          minHeight: 0,
-          ...style
-        }}
-      >
-        <div
-          style={{
-            marginBottom: isOpen ? 12 : 0,
-            display: 'flex',
-            alignItems: 'flex-start',
-            justifyContent: 'space-between',
-            gap: 12
-          }}
-        >
-          <div style={{ minWidth: 0 }}>
-            <div
-              style={{
-                fontSize: 11,
-                fontWeight: 800,
-                letterSpacing: '.16em',
-                textTransform: 'uppercase',
-                color: 'var(--accent)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 7
-              }}
-            >
-              {icon ? <Icon name={icon} size={13} /> : null}
-              {kicker}
-            </div>
-
-            <div
-              style={{
-                fontFamily: 'var(--font-serif)',
-                fontSize: 22,
-                lineHeight: '28px',
-                color: 'var(--text)',
-                marginTop: 4
-              }}
-            >
-              {title}
-            </div>
-
-            {subtitle && (
-              <div
-                style={{
-                  marginTop: 3,
-                  fontSize: 12.5,
-                  lineHeight: '18px',
-                  color: 'var(--muted)'
-                }}
-              >
-                {subtitle}
-              </div>
-            )}
-          </div>
-
-          <div
+      <section style={{
+        flexShrink: 0,
+        minWidth: 0,
+        minHeight: 0,
+        borderTop: noBorder
+          ? 'none'
+          : '1px solid var(--outline-variant)',
+        paddingTop: noBorder ? 0 : 14,
+        ...style
+      }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: 8,
+          marginBottom: isOpen ? 12 : 0
+        }}>
+          <Header
+            type={onToggle ? 'button' : undefined}
+            aria-expanded={onToggle ? isOpen : undefined}
+            aria-controls={onToggle ? contentId : undefined}
+            onClick={onToggle ? event => {
+              event.preventDefault();
+              event.stopPropagation();
+              onToggle();
+            } : undefined}
             style={{
               display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              flexShrink: 0
+              alignItems: 'flex-start',
+              flex: 1,
+              gap: 10,
+              minWidth: 0,
+              minHeight: 44,
+              padding: '6px 0',
+              border: 0,
+              borderRadius: 6,
+              background: 'transparent',
+              color: 'var(--text)',
+              font: 'inherit',
+              textAlign: 'left',
+              cursor: onToggle ? 'pointer' : 'default'
             }}
           >
-            {actions}
+            {icon && (
+              <span aria-hidden="true" style={{
+                display: 'grid',
+                placeItems: 'center',
+                flexShrink: 0,
+                width: 32,
+                height: 32,
+                borderRadius: 9,
+                background: 'var(--accent-soft)',
+                color: 'var(--accent)'
+              }}>
+                <Icon name={icon} size={16} />
+              </span>
+            )}
+
+            <span style={{ flex: 1, minWidth: 0 }}>
+              <span style={{
+                display: 'block',
+                fontFamily: 'var(--font-serif)',
+                fontSize: 20,
+                lineHeight: '26px',
+                overflowWrap: 'anywhere'
+              }}>
+                {title || kicker}
+              </span>
+
+              {subtitle && (
+                <span style={{
+                  display: 'block',
+                  marginTop: 4,
+                  color: 'var(--muted)',
+                  fontSize: 12,
+                  lineHeight: '18px',
+                  overflowWrap: 'anywhere'
+                }}>
+                  {subtitle}
+                </span>
+              )}
+            </span>
 
             {onToggle && (
-              <RailIconButton
-                title={isOpen ? 'Réduire' : 'Développer'}
-                onClick={function handleToggle(event) {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  onToggle();
-                }}
-              >
+              <span aria-hidden="true" style={{
+                flexShrink: 0,
+                padding: '4px 2px',
+                color: 'var(--muted)',
+                fontSize: 18
+              }}>
                 {isOpen ? '⌄' : '›'}
-              </RailIconButton>
+              </span>
             )}
-          </div>
+          </Header>
+
+          {actions && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              flexShrink: 0,
+              gap: 6,
+              paddingTop: 5
+            }}>
+              {actions}
+            </div>
+          )}
         </div>
 
-        {isOpen && children}
+        <div id={contentId}>
+          {isOpen && children}
+        </div>
       </section>
     );
   }

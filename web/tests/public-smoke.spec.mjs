@@ -801,8 +801,8 @@ test(
 
     expect(
       workerSource
-    ).toContain(
-      "'la-fabrique-static-v2'"
+    ).toMatch(
+      /\bconst\s+CACHE_NAME\s*=\s*(['"])la-fabrique-static-v[1-9]\d*\1\s*;/
     );
 
     expect(

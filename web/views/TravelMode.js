@@ -561,7 +561,164 @@
     cssLoaded = true;
 
     const style = document.createElement('style');
-    style.textContent = TRAVEL_MODE_CSS;
+    style.textContent = TRAVEL_MODE_CSS + `
+      .travel-mode {
+        background: var(--bg);
+        container-type: inline-size;
+      }
+
+      .travel-mode .travel-mode-hero {
+        min-height: 190px;
+        padding: clamp(18px, 3vw, 28px);
+        border-color: var(--line);
+        border-radius: 16px;
+        box-shadow: none;
+      }
+
+      .travel-mode .travel-mode-hero.has-cover::after {
+        background: linear-gradient(
+          90deg,
+          rgba(13,27,23,.82),
+          rgba(13,27,23,.60)
+        );
+      }
+
+      .travel-mode .travel-mode-title {
+        font-size: clamp(28px, 4vw, 40px);
+        line-height: 1.15;
+        overflow-wrap: anywhere;
+      }
+
+      .travel-mode .travel-mode-date {
+        font-weight: 500;
+        line-height: 1.5;
+      }
+
+      .travel-mode .travel-mode-day-nav {
+        margin-top: 18px;
+      }
+
+      .travel-mode .travel-mode-icon-btn,
+      .travel-mode .travel-mode-day-label,
+      .travel-mode .travel-mode-today-btn {
+        border-radius: 10px;
+        box-shadow: none;
+      }
+
+      .travel-mode .travel-mode-icon-btn {
+        flex-shrink: 0;
+      }
+
+      .travel-mode .travel-mode-day-label {
+        min-width: 0;
+        font-weight: 600;
+      }
+
+      .travel-mode .travel-quick-tools-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 8px;
+        margin: 0;
+        padding: 3px;
+        overflow: visible;
+      }
+
+      .travel-mode .travel-quick-tool {
+        width: 100%;
+        min-width: 0;
+        min-height: 46px;
+        padding: 10px;
+        border-radius: 10px;
+        font-size: 13px;
+        font-weight: 600;
+        white-space: normal;
+        box-shadow: none;
+        transform: none;
+      }
+
+      .travel-mode .travel-quick-panel,
+      .travel-mode .travel-mode-panel {
+        min-width: 0;
+        padding: 20px;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: var(--card);
+        box-shadow: none;
+      }
+
+      .travel-mode .travel-mode-grid > .travel-mode-panel:first-child {
+        border-left: 3px solid var(--accent);
+        background: var(--card);
+      }
+
+      .travel-mode .travel-mode-next-title {
+        font-size: clamp(24px, 3vw, 30px);
+        line-height: 1.2;
+        overflow-wrap: anywhere;
+      }
+
+      .travel-mode .travel-mode-place,
+      .travel-mode .travel-mode-item-title {
+        overflow-wrap: anywhere;
+      }
+
+      .travel-mode .travel-mode-map-btn {
+        padding: 10px 14px;
+        border-radius: 10px;
+        font-weight: 600;
+        box-shadow: none;
+        transform: none;
+      }
+
+      .travel-mode .travel-mode-item {
+        min-width: 0;
+        border-radius: 10px;
+        background: var(--card);
+        box-shadow: none;
+        transform: none;
+      }
+
+      .travel-mode .travel-mode-item > div {
+        min-width: 0;
+      }
+
+      .travel-mode .travel-mode-item-title {
+        font-weight: 600;
+      }
+
+      .travel-mode button:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+
+      @container (max-width: 700px) {
+        .travel-mode-grid {
+          grid-template-columns: minmax(0, 1fr);
+          gap: 12px;
+        }
+
+        .travel-mode .travel-quick-tools-row {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .travel-mode .travel-mode-panel,
+        .travel-mode .travel-quick-panel {
+          padding: 16px;
+        }
+      }
+
+      @container (max-width: 380px) {
+        .travel-mode-day-nav {
+          display: grid;
+          grid-template-columns: 46px minmax(0, 1fr) 46px;
+        }
+
+        .travel-mode-today-btn {
+          grid-column: 1 / -1;
+          width: 100%;
+        }
+      }
+    `;
     document.head.appendChild(style);
   }
 

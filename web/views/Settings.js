@@ -99,6 +99,101 @@ function SettingsModal() {
           boxShadow: 'var(--shadow-lg)'
         }}
       >
+        <style>{`
+          .web-settings-dialog .web-settings-header {
+            background: var(--card);
+            flex-shrink: 0;
+          }
+
+          .web-settings-dialog .web-settings-header > div {
+            min-width: 0;
+          }
+
+          .web-settings-dialog .web-settings-header h1 {
+            font-family: var(--font-serif, Georgia, serif) !important;
+            line-height: 1.2 !important;
+          }
+
+          .web-settings-dialog .web-settings-header p {
+            line-height: 1.6;
+          }
+
+          .web-settings-dialog .web-settings-header > button {
+            flex-shrink: 0;
+            min-width: 44px;
+            min-height: 44px;
+          }
+
+          .web-settings-dialog .web-settings-content {
+            min-height: 0;
+            background: var(--bg);
+            overscroll-behavior: contain;
+            container-type: inline-size;
+          }
+
+          .web-settings-dialog .web-settings-card {
+            min-width: 0;
+            border: 1px solid var(--line) !important;
+            border-radius: 14px !important;
+            background: var(--card) !important;
+            box-shadow: none !important;
+          }
+
+          .web-settings-dialog .web-settings-card h2 {
+            font-family: var(--font-serif, Georgia, serif) !important;
+            line-height: 1.3;
+          }
+
+          .web-settings-dialog .web-settings-choice,
+          .web-settings-dialog .web-settings-choice:hover {
+            transform: none !important;
+            box-shadow: none !important;
+          }
+
+          .web-settings-dialog .web-settings-field {
+            gap: 12px !important;
+            overflow-wrap: anywhere;
+          }
+
+          .web-settings-dialog :is(input, select, textarea) {
+            box-sizing: border-box;
+            max-width: 100%;
+          }
+
+          .web-settings-dialog :is(button, input, select, textarea):focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+          }
+
+          @container (max-width: 540px) {
+            .web-settings-field {
+              grid-template-columns: minmax(0, 1fr) !important;
+              align-items: start !important;
+            }
+          }
+
+          @media (max-width: 759px) {
+            .web-settings-dialog {
+              grid-template-rows: auto minmax(0, 1fr);
+            }
+
+            .web-settings-dialog .web-settings-nav {
+              min-width: 0;
+              padding-top: max(8px, env(safe-area-inset-top)) !important;
+              overscroll-behavior-x: contain;
+            }
+
+            .web-settings-dialog .web-settings-content {
+              padding: 14px !important;
+              padding-bottom: max(20px, env(safe-area-inset-bottom)) !important;
+            }
+
+            .web-settings-dialog :is(input, select, textarea) {
+              font-size: 16px !important;
+            }
+          }
+        `}</style>
+
         <aside className="web-settings-nav" style={{
           display: 'flex',
           flexDirection: compact ? 'row' : 'column',
@@ -269,28 +364,31 @@ function SettingsNavItem({ icon, active, onClick, children, compact }) {
     <button
       type="button"
       onClick={onClick}
-      title={compact ? children : undefined}
+      aria-current={active ? 'page' : undefined}
       style={{
         display: 'flex',
         alignItems: 'center',
-        justifyContent: compact ? 'center' : 'flex-start',
-        gap: 10,
-        minWidth: compact ? 42 : 0,
-        padding: compact ? '9px 11px' : '11px 12px',
-        border: '1px solid ' + (active ? 'rgba(157, 104, 12, .22)' : 'transparent'),
-        borderRadius: 8,
-        background: active ? 'var(--accent-soft)' : 'transparent',
-        color: active ? 'var(--accent)' : 'var(--muted)',
+        justifyContent: 'flex-start',
+        flexShrink: 0,
+        gap: 8,
+        minWidth: 0,
+        minHeight: 44,
+        padding: compact ? '10px 12px' : '11px 12px',
+        border: '1px solid ' + (active ? 'var(--line)' : 'transparent'),
+        borderRadius: 10,
+        background: active ? 'var(--card)' : 'transparent',
+        color: active ? 'var(--text)' : 'var(--muted)',
+        boxShadow: active ? 'inset 3px 0 0 var(--accent)' : 'none',
         cursor: 'pointer',
         fontFamily: 'inherit',
         fontSize: 13,
-        fontWeight: 800,
+        fontWeight: active ? 700 : 500,
         whiteSpace: 'nowrap',
         textAlign: 'left'
       }}
     >
       <Icon name={icon} size={16} />
-      {!compact && children}
+      <span>{children}</span>
     </button>
   );
 }
@@ -4215,40 +4313,75 @@ function SettingsChoice({ icon, label, description, active, onClick }) {
 }
 
 function SettingsToggle({ checked, onChange, label, description }) {
+  const labelId = React.useId();
+  const descriptionId = React.useId();
+
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: 12
+    }}>
       <button
         type="button"
         role="switch"
         aria-checked={checked}
+        aria-labelledby={labelId}
+        aria-describedby={description ? descriptionId : undefined}
         onClick={() => onChange(!checked)}
         style={{
-          width: 44,
-          height: 25,
-          padding: 3,
+          display: 'grid',
+          placeItems: 'center',
+          width: 48,
+          minWidth: 48,
+          height: 44,
+          padding: 0,
           border: 'none',
-          borderRadius: 20,
+          borderRadius: 10,
           flexShrink: 0,
-          background: checked ? 'var(--accent)' : 'var(--line)',
+          background: 'transparent',
           cursor: 'pointer'
         }}
       >
-        <span style={{
+        <span aria-hidden="true" style={{
           display: 'block',
-          width: 19,
-          height: 19,
-          borderRadius: '50%',
-          background: 'white',
-          transform: checked ? 'translateX(19px)' : 'translateX(0)',
-          transition: 'transform .16s ease'
-        }} />
+          boxSizing: 'border-box',
+          width: 44,
+          height: 26,
+          padding: 3,
+          borderRadius: 20,
+          background: checked ? 'var(--accent)' : 'var(--muted)'
+        }}>
+          <span style={{
+            display: 'block',
+            width: 20,
+            height: 20,
+            borderRadius: '50%',
+            background: '#fff',
+            transform: checked ? 'translateX(18px)' : 'translateX(0)'
+          }} />
+        </span>
       </button>
 
-      <div>
-        <div style={{ fontSize: 13, fontWeight: 900 }}>{label}</div>
-        <div style={{ marginTop: 3, color: 'var(--muted)', fontSize: 12, lineHeight: 1.35 }}>
-          {description}
+      <div style={{ minWidth: 0 }}>
+        <div id={labelId} style={{
+          fontSize: 13,
+          fontWeight: 600,
+          color: 'var(--text)'
+        }}>
+          {label}
         </div>
+
+        {description && (
+          <div id={descriptionId} style={{
+            marginTop: 4,
+            color: 'var(--muted)',
+            fontSize: 12,
+            lineHeight: 1.6
+          }}>
+            {description}
+          </div>
+        )}
       </div>
     </div>
   );

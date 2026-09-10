@@ -100,6 +100,75 @@ function SettingsModal() {
         }}
       >
         <style>{`
+          .web-settings-dialog .settings-trip-row,
+          .web-settings-dialog .settings-invite-row {
+            min-width: 0;
+            border-radius: 14px !important;
+            box-shadow: none !important;
+          }
+
+          .web-settings-dialog .settings-trip-row > div:nth-child(2) {
+            flex: 1 1 220px !important;
+          }
+
+          .web-settings-dialog .settings-trip-row > div:nth-child(2) > div:first-child {
+            flex-wrap: wrap;
+            row-gap: 6px;
+          }
+
+          .web-settings-dialog .settings-trip-row strong {
+            white-space: normal !important;
+            overflow-wrap: anywhere;
+            font-size: 16px !important;
+            line-height: 1.4;
+          }
+
+          .web-settings-dialog .settings-trip-row [aria-label^="Couleur de "] {
+            flex-wrap: wrap;
+            gap: 4px !important;
+          }
+
+          .web-settings-dialog .settings-trip-row > div:last-child {
+            flex: 1 1 100% !important;
+            justify-content: flex-start !important;
+            margin-left: 0 !important;
+            padding-top: 12px;
+            border-top: 1px solid var(--line);
+          }
+
+          .web-settings-dialog .settings-trip-row > div:last-child > button,
+          .web-settings-dialog .settings-invite-row > div:last-child > button {
+            min-height: 44px;
+            white-space: normal !important;
+            line-height: 1.4;
+          }
+
+          .web-settings-dialog .settings-invite-row > input {
+            width: 100%;
+            min-width: 0;
+            min-height: 44px;
+          }
+
+          .web-settings-dialog .settings-invite-row > div:first-child > div {
+            min-width: 0;
+            overflow-wrap: anywhere;
+          }
+
+          @container (max-width: 540px) {
+            .settings-trip-row > div:last-child,
+            .settings-invite-row > div:last-child {
+              display: grid !important;
+              grid-template-columns: repeat(2, minmax(0, 1fr));
+              width: 100%;
+            }
+
+            .settings-trip-row > div:last-child > button,
+            .settings-invite-row > div:last-child > button {
+              width: 100%;
+              min-width: 0;
+            }
+          }
+
           .web-settings-dialog .web-settings-header {
             background: var(--card);
             flex-shrink: 0;
@@ -2545,16 +2614,40 @@ Télécharge une copie JSON de tes données. Les fichiers privés ne sont pas in
         aria-pressed={active}
         onClick={() => saveTripAccent(trip, theme.key)}
         style={{
-          width: 20,
-          height: 20,
+          display: 'grid',
+          placeItems: 'center',
+          width: 44,
+          height: 44,
+          flexShrink: 0,
           padding: 0,
           border: '2px solid ' + (active ? 'var(--text)' : 'transparent'),
-          borderRadius: '50%',
-          background: theme.accent,
-          boxShadow: active ? '0 0 0 2px var(--card)' : 'none',
+          borderRadius: 10,
+          background: 'transparent',
           cursor: 'pointer'
         }}
-      />
+      >
+        <span
+          aria-hidden="true"
+          style={{
+            display: 'grid',
+            placeItems: 'center',
+            width: 24,
+            height: 24,
+            borderRadius: '50%',
+            background: theme.accent
+          }}
+        >
+          {active && (
+            <span style={{
+              width: 8,
+              height: 8,
+              borderRadius: '50%',
+              background: '#fff',
+              border: '1px solid #222'
+            }} />
+          )}
+        </span>
+      </button>
     );
   })}
 </div>

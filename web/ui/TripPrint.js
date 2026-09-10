@@ -475,15 +475,11 @@
             }
 
             body.pdf-exporting .sheet {
-              width: 210mm !important;
-              min-height: 297mm !important;
+              width: 184mm !important;
+              min-height: 0 !important;
               margin: 0 !important;
-              padding:
-                14mm
-                13mm
-                15mm !important;
-              background:
-                var(--paper) !important;
+              padding: 0 !important;
+              background: var(--paper) !important;
               box-shadow: none !important;
             }
 
@@ -845,19 +841,19 @@
               }
             }
 
-            @media (max-width: 600px) {
-              .sheet {
+            @media screen and (max-width: 600px) {
+              body:not(.pdf-exporting) .sheet {
                 width: 100%;
                 margin: 0;
                 padding: 22px 16px;
                 box-shadow: none;
               }
 
-              .trip-header h1 {
+              body:not(.pdf-exporting) .trip-header h1 {
                 font-size: 29px;
               }
 
-              .step {
+              body:not(.pdf-exporting) .step {
                 grid-template-columns:
                   58px minmax(0, 1fr);
                 gap: 10px;
@@ -1131,7 +1127,7 @@
                 await window
                   .html2pdf()
                   .set({
-                    margin: 0,
+                    margin: [14, 13, 15, 13],
                     filename: filename,
                     enableLinks: true,
                     image: {
@@ -1145,7 +1141,8 @@
                       backgroundColor:
                         '#fffdf9',
                       scrollX: 0,
-                      scrollY: 0
+                      scrollY: 0,
+                      windowWidth: 794
                     },
                     jsPDF: {
                       unit: 'mm',

@@ -361,6 +361,123 @@
       setBusy(false);
     }, [open, step && step.id, dayId]);
 
+    const editorRef = React.useRef(null);
+    const dialogStateRef = React.useRef(null);
+
+    dialogStateRef.current = { busy, onClose };
+
+    React.useEffect(function lockEditorScroll() {
+      if (!open) return;
+
+      const previousOverflow = document.body.style.overflow;
+      const previousFocus = document.activeElement;
+
+      document.body.style.overflow = 'hidden';
+
+      return function restoreEditorScroll() {
+        document.body.style.overflow = previousOverflow;
+
+        if (previousFocus?.isConnected) {
+          previousFocus.focus({ preventScroll: true });
+        }
+      };
+    }, [open]);
+
+    React.useEffect(function manageEditorKeyboard() {
+      if (!open) return;
+
+      const previousFocus = document.activeElement;
+
+      function getScope() {
+        return (
+          editorRef.current?.querySelector('[role="alertdialog"]') ||
+          editorRef.current
+        );
+      }
+
+      function getFocusable(scope) {
+        if (!scope) return [];
+
+        return Array.from(scope.querySelectorAll(
+          'button, input, select, textarea, a[href], [tabindex]'
+        )).filter(element => {
+          const style = window.getComputedStyle(element);
+
+          return (
+            element.tabIndex >= 0 &&
+            !element.matches(':disabled') &&
+            !element.closest('[inert], [aria-hidden="true"]') &&
+            element.getClientRects().length > 0 &&
+            style.visibility !== 'hidden' &&
+            style.visibility !== 'collapse'
+          );
+        });
+      }
+
+      function handleKeyDown(event) {
+        if (event.defaultPrevented) return;
+
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          event.stopPropagation();
+
+          if (dialogStateRef.current.busy) return;
+
+          if (deleteAsk) {
+            setDeleteAsk(false);
+          } else {
+            dialogStateRef.current.onClose();
+          }
+
+          return;
+        }
+
+        if (event.key !== 'Tab') return;
+
+        const scope = getScope();
+        const elements = getFocusable(scope);
+
+        if (!scope) return;
+
+        if (!elements.length) {
+          event.preventDefault();
+          scope.focus({ preventScroll: true });
+          return;
+        }
+
+        const first = elements[0];
+        const last = elements[elements.length - 1];
+        const active = document.activeElement;
+        const outside = !elements.includes(active);
+
+        if (event.shiftKey && (active === first || outside)) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && (active === last || outside)) {
+          event.preventDefault();
+          first.focus();
+        }
+      }
+
+      document.addEventListener('keydown', handleKeyDown);
+
+      const frame = window.requestAnimationFrame(() => {
+        const scope = getScope();
+        const first = getFocusable(scope)[0];
+
+        (first || scope)?.focus({ preventScroll: true });
+      });
+
+      return function cleanupEditorKeyboard() {
+        window.cancelAnimationFrame(frame);
+        document.removeEventListener('keydown', handleKeyDown);
+
+        if (previousFocus?.isConnected) {
+          previousFocus.focus({ preventScroll: true });
+        }
+      };
+    }, [open, deleteAsk]);
+
     if (!open) return null;
 
     const inputStyle = inputBaseStyle();
@@ -1254,6 +1371,12 @@
       >
         <div
           className="web-step-editor-panel"
+          ref={editorRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label={modalTitle}
+          aria-busy={busy}
+          tabIndex={-1}
           onClick={event => event.stopPropagation()}
           style={{
             width: '100%',
@@ -1490,7 +1613,12 @@
           </div>
 
           {deleteAsk && (
-            <div style={{
+            <div
+              role="alertdialog"
+              aria-modal="true"
+              aria-label="Supprimer cette étape ?"
+              tabIndex={-1}
+              style={{
               position: 'absolute',
               inset: 0,
               zIndex: 5,

@@ -2056,6 +2056,134 @@ body.is-dragging-day * {
   }
 }
 
+.web-budget-page,
+.web-docs-page {
+  min-width: 0;
+  background: var(--bg);
+}
+
+.workspace-page-header {
+  margin-bottom: 24px;
+}
+
+.workspace-page-title {
+  margin: 6px 0 8px;
+  color: var(--text);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(28px, 3vw, 38px);
+  font-weight: 600;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.workspace-page-description {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.web-budget-page .web-budget-total,
+.web-budget-page .web-budget-expense-form,
+.web-docs-page .web-docs-detail {
+  border: 1px solid var(--line) !important;
+  border-radius: 16px !important;
+  background: var(--card) !important;
+  box-shadow: none !important;
+}
+
+.web-budget-total::after {
+  display: none;
+}
+
+.web-budget-page .web-budget-total {
+  padding: 22px !important;
+}
+
+.web-budget-page .web-budget-tabs,
+.web-docs-page .web-docs-tabs {
+  gap: 4px !important;
+  padding: 4px !important;
+  border-radius: 12px !important;
+  background: var(--inset) !important;
+  box-shadow: none !important;
+}
+
+.web-budget-tabs > button,
+.web-docs-tabs > button {
+  min-width: 0;
+  min-height: 44px;
+  flex: 1;
+  border-radius: 9px !important;
+  white-space: normal;
+}
+
+.web-budget-page .web-budget-expense-row,
+.web-docs-page .web-docs-list-item {
+  border-radius: 12px !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.web-budget-page .web-budget-expense-row:hover,
+.web-docs-page .web-docs-list-item:hover {
+  border-color: var(--accent) !important;
+}
+
+.web-docs-page .web-docs-search-area {
+  background: var(--card) !important;
+}
+
+.web-docs-page .web-docs-preview-panel {
+  background: var(--inset) !important;
+}
+
+.web-docs-header > div,
+.web-docs-upload-controls {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.web-docs-upload-controls > select {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.web-budget-page button,
+.web-docs-page button,
+.web-budget-page input,
+.web-budget-page select,
+.web-docs-page select {
+  min-height: 44px;
+}
+
+.web-budget-page :is(button, input, select, textarea):focus-visible,
+.web-docs-page :is(button, input, select, textarea):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+@media (max-width: 760px) {
+  .workspace-page-header {
+    margin-bottom: 18px;
+  }
+
+  .web-docs-upload-controls {
+    width: 100%;
+  }
+
+  .web-docs-upload-controls > select {
+    flex: 1 1 150px;
+    font-size: 16px !important;
+  }
+
+  .web-docs-upload-controls > button {
+    flex: 1 1 110px;
+    justify-content: center;
+  }
+}
+
 .home-guided-action {
   min-height: 44px;
   display: inline-flex;

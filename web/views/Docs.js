@@ -586,10 +586,11 @@ const renderDetail = () => (
         {/* ── En-tête ── */}
         <div className="web-docs-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12, marginBottom: 18 }}>
           <div>
-<div style={kicker}>Documents de voyage</div>
-<div style={{ fontFamily: serif, fontStyle: 'italic', fontSize: 26, color: 'var(--text)', marginTop: 3 }}>
-  Billets et fichiers
-</div>
+<div style={kicker}>Organisation du voyage</div>
+<h1 className="workspace-page-title">Documents</h1>
+<p className="workspace-page-description">
+  Retrouve tes billets, réservations et fichiers.
+</p>
             <p style={{ color: 'var(--muted)', fontSize: 13, margin: '4px 0 0' }}>
               {trip?.name || 'Mon voyage'} · {total} document{total > 1 ? 's' : ''}
             </p>

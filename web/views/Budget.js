@@ -277,8 +277,13 @@ function BudgetView() {
         style={{ maxWidth: 860, margin: '0 auto', padding: '24px 22px 40px' }}
       >
 
-        <div style={kicker}>Budget</div>
-        <div style={{ fontFamily: serif, fontStyle: 'italic', fontSize: 26, color: 'var(--text)', marginTop: 3, marginBottom: 16 }}>{trip.name}</div>
+        <header className="workspace-page-header">
+          <div style={kicker}>Organisation du voyage</div>
+          <h1 className="workspace-page-title">Budget</h1>
+          <p className="workspace-page-description">
+            {trip.name} · Suis les dépenses et la répartition entre voyageurs.
+          </p>
+        </header>
 
         {/* Total */}
        <div className="web-budget-total" style={{ ...card, padding: '20px 22px', marginBottom: 14, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>

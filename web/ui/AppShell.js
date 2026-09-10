@@ -1534,11 +1534,144 @@
   outline-offset:2px;
 }
 
-.home-trip-grid{
-  contain:layout paint;
+.home-library .home-trip-grid{
   display:grid;
   grid-template-columns:repeat(3,minmax(0,1fr));
-  gap:18px;
+  gap:20px;
+  align-items:stretch;
+}
+
+.home-trip-group-heading{
+  grid-column:1 / -1;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  margin-top:24px;
+}
+
+.home-trip-group-heading:first-child{
+  margin-top:0;
+}
+
+.home-trip-group-heading h3{
+  margin:0;
+  color:var(--text);
+  font-family:var(--font-serif);
+  font-size:26px;
+  font-weight:400;
+}
+
+.home-trip-group-heading span{
+  display:grid;
+  place-items:center;
+  min-width:28px;
+  min-height:28px;
+  padding:2px 8px;
+  border:1px solid var(--outline-variant);
+  border-radius:999px;
+  color:var(--muted);
+  font-size:12px;
+}
+
+.home-library .home-trip-card{
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  border-radius:20px;
+  box-shadow:0 3px 12px rgba(0,0,0,.04);
+}
+
+.home-library .home-trip-card:hover{
+  transform:none;
+  box-shadow:0 6px 20px rgba(0,0,0,.08);
+}
+
+.home-library .home-trip-cover{
+  height:180px;
+  flex-shrink:0;
+}
+
+.home-library .home-trip-cover img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+
+.home-library .home-trip-card-body{
+  flex:1;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  align-content:start;
+  gap:12px;
+  padding:18px;
+}
+
+.home-library .home-trip-card-title,
+.home-library .home-trip-card-meta,
+.home-library .home-trip-card-actions{
+  grid-column:1 / -1;
+  margin:0;
+}
+
+.home-library .home-trip-card-title{
+  font-size:25px;
+  line-height:1.2;
+  overflow-wrap:anywhere;
+}
+
+.home-library .home-trip-card-meta{
+  font-size:13px;
+  line-height:1.5;
+  font-weight:400;
+}
+
+.home-library .home-trip-card-body > .home-trip-resume{
+  background:transparent;
+  color:var(--text);
+  border:1px solid var(--outline-variant);
+  box-shadow:none;
+}
+
+.home-library .home-trip-resume,
+.home-library .home-trip-map{
+  min-height:44px;
+}
+
+.home-library .home-trip-map{
+  width:44px;
+  height:44px;
+}
+
+.home-library .home-trip-card-actions{
+  display:flex;
+  gap:10px;
+  padding-top:4px;
+}
+
+.home-library button:focus-visible{
+  outline:2px solid var(--accent);
+  outline-offset:3px;
+}
+
+@media(max-width:1100px){
+  .home-library .home-trip-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+}
+
+@media(max-width:640px){
+  .home-library .home-trip-grid{
+    grid-template-columns:minmax(0,1fr);
+    gap:16px;
+  }
+
+  .home-library .home-trip-cover{
+    height:160px;
+  }
+
+  .home-trip-group-heading h3{
+    font-size:24px;
+  }
 }
 
 .home-trip-card{
@@ -7511,11 +7644,31 @@ async function createTripFromHero() {
           ) : orderedTrips.length ? (
             <div className="home-trip-grid">
               {orderedTrips.map(function renderTripCard(trip, index) {
-                const image =  trip.cover_image_url ||  trip.coverImageUrl ||  tripImages[index % tripImages.length];
+                const image = trip.cover_image_url || trip.coverImageUrl || tripImages[index % tripImages.length];
+                const status = getHomeTripTimelineStatus(trip);
+                const startsGroup = index === 0 ||
+                  getHomeTripTimelineStatus(orderedTrips[index - 1]) !== status;
+                const headings = {
+                  current: 'En cours',
+                  upcoming: 'À venir',
+                  undated: 'Dates à définir',
+                  completed: 'Terminés',
+                  archived: 'Archivés'
+                };
 
                 return (
+                  <React.Fragment key={trip.id || index}>
+                    {startsGroup && (
+                      <div className="home-trip-group-heading">
+                        <h3>{headings[status]}</h3>
+                        <span>
+                          {orderedTrips.filter(item =>
+                            getHomeTripTimelineStatus(item) === status
+                          ).length}
+                        </span>
+                      </div>
+                    )}
                   <article
-                    key={trip.id || index}
                     className={
                       'home-trip-card' +
                       (
@@ -7555,11 +7708,13 @@ async function createTripFromHero() {
                       </h3>
 
                       <div className="home-trip-card-meta">
-                        <strong>
-                          {getHomeTripTimelineLabel(trip)}
-                        </strong>
-                        {' · '}
-                        Reprendre la planification, compléter les étapes et préparer les détails du voyage.
+                        {status === 'completed'
+                          ? 'Retrouver cet itinéraire ou préparer un nouveau départ.'
+                          : status === 'archived'
+                            ? 'Restaurer ou consulter ce voyage.'
+                            : status === 'current'
+                              ? 'Retrouver le programme de ton séjour.'
+                              : 'Organiser les journées et les détails du séjour.'}
                       </div>
 
                         <button
@@ -7625,6 +7780,7 @@ async function createTripFromHero() {
                       </div>
                     </div>
                   </article>
+                  </React.Fragment>
                 );
               })}
             </div>

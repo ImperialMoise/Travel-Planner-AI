@@ -1106,7 +1106,213 @@
 
     const style = document.createElement('style');
     style.id = 'atelier-v2-refactor-css';
-    style.textContent = ATELIER_CSS;
+    style.textContent = ATELIER_CSS + `
+      .atelier-v2{
+        container-type:inline-size;
+      }
+
+      .atelier-v2 .atelier-v2-main{
+        padding:clamp(12px,2vw,28px);
+        gap:20px;
+        scroll-padding-top:20px;
+      }
+
+      .atelier-v2 .atelier-v2-hero{
+        flex-shrink:0;
+        width:100%;
+        max-width:1240px;
+        min-height:0;
+        margin:0 auto;
+        border-radius:18px;
+        box-shadow:none;
+        animation:none;
+      }
+
+      .atelier-v2 .atelier-v2-hero-inner{
+        min-height:0;
+        max-width:none;
+        padding:24px;
+      }
+
+      .atelier-v2 .atelier-v2-hero.has-cover .atelier-v2-hero-inner{
+        min-height:200px;
+      }
+
+      .atelier-v2 .atelier-v2-hero:not(.has-cover) .atelier-v2-hero-overlay{
+        background:var(--card);
+      }
+
+      .atelier-v2 .atelier-v2-hero-badges{
+        gap:8px;
+        margin-bottom:12px;
+      }
+
+      .atelier-v2 .atelier-v2-hero-title{
+        margin:0 0 10px;
+        font-size:clamp(28px,3vw,40px);
+        line-height:1.12;
+        overflow-wrap:anywhere;
+      }
+
+      .atelier-v2 .atelier-v2-hero-note{
+        max-width:70ch;
+        font-size:14px;
+        line-height:1.6;
+        overflow-wrap:anywhere;
+      }
+
+      .atelier-v2 .atelier-v2-hero-actions{
+        margin-top:16px;
+        gap:8px;
+      }
+
+      .atelier-v2 .atelier-v2-hero-btn,
+      .atelier-v2 .atelier-v2-hero-icon-btn{
+        min-height:44px;
+        border-radius:10px;
+        box-shadow:none;
+        font-weight:600;
+      }
+
+      .atelier-v2 .atelier-v2-body{
+        flex:0 0 auto;
+        width:100%;
+        max-width:1240px;
+        margin:0 auto;
+        padding:0 0 24px;
+        grid-template-columns:minmax(0,1fr) 280px;
+        gap:20px;
+        align-items:start;
+      }
+
+      .atelier-v2 .atelier-v2-plan-card{
+        min-height:0;
+        border-radius:18px;
+        box-shadow:none;
+      }
+
+      .atelier-v2 .atelier-v2-plan-head{
+        min-height:64px;
+        padding:16px 18px;
+        background:var(--card);
+        flex-wrap:wrap;
+      }
+
+      .atelier-v2 .atelier-v2-plan-title{
+        font-family:var(--font-serif);
+        font-size:23px;
+        line-height:1.2;
+        font-weight:400;
+      }
+
+      .atelier-v2 .atelier-v2-plan-actions{
+        flex-wrap:wrap;
+      }
+
+      .atelier-v2 .atelier-v2-btn{
+        min-height:44px;
+        border-radius:10px;
+        box-shadow:none;
+      }
+
+      .atelier-v2 .atelier-v2-sidebar{
+        padding:16px;
+        background:var(--card);
+        border:1px solid var(--line);
+        border-radius:18px;
+      }
+
+      .atelier-v2 .atelier-v2-timeline{
+        gap:12px;
+      }
+
+      .atelier-v2 .web-step-card-title{
+        overflow-wrap:anywhere;
+      }
+
+      .atelier-v2 button:focus-visible{
+        outline:2px solid var(--accent);
+        outline-offset:3px;
+      }
+
+      .day-spine{
+        background:var(--card);
+        box-shadow:none;
+      }
+
+      .day-spine .day-spine-head{
+        padding:20px 16px;
+        background:var(--card);
+      }
+
+      .day-spine .day-spine-title{
+        font-size:23px;
+        line-height:1.25;
+        overflow-wrap:anywhere;
+      }
+
+      .day-spine .day-spine-scroll{
+        padding:14px 10px 24px;
+      }
+
+      .day-spine .day-card{
+        border-radius:12px;
+        box-shadow:none;
+      }
+
+      .day-spine .day-card.active{
+        transform:none;
+        border-color:var(--accent);
+        background:var(--accent-soft);
+        box-shadow:none;
+      }
+
+      .day-spine .day-card-num{
+        box-shadow:none;
+      }
+
+      @container (max-width:820px){
+        .atelier-v2 .atelier-v2-body{
+          grid-template-columns:minmax(0,1fr);
+          gap:16px;
+        }
+
+        .atelier-v2 .atelier-v2-hero-inner{
+          padding:18px;
+        }
+
+        .atelier-v2 .atelier-v2-sidebar{
+          padding:14px;
+        }
+      }
+
+      @container (max-width:480px){
+        .atelier-v2 .atelier-v2-hero-inner{
+          padding:16px;
+        }
+
+        .atelier-v2 .atelier-v2-hero-title{
+          font-size:28px;
+        }
+
+        .atelier-v2 .atelier-v2-hero.has-cover .atelier-v2-hero-inner{
+          min-height:180px;
+        }
+
+        .atelier-v2 .atelier-v2-plan-head{
+          padding:14px;
+        }
+      }
+
+      @media(prefers-reduced-motion:reduce){
+        .atelier-v2 *,
+        .day-spine *{
+          animation:none !important;
+          transition:none !important;
+          scroll-behavior:auto !important;
+        }
+      }
+    `;
     document.head.appendChild(style);
   }
 
@@ -2721,10 +2927,9 @@ function openAddStep(type, preset) {
               <div className="atelier-v2-plan-card">
                 <div className="atelier-v2-plan-head">
 <div>
-                    <div className="atelier-v2-plan-title">
-                      <span aria-hidden="true">☷</span>
-                      Plan d’action
-                    </div>
+                      <div className="atelier-v2-plan-title">
+                        Programme du jour
+                      </div>
 
                     <div style={{
                       marginTop: 2,

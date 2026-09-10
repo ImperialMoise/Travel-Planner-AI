@@ -458,14 +458,12 @@
         style={{
                    borderRadius: 18,
           padding: '15px 16px',
-          boxShadow: selected
-            ? '0 0 0 3px rgba(150,100,13,.16), 0 16px 34px rgba(54,42,27,.13)'
-            : '0 7px 22px rgba(54,42,27,.075)',
+          boxShadow: 'none',
           border: selected
             ? '1px solid var(--accent)'
             : '1px solid var(--line)',
           background: selected
-            ? 'linear-gradient(135deg, var(--card), var(--accent-soft))'
+            ? 'var(--accent-soft)'
             : 'var(--card)',
           display: 'flex',
           gap: 12,

@@ -176,6 +176,152 @@ function mvFmtDate(iso){const d=new Date(iso);return d.getDate()+' '+MONTHS_MAP[
 
 /* ═══ CSS ═══ */
 const MV_CSS=`
+.map-redesign .web-map-search{
+  top:12px !important;
+  left:12px !important;
+  right:132px !important;
+  width:auto !important;
+  max-width:440px !important;
+  transform:none !important;
+}
+
+.map-redesign .web-map-search input{
+  min-height:46px;
+  font-size:16px !important;
+  border-radius:12px !important;
+  background:var(--card) !important;
+}
+
+.map-redesign .web-map-search button{
+  min-height:44px;
+}
+
+.map-redesign .web-map-toolbox{
+  position:absolute;
+  top:12px;
+  right:12px;
+  bottom:12px;
+  width:180px;
+  max-width:calc(100% - 24px);
+  z-index:24;
+  pointer-events:none;
+}
+
+.map-redesign .web-map-toolbox summary{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  width:fit-content;
+  min-height:46px;
+  margin-left:auto;
+  padding:0 14px;
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:var(--card);
+  color:var(--text);
+  font-size:13px;
+  font-weight:600;
+  cursor:pointer;
+  list-style:none;
+  pointer-events:auto;
+}
+
+.map-redesign .web-map-toolbox summary::-webkit-details-marker{
+  display:none;
+}
+
+.map-redesign .web-map-toolbox .web-map-controls{
+  position:relative !important;
+  top:auto !important;
+  right:auto !important;
+  width:100% !important;
+  max-height:calc(100% - 56px);
+  margin-top:8px;
+  padding:8px;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  border:1px solid var(--line);
+  border-radius:14px;
+  background:var(--card);
+  box-shadow:0 6px 20px rgba(0,0,0,.10);
+  pointer-events:auto;
+}
+
+.map-redesign .web-map-controls > button,
+.map-redesign .web-map-controls > div,
+.map-redesign .web-map-controls > div > button{
+  width:100% !important;
+  flex-shrink:0;
+  box-shadow:none !important;
+  background:var(--card) !important;
+}
+
+.map-redesign .web-map-controls button{
+  min-height:44px;
+}
+
+.map-redesign .web-map-control-label{
+  display:inline !important;
+}
+
+.map-redesign .web-map-readout{
+  display:flex !important;
+}
+
+.map-redesign .web-map-controls > div > div.mv-glass{
+  position:static !important;
+  width:100% !important;
+  margin-top:6px;
+  box-shadow:none;
+}
+
+.map-redesign .web-map-day-card,
+.map-redesign .web-map-found-place{
+  left:12px !important;
+  right:auto !important;
+  bottom:12px !important;
+  width:360px !important;
+  max-width:calc(100% - 24px) !important;
+  max-height:55% !important;
+  overflow:auto !important;
+  overscroll-behavior:contain;
+  border-radius:16px !important;
+}
+
+.map-redesign .web-map-day-card .mv-card{
+  width:100% !important;
+  max-width:none !important;
+  max-height:none !important;
+  background:var(--card) !important;
+  box-shadow:none !important;
+}
+
+.map-redesign .web-map-day-card .mv-card-head{
+  background:var(--card) !important;
+}
+
+.map-redesign .mv-card-toggle,
+.map-redesign .mv-card-foot button,
+.map-redesign .web-map-found-place button{
+  min-height:44px;
+}
+
+.map-redesign .web-map-pick-banner{
+  top:68px !important;
+  left:12px !important;
+  right:132px !important;
+  max-width:none !important;
+  transform:none !important;
+  border-radius:12px !important;
+  background:var(--card) !important;
+}
+
+.map-redesign button:focus-visible,
+.map-redesign summary:focus-visible{
+  outline:2px solid var(--accent);
+  outline-offset:3px;
+}
 .mv-frame{flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden}
 .mv-body{flex:1;display:flex;min-height:0}
 .mv-spine{width:258px;flex-shrink:0;border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0;background:var(--card)}
@@ -1032,7 +1178,7 @@ if(src)src.setData({type:'Feature',geometry:route.geometry});
   }
 
   // ── Cards ──
-  function renderWelcome(){if(!cardRef.current)return;var nbDays=T.days?T.days.length:0;var nbSteps=0;T.days.forEach(function(d){nbSteps+=(d.steps||[]).length;});cardRef.current.innerHTML='<div class="mv-card"><div class="mv-welcome-pad"><div style="font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--accent)">Le voyage</div><div style="font-family:var(--font-serif);font-style:italic;font-size:24px;margin-top:3px;color:var(--text)">'+T.name+'</div><div class="mv-welcome-line">'+nbDays+' jours · '+nbSteps+' étapes sur la carte.<br>Cliquez un jour à gauche pour zoomer.</div></div></div>';}
+  function renderWelcome(){if(!cardRef.current)return;var nbDays=T.days?T.days.length:0;var nbSteps=0;T.days.forEach(function(d){nbSteps+=(d.steps||[]).length;});cardRef.current.innerHTML='<div class="mv-card"><div class="mv-welcome-pad"><div style="font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--accent)">Le voyage</div><div style="font-family:var(--font-serif);font-style:italic;font-size:24px;margin-top:3px;color:var(--text)">'+T.name+'</div><div class="mv-welcome-line">'+nbDays+' jours · '+nbSteps+' étapes sur la carte.<br>Utilise « Organiser les jours » pour choisir une journée.</div></div></div>';}
   function renderDayCard(i) {
   if (!cardRef.current) return;
 
@@ -1857,7 +2003,7 @@ Store.set({
   return(
     <>
     <style>{MV_CSS}</style>
-    <div className="mv-map-wrap" style={{flex:1}}>
+    <div className="mv-map-wrap map-redesign" style={{flex:1}}>
       <div id="mv-map" ref={mapEl}/>
 
       {mapLibraryState !== 'ready' && (
@@ -1922,7 +2068,20 @@ Store.set({
       </div>
 
       {/* ═══ CONTRÔLES (droite) ═══ */}
-<div className="web-map-controls" style={{position:'absolute',top:14,right:14,zIndex:5,display:'flex',flexDirection:'column',gap:10,alignItems:'stretch',width:148}}>
+<details className="web-map-toolbox">
+  <summary>
+    <Icon name="map" size={16} />
+    Outils
+  </summary>
+  <div
+    className="web-map-controls"
+    style={{
+      display:'flex',
+      flexDirection:'column',
+      gap:8,
+      alignItems:'stretch'
+    }}
+  >
 
   {/* Recentrer / Vue globale */}
   <button
@@ -2086,7 +2245,8 @@ Store.set({
     <b style={{color:'var(--text)',fontSize:13}}>GLOBE</b>
     <span style={{color:'var(--muted)',fontSize:12,fontFamily:'var(--font-mono)'}}>· z1.6</span>
   </div>
-</div>
+  </div>
+</details>
 
       {/* ═══ LIEU TROUVÉ (au-dessus de la carte du jour) ═══ */}
 {foundPlace && !editorOpen && (
@@ -2230,6 +2390,7 @@ Store.set({
   className="web-map-day-card"
   ref={cardRef}
   style={{
+    display:foundPlace && !editorOpen ? 'none' : 'block',
     position:'absolute',
     left:16,
     bottom:16,

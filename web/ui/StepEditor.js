@@ -1304,6 +1304,8 @@
 
             <button
               className="web-step-editor-close"
+              aria-label="Fermer l’éditeur d’étape"
+              title="Fermer"
               type="button"
               onClick={busy ? undefined : onClose}
               disabled={busy}

@@ -4103,6 +4103,149 @@
         }
       }
     `;
+    style.textContent += `
+      .modal-backdrop .modal-card {
+        border-color: var(--line);
+        border-radius: 16px;
+        max-height: calc(100dvh - 32px);
+        box-shadow: 0 16px 48px rgba(0,0,0,.18);
+      }
+
+      .modal-card .modal-head {
+        gap: 16px;
+        background: var(--card);
+        padding: 18px 20px;
+      }
+
+      .modal-card .modal-title {
+        min-width: 0;
+        font-size: 26px;
+        font-style: normal;
+        line-height: 1.2;
+        overflow-wrap: anywhere;
+      }
+
+      .modal-card .modal-head > button {
+        flex-shrink: 0;
+        min-width: 44px;
+        min-height: 44px;
+      }
+
+      .modal-card .modal-body {
+        min-height: 0;
+        padding: 20px;
+        overscroll-behavior: contain;
+      }
+
+      .modal-card .field-label {
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: none;
+        letter-spacing: normal;
+      }
+
+      .modal-card :is(input, select, textarea) {
+        box-sizing: border-box;
+        max-width: 100%;
+        font-size: 16px;
+      }
+
+      .modal-card .simple-btn {
+        min-height: 44px;
+        border-radius: 10px;
+        box-shadow: none;
+        transform: none;
+      }
+
+      .web-step-editor-overlay .web-step-editor-panel {
+        border-color: var(--line) !important;
+        border-radius: 16px !important;
+        box-shadow: 0 16px 48px rgba(0,0,0,.18) !important;
+        max-height: calc(100dvh - 100px) !important;
+      }
+
+      .web-step-editor-panel .web-step-editor-header {
+        flex-shrink: 0;
+        background: var(--card) !important;
+      }
+
+      .web-step-editor-header > div > div:last-child {
+        font-style: normal !important;
+        overflow-wrap: anywhere;
+      }
+
+      .web-step-editor-panel .web-step-editor-close {
+        min-width: 44px;
+        min-height: 44px;
+        flex-shrink: 0;
+      }
+
+      .web-step-editor-panel .web-step-editor-body {
+        overscroll-behavior: contain;
+      }
+
+      .web-step-editor-panel .web-step-editor-footer {
+        flex-shrink: 0;
+        flex-wrap: wrap;
+      }
+
+      .web-step-editor-panel .web-step-editor-footer button {
+        min-height: 44px;
+      }
+
+      .modal-card :is(button, input, select, textarea):focus-visible,
+      .web-step-editor-panel :is(button, input, select, textarea):focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+
+      @media (max-width: 560px) {
+        .modal-backdrop .modal-card {
+          border-radius: 16px 16px 0 0;
+          max-height: calc(100dvh - max(16px, env(safe-area-inset-top)));
+        }
+
+        .modal-card .modal-head {
+          padding: 14px max(16px, env(safe-area-inset-right))
+            14px max(16px, env(safe-area-inset-left));
+        }
+
+        .modal-card .modal-body {
+          padding: 16px max(16px, env(safe-area-inset-right))
+            max(20px, env(safe-area-inset-bottom))
+            max(16px, env(safe-area-inset-left));
+        }
+
+        .web-step-editor-overlay {
+          align-items: flex-end !important;
+          padding: max(16px, env(safe-area-inset-top)) 0 0 !important;
+        }
+
+        .web-step-editor-overlay .web-step-editor-panel {
+          max-height: calc(100dvh - max(16px, env(safe-area-inset-top))) !important;
+          border-radius: 16px 16px 0 0 !important;
+        }
+
+        .web-step-editor-panel :is(input, select, textarea) {
+          font-size: 16px !important;
+        }
+
+        .web-step-editor-panel .web-step-editor-footer {
+          padding-bottom: max(14px, env(safe-area-inset-bottom)) !important;
+        }
+      }
+
+      @media (max-width: 380px) {
+        .web-step-editor-panel .web-step-editor-footer > div {
+          display: none;
+        }
+
+        .web-step-editor-panel .web-step-editor-footer > button {
+          flex: 1 1 100px;
+        }
+      }
+    `;
+
     document.head.appendChild(style);
   }
 
@@ -9634,10 +9777,14 @@ async function submit() {
             ].join(',')
           )
         ).filter(function keepVisible(element) {
+          const style = window.getComputedStyle(element);
+
           return (
-            element.getAttribute(
-              'aria-hidden'
-            ) !== 'true'
+            element.tabIndex >= 0 &&
+            !element.closest('[aria-hidden="true"], [inert]') &&
+            element.getClientRects().length > 0 &&
+            style.visibility !== 'hidden' &&
+            style.visibility !== 'collapse'
           );
         });
       }

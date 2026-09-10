@@ -4436,6 +4436,14 @@
 
 const [toolboxOpen, setToolboxOpen] = React.useState(false);
 const [daySpineOpen, setDaySpineOpen] = React.useState(false);
+
+const closeDayOrganizer = React.useCallback(() => {
+  setDaySpineOpen(false);
+}, []);
+
+React.useEffect(() => {
+  setDaySpineOpen(false);
+}, [activeTripId]);
 const [toolboxCollapsed, setToolboxCollapsed] = React.useState(
   () => localStorage.getItem('toolbox_collapsed') === 'true'
 );
@@ -4510,36 +4518,91 @@ function toggleToolboxCollapsed() {
             <LoadingTrip />
           ) : (
             <>
-              {appMode !== 'travel' &&
-                !isTinyShell &&
-                !desktopFocusMode && (
-                  <DaySpine
-                    width={sideWidth}
-                  />
-                )}
-
-              {isTinyShell && daySpineOpen && (
-                <div
-                  className="app-overlay left"
-                  onClick={() => setDaySpineOpen(false)}
+              {daySpineOpen && (
+                <ModalShell
+                  title="Organiser les jours"
+                  onClose={closeDayOrganizer}
                 >
-                  <div
-                    onClick={event => event.stopPropagation()}
-                    style={{
-                      height: '100%',
-                      maxWidth: 320,
-                      width: '86vw'
-                    }}
-                  >
+                  <div style={{
+                    height: '60vh',
+                    maxHeight: 520,
+                    minHeight: 0,
+                    overflow: 'hidden',
+                    border: '1px solid var(--line)',
+                    borderRadius: 12
+                  }}>
                     <DaySpine
                       width="100%"
-                      onPickDay={() => setDaySpineOpen(false)}
+                      onPickDay={closeDayOrganizer}
                     />
                   </div>
-                </div>
+                </ModalShell>
               )}
 
               <section className="app-view">
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexShrink: 0,
+                  gap: 12,
+                  padding: '12px clamp(12px, 2vw, 28px)',
+                  borderBottom: '1px solid var(--line)',
+                  background: 'var(--card)'
+                }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{
+                      color: 'var(--muted)',
+                      fontSize: 11,
+                      marginBottom: 3
+                    }}>
+                      {appMode === 'travel'
+                        ? 'Mon carnet de voyage'
+                        : 'Mon itinéraire'}
+                    </div>
+
+                    <div
+                      title={trip.name || 'Mon voyage'}
+                      style={{
+                        color: 'var(--text)',
+                        fontFamily: 'var(--font-serif)',
+                        fontSize: 'clamp(18px, 2vw, 24px)',
+                        lineHeight: 1.2,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      {trip.name || 'Mon voyage'}
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    className="topbar-focus-btn"
+                    aria-haspopup="dialog"
+                    onClick={() => setDaySpineOpen(true)}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                      gap: 8,
+                      minHeight: 44,
+                      padding: '8px 12px',
+                      border: '1px solid var(--outline-variant)',
+                      borderRadius: 10,
+                      background: 'var(--card)',
+                      color: 'var(--text)',
+                      fontSize: 12,
+                      fontWeight: 600
+                    }}
+                  >
+                    <Icon name="cal" size={16} />
+                    Organiser les jours
+                  </button>
+                </div>
+
                 {CurrentView ? (
                   <CurrentView />
                 ) : (
@@ -4619,18 +4682,6 @@ function toggleToolboxCollapsed() {
 
         {user && activeTripId && trip && (
           <MobileWorkspaceNav />
-        )}
-
-        {isTinyShell && user && activeTripId && trip && (
-          <button
-            type="button"
-            className="app-floating days"
-            onClick={() => setDaySpineOpen(true)}
-            title="Ouvrir les jours"
-          >
-            <Icon name="cal" size={18} />
-            Jours
-          </button>
         )}
 
         {appMode !== 'travel' && isNarrowShell && user && activeTripId && trip && (

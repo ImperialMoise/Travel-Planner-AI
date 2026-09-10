@@ -3,6 +3,152 @@ import {
   expect
 } from '@playwright/test';
 
+test('l’éditeur reste accessible sans modifier de voyage', async ({ page }) => {
+  await page.goto('/', { waitUntil: 'domcontentloaded' });
+  await expect(page.locator('.home-page.is-public')).toBeVisible();
+
+  await page.waitForFunction(() =>
+    Boolean(window.StepEditor && window.React && window.ReactDOM)
+  );
+
+  await page.route('**/*', route => {
+    const method = route.request().method();
+
+    return ['GET', 'HEAD', 'OPTIONS'].includes(method)
+      ? route.continue()
+      : route.abort();
+  });
+
+  const errors = monitorJavaScriptErrors(page);
+
+  await page.evaluate(() => {
+    const host = document.createElement('div');
+    host.id = 'editor-test-host';
+    document.body.appendChild(host);
+
+    const step = {
+      id: 'test-step-not-saved',
+      type: 'activite',
+      label: 'Étape fictive',
+      time: '10:00',
+      lieu: '',
+      note: ''
+    };
+
+    const days = [{
+      id: 'test-day-not-saved',
+      dateISO: '2026-10-05',
+      steps: [step]
+    }];
+
+    function EditorTest() {
+      const [open, setOpen] = React.useState(false);
+
+      return React.createElement(
+        React.Fragment,
+        null,
+        React.createElement('button', {
+          type: 'button',
+          onClick: () => setOpen(true)
+        }, 'Ouvrir l’éditeur de test'),
+        React.createElement(window.StepEditor, {
+          open,
+          tripId: 'test-trip-not-saved',
+          dayId: days[0].id,
+          days,
+          step,
+          stepCount: 1,
+          onClose: () => setOpen(false),
+          onSaved: () => {
+            throw new Error('Ce test ne doit rien enregistrer.');
+          }
+        })
+      );
+    }
+
+    ReactDOM.render(React.createElement(EditorTest), host);
+  });
+
+  try {
+    const opener = page.getByRole('button', {
+      name: 'Ouvrir l’éditeur de test',
+      exact: true
+    });
+
+    await opener.click();
+
+    const dialog = page.getByRole('dialog', {
+      name: 'Modifier l’étape',
+      exact: true
+    });
+
+    await expect(dialog).toBeVisible();
+
+    const close = dialog.getByRole('button', {
+      name: 'Fermer l’éditeur d’étape',
+      exact: true
+    });
+
+    const save = dialog.getByRole('button', {
+      name: 'Enregistrer',
+      exact: true
+    });
+
+    await expect(close).toBeFocused();
+
+    await page.keyboard.press('Shift+Tab');
+    await expect(save).toBeFocused();
+
+    await page.keyboard.press('Tab');
+    await expect(close).toBeFocused();
+
+    const bounds = await dialog.boundingBox();
+    const viewport = page.viewportSize();
+
+    expect(bounds).not.toBeNull();
+    expect(viewport).not.toBeNull();
+    expect(bounds.x).toBeGreaterThanOrEqual(-1);
+    expect(bounds.x + bounds.width).toBeLessThanOrEqual(viewport.width + 1);
+
+    await dialog.getByRole('button', {
+      name: 'Supprimer',
+      exact: true
+    }).click();
+
+    const confirmation = page.getByRole('alertdialog', {
+      name: 'Supprimer cette étape ?',
+      exact: true
+    });
+
+    await expect(confirmation).toBeVisible();
+
+    const cancel = confirmation.getByRole('button', {
+      name: 'Annuler',
+      exact: true
+    });
+
+    await expect(cancel).toBeFocused();
+    await cancel.click();
+    await expect(confirmation).toHaveCount(0);
+    await expect(dialog).toBeVisible();
+
+    await page.keyboard.press('Escape');
+
+    await expect(dialog).toHaveCount(0);
+    await expect(opener).toBeFocused();
+    expect(errors).toEqual([]);
+  } finally {
+    await page.evaluate(() => {
+      const host = document.getElementById('editor-test-host');
+
+      if (host) {
+        ReactDOM.unmountComponentAtNode(host);
+        host.remove();
+      }
+    });
+  }
+});
+
 function monitorJavaScriptErrors(page) {
   const errors = [];
 

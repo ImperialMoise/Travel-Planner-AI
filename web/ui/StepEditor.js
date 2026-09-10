@@ -1359,7 +1359,7 @@
         style={{
           position: 'fixed',
           inset: 0,
-          zIndex: 300,
+          zIndex: 6000,
           background: 'rgba(21,48,42,.36)',
           backdropFilter: 'blur(7px)',
           WebkitBackdropFilter: 'blur(7px)',

@@ -1717,6 +1717,121 @@
       }
     `;
 
+    style.textContent += `
+      .trip-summary-view {
+        background: var(--bg);
+        container-type: inline-size;
+      }
+
+      .trip-summary-view .trip-summary-content {
+        box-sizing: border-box;
+        width: 100%;
+        max-width: 1180px;
+        padding: clamp(12px, 3vw, 28px);
+        padding-bottom: max(28px, env(safe-area-inset-bottom));
+      }
+
+      .trip-summary-view .trip-summary-hero {
+        min-height: 190px;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        box-shadow: none;
+      }
+
+      .trip-summary-view .trip-summary-hero-content {
+        padding: clamp(20px, 3vw, 30px);
+      }
+
+      .trip-summary-view .trip-summary-hero h1 {
+        font-size: clamp(28px, 4vw, 44px);
+        line-height: 1.12;
+        overflow-wrap: anywhere;
+      }
+
+      .trip-summary-view .trip-summary-hero p {
+        line-height: 1.6;
+        font-weight: 400;
+      }
+
+      .trip-summary-view .trip-summary-progress,
+      .trip-summary-view .trip-summary-stat,
+      .trip-summary-view .trip-summary-panel,
+      .trip-summary-view .trip-summary-memories > div {
+        border-color: var(--line);
+        border-radius: 14px;
+        box-shadow: none;
+      }
+
+      .trip-summary-view .trip-summary-stats {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .trip-summary-view .trip-summary-stat {
+        padding: 18px;
+      }
+
+      .trip-summary-view .trip-summary-stat-icon {
+        width: 32px;
+        height: 32px;
+        margin-bottom: 12px;
+        border-radius: 9px;
+      }
+
+      .trip-summary-view .trip-summary-stat > strong {
+        font-size: 30px;
+        line-height: 1.15;
+      }
+
+      .trip-summary-view .trip-summary-stat small,
+      .trip-summary-view .trip-summary-panel-heading p,
+      .trip-summary-view .trip-summary-lodgings small {
+        font-size: 12px;
+        line-height: 1.6;
+        font-weight: 400;
+      }
+
+      .trip-summary-view .trip-summary-panel-heading h2 {
+        font-size: 23px;
+        line-height: 1.25;
+      }
+
+      .trip-summary-view .trip-summary-lodgings > div > span:last-child {
+        min-width: 0;
+        overflow-wrap: anywhere;
+      }
+
+      .trip-summary-view .trip-summary-bar-label {
+        flex-wrap: wrap;
+        row-gap: 5px;
+      }
+
+      .trip-summary-view .trip-summary-bar-label > span {
+        overflow-wrap: anywhere;
+      }
+
+      @container (max-width: 700px) {
+        .trip-summary-view .trip-summary-stats {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .trip-summary-view .trip-summary-grid,
+        .trip-summary-view .trip-summary-memories {
+          grid-template-columns: minmax(0, 1fr);
+        }
+
+        .trip-summary-view .trip-summary-panel,
+        .trip-summary-view .trip-summary-stat {
+          padding: 16px;
+        }
+      }
+
+      @container (max-width: 340px) {
+        .trip-summary-view .trip-summary-stats {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      }
+    `;
+
     document.head.appendChild(style);
   }
 

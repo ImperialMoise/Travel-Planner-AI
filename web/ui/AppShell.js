@@ -3986,7 +3986,123 @@
 
     const style = document.createElement('style');
     style.id = 'app-shell-refactor-css';
-    style.textContent = APP_SHELL_CSS;
+    style.textContent = APP_SHELL_CSS + `
+      .topbar {
+        box-shadow: none;
+        background: var(--card);
+      }
+
+      .topbar .topbar-center {
+        gap: 12px;
+      }
+
+      .topbar .topbar-nav,
+      .topbar .workspace-mode {
+        padding: 4px;
+        border-radius: 12px;
+        box-shadow: none;
+      }
+
+      .topbar .topbar-nav {
+        background: var(--inset);
+      }
+
+      .topbar .topbar-nav-btn,
+      .topbar .workspace-mode-btn {
+        min-height: 44px;
+        height: auto;
+        padding: 8px 12px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        white-space: nowrap;
+        transform: none;
+        box-shadow: none;
+      }
+
+      .topbar .topbar-nav-btn.active {
+        background: var(--card);
+        color: var(--text);
+        border-color: var(--line);
+        box-shadow: inset 0 -2px 0 var(--accent);
+      }
+
+      .topbar .workspace-mode-btn.active {
+        background: var(--accent);
+        color: var(--accent-ink);
+      }
+
+      .topbar button:focus-visible,
+      .mobile-workspace-nav button:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+
+      @media (min-width: 761px) and (max-width: 1400px) {
+        .topbar,
+        .topbar.compact {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto;
+          height: auto;
+          gap: 10px;
+          padding: 10px 16px;
+        }
+
+        .topbar > .topbar-left {
+          grid-column: 1;
+          grid-row: 1;
+        }
+
+        .topbar > .topbar-right {
+          grid-column: 2;
+          grid-row: 1;
+          justify-self: end;
+        }
+
+        .topbar > .topbar-center {
+          grid-column: 1 / -1;
+          grid-row: 2;
+          flex-wrap: wrap;
+          justify-content: flex-start;
+        }
+
+        .topbar .topbar-nav {
+          flex-shrink: 1;
+          min-width: 0;
+          max-width: 100%;
+          overflow-x: auto;
+        }
+      }
+
+      @media (max-width: 760px) {
+        .mobile-workspace-nav {
+          background: var(--card);
+          box-shadow: none;
+          gap: 2px;
+        }
+
+        .mobile-workspace-nav .mobile-workspace-nav-btn {
+          min-height: 52px;
+          gap: 5px;
+          border-radius: 9px;
+          font-weight: 600;
+          line-height: 1.2;
+          overflow-wrap: anywhere;
+        }
+
+        .mobile-workspace-nav .mobile-workspace-nav-btn.active {
+          background: var(--accent-soft);
+          color: var(--text);
+          box-shadow: inset 0 2px 0 var(--accent);
+        }
+
+        .mobile-workspace-nav .mobile-workspace-nav-btn.travel.active {
+          background: var(--accent);
+          color: var(--accent-ink);
+          box-shadow: none;
+        }
+      }
+    `;
     document.head.appendChild(style);
   }
 
@@ -5172,7 +5288,7 @@ function toggleToolboxCollapsed() {
 const navItems = [
   {
     id: 'itinerary',
-    label: compact ? 'Plan' : 'Itinéraire'
+    label: 'Itinéraire'
   },
   {
     id: 'map',
@@ -5180,7 +5296,7 @@ const navItems = [
   },
   {
     id: 'budget',
-    label: compact ? '€' : 'Budget'
+    label: 'Budget'
   },
   {
     id: 'summary',
@@ -5188,7 +5304,7 @@ const navItems = [
   },
   {
     id: 'docs',
-    label: 'Docs'
+    label: 'Documents'
   }
 ];
 

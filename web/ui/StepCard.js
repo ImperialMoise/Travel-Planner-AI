@@ -308,8 +308,9 @@
               : muted
                 ? 'var(--muted)'
                 : 'var(--text)',
-          borderRadius: 999,
-          padding: '6px 10px',
+          borderRadius: 10,
+          minHeight: 44,
+          padding: '8px 12px',
           display: 'inline-flex',
           alignItems: 'center',
           gap: 6,
@@ -456,109 +457,50 @@
         className="web-step-card"
         onClick={selectStep}
         style={{
-                   borderRadius: 18,
-          padding: '15px 16px',
-          boxShadow: 'none',
-          border: selected
-            ? '1px solid var(--accent)'
-            : '1px solid var(--line)',
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'flex-start',
+          gap: 16,
+          padding: 18,
+          minWidth: 0,
+          borderRadius: 14,
+          border: '1px solid ' + (
+            selected ? 'var(--accent)' : 'var(--line)'
+          ),
+          borderLeft: '3px solid ' + tone.accent,
           background: selected
             ? 'var(--accent-soft)'
             : 'var(--card)',
-          display: 'flex',
-          gap: 12,
-          position: 'relative',
-          overflow: 'hidden',
-          cursor: 'pointer',
-          transition:
-            'box-shadow .2s ease, border-color .2s ease, background .2s ease, transform .2s ease',
-          flexShrink: 0,
-          minHeight: 104
+          boxShadow: 'none'
         }}
       >
-        <div style={{
-          position: 'absolute',
-          left: 0,
-          top: 0,
-          bottom: 0,
-          width: 3,
-          background: tone.accent
-        }} />
-
-        <IconButton
-          title={important ? 'Retirer des étapes clés' : 'Marquer comme étape clé'}
-          onClick={toggleImportant}
-          active={important}
-          top={12}
-          right={12}
-        >
-          {important ? '★' : '☆'}
-        </IconButton>
-
-        <IconButton
-          title="Modifier cette étape"
-          onClick={editStep}
-          top={48}
-          right={12}
-        >
-          ✎
-        </IconButton>
-
-<div
+        <div
           className="web-step-time-column"
           style={{
+            flex: '0 0 76px',
             display: 'flex',
             flexDirection: 'column',
-            alignItems: 'center',
-            minWidth: 64,
-            gap: 6,
-            paddingTop: 2
+            alignItems: 'flex-start',
+            gap: 5
           }}
         >
-          <div style={{
-            minWidth: 58,
-            border: '1px solid var(--outline-variant)',
-            borderRadius: 11,
-            background: 'var(--inset)',
-            padding: '7px 6px',
-            textAlign: 'center'
+          <strong style={{
+            fontSize: startTime ? 16 : 12,
+            lineHeight: 1.4,
+            color: startTime ? 'var(--text)' : 'var(--muted)',
+            fontVariantNumeric: 'tabular-nums'
           }}>
-            <div style={{
-              fontFamily: 'var(--font-mono, ui-monospace)',
-              fontSize: startTime ? 11 : 9.5,
-              lineHeight: '14px',
-              fontWeight: 900,
-              color: startTime ? tone.accent : 'var(--muted)'
-            }}>
-              {startTime || 'Horaire libre'}
-            </div>
+            {startTime || 'Horaire libre'}
+          </strong>
 
-            {endTime && (
-              <div style={{
-                marginTop: 2,
-                fontFamily: 'var(--font-mono, ui-monospace)',
-                fontSize: 10,
-                lineHeight: '13px',
-                fontWeight: 800,
-                color: 'var(--muted)'
-              }}>
-                → {endTime}
-              </div>
-            )}
-          </div>
+          {endTime && (
+            <span style={{ fontSize: 13, color: 'var(--muted)' }}>
+              → {endTime}
+            </span>
+          )}
 
           {duration && (
-            <span style={{
-              borderRadius: 999,
-              background: tone.soft,
-              color: tone.accent,
-              fontFamily: 'var(--font-mono, ui-monospace)',
-              fontSize: 9.5,
-              fontWeight: 900,
-              lineHeight: '13px',
-              padding: '3px 6px',
-              whiteSpace: 'nowrap'
-            }}>
+            <span style={{ fontSize: 12, color: 'var(--muted)' }}>
               {duration}
             </span>
           )}
@@ -567,52 +509,47 @@
         <div
           className="web-step-card-content"
           style={{
-          flex: 1,
-          minWidth: 0,
-          paddingRight: 38
-        }}>
+            flex: '1 1 180px',
+            minWidth: 0,
+            paddingRight: 0,
+            overflowWrap: 'anywhere'
+          }}
+        >
           <div style={{
+            marginBottom: 8,
+            color: tone.accent,
             display: 'flex',
             alignItems: 'center',
             flexWrap: 'wrap',
-            gap: 7,
-            marginBottom: 7
+            gap: 8,
+            fontSize: 12,
+            fontWeight: 600
           }}>
-            <Pill tone={tone} icon={stepIcon(step)} strong>
-              {tone.label}
-            </Pill>
-
-            {important && (
-              <Pill
-                tone={{
-                  accent: 'var(--accent)',
-                  soft: 'var(--accent-soft)'
-                }}
-                strong
-              >
-                ★ Étape clé
-              </Pill>
-            )}
+            <Icon name={stepIcon(step)} size={14} />
+            {tone.label}
+            {important && <span>★ Étape clé</span>}
           </div>
 
-          <div
+          <h3
             className="web-step-card-title"
             style={{
-            fontFamily: 'var(--font-serif)',
-            fontSize: 20,
-            lineHeight: '28px',
-            color: 'var(--text)',
-            marginBottom: 8
-          }}>
+              margin: '0 0 8px',
+              fontFamily: 'var(--font-serif)',
+              fontSize: 23,
+              lineHeight: 1.25,
+              fontWeight: 400,
+              color: 'var(--text)'
+            }}
+          >
             {title}
-          </div>
+          </h3>
 
           {subtitle && (
             <p style={{
-              fontSize: 13.5,
-              lineHeight: '20px',
+              margin: '0 0 10px',
               color: 'var(--muted)',
-              margin: '0 0 10px'
+              fontSize: 14,
+              lineHeight: 1.5
             }}>
               {subtitle}
             </p>
@@ -620,11 +557,11 @@
 
           {step.note && (
             <p style={{
-              fontSize: 13.5,
-              lineHeight: '20px',
-              color: 'var(--muted)',
-              fontStyle: 'italic',
-              margin: '0 0 10px'
+              margin: '0 0 14px',
+              color: 'var(--text)',
+              fontSize: 13,
+              lineHeight: 1.6,
+              whiteSpace: 'pre-wrap'
             }}>
               {step.note}
             </p>
@@ -636,37 +573,52 @@
             alignItems: 'center',
             gap: 8
           }}>
-           
-            {needsLocation && (
-              <Pill
-                tone={{
-                  accent: 'var(--accent)',
-                  soft: 'var(--accent-soft)'
-                }}
-                strong
-              >
-                ⌖ À localiser
-              </Pill>
-            )}
-
-            {documentUrl && (
-              <ActionButton
-                title="Ouvrir le document lié"
-                onClick={openDocument}
-                accent
-              >
-                <Icon name="paperclip" size={13} />
-                Document
-              </ActionButton>
-            )}
+            <ActionButton title="Modifier cette étape" onClick={editStep}>
+              Modifier
+            </ActionButton>
 
             <ActionButton
               title={hasCoords ? 'Voir sur la carte' : 'Localiser cette étape'}
               onClick={openOnMap}
             >
-              <span style={{ fontSize: 14, lineHeight: 1 }}>⌖</span>
+              <Icon name="map" size={14} />
               {hasCoords ? 'Carte' : 'Localiser'}
             </ActionButton>
+
+            {documentUrl && (
+              <ActionButton
+                title="Ouvrir le document lié"
+                onClick={openDocument}
+              >
+                <Icon name="paperclip" size={14} />
+                Document
+              </ActionButton>
+            )}
+
+            <button
+              type="button"
+              className="web-step-action-button"
+              aria-pressed={important}
+              aria-label={important
+                ? 'Retirer des étapes clés'
+                : 'Marquer comme étape clé'}
+              onClick={toggleImportant}
+              style={{
+                minWidth: 44,
+                minHeight: 44,
+                padding: 8,
+                border: '1px solid var(--outline-variant)',
+                borderRadius: 10,
+                background: important
+                  ? 'var(--accent-soft)'
+                  : 'var(--card)',
+                color: important ? 'var(--accent)' : 'var(--muted)',
+                fontSize: 20,
+                cursor: 'pointer'
+              }}
+            >
+              <span aria-hidden="true">{important ? '★' : '☆'}</span>
+            </button>
           </div>
         </div>
       </article>

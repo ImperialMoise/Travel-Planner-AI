@@ -616,11 +616,16 @@ function InlineButton({
 
     const statusLabel =
       stay.status === 'checkin'
-        ? 'Check-in'
+        ? 'Arrivée aujourd’hui'
         : stay.status === 'checkout'
-          ? 'Check-out'
-          : 'Nuitée';
-    const nightLabel = 'Nuit ' + Math.min(stay.nightNumber || 1, stay.nights || 1) + '/' + (stay.nights || 1);
+          ? 'Départ aujourd’hui'
+          : 'Tu dors ici ce soir';
+
+    const nightLabel = stay.status === 'checkout'
+      ? 'Dernière nuit passée'
+      : 'Nuit ' +
+        Math.min(stay.nightNumber || 1, stay.nights || 1) +
+        ' / ' + (stay.nights || 1);
 
     function openDocument(event) {
       event.stopPropagation();
@@ -770,7 +775,7 @@ function InlineButton({
               fontWeight: 900,
               color: 'var(--text)'
             }}>
-              {step.timeCheckIn || '15:00'}
+              {step.timeCheckIn || 'Horaire à préciser'}
             </div>
           </div>
 
@@ -799,7 +804,7 @@ function InlineButton({
               fontWeight: 900,
               color: 'var(--text)'
             }}>
-              {step.timeCheckOut || '11:00'}
+              {step.timeCheckOut || 'Horaire à préciser'}
             </div>
           </div>
         </div>

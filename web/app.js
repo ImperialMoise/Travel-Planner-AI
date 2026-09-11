@@ -344,7 +344,8 @@
     function registerServiceWorker() {
       navigator.serviceWorker
         .register(
-          '/service-worker.js'
+          '/service-worker.js',
+          { updateViaCache: 'none' }
         )
         .then(
           function watchServiceWorkerUpdate(

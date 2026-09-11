@@ -1,5 +1,5 @@
 const CACHE_NAME =
-  'la-fabrique-static-v3';
+  'la-fabrique-static-v4';
 
 const OFFLINE_URL =
   '/offline.html';
@@ -25,7 +25,9 @@ self.addEventListener(
         .open(CACHE_NAME)
         .then(function precache(cache) {
           return cache.addAll(
-            PRECACHE_URLS
+            PRECACHE_URLS.map(function freshRequest(url) {
+              return new Request(url, { cache: 'reload' });
+            })
           );
         })
         .then(function activateImmediately() {
@@ -75,7 +77,9 @@ self.addEventListener(
 self.addEventListener(
   'fetch',
   function handleFetch(event) {
-    const request = event.request;
+    const request = event.request.method === 'GET'
+      ? new Request(event.request, { cache: 'no-store' })
+      : event.request;
 
     if (request.method !== 'GET') {
       return;

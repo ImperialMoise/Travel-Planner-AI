@@ -176,6 +176,205 @@ function mvFmtDate(iso){const d=new Date(iso);return d.getDate()+' '+MONTHS_MAP[
 
 /* ═══ CSS ═══ */
 const MV_CSS=`
+.mv-map-wrap.map-redesign {
+  overflow: hidden;
+}
+
+.mv-map-wrap.map-redesign .web-map-search {
+  top: max(12px, env(safe-area-inset-top, 0px)) !important;
+  left: max(12px, env(safe-area-inset-left, 0px)) !important;
+  right: 120px !important;
+  max-width: 440px !important;
+  z-index: 25;
+}
+
+.map-search-v2 {
+  position: absolute;
+}
+
+.map-search-v2 .map-search-field {
+  position: relative;
+}
+
+.map-search-v2 .map-search-field input {
+  width: 100%;
+  height: 48px;
+  box-sizing: border-box;
+  padding: 10px 44px 10px 38px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--card);
+  color: var(--text);
+  font: inherit;
+  font-size: 16px;
+  box-shadow: 0 3px 12px rgba(0,0,0,.08);
+}
+
+.map-search-v2 input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+}
+
+.map-search-v2 .map-search-icon {
+  position: absolute;
+  left: 13px;
+  top: 16px;
+  color: var(--accent);
+  pointer-events: none;
+}
+
+.map-search-v2 .map-search-clear {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.map-search-v2 .map-search-feedback,
+.map-search-v2 .map-search-results,
+.map-search-v2 .map-search-retry {
+  box-sizing: border-box;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--card);
+  color: var(--text);
+  box-shadow: 0 3px 12px rgba(0,0,0,.08);
+}
+
+.map-search-v2 .map-search-feedback {
+  margin-top: 8px;
+  padding: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.map-search-v2 .map-search-retry {
+  margin-top: 6px;
+  min-height: 44px;
+  padding: 8px 14px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.map-search-v2 .map-search-results {
+  list-style: none;
+  padding: 4px;
+  margin: 8px 0 0;
+  max-height: min(300px, 38dvh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.map-search-v2 .map-search-results button {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.map-search-v2 .map-search-results button:hover {
+  background: var(--accent-soft);
+}
+
+.map-search-v2 .map-search-results button > span:first-child {
+  flex-shrink: 0;
+  padding-top: 2px;
+  color: var(--accent);
+}
+
+.map-search-v2 .map-search-results button > span:last-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.map-search-v2 .map-search-results strong,
+.map-search-v2 .map-search-results small {
+  display: block;
+  line-height: 1.45;
+}
+
+.map-search-v2 .map-search-results strong {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.map-search-v2 .map-search-results small {
+  margin-top: 3px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.mv-map-wrap.map-redesign .web-map-toolbox {
+  top: max(12px, env(safe-area-inset-top, 0px));
+  right: max(12px, env(safe-area-inset-right, 0px));
+  bottom: max(12px, env(safe-area-inset-bottom, 0px));
+}
+
+.mv-map-wrap.map-redesign .web-map-toolbox summary {
+  min-height: 48px;
+  border-radius: 10px;
+}
+
+.mv-map-wrap.map-redesign .web-map-day-card,
+.mv-map-wrap.map-redesign .web-map-found-place {
+  bottom: max(12px, env(safe-area-inset-bottom, 0px)) !important;
+  border-radius: 12px !important;
+  max-height: 45% !important;
+  background: var(--card);
+  box-shadow: 0 4px 18px rgba(0,0,0,.10) !important;
+  overflow-wrap: anywhere;
+}
+
+.mv-map-wrap.map-redesign .mv-card-head {
+  padding: 12px 14px;
+}
+
+.mv-map-wrap.map-redesign .web-map-found-place button,
+.mv-map-wrap.map-redesign .web-map-pick-banner button {
+  min-width: 44px;
+  min-height: 44px;
+  flex-shrink: 0;
+}
+
+.mv-map-wrap.map-redesign .web-map-pick-banner {
+  right: 12px !important;
+  top: calc(max(12px, env(safe-area-inset-top, 0px)) + 58px) !important;
+  padding: 10px 12px !important;
+  font-size: 13px !important;
+}
+
+.mv-map-wrap.map-redesign input:focus-visible,
+.mv-map-wrap.map-redesign button:focus-visible,
+.mv-map-wrap.map-redesign summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (max-width: 480px) {
+  .mv-map-wrap.map-redesign .web-map-day-card,
+  .mv-map-wrap.map-redesign .web-map-found-place {
+    width: calc(100% - 24px) !important;
+  }
+
+  .map-search-v2 .map-search-results button {
+    padding: 12px 8px;
+  }
+}
 .map-redesign .web-map-search{
   top:12px !important;
   left:12px !important;
@@ -1007,6 +1206,16 @@ React.useEffect(() => {
   const [layersOpen,setLayersOpen]=React.useState(false);
   const [query,setQuery]=React.useState('');
   const [results,setResults]=React.useState([]);
+  const [searchState, setSearchState] = React.useState('idle');
+  const searchVersion = React.useRef(0);
+  const searchInputRef = React.useRef(null);
+
+  React.useEffect(function cleanupPlaceSearch() {
+    return function cleanup() {
+      clearTimeout(searchTimer.current);
+      searchVersion.current += 1;
+    };
+  }, []);
   const [foundPlace,setFoundPlace]=React.useState(null);
   const [pickingDay,setPickingDay]=React.useState(false);
   const [editorOpen,setEditorOpen]=React.useState(null);
@@ -1620,37 +1829,69 @@ function fitAll(){
 
     return cleanFrenchPlaceText(f.formatted || f.place_name || '');
   }
-  function doSearch(q) {
-  setQuery(q);
-  clearTimeout(searchTimer.current);
-
-  if (!q.trim()) {
+  function dismissSearch() {
+    clearTimeout(searchTimer.current);
+    searchVersion.current += 1;
     setResults([]);
-    return;
+    setSearchState('idle');
   }
 
-  searchTimer.current = setTimeout(async function() {
-    try {
-      if (!window.SB || !window.SB.searchPlaces) {
-        setResults([]);
-        return;
-      }
+  function doSearch(q) {
+    setQuery(q);
+    clearTimeout(searchTimer.current);
+    const version = ++searchVersion.current;
+    const text = q.trim();
 
-      const data = await window.SB.searchPlaces({
-        query: q.trim(),
-        language: 'fr',
-        country: '',
-        type: 'place',
-        limit: 6
-      });
+    setResults([]);
 
-      setResults((data && data.results) || []);
-    } catch (e) {
-      console.error('Recherche carte indisponible :', e);
-      setResults([]);
+    if (text.length < 2) {
+      setSearchState('idle');
+      return;
     }
-  }, 350);
-}
+
+    setSearchState('loading');
+
+    searchTimer.current = setTimeout(async function searchPlaces() {
+      let timeout;
+
+      try {
+        if (!window.SB || !window.SB.searchPlaces) {
+          throw new Error('Recherche indisponible');
+        }
+
+        const data = await Promise.race([
+          window.SB.searchPlaces({
+            query: text,
+            language: 'fr',
+            country: '',
+            type: 'place',
+            limit: 6
+          }),
+          new Promise((resolve, reject) => {
+            timeout = setTimeout(
+              () => reject(new Error('Recherche trop longue')),
+              12000
+            );
+          })
+        ]);
+
+        if (version !== searchVersion.current) return;
+
+        const nextResults = Array.isArray(data?.results)
+          ? data.results
+          : [];
+
+        setResults(nextResults);
+        setSearchState(nextResults.length ? 'ready' : 'empty');
+      } catch {
+        if (version !== searchVersion.current) return;
+        setResults([]);
+        setSearchState('error');
+      } finally {
+        clearTimeout(timeout);
+      }
+    }, 350);
+  }
 
 function focusPreviewPlace(place) {
   const map = mapRef.current;
@@ -1754,7 +1995,7 @@ function focusPreviewPlace(place) {
 }
 
 function pickResult(f) {
-  setResults([]);
+  dismissSearch();
   setQuery('');
 
   const label = preferredPlaceLabel(f);
@@ -2043,28 +2284,99 @@ Store.set({
       )}
 
       {/* ═══ RECHERCHE (centre haut) ═══ */}
-      <div className="web-map-search" style={{position:'absolute',top:14,left:'50%',transform:'translateX(-50%)',zIndex:22,width:380,maxWidth:'calc(100% - 200px)'}}>
-        <div style={{position:'relative'}}>
-          <input aria-label="Rechercher un lieu" value={query} onChange={e=>doSearch(e.target.value)} placeholder="Rechercher un lieu…" className="mv-glass" style={{width:'100%',padding:'10px 14px 10px 38px',borderRadius:999,color:'var(--text)',fontFamily:'inherit',fontSize:13.5,outline:'none'}}/>
-          <Icon name="pin" size={14} style={{position:'absolute',left:13,top:12,color:'var(--accent)'}}/>
-          {results.length>0&&(
-            <div className="mv-glass" style={{position:'absolute',top:'calc(100% + 4px)',left:0,right:0,borderRadius:14,overflow:'hidden',maxHeight:280,overflowY:'auto',zIndex:200}}>
-              {results.map((f,k)=>(
-                <button key={k} onClick={()=>pickResult(f)} style={{width:'100%',display:'flex',alignItems:'center',gap:10,padding:'10px 14px',border:'none',borderBottom:'1px solid var(--line2)',background:'transparent',cursor:'pointer',fontFamily:'inherit',textAlign:'left',color:'var(--text)'}} onMouseEnter={e=>e.currentTarget.style.background='var(--accent-soft)'} onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
-                  <div style={{width:28,height:28,borderRadius:8,background:'var(--accent-soft)',color:'var(--accent)',display:'grid',placeItems:'center',flexShrink:0}}><Icon name="pin" size={13}/></div>
-                  <div style={{flex:1,minWidth:0}}>
-  <div style={{fontSize:13,fontWeight:700}}>
-    {preferredPlaceLabel(f)}
-  </div>
-  <div style={{fontSize:11,color:'var(--muted)',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
-    {preferredPlaceSubtitle(f)}
-  </div>
-</div>
-                </button>
-              ))}
-            </div>
+      <div
+        className="web-map-search map-search-v2"
+        onKeyDown={event => {
+          if (event.key === 'Escape') {
+            event.preventDefault();
+            event.stopPropagation();
+            dismissSearch();
+            searchInputRef.current?.focus();
+          }
+        }}
+      >
+        <div className="map-search-field">
+          <span className="map-search-icon" aria-hidden="true">
+            <Icon name="pin" size={16} />
+          </span>
+
+          <input
+            ref={searchInputRef}
+            type="search"
+            aria-label="Rechercher un lieu"
+            aria-describedby="map-search-status"
+            value={query}
+            onChange={event => doSearch(event.target.value)}
+            placeholder="Ville, adresse, lieu…"
+            autoComplete="off"
+            spellCheck={false}
+          />
+
+          {query && (
+            <button
+              type="button"
+              className="map-search-clear"
+              aria-label="Effacer la recherche"
+              onClick={() => {
+                doSearch('');
+                searchInputRef.current?.focus();
+              }}
+            >
+              <Icon name="x" size={16} />
+            </button>
           )}
         </div>
+
+        <div
+          id="map-search-status"
+          role="status"
+          aria-live="polite"
+          className={
+            searchState === 'loading' ||
+            searchState === 'empty' ||
+            searchState === 'error'
+              ? 'map-search-feedback'
+              : 'sr-only'
+          }
+        >
+          {searchState === 'loading'
+            ? 'Recherche en cours…'
+            : searchState === 'empty'
+              ? 'Aucun lieu trouvé. Essaie une ville ou une adresse plus précise.'
+              : searchState === 'error'
+                ? 'Recherche indisponible. Vérifie ta connexion puis réessaie.'
+                : searchState === 'ready'
+                  ? `${results.length} résultat${results.length > 1 ? 's' : ''}.`
+                  : ''}
+        </div>
+
+        {searchState === 'error' && (
+          <button
+            type="button"
+            className="map-search-retry"
+            onClick={() => doSearch(query)}
+          >
+            Réessayer
+          </button>
+        )}
+
+        {results.length > 0 && (
+          <ul className="map-search-results" aria-label="Lieux trouvés">
+            {results.map((place, index) => (
+              <li key={index}>
+                <button type="button" onClick={() => pickResult(place)}>
+                  <span aria-hidden="true">
+                    <Icon name="pin" size={16} />
+                  </span>
+                  <span>
+                    <strong>{preferredPlaceLabel(place)}</strong>
+                    <small>{preferredPlaceSubtitle(place)}</small>
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       {/* ═══ CONTRÔLES (droite) ═══ */}
@@ -2298,7 +2610,12 @@ Store.set({
         </div>
 
         <button
-          onClick={()=>setFoundPlace(null)}
+          type="button"
+          aria-label="Fermer les détails du lieu"
+          onClick={() => {
+            setFoundPlace(null);
+            setPickingDay(false);
+          }}
           style={{border:'none',background:'transparent',color:'var(--faint)',cursor:'pointer',padding:2}}
         >
           <Icon name="x" size={16}/>

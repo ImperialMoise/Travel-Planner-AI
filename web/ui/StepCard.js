@@ -455,6 +455,7 @@
     return (
       <article
         className="web-step-card"
+        data-selected={selected ? 'true' : 'false'}
         onClick={selectStep}
         style={{
           display: 'flex',

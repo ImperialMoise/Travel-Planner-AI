@@ -1313,6 +1313,324 @@
         }
       }
     `;
+    style.textContent += `
+      .workspace-redesign .atelier-v2.itinerary-layout {
+        --timeline-time-width: 72px;
+        --timeline-gap: 24px;
+      }
+
+      .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-main {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        padding: 16px;
+        padding-bottom: calc(28px + env(safe-area-inset-bottom, 0px));
+      }
+
+      .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-body {
+        display: block;
+        width: 100%;
+        max-width: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-content {
+        display: block;
+        min-width: 0;
+      }
+
+      .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-main > nav {
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+        margin: 0 !important;
+        flex-shrink: 0;
+        overscroll-behavior-x: contain;
+      }
+
+      .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-hero {
+        width: 100%;
+        max-width: none;
+        margin: 0;
+        border-radius: 12px;
+        border: 1px solid var(--line);
+        box-shadow: none;
+      }
+
+      .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-hero-inner {
+        padding: 20px;
+        min-height: 0;
+      }
+
+      .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-hero.has-cover .atelier-v2-hero-inner {
+        min-height: 170px;
+      }
+
+      .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-hero-title {
+        font-size: clamp(25px, 3vw, 32px);
+        line-height: 1.18;
+        margin-bottom: 8px;
+      }
+
+      .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-hero-badges {
+        margin-bottom: 8px;
+      }
+
+      .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-hero-note {
+        margin: 0;
+        line-height: 1.55;
+      }
+
+      .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-hero-actions {
+        margin-top: 12px;
+        flex-wrap: wrap;
+      }
+
+      .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-plan-card {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        box-shadow: none;
+        min-width: 0;
+      }
+
+      .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-plan-head {
+        min-height: 0;
+        padding: 14px 18px;
+        gap: 12px;
+        background: transparent;
+      }
+
+      .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-plan-title {
+        font-family: inherit;
+        font-size: 14px;
+        font-weight: 600;
+      }
+
+      .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-timeline {
+        gap: 0;
+        padding: 0 18px 18px;
+      }
+
+      .workspace-redesign .itinerary-layout.atelier-v2 .web-step-card {
+        display: grid !important;
+        grid-template-columns: var(--timeline-time-width) minmax(0, 1fr);
+        align-items: stretch !important;
+        gap: var(--timeline-gap) !important;
+        padding: 20px 0 !important;
+        border: 0 !important;
+        border-radius: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
+      }
+
+      .workspace-redesign .itinerary-layout.atelier-v2 .web-step-card[data-selected="true"] {
+        background: var(--accent-soft) !important;
+        border-radius: 8px !important;
+      }
+
+      .workspace-redesign .itinerary-layout.atelier-v2 .web-step-time-column {
+        position: relative;
+        min-width: 0;
+        padding-right: 6px;
+        overflow-wrap: anywhere;
+      }
+
+      .workspace-redesign .itinerary-layout.atelier-v2 .web-step-time-column::before {
+        content: '';
+        position: absolute;
+        top: 8px;
+        bottom: -32px;
+        right: calc(var(--timeline-gap) / -2);
+        width: 1px;
+        background: var(--line);
+        pointer-events: none;
+      }
+
+      .workspace-redesign .itinerary-layout.atelier-v2 .web-step-time-column::after {
+        content: '';
+        position: absolute;
+        top: 7px;
+        right: calc(var(--timeline-gap) / -2 - 5px);
+        width: 11px;
+        height: 11px;
+        border-radius: 50%;
+        background: var(--accent);
+        box-shadow: 0 0 0 3px var(--card);
+        pointer-events: none;
+      }
+
+      .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-drop:last-of-type .web-step-time-column::before {
+        bottom: 0;
+      }
+
+      .workspace-redesign .itinerary-layout.atelier-v2 .web-step-card-title {
+        font-size: clamp(20px, 2.2vw, 24px) !important;
+        line-height: 1.25 !important;
+      }
+
+      .workspace-redesign .itinerary-layout.atelier-v2 .web-step-card-content {
+        min-width: 0;
+      }
+
+      .workspace-redesign .itinerary-layout.atelier-v2 .web-step-card-content p {
+        overflow-wrap: anywhere;
+      }
+
+      .workspace-redesign .itinerary-layout.atelier-v2 .web-step-action-button {
+        min-height: 44px !important;
+        border-radius: 8px !important;
+        box-shadow: none !important;
+      }
+
+      .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-touch-order {
+        display: flex;
+        justify-content: flex-end;
+        gap: 6px;
+        padding-top: 8px;
+      }
+
+      .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-touch-order button {
+        min-width: 44px;
+        min-height: 44px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        color: var(--text);
+        background: var(--card);
+        cursor: pointer;
+      }
+
+      .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-touch-order button:disabled {
+        opacity: .4;
+        cursor: default;
+      }
+
+      .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-add {
+        justify-content: flex-start;
+        min-height: 48px;
+        padding: 12px;
+        margin-top: 12px;
+        border: 1px dashed var(--line);
+        border-radius: 8px;
+        background: transparent;
+        color: var(--accent);
+      }
+
+      .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-empty {
+        min-height: 0;
+        margin: 16px 0;
+        padding: 24px 16px;
+        border: 1px dashed var(--line);
+        border-radius: 10px;
+        background: var(--inset);
+      }
+
+      .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-sidebar {
+        margin-top: 16px;
+        padding: 0;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        box-shadow: none;
+        min-width: 0;
+      }
+
+      .workspace-redesign .itinerary-layout.atelier-v2 .web-meal-rail {
+        width: 100% !important;
+        height: auto !important;
+        overflow: visible !important;
+        border: 0 !important;
+        background: transparent !important;
+      }
+
+      .workspace-redesign .itinerary-layout.atelier-v2 .web-meal-rail-scroll {
+        flex: none !important;
+        overflow: visible !important;
+        scrollbar-gutter: auto !important;
+        padding: 0 !important;
+        gap: 12px !important;
+      }
+
+      .workspace-redesign .itinerary-layout.atelier-v2 .web-meal-rail-scroll > section {
+        padding: 12px !important;
+        border: 1px solid var(--line) !important;
+        border-radius: 12px;
+        background: var(--card);
+        overflow-wrap: anywhere;
+      }
+
+      .workspace-redesign .itinerary-layout.atelier-v2 .web-meal-rail button {
+        min-height: 44px;
+        max-width: 100%;
+      }
+
+      @container (min-width: 850px) {
+        .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-main {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) 280px;
+          grid-template-rows: auto auto auto;
+          align-content: start;
+          gap: 0 20px;
+          padding: 20px 24px 32px;
+        }
+
+        .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-main > nav {
+          grid-column: 1 / -1;
+          margin-bottom: 20px !important;
+        }
+
+        .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-body,
+        .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-content {
+          display: contents;
+        }
+
+        .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-hero {
+          grid-column: 1;
+          grid-row: 2;
+          border-bottom: 0;
+          border-radius: 12px 12px 0 0;
+        }
+
+        .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-plan-card {
+          grid-column: 1;
+          grid-row: 3;
+          border-top: 0;
+          border-radius: 0 0 12px 12px;
+        }
+
+        .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-sidebar {
+          grid-column: 2;
+          grid-row: 2 / span 2;
+          align-self: start;
+          margin: 0;
+        }
+      }
+
+      @container (max-width: 480px) {
+        .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-main {
+          --timeline-time-width: 58px;
+          --timeline-gap: 18px;
+          padding: 12px;
+          padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+        }
+
+        .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-hero-inner {
+          padding: 16px;
+        }
+
+        .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-timeline {
+          padding: 0 12px 12px;
+        }
+
+        .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-plan-head {
+          padding: 12px;
+        }
+
+        .workspace-redesign .itinerary-layout.atelier-v2 .web-step-card {
+          padding: 16px 0 !important;
+        }
+      }
+    `;
     document.head.appendChild(style);
   }
 
@@ -2826,7 +3144,7 @@ function openAddStep(type, preset) {
     );
 
     return (
-      <div className="atelier-v2">
+      <div className="atelier-v2 itinerary-layout">
         <div className="atelier-v2-main">
           <nav
             ref={dayNavRef}
@@ -3407,8 +3725,8 @@ function openAddStep(type, preset) {
 
                     <span>
                       Utilise « + Ajouter » pour prévoir une activité ou un
-                      transport. Les repas et hébergements restent disponibles
-                      dans la colonne de droite.
+                      transport. Retrouve les repas, hébergements et la météo
+                      dans les panneaux complémentaires de cette journée.
                     </span>
                   </div>
                 )}

@@ -4499,6 +4499,260 @@
       }
     `;
 
+    style.textContent += `
+      .home-library.home-library-v2 {
+        padding: 32px clamp(16px, 4vw, 48px) 48px;
+      }
+
+      .home-library-v2 .home-library-head {
+        align-items: flex-start;
+        flex-wrap: wrap;
+        gap: 20px;
+        margin-bottom: 24px;
+      }
+
+      .home-library-v2 .home-library-kicker {
+        display: none;
+      }
+
+      .home-library-v2 .home-library-title {
+        margin: 0;
+        font-family: var(--font-serif);
+        font-size: clamp(30px, 4vw, 42px);
+        line-height: 1.15;
+      }
+
+      .home-library-v2 .home-library-text {
+        max-width: 52ch;
+        margin: 10px 0 0;
+        font-weight: 400;
+        line-height: 1.5;
+      }
+
+      .home-library-v2 .home-library-tools {
+        min-width: 0;
+        max-width: 100%;
+      }
+
+      .home-library-v2 .home-library-tools input,
+      .home-library-v2 .home-library-tools select {
+        min-height: 44px !important;
+        max-width: 100%;
+        font-size: 16px !important;
+        box-sizing: border-box;
+      }
+
+      .home-library-v2 .home-trip-grid {
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+        gap: 18px;
+      }
+
+      .home-library-v2 .home-trip-group-heading {
+        gap: 10px;
+        margin-top: 20px;
+      }
+
+      .home-library-v2 .home-trip-group-heading:first-child {
+        margin-top: 0;
+      }
+
+      .home-library-v2 .home-trip-group-heading h3 {
+        font-size: 25px;
+        line-height: 1.2;
+      }
+
+      .home-library-v2 .home-trip-group-heading span {
+        min-width: 24px;
+        min-height: 24px;
+        border: 0;
+        background: var(--inset);
+      }
+
+      .home-library-v2 .home-trip-card {
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--card);
+        box-shadow: none;
+      }
+
+      .home-library-v2 .home-trip-card:hover {
+        transform: none;
+        box-shadow: none;
+        border-color: var(--accent);
+      }
+
+      .home-library-v2 .home-trip-cover {
+        height: 180px;
+        touch-action: pan-y pinch-zoom;
+      }
+
+      .home-library-v2 .home-trip-cover img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        pointer-events: none;
+      }
+
+      .home-library-v2 .home-trip-cover::after {
+        background: linear-gradient(180deg, transparent, rgba(0,0,0,.12));
+      }
+
+      .home-library-v2 .home-trip-chip {
+        display: none;
+      }
+
+      .home-library-v2 .home-trip-card-body {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        padding: 16px;
+        min-width: 0;
+      }
+
+      .home-library-v2 .home-trip-card-title {
+        font-size: 26px;
+        line-height: 1.2;
+      }
+
+      .home-library-v2 .home-trip-title-link {
+        display: block;
+        width: 100%;
+        min-height: 44px;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        color: inherit;
+        font: inherit;
+        text-align: left;
+        overflow-wrap: anywhere;
+        cursor: pointer;
+      }
+
+      .home-library-v2 .home-trip-title-link:hover {
+        text-decoration: underline;
+        text-underline-offset: 4px;
+      }
+
+      .home-library-v2 .home-trip-card-meta {
+        color: var(--muted);
+        font-size: 14px;
+        font-weight: 400;
+        line-height: 1.5;
+        overflow-wrap: anywhere;
+      }
+
+      .home-library-v2 .home-trip-card-actions {
+        order: 1;
+        margin-top: auto;
+        padding-top: 6px;
+      }
+
+      .home-library-v2 .home-trip-card-actions > .home-trip-resume {
+        flex: 1;
+        justify-content: center;
+        min-width: 0;
+        white-space: normal;
+      }
+
+      .home-library-v2 .home-trip-resume,
+      .home-library-v2 .home-trip-map {
+        min-height: 44px;
+        border-radius: 8px;
+        box-shadow: none;
+      }
+
+      .home-library-v2 .home-trip-management {
+        order: 2;
+        border-top: 1px solid var(--line);
+      }
+
+      .home-library-v2 .home-trip-management summary {
+        min-height: 44px;
+        padding: 12px 0;
+        box-sizing: border-box;
+        color: var(--muted);
+        font-size: 13px;
+        cursor: pointer;
+      }
+
+      .home-library-v2 .home-trip-management-actions {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding-bottom: 4px;
+      }
+
+      .home-library-v2 .home-trip-management-actions .home-trip-resume {
+        background: var(--inset);
+        color: var(--text);
+        border: 1px solid var(--line);
+      }
+
+      .home-library-v2 summary:focus-visible,
+      .home-library-v2 button:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 3px;
+      }
+
+      .home-library-v2 .home-trip-card[data-status="completed"],
+      .home-library-v2 .home-trip-card[data-status="archived"] {
+        display: grid;
+        grid-template-columns: 96px minmax(0, 1fr);
+        align-items: start;
+      }
+
+      .home-library-v2 .home-trip-card[data-status="completed"] .home-trip-cover,
+      .home-library-v2 .home-trip-card[data-status="archived"] .home-trip-cover {
+        height: 110px;
+        margin: 12px 0 12px 12px;
+        border-radius: 8px;
+      }
+
+      .home-library-v2 .home-trip-card[data-status="completed"] .home-trip-card-title,
+      .home-library-v2 .home-trip-card[data-status="archived"] .home-trip-card-title {
+        font-size: 21px;
+      }
+
+      .home-library-v2 .home-trip-card[data-status="archived"] .home-trip-archive-badge {
+        top: 4px;
+        right: 4px;
+        padding: 4px;
+        font-size: 9px;
+        letter-spacing: 0;
+      }
+
+      @media (max-width: 640px) {
+        .home-library.home-library-v2 {
+          padding: 24px 16px 32px;
+        }
+
+        .home-library-v2 .home-library-tools {
+          width: 100%;
+          justify-content: flex-start !important;
+        }
+
+        .home-library-v2 .home-library-tools input {
+          width: 100% !important;
+          flex: 1 1 100%;
+        }
+
+        .home-library-v2 .home-library-tools select {
+          flex: 1 1 180px;
+          min-width: 0;
+        }
+
+        .home-library-v2 .home-trip-grid {
+          grid-template-columns: minmax(0, 1fr);
+          gap: 14px;
+        }
+
+        .home-library-v2 .home-trip-cover {
+          height: clamp(150px, 46vw, 220px);
+        }
+      }
+    `;
     document.head.appendChild(style);
   }
 
@@ -8085,7 +8339,7 @@ async function createTripFromHero() {
 
       <section
         id="home-trips-section"
-        className="home-library"
+        className="home-library home-library-v2"
       >
         <div className="home-library-inner">
           <div className="home-library-head">
@@ -8095,12 +8349,11 @@ async function createTripFromHero() {
               </div>
 
               <h2 className="home-library-title">
-                Tes voyages t’attendent.
+                Mes voyages
               </h2>
 
               <p className="home-library-text">
-                Retrouve les itinéraires déjà créés, reprends une journée en cours,
-                ajoute des étapes ou complète les logements, restaurants et documents.
+                Prépare les prochains départs et retrouve tes anciens itinéraires.
               </p>
             </div>
 
@@ -8223,6 +8476,7 @@ async function createTripFromHero() {
                       </div>
                     )}
                   <article
+                    data-status={status}
                     className={
                       'home-trip-card' +
                       (
@@ -8258,25 +8512,33 @@ async function createTripFromHero() {
 
                     <div className="home-trip-card-body">
                       <h3 className="home-trip-card-title">
-                        {trip.name || 'Voyage sans titre'}
+                        <button
+                          type="button"
+                          className="home-trip-title-link"
+                          onClick={() => openTrip(trip.id)}
+                        >
+                          {trip.name || 'Voyage sans titre'}
+                        </button>
                       </h3>
 
                       <div className="home-trip-card-meta">
-                        {status === 'completed'
-                          ? 'Retrouver cet itinéraire ou préparer un nouveau départ.'
-                          : status === 'archived'
-                            ? 'Restaurer ou consulter ce voyage.'
-                            : status === 'current'
-                              ? 'Retrouver le programme de ton séjour.'
-                              : 'Organiser les journées et les détails du séjour.'}
+                        {tripDateRange(trip) || 'Dates à définir'}
                       </div>
 
-                        <button
-                          type="button"
-                          className="home-trip-resume"
-                          onClick={() => duplicateTripFromHome(trip)}
-                          title="Dupliquer ce voyage"
-                        >
+                      <details className="home-trip-management">
+                        <summary>
+                          Gérer
+                          <span className="sr-only">
+                            {' le voyage ' + (trip.name || 'sans titre')}
+                          </span>
+                        </summary>
+                        <div className="home-trip-management-actions">
+                          <button
+                            type="button"
+                            className="home-trip-resume"
+                            onClick={() => duplicateTripFromHome(trip)}
+                            title="Dupliquer ce voyage"
+                          >
                           Dupliquer
                         </button>
 
@@ -8307,13 +8569,20 @@ async function createTripFromHero() {
                           />
                         </button>
 
+                        </div>
+                      </details>
+
                       <div className="home-trip-card-actions">
                         <button
                           type="button"
                           className="home-trip-resume"
                           onClick={() => openTrip(trip.id)}
                         >
-                          Reprendre
+                          {status === 'completed' || status === 'archived'
+                            ? 'Consulter'
+                            : status === 'current'
+                              ? 'Ouvrir mon séjour'
+                              : 'Préparer'}
                         </button>
 
                         <button

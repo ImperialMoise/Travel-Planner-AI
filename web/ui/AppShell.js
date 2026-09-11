@@ -4246,6 +4246,259 @@
       }
     `;
 
+    style.textContent += `
+      .workspace-trip-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        flex-shrink: 0;
+        gap: 16px;
+        padding: 22px clamp(16px, 3vw, 36px) 16px;
+        background: var(--bg);
+      }
+
+      .workspace-trip-heading {
+        min-width: 0;
+        flex: 1 1 240px;
+      }
+
+      .workspace-back {
+        padding: 4px 0;
+        border: 0;
+        background: transparent;
+        color: var(--muted);
+        font: inherit;
+        font-size: 13px;
+        cursor: pointer;
+      }
+
+      .workspace-trip-title {
+        margin-top: 10px;
+        color: var(--text);
+        font-family: var(--font-serif);
+        font-size: clamp(28px, 3.5vw, 44px);
+        line-height: 1.12;
+        overflow-wrap: anywhere;
+      }
+
+      .workspace-trip-dates {
+        margin-top: 8px;
+        color: var(--muted);
+        font-size: 15px;
+      }
+
+      .workspace-trip-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .workspace-trip-actions > button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        min-height: 44px;
+        padding: 8px 12px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--card);
+        color: var(--text);
+        font: inherit;
+        font-size: 12px;
+        cursor: pointer;
+      }
+
+      .workspace-redesign .atelier-v2 .web-step-card {
+        border: 0 !important;
+        border-bottom: 1px solid var(--line) !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+      }
+
+      .workspace-redesign .atelier-v2 .web-step-card-title {
+        font-size: 22px !important;
+      }
+
+      @media (min-width: 1100px) {
+        .app-shell.workspace-redesign {
+          box-sizing: border-box;
+          padding-left: 220px;
+        }
+
+        .workspace-redesign > .topbar {
+          position: fixed;
+          inset: 0 auto 0 0;
+          width: 220px;
+          height: 100dvh;
+          display: flex;
+          flex-direction: column;
+          align-items: stretch;
+          justify-content: flex-start;
+          gap: 28px;
+          padding: 28px 16px 20px;
+          border-right: 1px solid var(--line);
+          border-bottom: 0;
+          background: var(--card);
+          box-shadow: none;
+        }
+
+        .workspace-redesign .topbar-left {
+          display: flex;
+          flex-direction: column;
+          align-items: stretch;
+          gap: 24px;
+        }
+
+        .workspace-redesign .topbar-brand {
+          display: block;
+          white-space: normal;
+          font-family: var(--font-serif);
+          font-size: 27px;
+          line-height: 1.1;
+        }
+
+        .workspace-redesign .topbar-brand-long,
+        .workspace-redesign .topbar-brand-suffix {
+          display: block;
+        }
+
+        .workspace-redesign .topbar-brand-short {
+          display: none;
+        }
+
+        .workspace-redesign .trip-switcher-btn {
+          width: 100%;
+          max-width: 100%;
+        }
+
+        .workspace-redesign .topbar-center {
+          display: flex;
+          flex-direction: column;
+          align-items: stretch;
+          justify-content: flex-start;
+          flex: 0 0 auto;
+          gap: 24px;
+        }
+
+        .workspace-redesign .topbar-center .topbar-nav {
+          display: flex;
+          flex-direction: column;
+          align-items: stretch;
+          width: 100%;
+          padding: 0;
+          border: 0;
+          background: transparent;
+          gap: 6px;
+          overflow: visible;
+        }
+
+        .workspace-redesign .topbar .topbar-nav-btn {
+          width: 100%;
+          min-height: 48px;
+          padding: 12px 16px;
+          text-align: left;
+          font-size: 15px;
+          border-radius: 9px;
+          box-shadow: none;
+        }
+
+        .workspace-redesign .topbar .topbar-nav-btn.active {
+          background: var(--inset);
+          color: var(--text);
+          border-color: transparent;
+          box-shadow: inset 3px 0 0 var(--accent);
+        }
+
+        .workspace-redesign .workspace-mode {
+          width: 100%;
+        }
+
+        .workspace-redesign .workspace-mode-btn {
+          min-width: 0;
+          flex: 1;
+          padding-right: 6px;
+          padding-left: 6px;
+        }
+
+        .workspace-redesign .topbar-right {
+          margin-top: auto;
+          width: 100%;
+        }
+
+        .workspace-redesign .topbar-account {
+          width: 100%;
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: flex-start;
+          gap: 8px;
+          padding-left: 0;
+          border-left: 0;
+        }
+
+        .workspace-redesign .atelier-v2 .atelier-v2-main {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) 280px;
+          grid-template-rows: auto auto auto;
+          align-content: start;
+          column-gap: 18px;
+          row-gap: 0;
+          padding-top: 0;
+        }
+
+        .workspace-redesign .atelier-v2-main > nav {
+          grid-column: 1 / -1;
+          margin-bottom: 20px !important;
+          padding: 3px !important;
+          border-radius: 9px !important;
+        }
+
+        .workspace-redesign .atelier-v2-main > nav button {
+          min-height: 48px !important;
+          border-radius: 7px !important;
+        }
+
+        .workspace-redesign .atelier-v2-body,
+        .workspace-redesign .atelier-v2-content {
+          display: contents;
+        }
+
+        .workspace-redesign .atelier-v2 .atelier-v2-hero {
+          grid-column: 1;
+          grid-row: 2;
+          width: 100%;
+          margin: 0;
+          border-radius: 12px 12px 0 0;
+          border-bottom: 0;
+          box-shadow: none;
+        }
+
+        .workspace-redesign .atelier-v2 .atelier-v2-hero-title {
+          font-size: 28px;
+          line-height: 1.2;
+        }
+
+        .workspace-redesign .atelier-v2 .atelier-v2-plan-card {
+          grid-column: 1;
+          grid-row: 3;
+          border-radius: 0 0 12px 12px;
+          border-top: 0;
+          box-shadow: none;
+        }
+
+        .workspace-redesign .atelier-v2 .atelier-v2-sidebar {
+          grid-column: 2;
+          grid-row: 2 / span 2;
+          align-self: start;
+          min-width: 0;
+          padding: 14px;
+          border-radius: 12px;
+          box-shadow: none;
+        }
+      }
+    `;
+
     document.head.appendChild(style);
   }
 
@@ -4732,7 +4985,7 @@ function toggleToolboxCollapsed() {
 
     return (
       <div
-  className="app-shell"
+  className={'app-shell' + (user && trip && activeTripId ? ' workspace-redesign' : '')}
   style={{
     '--accent': accent.accent,
     '--accent-soft': accent.soft,
@@ -4799,68 +5052,58 @@ function toggleToolboxCollapsed() {
               )}
 
               <section className="app-view">
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  flexShrink: 0,
-                  gap: 12,
-                  padding: '12px clamp(12px, 2vw, 28px)',
-                  borderBottom: '1px solid var(--line)',
-                  background: 'var(--card)'
-                }}>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{
-                      color: 'var(--muted)',
-                      fontSize: 11,
-                      marginBottom: 3
-                    }}>
-                      {appMode === 'travel'
-                        ? 'Mon carnet de voyage'
-                        : 'Mon itinéraire'}
-                    </div>
-
-                    <div
-                      title={trip.name || 'Mon voyage'}
-                      style={{
-                        color: 'var(--text)',
-                        fontFamily: 'var(--font-serif)',
-                        fontSize: 'clamp(18px, 2vw, 24px)',
-                        lineHeight: 1.2,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap'
-                      }}
+                <header className="workspace-trip-header">
+                  <div className="workspace-trip-heading">
+                    <button
+                      type="button"
+                      className="workspace-back"
+                      onClick={() => Store.set({
+                        activeTripId: null,
+                        trip: null,
+                        selectedDayIndex: 0,
+                        selectedStepId: null
+                      })}
                     >
+                      Mes voyages
+                    </button>
+
+                    <div className="workspace-trip-title">
                       {trip.name || 'Mon voyage'}
                     </div>
+
+                    {(trip.startDate || trip.endDate) && (
+                      <div className="workspace-trip-dates">
+                        {[
+                          trip.startDate && formatDayDate(trip.startDate),
+                          trip.endDate && formatDayDate(trip.endDate)
+                        ].filter(Boolean).join(' — ')}
+                      </div>
+                    )}
                   </div>
 
-                  <button
-                    type="button"
-                    className="topbar-focus-btn"
-                    aria-haspopup="dialog"
-                    onClick={() => setDaySpineOpen(true)}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                      gap: 8,
-                      minHeight: 44,
-                      padding: '8px 12px',
-                      border: '1px solid var(--outline-variant)',
-                      borderRadius: 10,
-                      background: 'var(--card)',
-                      color: 'var(--text)',
-                      fontSize: 12,
-                      fontWeight: 600
-                    }}
-                  >
-                    <Icon name="cal" size={16} />
-                    Organiser les jours
-                  </button>
-                </div>
+                  <div className="workspace-trip-actions">
+                    {appMode !== 'travel' && (
+                      <button
+                        type="button"
+                        className="topbar-focus-btn"
+                        onClick={() => setToolboxOpen(true)}
+                      >
+                        <Icon name="gear" size={16} />
+                        Outils
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      className="topbar-focus-btn"
+                      aria-haspopup="dialog"
+                      onClick={() => setDaySpineOpen(true)}
+                    >
+                      <Icon name="cal" size={16} />
+                      Organiser les jours
+                    </button>
+                  </div>
+                </header>
 
                 {CurrentView ? (
                   <CurrentView />
@@ -4877,6 +5120,7 @@ function toggleToolboxCollapsed() {
               </section>
 
               {appMode !== 'travel' &&
+                view !== 'itinerary' &&
                 !isNarrowShell &&
                 !desktopFocusMode &&
                 window.Toolbox && (
@@ -4918,7 +5162,7 @@ function toggleToolboxCollapsed() {
   </div>
 )}
 
-              {appMode !== 'travel' && isNarrowShell && toolboxOpen && window.Toolbox && (
+              {appMode !== 'travel' && toolboxOpen && window.Toolbox && (
                 <div
                   className="app-overlay right"
                   onClick={() => setToolboxOpen(false)}

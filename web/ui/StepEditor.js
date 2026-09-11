@@ -364,7 +364,7 @@
     const editorRef = React.useRef(null);
     const dialogStateRef = React.useRef(null);
 
-    dialogStateRef.current = { busy, onClose };
+    dialogStateRef.current = { busy, onClose, deleteAsk };
 
     React.useEffect(function lockEditorScroll() {
       if (!open) return;
@@ -383,7 +383,7 @@
       };
     }, [open]);
 
-    React.useEffect(function manageEditorKeyboard() {
+    React.useLayoutEffect(function manageEditorKeyboard() {
       if (!open) return;
 
       const previousFocus = document.activeElement;
@@ -423,7 +423,7 @@
 
           if (dialogStateRef.current.busy) return;
 
-          if (deleteAsk) {
+          if (dialogStateRef.current.deleteAsk) {
             setDeleteAsk(false);
           } else {
             dialogStateRef.current.onClose();

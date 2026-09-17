@@ -47,16 +47,82 @@ function SettingsModal() {
   const { user, trips, activeTripId, trip } = Store.useStore();
   const [section, setSection] = React.useState('account');
   const compact = useSettingsCompact();
+  const dialogRef = React.useRef(null);
   const close = () => Store.set({ settingsOpen: false });
   const current = SETTINGS_SECTIONS[section];
 
   React.useEffect(() => {
-    const onEsc = event => {
-      if (event.key === 'Escape') close();
-    };
+    const dialog = dialogRef.current;
+    if (!dialog) return;
 
-    document.addEventListener('keydown', onEsc);
-    return () => document.removeEventListener('keydown', onEsc);
+    const previousFocus = document.activeElement;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    function focusableElements() {
+      return Array.from(dialog.querySelectorAll(
+        'button, a[href], input, select, textarea, [tabindex]'
+      )).filter(element =>
+        element.tabIndex >= 0 &&
+        !element.matches(':disabled') &&
+        !element.closest('[hidden], [inert]') &&
+        element.getClientRects().length > 0 &&
+        getComputedStyle(element).visibility !== 'hidden'
+      );
+    }
+
+    function handleKeyboard(event) {
+      if (event.defaultPrevented) return;
+      if (
+        event.target.closest('[role="dialog"], [role="alertdialog"]') !== dialog
+      ) return;
+
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        event.stopPropagation();
+        close();
+        return;
+      }
+
+      if (event.key !== 'Tab') return;
+
+      const elements = focusableElements();
+      const first = elements[0];
+      const last = elements[elements.length - 1];
+
+      if (!first) {
+        event.preventDefault();
+        dialog.focus();
+      } else if (event.shiftKey && (
+        document.activeElement === first ||
+        document.activeElement === dialog
+      )) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && (
+        document.activeElement === last ||
+        document.activeElement === dialog
+      )) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    dialog.addEventListener('keydown', handleKeyboard);
+
+    const frame = requestAnimationFrame(() => {
+      const closeButton = dialog.querySelector('.web-settings-header > button');
+      (closeButton || dialog).focus({ preventScroll: true });
+    });
+
+    return () => {
+      cancelAnimationFrame(frame);
+      dialog.removeEventListener('keydown', handleKeyboard);
+      document.body.style.overflow = previousOverflow;
+      if (previousFocus?.isConnected) {
+        previousFocus.focus({ preventScroll: true });
+      }
+    };
   }, []);
 
   function openTrip(id) {
@@ -72,7 +138,7 @@ function SettingsModal() {
       style={{
         position: 'fixed',
         inset: 0,
-        zIndex: 500,
+        zIndex: 7000,
         padding: compact ? 0 : 18,
         display: 'grid',
         placeItems: 'center',
@@ -81,7 +147,9 @@ function SettingsModal() {
       }}
     >
 <div
-        className="web-settings-dialog"
+        className="web-settings-dialog settings-layout-v2"
+        ref={dialogRef}
+        tabIndex={-1}
         role="dialog"
         aria-modal="true"
         aria-label="Paramètres du compte"
@@ -100,6 +168,125 @@ function SettingsModal() {
         }}
       >
         <style>{`
+          .web-settings-dialog.settings-layout-v2 {
+            box-sizing: border-box;
+          }
+
+          .settings-layout-v2 .web-settings-nav {
+            min-height: 0;
+            overflow-y: auto;
+          }
+
+          .settings-layout-v2 .web-settings-nav button {
+            min-height: 46px;
+            border-radius: 8px !important;
+          }
+
+          .settings-layout-v2 .web-settings-nav button[aria-current="page"] {
+            background: var(--card) !important;
+            color: var(--text) !important;
+          }
+
+          .settings-layout-v2 .web-settings-header {
+            padding: 20px 24px !important;
+            gap: 12px !important;
+          }
+
+          .settings-layout-v2 .web-settings-header h1 {
+            font-size: clamp(26px, 3vw, 34px) !important;
+          }
+
+          .settings-layout-v2 .web-settings-content {
+            padding: 24px !important;
+          }
+
+          .web-settings-dialog.settings-layout-v2 .web-settings-card {
+            padding: 20px !important;
+            border-radius: 12px !important;
+          }
+
+          .settings-layout-v2 .web-settings-card + .web-settings-card {
+            margin-top: 16px;
+          }
+
+          .settings-layout-v2 .web-settings-field {
+            padding: 16px 0 !important;
+          }
+
+          .settings-layout-v2 .web-settings-field > div:first-child > div:first-child {
+            font-weight: 600 !important;
+            font-size: 14px !important;
+          }
+
+          .settings-layout-v2 .web-settings-field > div:first-child > div:last-child {
+            line-height: 1.5 !important;
+          }
+
+          .settings-layout-v2 .web-settings-content :is(input, select, textarea) {
+            min-height: 44px;
+            border-radius: 8px;
+            line-height: 1.4;
+          }
+
+          .settings-layout-v2 .web-settings-content button {
+            min-height: 44px;
+          }
+
+          .settings-layout-v2 .web-settings-choice {
+            min-height: 96px !important;
+            border-radius: 10px !important;
+          }
+
+          .settings-layout-v2 .settings-section-picker {
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr);
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            min-width: 0;
+            color: var(--muted);
+            font-size: 13px;
+          }
+
+          .settings-section-picker select {
+            width: 100%;
+            min-width: 0;
+            min-height: 46px;
+            padding: 10px 12px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--card);
+            color: var(--text);
+            font: inherit;
+            font-size: 16px;
+          }
+
+          @media (max-width: 759px) {
+            .web-settings-dialog.settings-layout-v2 {
+              padding-top: env(safe-area-inset-top, 0px);
+              padding-left: env(safe-area-inset-left, 0px);
+              padding-right: env(safe-area-inset-right, 0px);
+              grid-template-rows: auto minmax(0, 1fr);
+            }
+
+            .web-settings-dialog.settings-layout-v2 .web-settings-nav {
+              padding: 10px 14px !important;
+              overflow: visible;
+            }
+
+            .web-settings-dialog.settings-layout-v2 .web-settings-header {
+              padding: 14px !important;
+            }
+
+            .web-settings-dialog.settings-layout-v2 .web-settings-content {
+              padding: 14px !important;
+              padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px)) !important;
+            }
+
+            .web-settings-dialog.settings-layout-v2 .web-settings-card {
+              padding: 16px !important;
+            }
+          }
           .web-settings-dialog .settings-trip-row,
           .web-settings-dialog .settings-invite-row {
             min-width: 0;
@@ -289,17 +476,33 @@ function SettingsModal() {
             </div>
           )}
 
-          {Object.entries(SETTINGS_SECTIONS).map(([key, item]) => (
-            <SettingsNavItem
-              key={key}
-              compact={compact}
-              icon={item.icon}
-              active={section === key}
-              onClick={() => setSection(key)}
-            >
-              {key === 'account' ? 'Mon compte' : item.title}
-            </SettingsNavItem>
-          ))}
+          {compact ? (
+            <label className="settings-section-picker">
+              <span>Mon espace</span>
+              <select
+                value={section}
+                onChange={event => setSection(event.target.value)}
+              >
+                {Object.entries(SETTINGS_SECTIONS).map(([key, item]) => (
+                  <option key={key} value={key}>
+                    {item.title}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : (
+            Object.entries(SETTINGS_SECTIONS).map(([key, item]) => (
+              <SettingsNavItem
+                key={key}
+                compact={false}
+                icon={item.icon}
+                active={section === key}
+                onClick={() => setSection(key)}
+              >
+                {item.title}
+              </SettingsNavItem>
+            ))
+          )}
 
           {!compact && (
             <div style={{
@@ -4382,6 +4585,7 @@ function SettingsChoice({ icon, label, description, active, onClick }) {
   return (
     <button
       className="web-settings-choice"
+      aria-pressed={active}
       type="button"
       onClick={onClick}
       style={{

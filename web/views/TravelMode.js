@@ -719,6 +719,221 @@
         }
       }
     `;
+    style.textContent += `
+      .travel-mode.travel-mode-v2 {
+        padding: clamp(14px, 3vw, 28px);
+        padding-bottom: calc(28px + env(safe-area-inset-bottom, 0px));
+      }
+
+      .travel-mode-v2 .travel-mode-shell {
+        width: 100%;
+        max-width: 1180px;
+        margin: 0 auto;
+        min-width: 0;
+      }
+
+      .travel-mode.travel-mode-v2 .travel-mode-hero {
+        min-height: 0;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: none;
+      }
+
+      .travel-mode.travel-mode-v2 .travel-mode-title {
+        margin: 8px 0;
+        font-size: clamp(26px, 3.5vw, 36px);
+        line-height: 1.2;
+      }
+
+      .travel-mode.travel-mode-v2 .travel-mode-day-nav {
+        margin-top: 14px;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .travel-mode-v2 .travel-mode-progress {
+        margin-top: 16px;
+      }
+
+      .travel-mode.travel-mode-v2 .travel-quick-tools {
+        padding: 14px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--card);
+        box-shadow: none;
+      }
+
+      .travel-mode.travel-mode-v2 .travel-quick-tools-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr));
+        gap: 8px;
+      }
+
+      .travel-mode.travel-mode-v2 .travel-quick-tool {
+        min-width: 0;
+        min-height: 44px;
+        padding: 10px;
+        border-radius: 8px;
+        white-space: normal;
+        justify-content: center;
+        box-shadow: none;
+      }
+
+      .travel-mode.travel-mode-v2 .travel-mode-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+        gap: 16px;
+        align-items: start;
+      }
+
+      .travel-mode.travel-mode-v2 .travel-mode-panel,
+      .travel-mode.travel-mode-v2 .travel-quick-panel {
+        min-width: 0;
+        padding: 20px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--card);
+        box-shadow: none;
+      }
+
+      .travel-mode-v2 .travel-mode-grid > section {
+        border-top: 3px solid var(--accent);
+      }
+
+      .travel-mode.travel-mode-v2 .travel-mode-next-time {
+        margin-top: 12px;
+        font-size: 18px;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .travel-mode.travel-mode-v2 .travel-mode-next-title {
+        font-size: clamp(23px, 3vw, 30px);
+        line-height: 1.25;
+        overflow-wrap: anywhere;
+      }
+
+      .travel-mode-v2 .travel-mode-clock-note,
+      .travel-mode-v2 .travel-mode-night-label {
+        margin: 8px 0 12px;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.5;
+      }
+
+      .travel-mode-v2 .travel-mode-program-header {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 16px;
+      }
+
+      .travel-mode-program-header h2 {
+        margin: 0;
+        font-family: var(--font-serif);
+        font-size: 26px;
+        font-weight: 400;
+        line-height: 1.2;
+      }
+
+      .travel-mode-program-header > span {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .travel-mode.travel-mode-v2 .travel-mode-list {
+        gap: 0;
+      }
+
+      .travel-mode.travel-mode-v2 .travel-mode-item {
+        display: grid;
+        grid-template-columns: 64px minmax(0, 1fr);
+        gap: 14px;
+        padding: 14px 8px;
+        border: 0;
+        border-bottom: 1px solid var(--line);
+        border-radius: 0;
+        background: transparent;
+        box-shadow: none;
+      }
+
+      .travel-mode-v2 .travel-mode-item:last-child {
+        border-bottom: 0;
+      }
+
+      .travel-mode.travel-mode-v2 .travel-mode-item[data-next="true"] {
+        border-left: 3px solid var(--accent);
+        background: var(--accent-soft);
+        border-radius: 8px;
+      }
+
+      .travel-mode-v2 .travel-mode-item-time {
+        padding-top: 10px;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .travel-mode-v2 .travel-mode-step-link {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        width: 100%;
+        min-height: 44px;
+        padding: 6px 0;
+        border: 0;
+        background: transparent;
+        color: var(--text);
+        font-family: var(--font-serif);
+        font-size: 21px;
+        text-align: left;
+        overflow-wrap: anywhere;
+        cursor: pointer;
+      }
+
+      .travel-mode-step-link svg {
+        flex-shrink: 0;
+        color: var(--accent);
+      }
+
+      .travel-mode-v2 .travel-mode-place {
+        overflow-wrap: anywhere;
+      }
+
+      .travel-mode.travel-mode-v2 .travel-mode-map-btn {
+        min-height: 44px;
+        border-radius: 8px;
+        padding: 10px 14px;
+        white-space: normal;
+        line-height: 1.4;
+      }
+
+      .travel-mode-v2 button:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 3px;
+      }
+
+      @container (max-width: 700px) {
+        .travel-mode.travel-mode-v2 .travel-mode-grid {
+          grid-template-columns: minmax(0, 1fr);
+        }
+
+        .travel-mode.travel-mode-v2 .travel-mode-panel {
+          padding: 16px;
+        }
+      }
+
+      @container (max-width: 380px) {
+        .travel-mode.travel-mode-v2 .travel-quick-tools-row {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .travel-mode.travel-mode-v2 .travel-mode-item {
+          grid-template-columns: 52px minmax(0, 1fr);
+          gap: 10px;
+        }
+      }
+    `;
     document.head.appendChild(style);
   }
 
@@ -851,15 +1066,14 @@
 
     const nextStep = steps[startIndex] || null;
 
-    const upcomingSteps = steps.slice(
-      startIndex + 1,
-      startIndex + 4
-    );
+    const upcomingSteps = steps;
 
-    const lodging = (day.steps || []).find(
-      step =>
-        String(step.type || '').toLowerCase() === 'logement'
-    );
+    const lodgingStay =
+      window.ItineraryUtils
+        ?.findLodgingStaysForDay(days, dayIndex)
+        .find(stay => stay.status !== 'checkout') || null;
+
+    const lodging = lodgingStay?.step || null;
 
     const currentQuickTool = QUICK_TOOLS.find(
       tool => tool.id === quickTool
@@ -959,7 +1173,7 @@
     }
 
     return (
-      <main className="travel-mode">
+      <main className="travel-mode travel-mode-v2">
         <div className="travel-mode-shell">
           <section
             className={
@@ -1112,8 +1326,13 @@
               aria-live="polite"
             >
               <div className="travel-mode-panel-kicker">
-                Prochaine étape
+                {isToday ? 'À partir de maintenant' : 'Première étape du jour'}
               </div>
+              {isToday && (
+                <p className="travel-mode-clock-note">
+                  Repère calculé selon l’heure de cet appareil.
+                </p>
+              )}
 
               {nextStep ? (
                 <>
@@ -1134,9 +1353,7 @@
                   <button
                     type="button"
                     className="travel-mode-map-btn"
-                    onClick={() =>
-                      returnToPlanning('map')
-                    }
+                    onClick={() => showStepOnMap(nextStep)}
                   >
                     <Icon name="map" size={14} />
                     {' '}
@@ -1161,6 +1378,20 @@
                   <div className="travel-mode-next-title">
                     {stepLabel(lodging)}
                   </div>
+
+                  {lodgingStay && (
+                    <div className="travel-mode-night-label">
+                      Nuit {lodgingStay.nightNumber} sur {lodgingStay.nights}
+                    </div>
+                  )}
+
+                  <button
+                    type="button"
+                    className="travel-mode-map-btn"
+                    onClick={() => returnToPlanning('itinerary')}
+                  >
+                    Voir les détails de l’hébergement
+                  </button>
 
                   {stepPlace(lodging) && (
                     <div className="travel-mode-place">
@@ -1193,8 +1424,11 @@
             className="travel-mode-panel"
             style={{ marginTop: 16 }}
           >
-            <div className="travel-mode-panel-kicker">
-              Ensuite
+            <div className="travel-mode-program-header">
+              <h2>Programme de la journée</h2>
+              <span>
+                {upcomingSteps.length} étape{upcomingSteps.length > 1 ? 's' : ''}
+              </span>
             </div>
 
             {upcomingSteps.length ? (
@@ -1203,15 +1437,22 @@
                   <div
                     key={step.id || index}
                     className="travel-mode-item"
+                    data-next={step === nextStep ? 'true' : 'false'}
                   >
                     <div className="travel-mode-item-time">
                       {step.time || '—'}
                     </div>
 
                     <div>
-                      <div className="travel-mode-item-title">
+                      <button
+                        type="button"
+                        className="travel-mode-item-title travel-mode-step-link"
+                        onClick={() => showStepOnMap(step)}
+                        aria-label={'Voir sur la carte : ' + stepLabel(step)}
+                      >
                         {stepLabel(step)}
-                      </div>
+                        <Icon name="map" size={16} />
+                      </button>
 
                       {stepPlace(step) && (
                         <div className="travel-mode-place">
@@ -1224,8 +1465,7 @@
               </div>
             ) : (
               <div className="travel-mode-empty">
-                Le reste de la journée est libre pour le
-                moment.
+                Aucune activité ni aucun trajet enregistré pour cette journée.
               </div>
             )}
           </section>

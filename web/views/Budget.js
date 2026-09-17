@@ -204,7 +204,17 @@ function BudgetView() {
            <div className="web-budget-expense-row" key={b.id} onClick={() => openEdit(b)} style={{ ...card, display: 'flex', alignItems: 'center', gap: 13, padding: '12px 14px', cursor: 'pointer' }}>
               <div style={{ width: 38, height: 38, borderRadius: 11, background: m.color + '22', color: m.color, display: 'grid', placeItems: 'center', flexShrink: 0 }}><Icon name={m.icon} size={18} /></div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--text)' }}>{b.desc || m.id}</div>
+                <button
+                  type="button"
+                  className="budget-expense-edit"
+                  aria-label={'Modifier la dépense ' + (b.desc || m.id)}
+                  onClick={event => {
+                    event.stopPropagation();
+                    openEdit(b);
+                  }}
+                >
+                  {b.desc || m.id}
+                </button>
                 <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>
                   <span style={{ color: colorOf(b.paidBy), fontWeight: 700 }}>{b.paidBy || '?'}</span> a payé · pour {tl}
                 </div>
@@ -286,13 +296,29 @@ function BudgetView() {
         </header>
 
         {/* Total */}
-       <div className="web-budget-total" style={{ ...card, padding: '20px 22px', marginBottom: 14, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-          <div>
-            <div style={{ fontSize: 12, color: 'var(--muted)' }}>Total du voyage</div>
-            <div style={{ fontFamily: serif, fontSize: 40, lineHeight: 1, color: 'var(--text)' }}>{eur(total).replace(' €', '')}<span style={{ fontSize: 22, color: 'var(--accent)' }}> €</span></div>
-            <div style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 5 }}>{budget.length} dépense{budget.length > 1 ? 's' : ''} · {eur(perHead)} / personne</div>
+        <dl className="budget-summary-grid">
+          <div className="budget-summary-card">
+            <dt>Total enregistré</dt>
+            <dd>{eur(total)}</dd>
+            <small>Toutes les dépenses du voyage</small>
           </div>
-        </div>
+
+          <div className="budget-summary-card">
+            <dt>Moyenne par personne</dt>
+            <dd>{eur(perHead)}</dd>
+            <small>
+              Les remboursements réels figurent dans « Équilibre ».
+            </small>
+          </div>
+
+          <div className="budget-summary-card">
+            <dt>Dépenses</dt>
+            <dd>{budget.length}</dd>
+            <small>
+              {names.length} voyageur{names.length > 1 ? 's' : ''}
+            </small>
+          </div>
+        </dl>
 
         {/* Voyageurs */}
         <div style={{ ...card, padding: 14, marginBottom: 18 }}>

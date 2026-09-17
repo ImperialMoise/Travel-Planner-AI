@@ -42,7 +42,7 @@ function DocsView() {
 
   // ── State ──
   const [documents, setDocuments] = React.useState([]);
-  const [tab, setTab]       = React.useState('resume');    // 'resume' | 'detail'
+  const [tab, setTab] = React.useState('detail');
   const [uploadCat, setUploadCat] = React.useState('other');
   const [busy, setBusy]     = React.useState(false);
 
@@ -315,9 +315,11 @@ const renderDetail = () => (
               transform: 'translateY(-50%)', color: 'var(--faint)'
             }} />
             <input
+              type="search"
+              aria-label="Rechercher un document"
               value={searchQ}
               onChange={e => setSearchQ(e.target.value)}
-              placeholder="Rechercher…"
+              placeholder="Rechercher un billet, une réservation…"
               style={inp}
             />
           </div>
@@ -336,8 +338,26 @@ const renderDetail = () => (
         {/* Liste scrollable */}
         <div className="web-docs-list" style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '12px 14px' }}>
           {filteredDocs.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '36px 12px', color: 'var(--faint)', fontSize: 13, fontStyle: 'italic' }}>
-              {total === 0 ? 'Aucun document ajouté.' : 'Aucun résultat.'}
+            <div className="docs-empty-state" role="status">
+              <strong>
+                {total === 0 ? 'Tes documents de voyage, au même endroit' : 'Aucun document correspondant'}
+              </strong>
+              <p>
+                {total === 0
+                  ? 'Utilise « Ajouter » pour conserver un billet, une réservation ou une image.'
+                  : 'Essaie un autre nom ou affiche toutes les catégories.'}
+              </p>
+              {total > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQ('');
+                    setFilter('__all__');
+                  }}
+                >
+                  Réinitialiser les filtres
+                </button>
+              )}
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -348,6 +368,9 @@ const renderDetail = () => (
                 return (
                   <button
                     className="web-docs-list-item"
+                    type="button"
+                    aria-pressed={isSelected}
+                    title={doc.name}
                     key={doc.id}
                     onClick={() => setSelectedId(doc.id)}
                     style={{

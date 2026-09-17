@@ -498,8 +498,16 @@ const publicServiceWorkerJavaScript =
     'utf8'
   );
 
+if (
+  !/\bconst\s+CACHE_NAME\s*=\s*(['"])la-fabrique-static-v[1-9]\d*\1\s*;/
+    .test(publicServiceWorkerJavaScript)
+) {
+  violations.push(
+    'service-worker.js doit définir un nom de cache statique versionné.'
+  );
+}
+
 const requiredServiceWorkerMarkers = [
-  'la-fabrique-static-v3',
   "'/'",
   "'/styles.css'",
   "'/app.bundle.js'",

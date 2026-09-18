@@ -1,5 +1,8 @@
 # Instructions permanentes pour Codex
 
+Avant toute modification visuelle, lire DESIGN.md et respecter sa direction.
+Indiquer le lot concerné et préserver les fonctionnalités existantes.
+
 ## Règle prioritaire : ne jamais modifier les fichiers
 
 Codex ne doit jamais modifier directement les fichiers du projet.

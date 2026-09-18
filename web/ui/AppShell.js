@@ -5838,26 +5838,18 @@ function toggleToolboxCollapsed() {
     const [newTripOpen, setNewTripOpen] =
       React.useState(false);
 
-    React.useEffect(
-      function listenHomepageGuidedTrip() {
-        function openGuidedTrip() {
-          setNewTripOpen(true);
-        }
+    React.useEffect(function listenHomepageTrip() {
+      function openTripModal() {
+        setNewTripGuidedOpen(false);
+        setNewTripOpen(true);
+      }
 
-        window.addEventListener(
-          'open-guided-trip-modal',
-          openGuidedTrip
-        );
+      window.addEventListener('open-trip-modal', openTripModal);
 
-        return function cleanup() {
-          window.removeEventListener(
-            'open-guided-trip-modal',
-            openGuidedTrip
-          );
-        };
-      },
-      []
-    );
+      return () => {
+        window.removeEventListener('open-trip-modal', openTripModal);
+      };
+    }, []);
 
     const [
       newTripGuidedOpen,
@@ -7213,12 +7205,7 @@ function DaySpine({
               return false;
             }
 
-            const status =
-              end && end < todayISO
-                ? 'completed'
-                : start && start > todayISO
-                  ? 'upcoming'
-                  : 'current';
+            const status = getHomeTripTimelineStatus(trip);
 
             const matchesStatus =
               tripStatus === 'all' ||
@@ -7725,6 +7712,28 @@ async function createTripFromHero() {
 
   openTrip(tripId);
 }
+
+  if (!loggedOut) {
+    const Library = window.TripLibrary;
+
+    return (
+      <Library
+        trips={orderedTrips}
+        query={tripQuery}
+        status={tripStatus}
+        onQuery={setTripQuery}
+        onStatus={setTripStatus}
+        onOpen={openTrip}
+        onDuplicate={duplicateTripFromHome}
+        onArchive={toggleTripArchive}
+        onCreate={() => window.dispatchEvent(new Event('open-trip-modal'))}
+        onGuided={() => window.dispatchEvent(new Event('open-guided-trip-modal'))}
+        getStatus={getHomeTripTimelineStatus}
+        dateRange={tripDateRange}
+        apkUrl={androidApkUrl}
+      />
+    );
+  }
 
   return (
     <div className={'home-page' + (loggedOut ? ' is-public' : '')}>

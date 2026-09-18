@@ -1006,7 +1006,7 @@ function EmptyLodgingCard({ onAdd }) {
   }) {
 const [openSections, setOpenSections] = React.useState({
       restaurants: false,
-      lodging: true,
+      lodging: false,
       weather: false
     });
 
@@ -1017,8 +1017,8 @@ const [openSections, setOpenSections] = React.useState({
         dayIndex || 0
       );
 
-    const stay =
-      stays[0] || null;
+    const tonightStay =
+      stays.find(item => item.status !== 'checkout') || null;
 
     function toggleSection(key) {
       setOpenSections(function update(prev) {
@@ -1086,23 +1086,18 @@ const [openSections, setOpenSections] = React.useState({
           <window.RailSection
             noBorder
             kicker="Hébergement"
-            title="Hébergement"
+            title={tonightStay ? 'Cette nuit' : 'Hébergement'}
             subtitle={
-              stays.length === 1
-                ? lodgingName(
-                    stay.step
+              tonightStay
+                ? lodgingName(tonightStay.step) +
+                  ' · Nuit ' +
+                  Math.min(
+                    tonightStay.nightNumber || 1,
+                    tonightStay.nights || 1
                   ) +
-                  ' · ' +
-                  stay.nights +
-                  ' nuit' +
-                  (
-                    stay.nights > 1
-                      ? 's'
-                      : ''
-                  )
-                : stays.length > 1
-                  ? stays.length +
-                    ' hébergements concernés aujourd’hui'
+                  '/' + (tonightStay.nights || 1)
+                : stays.length
+                  ? 'Départ aujourd’hui · ' + lodgingName(stays[0].step)
                   : 'Aucun hébergement pour cette nuit.'
             }
             icon="bed"

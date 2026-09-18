@@ -1359,32 +1359,81 @@
       }
 
       .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-hero-inner {
-        padding: 20px;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 44px;
+        align-items: start;
+        gap: 6px 12px;
+        padding: 16px 20px;
         min-height: 0;
       }
 
       .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-hero.has-cover .atelier-v2-hero-inner {
-        min-height: 170px;
+        min-height: 150px;
       }
 
       .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-hero-title {
-        font-size: clamp(25px, 3vw, 32px);
-        line-height: 1.18;
-        margin-bottom: 8px;
+        grid-column: 1;
+        margin: 0;
+        font-size: clamp(24px, 3vw, 30px);
+        line-height: 1.2;
+        overflow-wrap: anywhere;
       }
 
       .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-hero-badges {
-        margin-bottom: 8px;
+        grid-column: 1;
+        margin: 0;
+        gap: 8px;
       }
 
       .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-hero-note {
-        margin: 0;
-        line-height: 1.55;
+        grid-column: 1 / -1;
+        margin: 4px 0 0;
+        font-size: 14px;
+        line-height: 1.5;
+        overflow-wrap: anywhere;
       }
 
       .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-hero-actions {
-        margin-top: 12px;
+        display: block;
+        grid-column: 2;
+        grid-row: 1 / span 2;
+        margin: 0;
+      }
+
+      .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-hero-actions[open] {
+        grid-column: 1 / -1;
+        grid-row: auto;
+      }
+
+      .atelier-v2-hero-actions > summary {
+        display: grid;
+        place-items: center;
+        width: 44px;
+        min-height: 44px;
+        margin-left: auto;
+        list-style: none;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--card);
+        color: var(--text);
+        font-size: 24px;
+        cursor: pointer;
+      }
+
+      .atelier-v2-hero-actions > summary::-webkit-details-marker {
+        display: none;
+      }
+
+      .atelier-v2-hero-actions > summary:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 3px;
+      }
+
+      .atelier-v2-day-actions-list {
+        display: flex;
         flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 10px;
       }
 
       .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-plan-card {
@@ -3187,9 +3236,9 @@ function openAddStep(type, preset) {
                   })}
                   style={{
                     flex: '0 0 auto',
-                    minWidth: 112,
-                    minHeight: 60,
-                    padding: '10px 14px',
+                    minWidth: 100,
+                    minHeight: 52,
+                    padding: '6px 12px',
                     border: '1px solid ' + (
                       selected ? 'var(--accent)' : 'transparent'
                     ),
@@ -3272,7 +3321,24 @@ function openAddStep(type, preset) {
                 <p className="atelier-v2-hero-note">{day.note}</p>
               )}
 
-              <div className="atelier-v2-hero-actions">
+              <details
+                className="atelier-v2-hero-actions"
+                onPointerDown={event => event.stopPropagation()}
+                onKeyDown={event => {
+                  if (event.key !== 'Escape') return;
+                  event.preventDefault();
+                  event.stopPropagation();
+                  event.currentTarget.open = false;
+                  event.currentTarget.querySelector('summary')?.focus();
+                }}
+              >
+                <summary
+                  aria-label="Actions de la journée"
+                  title="Actions de la journée"
+                >
+                  <span aria-hidden="true">⋯</span>
+                </summary>
+                <div className="atelier-v2-day-actions-list">
   <button
     type="button"
     className="atelier-v2-hero-btn"
@@ -3311,7 +3377,8 @@ function openAddStep(type, preset) {
       <Icon name={isCoverCropLocked ? 'lock' : 'unlock'} size={17} />
     </button>
   )}
-</div>
+                </div>
+              </details>
             </div>
 
             {hasDayCover && day.coverSourceUrl && (

@@ -4248,23 +4248,22 @@
 
     style.textContent += `
       .workspace-trip-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        flex-wrap: wrap;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: start;
         flex-shrink: 0;
-        gap: 16px;
-        padding: 22px clamp(16px, 3vw, 36px) 16px;
+        gap: 12px;
+        padding: 16px clamp(16px, 3vw, 36px);
         background: var(--bg);
       }
 
-      .workspace-trip-heading {
-        min-width: 0;
-        flex: 1 1 240px;
-      }
+      .workspace-trip-heading { min-width: 0; }
 
       .workspace-back {
-        padding: 4px 0;
+        display: inline-flex;
+        align-items: center;
+        min-height: 44px;
+        padding: 0;
         border: 0;
         background: transparent;
         color: var(--muted);
@@ -4274,40 +4273,89 @@
       }
 
       .workspace-trip-title {
-        margin-top: 10px;
-        color: var(--text);
+        margin-top: 4px;
+        color: #183e35;
         font-family: var(--font-serif);
-        font-size: clamp(28px, 3.5vw, 44px);
-        line-height: 1.12;
+        font-size: clamp(24px, 3vw, 36px);
+        line-height: 1.15;
         overflow-wrap: anywhere;
       }
 
       .workspace-trip-dates {
-        margin-top: 8px;
+        margin-top: 6px;
         color: var(--muted);
-        font-size: 15px;
+        font-size: 14px;
+        line-height: 1.4;
       }
 
-      .workspace-trip-actions {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
+      .workspace-trip-menu {
+        position: relative;
+        align-self: start;
+        margin-top: 4px;
       }
 
-      .workspace-trip-actions > button {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 7px;
-        min-height: 44px;
-        padding: 8px 12px;
+      .workspace-trip-menu > summary {
+        display: grid;
+        place-items: center;
+        width: 44px;
+        height: 44px;
+        list-style: none;
         border: 1px solid var(--line);
-        border-radius: 8px;
+        border-radius: 10px;
         background: var(--card);
+        color: #183e35;
+        cursor: pointer;
+        font-size: 24px;
+      }
+
+      .workspace-trip-menu > summary::-webkit-details-marker {
+        display: none;
+      }
+
+      .workspace-trip-menu-items {
+        position: absolute;
+        z-index: 80;
+        top: calc(100% + 8px);
+        right: 0;
+        width: min(240px, calc(100vw - 32px));
+        padding: 6px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--card);
+        box-shadow: 0 8px 28px rgba(24, 62, 53, .12);
+      }
+
+      .workspace-trip-menu-items > button {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        min-height: 44px;
+        padding: 10px 12px;
+        border: 0;
+        border-radius: 8px;
+        background: transparent;
         color: var(--text);
         font: inherit;
-        font-size: 12px;
+        font-size: 14px;
+        text-align: left;
         cursor: pointer;
+      }
+
+      .workspace-trip-menu-items > button:hover {
+        background: var(--inset);
+      }
+
+      .workspace-trip-menu :is(summary, button):focus-visible,
+      .workspace-back:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 3px;
+      }
+
+      @media (max-width: 600px) {
+        .workspace-trip-header { padding: 8px 16px 12px; }
+        .workspace-trip-title { font-size: 24px; }
+        .workspace-trip-dates { font-size: 13px; }
       }
 
       .workspace-redesign .atelier-v2 .web-step-card {
@@ -5335,28 +5383,51 @@ function toggleToolboxCollapsed() {
                     )}
                   </div>
 
-                  <div className="workspace-trip-actions">
-                    {appMode !== 'travel' && (
+                  <details
+                    key={String(trip.id) + '-' + view + '-' + appMode}
+                    className="workspace-trip-menu"
+                    onKeyDown={event => {
+                      if (event.key !== 'Escape') return;
+                      event.preventDefault();
+                      event.stopPropagation();
+                      event.currentTarget.open = false;
+                      event.currentTarget.querySelector('summary')?.focus();
+                    }}
+                  >
+                    <summary
+                      aria-label="Actions du voyage"
+                      title="Actions du voyage"
+                    >
+                      <span aria-hidden="true">⋯</span>
+                    </summary>
+
+                    <div className="workspace-trip-menu-items">
+                      {appMode !== 'travel' && (
+                        <button
+                          type="button"
+                          onClick={event => {
+                            event.currentTarget.closest('details').open = false;
+                            setToolboxOpen(true);
+                          }}
+                        >
+                          <Icon name="gear" size={16} />
+                          Outils du voyage
+                        </button>
+                      )}
+
                       <button
                         type="button"
-                        className="topbar-focus-btn"
-                        onClick={() => setToolboxOpen(true)}
+                        aria-haspopup="dialog"
+                        onClick={event => {
+                          event.currentTarget.closest('details').open = false;
+                          setDaySpineOpen(true);
+                        }}
                       >
-                        <Icon name="gear" size={16} />
-                        Outils
+                        <Icon name="cal" size={16} />
+                        Organiser les jours
                       </button>
-                    )}
-
-                    <button
-                      type="button"
-                      className="topbar-focus-btn"
-                      aria-haspopup="dialog"
-                      onClick={() => setDaySpineOpen(true)}
-                    >
-                      <Icon name="cal" size={16} />
-                      Organiser les jours
-                    </button>
-                  </div>
+                    </div>
+                  </details>
                 </header>
 
                 {CurrentView ? (

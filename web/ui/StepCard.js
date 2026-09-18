@@ -557,15 +557,47 @@
           )}
 
           {step.note && (
-            <p style={{
-              margin: '0 0 14px',
-              color: 'var(--text)',
-              fontSize: 13,
-              lineHeight: 1.6,
-              whiteSpace: 'pre-wrap'
-            }}>
-              {step.note}
-            </p>
+            String(step.note).length > 180 ? (
+              <details
+                key={step.id}
+                style={{ margin: '0 0 12px' }}
+                onClick={event => event.stopPropagation()}
+              >
+                <summary style={{
+                  display: 'list-item',
+                  minHeight: 44,
+                  padding: '10px 0',
+                  boxSizing: 'border-box',
+                  color: 'var(--petrol)',
+                  fontSize: 14,
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}>
+                  Notes de l’étape
+                </summary>
+                <p style={{
+                  margin: '4px 0 8px',
+                  color: 'var(--text)',
+                  fontSize: 16,
+                  lineHeight: 1.6,
+                  whiteSpace: 'pre-wrap',
+                  overflowWrap: 'anywhere'
+                }}>
+                  {step.note}
+                </p>
+              </details>
+            ) : (
+              <p style={{
+                margin: '0 0 12px',
+                color: 'var(--text)',
+                fontSize: 16,
+                lineHeight: 1.6,
+                whiteSpace: 'pre-wrap',
+                overflowWrap: 'anywhere'
+              }}>
+                {step.note}
+              </p>
+            )
           )}
 
           <div style={{

@@ -4076,9 +4076,73 @@
 
       @media (max-width: 760px) {
         .mobile-workspace-nav {
+          position: relative;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
           background: var(--card);
           box-shadow: none;
           gap: 2px;
+        }
+
+        .mobile-workspace-nav .mobile-workspace-nav-btn {
+          font-size: 12px;
+        }
+
+        .mobile-workspace-more {
+          min-width: 0;
+        }
+
+        .mobile-workspace-more > summary {
+          list-style: none;
+        }
+
+        .mobile-workspace-more > summary::-webkit-details-marker {
+          display: none;
+        }
+
+        .mobile-workspace-more > summary:focus-visible {
+          outline: 2px solid var(--accent);
+          outline-offset: -2px;
+        }
+
+        .mobile-workspace-more-panel {
+          position: absolute;
+          bottom: calc(100% + 8px);
+          right: max(12px, env(safe-area-inset-right));
+          width: min(280px, calc(100vw - 32px));
+          max-height: calc(100dvh - 160px);
+          overflow-y: auto;
+          padding: 6px;
+          border: 1px solid var(--outline-variant);
+          border-radius: 14px;
+          background: var(--card);
+          box-shadow: 0 8px 32px rgba(23, 54, 47, .16);
+        }
+
+        .mobile-workspace-more-panel button {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          width: 100%;
+          min-height: 48px;
+          padding: 12px;
+          border: 0;
+          border-radius: 8px;
+          background: transparent;
+          color: var(--text);
+          font: inherit;
+          font-size: 15px;
+          text-align: left;
+          cursor: pointer;
+        }
+
+        .mobile-workspace-more-panel button:hover,
+        .mobile-workspace-more-panel button[aria-current="page"] {
+          background: var(--accent-soft);
+        }
+
+        .mobile-workspace-more-panel button:focus-visible {
+          outline: 2px solid var(--accent);
+          outline-offset: -2px;
         }
 
         .mobile-workspace-nav .mobile-workspace-nav-btn {
@@ -5723,32 +5787,15 @@ function toggleToolboxCollapsed() {
     });
 
     const items = [
-      {
-        id: 'itinerary',
-        label: 'Plan',
-        icon: 'cal'
-      },
-      {
-        id: 'map',
-        label: 'Carte',
-        icon: 'map'
-      },
-      {
-        id: 'budget',
-        label: 'Budget',
-        icon: 'budget'
-      },
-      {
-        id: 'summary',
-        label: 'Bilan',
-        icon: 'sparkle'
-      },
-      {
-        id: 'docs',
-        label: 'Docs',
-        icon: 'docs'
-      }
+      { id: 'itinerary', label: 'Programme', icon: 'cal' },
+      { id: 'map', label: 'Carte', icon: 'map' },
+      { id: 'budget', label: 'Budget', icon: 'budget' }
     ];
+
+    const moreActive =
+      appMode === 'travel' ||
+      view === 'summary' ||
+      view === 'docs';
 
     function openPlanningView(nextView) {
       localStorage.setItem(
@@ -5839,30 +5886,59 @@ function toggleToolboxCollapsed() {
           );
         })}
 
-        <button
-          type="button"
-          className={
-            'mobile-workspace-nav-btn travel' +
-            (
-              appMode === 'travel'
-                ? ' active'
-                : ''
-            )
-          }
-          aria-current={
-            appMode === 'travel'
-              ? 'page'
-              : undefined
-          }
-          onClick={openTravelMode}
+        <details
+          key={String(trip?.id) + '-' + view + '-' + appMode}
+          className="mobile-workspace-more"
+          onKeyDown={event => {
+            if (event.key !== 'Escape') return;
+            event.preventDefault();
+            event.stopPropagation();
+            event.currentTarget.open = false;
+            event.currentTarget.querySelector('summary')?.focus();
+          }}
+          onBlur={event => {
+            if (!event.currentTarget.contains(event.relatedTarget)) {
+              event.currentTarget.open = false;
+            }
+          }}
         >
-          <Icon
-            name="pin"
-            size={18}
-          />
+          <summary
+            className={'mobile-workspace-nav-btn' + (moreActive ? ' active' : '')}
+          >
+            <span aria-hidden="true" style={{ fontSize: 22, lineHeight: '18px' }}>⋯</span>
+            <span>Plus</span>
+          </summary>
 
-          <span>Voyager</span>
-        </button>
+          <div className="mobile-workspace-more-panel">
+            {[
+              { id: 'docs', label: 'Documents', icon: 'docs' },
+              { id: 'summary', label: 'Bilan du voyage', icon: 'sparkle' },
+              { id: 'travel', label: 'Mode Voyager', icon: 'pin' }
+            ].map(item => {
+              const active = item.id === 'travel'
+                ? appMode === 'travel'
+                : appMode !== 'travel' && view === item.id;
+
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  aria-current={active ? 'page' : undefined}
+                  onClick={event => {
+                    const menu = event.currentTarget.closest('details');
+                    menu.open = false;
+                    menu.querySelector('summary')?.focus();
+                    if (item.id === 'travel') openTravelMode();
+                    else openPlanningView(item.id);
+                  }}
+                >
+                  <Icon name={item.icon} size={18} />
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </details>
       </nav>
     );
   }

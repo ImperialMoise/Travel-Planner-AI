@@ -10357,5 +10357,6 @@ async function submit() {
 
   window.ErrorBoundary = ErrorBoundaryClass;
   window.AppShell = AppShell;
+  window.WorkspaceModal = ModalShell;
   window.selectTrip = selectTrip;
 })();

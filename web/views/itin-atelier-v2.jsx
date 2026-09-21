@@ -888,6 +888,9 @@ return {
     const [organizingSteps, setOrganizingSteps] = React.useState(false);
     const [dayEditorOpen, setDayEditorOpen] = React.useState(false);
     const [coverPickerOpen, setCoverPickerOpen] = React.useState(false);
+    const [coverDetailsOpen, setCoverDetailsOpen] = React.useState(false);
+    const closeCoverDetails = React.useCallback(() => setCoverDetailsOpen(false), []);
+    const mainPanelRef = React.useRef(null);
     const [coverPositionY, setCoverPositionY] = React.useState(50);
     const cropDragRef = React.useRef(null);
     const [dragIndex, setDragIndex] = React.useState(null);
@@ -913,16 +916,35 @@ return {
     );
 
     const day = days[safeDayIndex] || null;
+
     const dayNavRef = React.useRef(null);
 
     React.useEffect(() => {
       const nav = dayNavRef.current;
       const button = nav?.querySelector('[aria-current="date"]');
       if (!nav || !button) return;
-
-      nav.scrollLeft =
-        button.offsetLeft - (nav.clientWidth - button.offsetWidth) / 2;
+      const listBox = nav.getBoundingClientRect();
+      const buttonBox = button.getBoundingClientRect();
+      if (buttonBox.top < listBox.top) {
+        nav.scrollTop += buttonBox.top - listBox.top - 6;
+      } else if (buttonBox.bottom > listBox.bottom) {
+        nav.scrollTop += buttonBox.bottom - listBox.bottom + 6;
+      }
     }, [safeDayIndex, days.length, trip?.id]);
+
+    React.useEffect(() => {
+      if (mainPanelRef.current) mainPanelRef.current.scrollTop = 0;
+      setCoverDetailsOpen(false);
+    }, [day?.id]);
+
+    function runDayOption(event, action) {
+      const menu = event.currentTarget.closest('details');
+      if (menu) {
+        menu.open = false;
+        menu.querySelector('summary')?.focus();
+      }
+      action();
+    }
 
     React.useEffect(
       function resetQuickAddWhenDayChanges() {
@@ -1608,7 +1630,7 @@ function openAddStep(type, preset) {
           <div className="fv-days-heading">
             <span>Les journées</span><Icon name="cal" size={16} />
           </div>
-          <div className="fv-days-list">
+          <div className="fv-days-list" ref={dayNavRef}>
             {days.map((item, index) => (
               <button type="button" className="fv-day" key={item.id || index}
                 aria-current={index === safeDayIndex ? 'date' : undefined}
@@ -1625,7 +1647,8 @@ function openAddStep(type, preset) {
             <Icon name="cal" size={16} />Organiser les jours
           </button>
         </aside>
-        <section className="fv-main" aria-label="Programme de la journée">
+        <section className="fv-main" ref={mainPanelRef} tabIndex="0" aria-label="Programme de la journée">
+          <div className="fv-main-inner">
           <label className="fv-mobile-day">
             Journée
             <select aria-label="Choisir une journée" value={safeDayIndex}
@@ -1660,40 +1683,21 @@ function openAddStep(type, preset) {
                 <summary aria-label="Options de la journée" title="Options de la journée">
                   <span aria-hidden="true">⋯</span>
                 </summary>
-                <div className="fv-day-options-panel">
-            <div className="fv-actions">
-              <button type="button" className="fv-button" onClick={selectMapForDay}>Carte du jour</button>
-              <button type="button" className="fv-button" onClick={() => setCoverPickerOpen(true)}>
-                <Icon name="camera" size={16} />Changer la photo
-              </button>
-              <button type="button" className="fv-button"
-                onClick={() => window.dispatchEvent(new Event('open-day-organizer'))}>
-                Organiser les jours
-              </button>
-            </div>
-            {hasDayCover && (
-              <>
-                <div className={'fv-cover-editor' + (isCoverCropLocked ? '' : ' unlocked')}
-                  onPointerDown={handleCoverPointerDown} onPointerMove={handleCoverPointerMove}
-                  onPointerUp={handleCoverPointerUp} onPointerCancel={() => {
-                    cropDragRef.current = null;
-                    setCoverPositionY(savedCoverPositionY);
-                  }}>
-                  <img src={day.coverImageUrl} alt={day.coverImageAlt || 'Photo de la journée'}
-                    style={{ objectPosition: `center ${coverPositionY}%` }}
-                    loading="lazy" decoding="async" draggable="false" />
-                </div>
-                <button type="button" className="fv-textbutton" onClick={toggleCoverCropLock}>
-                  {isCoverCropLocked ? 'Déverrouiller le recadrage' : 'Verrouiller le recadrage'}
-                </button>
-                {day.coverSourceUrl && (
-                  <a className="fv-credit" href={day.coverSourceUrl} target="_blank" rel="noreferrer">
-                    Photo par {day.coverPhotographerName || 'Pexels'} via Pexels
-                  </a>
-                )}
-              </>
-            )}
 
+                <div className="fv-day-options-panel">
+                  <button type="button" className="fv-button"
+                    onClick={event => runDayOption(event, selectMapForDay)}>
+                    <Icon name="map" size={16} />Carte du jour
+                  </button>
+                  <button type="button" className="fv-button"
+                    onClick={event => runDayOption(event, () => setCoverDetailsOpen(true))}>
+                    <Icon name="camera" size={16} />Photo et recadrage
+                  </button>
+                  <button type="button" className="fv-button"
+                    onClick={event => runDayOption(event, () =>
+                      window.dispatchEvent(new Event('open-day-organizer')))}>
+                    <Icon name="cal" size={16} />Organiser les jours
+                  </button>
                 </div>
               </details>
             </div>
@@ -2143,11 +2147,54 @@ function openAddStep(type, preset) {
             onClick={() => setQuickAdd(previous => ({ ...previous, open: !previous.open }))}>
             {quickAdd.open ? 'Fermer l’ajout rapide' : 'Ajout rapide'}
           </button>
+          </div>
         </section>
         <window.MealRail trip={trip} day={day} dayIndex={safeDayIndex}
           onEditStep={openEditorForStep} onAddStep={openAddStep} onReload={reloadTrip} />
-                {coverPickerOpen && (
+
+        {coverDetailsOpen && (
+          <window.WorkspaceModal title="Photo de la journée" onClose={closeCoverDetails}>
+            <div className="fv-app fv-photo-panel" data-workspace-accent="forest">
+              <p className="fv-muted">
+                La photo est conservée sans prendre de place dans le programme.
+              </p>
+            {hasDayCover && (
+              <>
+                <div className={'fv-cover-editor' + (isCoverCropLocked ? '' : ' unlocked')}
+                  onPointerDown={handleCoverPointerDown} onPointerMove={handleCoverPointerMove}
+                  onPointerUp={handleCoverPointerUp} onPointerCancel={() => {
+                    cropDragRef.current = null;
+                    setCoverPositionY(savedCoverPositionY);
+                  }}>
+                  <img src={day.coverImageUrl} alt={day.coverImageAlt || 'Photo de la journée'}
+                    style={{ objectPosition: `center ${coverPositionY}%` }}
+                    loading="lazy" decoding="async" draggable="false" />
+                </div>
+                <button type="button" className="fv-textbutton" onClick={toggleCoverCropLock}>
+                  {isCoverCropLocked ? 'Déverrouiller le recadrage' : 'Verrouiller le recadrage'}
+                </button>
+                {day.coverSourceUrl && (
+                  <a className="fv-credit" href={day.coverSourceUrl} target="_blank" rel="noreferrer">
+                    Photo par {day.coverPhotographerName || 'Pexels'} via Pexels
+                  </a>
+                )}
+              </>
+            )}
+              <div className="fv-actions">
+                <button type="button" className="fv-button" onClick={() => {
+                  setCoverDetailsOpen(false);
+                  setCoverPickerOpen(true);
+                }}>
+                  <Icon name="camera" size={16} />{hasDayCover ? 'Changer la photo' : 'Choisir une photo'}
+                </button>
+                <button type="button" className="fv-button" onClick={closeCoverDetails}>Terminé</button>
+              </div>
+            </div>
+          </window.WorkspaceModal>
+        )}
+        {coverPickerOpen && (
           <TripCoverPickerModal
+```
   tripId={trip.id}
   tripName={trip.name}
   day={day}

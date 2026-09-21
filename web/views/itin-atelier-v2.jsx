@@ -32,1702 +32,63 @@
   const U = window.ItineraryUtils || {};
 
   const ATELIER_CSS = `
-  .atelier-v2{
-    flex:1;
-    min-width:0;
-    min-height:0;
-    height:100%;
-    display:flex;
-    flex-direction:column;
-    background:var(--bg);
-    color:var(--text);
-    overflow:hidden;
-  }
-
-  .atelier-v2-main{
-    flex:1;
-    min-height:0;
-    min-width:0;
-    display:flex;
-    flex-direction:column;
-    overflow-y:auto;
-    overflow-x:hidden;
-    scrollbar-gutter:stable;
-  }
-
-  /* ── Hero : encadré 3/3 pleine largeur ── */
-  .atelier-v2-hero{
-    position:relative;
-    min-height:270px;
-    border-radius:24px;
-    overflow:hidden;
-    margin:22px 28px 16px;
-    background:var(--card);
-    border:1px solid var(--line);
-    box-shadow:0 14px 38px rgba(54,42,27,.10);
-    animation:atelier-day-enter .28s ease both;
-  }
-
-  .atelier-v2-hero-img{
-    position:absolute;
-    inset:0;
-    width:100%;
-    height:100%;
-    object-fit:cover;
-    opacity:.74;
-    transform:scale(1.01);
-    transition:transform .7s ease;
-  }
-
-  .atelier-v2-hero:hover .atelier-v2-hero-img{
-    transform:scale(1.045);
-  }
-
-  .atelier-v2-hero-overlay{
-    position:absolute;
-    inset:0;
-    background:linear-gradient(90deg,var(--card) 0%,rgba(254,249,239,.94) 42%,rgba(254,249,239,.30) 100%);
-  }
-
-  .atelier-v2-hero-inner{
-    position:relative;
-    z-index:1;
-    display:flex;
-    flex-direction:column;
-    justify-content:center;
-    min-height:270px;
-    padding:32px 36px;
-    max-width:720px;
-  }
-
-  .atelier-v2-hero-badges{
-    display:flex;
-    align-items:center;
-    gap:10px;
-    margin-bottom:12px;
-    flex-wrap:wrap;
-  }
-
-  .atelier-v2-hero-badge{
-    display:inline-flex;
-    align-items:center;
-    min-height:28px;
-    padding:0 12px;
-    background:var(--accent-soft);
-    border-radius:7px;
-    font-family:var(--font-mono,monospace);
-    font-size:11px;
-    font-weight:900;
-    letter-spacing:.12em;
-    text-transform:uppercase;
-    color:var(--accent);
-    border:1px solid rgba(124,84,16,.18);
-  }
-
-  .atelier-v2-hero-date{
-    display:inline-flex;
-    align-items:center;
-    min-height:28px;
-    padding:0 12px;
-    border-radius:7px;
-    background:var(--surface-container,#f2ede3);
-    font-family:var(--font-mono,monospace);
-    font-size:11px;
-    font-weight:700;
-    color:var(--muted);
-  }
-
-  .atelier-v2-hero-title{
-    font-family:var(--font-serif);
-    font-size:42px;
-    line-height:46px;
-    color:var(--text);
-    font-weight:400;
-    letter-spacing:-.035em;
-    margin-bottom:10px;
-  }
-
-  .atelier-v2-hero-note{
-    max-width:560px;
-    font-size:14.5px;
-    line-height:22px;
-    color:var(--muted);
-    margin:0;
-  }
-
-  .atelier-v2-hero-actions{
-    position:relative;
-    z-index:2;
-    display:flex;
-    gap:10px;
-    margin-top:22px;
-    flex-wrap:wrap;
-  }
-
-  .atelier-v2-hero-btn{
-    border:1px solid var(--line);
-    background:var(--card);
-    color:var(--text);
-    border-radius:11px;
-    min-height:44px;
-    padding:0 16px;
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    gap:8px;
-    cursor:pointer;
-    font-family:inherit;
-    font-size:12.5px;
-    font-weight:900;
-    box-shadow:0 5px 14px rgba(54,42,27,.07);
-    transition:
-      transform .18s var(--ease-out),
-      border-color .18s ease,
-      background .18s ease,
-      color .18s ease;
-  }
-
-  .atelier-v2-hero-btn:hover{
-    transform:translateY(-1px);
-    border-color:var(--accent);
-    color:var(--accent);
-    background:var(--accent-soft);
-  }
-
-  .atelier-v2-hero-btn:focus-visible{
-    outline:3px solid var(--accent-soft);
-    outline-offset:2px;
-  }
-
-  .atelier-v2-hero-btn.primary{
-    background:var(--accent);
-    border-color:var(--accent);
-    color:var(--accent-ink,#fff);
-  }
-
-  .atelier-v2-hero-btn.primary:hover{
-    filter:brightness(.96);
-  }
-
-  /* ── Body 2/3 + 1/3 ── */
-    .atelier-v2-body{
-    display:grid;
-    grid-template-columns:minmax(0,2fr) minmax(280px,1fr);
-    gap:14px;
-    flex:1;
-    min-height:0;
-    padding:0 34px 34px;
-  }
-
-  .atelier-v2-content{
-    min-width:0;
-    min-height:0;
-  }
-
-  .atelier-v2-sidebar{
-    min-width:0;
-    min-height:0;
-  }
-
-  .atelier-v2-sidebar > aside{
-    width:100% !important;
-    border-left:none !important;
-    height:auto !important;
-    overflow:visible !important;
-    background:transparent !important;
-  }
-
-  .atelier-v2-sidebar > aside > div{
-    padding:0 !important;
-    overflow:visible !important;
-  }
-
-  .atelier-v2-plan-card{
-    min-height:372px;
-    background:var(--card);
-    border:1px solid var(--line);
-    border-radius:20px;
-    box-shadow:0 10px 30px rgba(54,42,27,.075);
-    overflow:hidden;
-  }
-
-  .atelier-v2-plan-head{
-    min-height:60px;
-    padding:13px 16px;
-    border-bottom:1px solid var(--line);
-    background:
-      linear-gradient(
-        90deg,
-        rgba(243,238,228,.78),
-        rgba(255,253,249,.94)
-      );
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:12px;
-  }
-
-  .atelier-v2-plan-title{
-    display:flex;
-    align-items:center;
-    gap:8px;
-    font-size:13px;
-    font-weight:900;
-    color:var(--text);
-  }
-
-  .atelier-v2-plan-actions{
-    display:flex;
-    align-items:center;
-    gap:8px;
-  }
-
-  .atelier-v2-plan-icon-btn{
-    width:32px;
-    height:32px;
-    border:0;
-    border-radius:8px;
-    background:transparent;
-    color:var(--muted);
-    cursor:pointer;
-    display:grid;
-    place-items:center;
-  }
-
-  .atelier-v2-plan-icon-btn:hover{
-    background:var(--inset);
-    color:var(--accent);
-  }
-
-  .atelier-v2-kicker{
-    font-size:11px;
-    font-weight:800;
-    letter-spacing:.17em;
-    text-transform:uppercase;
-    color:var(--accent);
-  }
-
-  .atelier-v2-actions{
-    display:flex;
-    align-items:center;
-    gap:8px;
-    flex-wrap:wrap;
-    justify-content:flex-end;
-  }
-
-  .atelier-v2-btn{
-    border:1px solid var(--outline-variant);
-    background:var(--card);
-    color:var(--text);
-    border-radius:999px;
-    min-height:38px;
-    padding:0 14px;
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    gap:7px;
-    cursor:pointer;
-    font-family:inherit;
-    font-size:12.5px;
-    font-weight:800;
-    box-shadow:0 2px 8px rgba(82,98,91,.05);
-  }
-
-  .atelier-v2-btn:hover{
-    border-color:var(--accent);
-    color:var(--accent);
-  }
-
-  .atelier-v2-btn.primary{
-    border-color:var(--accent);
-    background:var(--accent);
-    color:var(--accent-ink);
-  }
-
-  .atelier-v2-btn.danger{
-    border-color:rgba(192,86,63,.34);
-    background:rgba(192,86,63,.08);
-    color:#c0563f;
-  }
-
-  .atelier-v2-stats{
-    display:grid;
-    grid-template-columns:repeat(4,minmax(0,1fr));
-    gap:10px;
-    margin-bottom:22px;
-  }
-
-  .atelier-v2-stat{
-    background:var(--card);
-    border:1px solid var(--outline-variant);
-    border-radius:16px;
-    padding:13px 14px;
-    box-shadow:var(--shadow);
-    min-width:0;
-  }
-
-  .atelier-v2-stat-value{
-    font-family:var(--font-serif);
-    font-size:28px;
-    line-height:32px;
-    color:var(--text);
-  }
-
-  .atelier-v2-stat-label{
-    margin-top:3px;
-    color:var(--muted);
-    font-size:11px;
-    font-weight:800;
-    letter-spacing:.08em;
-    text-transform:uppercase;
-  }
-
-  .atelier-v2-note{
-    background:var(--soft);
-    border:1px solid rgba(217,182,126,.32);
-    border-radius:16px;
-    padding:16px 18px;
-    color:var(--muted);
-    font-size:14px;
-    line-height:21px;
-    font-style:italic;
-    margin-bottom:22px;
-    position:relative;
-    overflow:hidden;
-  }
-
-  .atelier-v2-note:before{
-    content:'';
-    position:absolute;
-    right:0;
-    top:0;
-    width:42px;
-    height:42px;
-    border-radius:0 0 0 16px;
-    background:rgba(217,182,126,.12);
-  }
-
-  .atelier-v2-timeline{
-    display:flex;
-    flex-direction:column;
-    gap:10px;
-    padding:12px 12px 30px;
-    background:var(--card);
-  }
-
-  .atelier-v2-drop{
-    transition:transform .15s,border-color .15s;
-  }
-
-  .atelier-v2-touch-order{
-    display:none;
-  }
-
-  .atelier-v2-drop.over{
-    transform:translateY(5px);
-  }
-
-  .atelier-v2-drop.over:before{
-    content:'';
-    display:block;
-    height:3px;
-    border-radius:999px;
-    background:var(--accent);
-    margin-bottom:10px;
-    box-shadow:0 0 0 4px var(--accent-soft);
-  }
-
-  .atelier-v2-add{
-    width:100%;
-    min-height:58px;
-    border:2px dashed var(--outline-variant);
-    background:var(--inset);
-    color:var(--muted);
-    border-radius:16px;
-    cursor:pointer;
-    font-family:inherit;
-    font-size:13px;
-    font-weight:900;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    gap:8px;
-  }
-
-  .atelier-v2-add:hover{
-    border-color:var(--accent);
-    color:var(--accent);
-    background:var(--accent-soft);
-  }
-
-  .atelier-v2-empty{
-    min-height:150px;
-    border:1px dashed rgba(150,100,13,.28);
-    background:
-      linear-gradient(
-        135deg,
-        var(--inset),
-        rgba(255,253,249,.96)
-      );
-    border-radius:16px;
-    padding:30px 24px;
-    color:var(--muted);
-    text-align:center;
-    line-height:21px;
-    margin-bottom:14px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-  }
-
-  .atelier-v2-reminder{
-    border:1px solid var(--outline-variant);
-    background:var(--card);
-    border-radius:14px;
-    padding:13px 15px;
-    display:flex;
-    align-items:center;
-    gap:13px;
-    cursor:pointer;
-    box-shadow:var(--shadow);
-  }
-
-  .atelier-v2-reminder:hover{
-    border-color:var(--accent);
-  }
-
-  .atelier-v2-reminder-icon{
-    width:38px;
-    height:38px;
-    border-radius:13px;
-    background:var(--accent-soft);
-    color:var(--accent);
-    display:grid;
-    place-items:center;
-    flex-shrink:0;
-  }
-
-  .atelier-v2-reminder-title{
-    font-size:13px;
-    font-weight:900;
-    color:var(--text);
-    line-height:18px;
-  }
-
-  .atelier-v2-reminder-sub{
-    margin-top:2px;
-    font-size:12px;
-    color:var(--muted);
-    line-height:17px;
-  }
-
-  .atelier-v2-modal-backdrop{
-    position:fixed;
-    inset:0;
-    z-index:320;
-    background:rgba(21,48,42,.36);
-    backdrop-filter:blur(7px);
-    -webkit-backdrop-filter:blur(7px);
-    display:flex;
-    align-items:flex-start;
-    justify-content:center;
-    padding:86px 24px 24px;
-  }
-
-  .atelier-v2-modal{
-    width:100%;
-    max-width:500px;
-    background:var(--card);
-    color:var(--text);
-    border:1px solid var(--outline-variant);
-    border-radius:20px;
-    box-shadow:0 40px 90px rgba(0,0,0,.34);
-    overflow:hidden;
-  }
-
-  .atelier-v2-modal-head{
-    padding:18px 20px;
-    border-bottom:1px solid var(--outline-variant);
-    background:var(--soft);
-    display:flex;
-    justify-content:space-between;
-    gap:16px;
-    align-items:flex-start;
-  }
-
-  .atelier-v2-modal-body{
-    padding:20px;
-  }
-
-  .atelier-v2-field{
-    margin-bottom:14px;
-  }
-
-  .atelier-v2-label{
-    display:block;
-    font-size:11px;
-    font-weight:800;
-    letter-spacing:.08em;
-    text-transform:uppercase;
-    color:var(--muted);
-    margin-bottom:6px;
-  }
-
-  .atelier-v2-input,
-  .atelier-v2-textarea{
-    width:100%;
-    border:1px solid var(--outline-variant);
-    background:var(--inset);
-    color:var(--text);
-    border-radius:12px;
-    padding:10px 12px;
-    font-family:inherit;
-    font-size:14px;
-    outline:none;
-  }
-
-  .atelier-v2-textarea{
-    min-height:92px;
-    resize:vertical;
-    line-height:20px;
-  }
-
-    .atelier-v2-hero{
-    background:var(--card);
-  }
-
-  .atelier-v2-hero-img{
-    opacity:1;
-  }
-
-  .atelier-v2-hero-overlay{
-    display:none;
-  }
-
-  .atelier-v2-hero.has-cover .atelier-v2-hero-overlay{
-    display:block;
-    background:rgba(13,27,23,.42);
-  }
-
-  .atelier-v2-hero.has-cover .atelier-v2-hero-title,
-  .atelier-v2-hero.has-cover .atelier-v2-hero-note{
-    color:#fff;
-    text-shadow:0 2px 14px rgba(0,0,0,.45);
-  }
-
-.atelier-v2-hero.has-cover .atelier-v2-hero-badge,
-.atelier-v2-hero.has-cover .atelier-v2-hero-date{
-  color:#fff;
-  border-color:rgba(255,255,255,.52);
-  background:rgba(13,27,23,.74);
-  box-shadow:0 5px 16px rgba(0,0,0,.18);
-  backdrop-filter:blur(8px);
-  -webkit-backdrop-filter:blur(8px);
-}
-
-  .atelier-v2-hero.has-cover .atelier-v2-hero-btn:not(.primary){
-    background:rgba(255,255,255,.92);
-  }
-
-  .atelier-v2-hero-credit{
-    position:absolute;
-    z-index:3;
-    right:16px;
-    bottom:14px;
-    max-width:calc(100% - 32px);
-    padding:6px 9px;
-    border-radius:6px;
-    background:rgba(13,27,23,.62);
-    color:rgba(255,255,255,.94);
-    font-size:10px;
-    line-height:14px;
-    text-decoration:none;
-  }
-
-  .atelier-v2-cover-modal{
-    max-width:900px;
-  }
-
-  .atelier-v2-cover-modal-title{
-    margin-top:3px;
-    font-family:var(--font-serif);
-    font-size:26px;
-    line-height:32px;
-  }
-
-  .atelier-v2-cover-search{
-    display:flex;
-    gap:10px;
-    margin-bottom:16px;
-  }
-
-  .atelier-v2-cover-search .atelier-v2-input{
-    min-width:0;
-    flex:1;
-  }
-
-  .atelier-v2-cover-grid{
-    display:grid;
-    grid-template-columns:repeat(2,minmax(0,1fr));
-    gap:12px;
-  }
-
-  .atelier-v2-cover-option{
-    position:relative;
-    min-height:185px;
-    overflow:hidden;
-    border:1px solid var(--outline-variant);
-    border-radius:12px;
-    background:var(--inset);
-    cursor:pointer;
-    text-align:left;
-  }
-
-  .atelier-v2-cover-option:hover{
-    border-color:var(--accent);
-    box-shadow:var(--shadow-lg);
-    transform:translateY(-2px);
-  }
-
-  .atelier-v2-cover-option img{
-    width:100%;
-    height:185px;
-    display:block;
-    object-fit:cover;
-  }
-
-  .atelier-v2-cover-option-info{
-    position:absolute;
-    left:0;
-    right:0;
-    bottom:0;
-    padding:11px 12px;
-    background:rgba(13,27,23,.72);
-    color:#fff;
-  }
-
-  .atelier-v2-cover-option-info strong,
-  .atelier-v2-cover-option-info small{
-    display:block;
-  }
-
-  .atelier-v2-cover-option-info strong{
-    font-size:12px;
-  }
-
-  .atelier-v2-cover-option-info small{
-    margin-top:2px;
-    font-size:10px;
-    opacity:.82;
-  }
-
-  .atelier-v2-cover-error,
-  .atelier-v2-cover-empty{
-    margin-bottom:14px;
-    padding:12px;
-    border-radius:10px;
-    background:var(--inset);
-    color:var(--muted);
-    font-size:13px;
-  }
-
-  .atelier-v2-cover-error{
-    color:var(--danger);
-  }
-
-  .atelier-v2-cover-empty{
-    display:flex;
-    align-items:center;
-    gap:9px;
-  }
-
-    .atelier-v2-hero-icon-btn{
-    width:40px;
-    min-width:40px;
-    height:40px;
-    border:1px solid var(--outline-variant);
-    border-radius:8px;
-    background:var(--card);
-    color:var(--text);
-    display:grid;
-    place-items:center;
-    cursor:pointer;
-    box-shadow:0 2px 8px rgba(82,98,91,.06);
-  }
-
-  .atelier-v2-hero-icon-btn:hover{
-    border-color:var(--accent);
-    color:var(--accent);
-    background:var(--accent-soft);
-  }
-
-  .atelier-v2-hero.has-cover .atelier-v2-hero-icon-btn{
-    background:rgba(255,255,255,.92);
-  }
-
-  .atelier-v2-hero.crop-editable{
-    touch-action:none;
-  }
-
-  .atelier-v2-hero.crop-editable .atelier-v2-hero-img{
-    cursor:grab;
-  }
-
-  @keyframes atelier-day-enter{
-  from{
-    opacity:.84;
-    transform:translateY(4px);
-  }
-
-  to{
-    opacity:1;
-    transform:translateY(0);
-  }
-}
-
-@media (prefers-reduced-motion:reduce){
-  .atelier-v2-hero{
-    animation:none;
-  }
-}
-
-  @media(max-width:620px){
-    .atelier-v2-cover-search,
-    .atelier-v2-cover-grid{
-      grid-template-columns:1fr;
+    .atelier-v2-btn {
+      min-height:44px;padding:9px 13px;border:1px solid var(--line);
+      border-radius:8px;background:var(--card);color:var(--text);
+      font:inherit;cursor:pointer;display:inline-flex;align-items:center;gap:7px;
     }
-
-    .atelier-v2-cover-search{
-      flex-direction:column;
+    .atelier-v2-btn.primary { background:var(--accent);color:var(--accent-ink); }
+    .atelier-v2-btn.danger { color:var(--danger); }
+    .atelier-v2-modal-backdrop {
+      position:fixed;inset:0;z-index:6000;background:rgba(12,22,18,.55);
+      display:flex;align-items:flex-start;justify-content:center;
+      padding:24px;overflow-y:auto;overscroll-behavior:contain;
     }
-  }
-
-  @media(max-width:1180px){
-    .atelier-v2-body{
-      grid-template-columns:minmax(0,1fr);
-      padding:0 24px 34px;
+    .atelier-v2-modal {
+      width:100%;max-width:540px;max-height:calc(100dvh - 48px);overflow:auto;
+      background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:16px;
+      box-shadow:0 20px 60px #0003;
     }
-
-    .atelier-v2-sidebar{
-      border-left:none;
-      padding-left:0;
-      border-top:1px solid var(--outline-variant);
-      padding-top:22px;
-      margin-top:14px;
+    .atelier-v2-modal-head {
+      padding:20px;border-bottom:1px solid var(--line);display:flex;
+      justify-content:space-between;gap:16px;align-items:flex-start;
     }
-  }
-
-  @media(max-width:760px){
-    .atelier-v2-main{
-      width:100%;
-      scrollbar-gutter:auto;
-      overscroll-behavior:contain;
-      -webkit-overflow-scrolling:touch;
+    .atelier-v2-modal-body { padding:20px; }
+    .atelier-v2-field { margin-bottom:16px; }
+    .atelier-v2-label { display:block;font-size:13px;font-weight:600;margin-bottom:6px; }
+    .atelier-v2-input,.atelier-v2-textarea {
+      width:100%;min-width:0;min-height:44px;padding:10px 12px;border:1px solid var(--line);
+      border-radius:8px;background:var(--card);color:var(--text);font:inherit;
     }
-
-        .atelier-v2-drop{
-      touch-action:pan-y pinch-zoom;
+    .atelier-v2-textarea { min-height:120px;resize:vertical; }
+    .atelier-v2-cover-modal { max-width:860px; }
+    .atelier-v2-cover-modal-title { font-family:var(--font-serif);font-size:24px;font-weight:400; }
+    .atelier-v2-cover-search { display:flex;gap:10px;padding:20px; }
+    .atelier-v2-cover-search .atelier-v2-input { flex:1; }
+    .atelier-v2-cover-grid { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:0 20px 20px; }
+    .atelier-v2-cover-option {
+      border:1px solid var(--line);background:var(--card);color:var(--text);
+      border-radius:10px;overflow:hidden;cursor:pointer;text-align:left;
     }
-
-    .atelier-v2-touch-order{
-      display:flex;
-      align-items:center;
-      justify-content:flex-end;
-      gap:6px;
-      margin:0 2px 6px;
+    .atelier-v2-cover-option img { display:block;width:100%;height:130px;object-fit:cover; }
+    .atelier-v2-cover-option-info { padding:10px; }
+    .atelier-v2-cover-option-info strong,.atelier-v2-cover-option-info small { display:block;overflow-wrap:anywhere; }
+    .atelier-v2-cover-option-info small { color:var(--muted); }
+    .atelier-v2-cover-error,.atelier-v2-cover-empty { padding:20px;color:var(--muted); }
+    .atelier-v2-cover-error { color:var(--danger); }
+    @media(max-width:600px) {
+      .atelier-v2-modal-backdrop { padding:12px; }
+      .atelier-v2-modal { max-height:calc(100dvh - 24px); }
+      .atelier-v2-cover-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .atelier-v2-cover-search { flex-wrap:wrap; }
     }
-
-    .atelier-v2-touch-order button{
-      width:38px;
-      height:34px;
-      display:grid;
-      place-items:center;
-      padding:0;
-      border:1px solid var(--outline-variant);
-      border-radius:10px;
-      background:var(--card);
-      color:var(--accent);
-      font:inherit;
-      font-size:17px;
-      font-weight:900;
-      cursor:pointer;
-      touch-action:manipulation;
-    }
-
-    .atelier-v2-touch-order button:disabled{
-      opacity:.3;
-      cursor:not-allowed;
-    }
-
-    .atelier-v2-hero{
-      min-height:0;
-      margin:10px 10px 8px;
-      border-radius:14px;
-    }
-
-    .atelier-v2-hero-inner{
-      max-width:none;
-      min-height:220px;
-      padding:18px 14px 16px;
-    }
-
-    .atelier-v2-hero-overlay{
-      background:linear-gradient(
-        90deg,
-        var(--card) 0%,
-        rgba(254,249,239,.94) 58%,
-        rgba(254,249,239,.38) 100%
-      );
-    }
-
-    .atelier-v2-hero-title{
-      max-width:100%;
-      margin-bottom:7px;
-      font-size:clamp(28px,9vw,36px);
-      line-height:1.08;
-      overflow-wrap:anywhere;
-    }
-
-    .atelier-v2-hero-note{
-      max-width:100%;
-      font-size:13px;
-      line-height:19px;
-    }
-
-    .atelier-v2-hero-badges{
-      gap:6px;
-      margin-bottom:10px;
-    }
-
-    .atelier-v2-hero-badge,
-    .atelier-v2-hero-date{
-      min-height:26px;
-      padding:0 9px;
-      font-size:10px;
-    }
-
-    .atelier-v2-hero-actions{
-      position:relative;
-      top:auto;
-      right:auto;
-      gap:6px;
-      margin-top:16px;
-    }
-
-    .atelier-v2-hero-btn{
-      min-height:44px;
-      padding:0 11px;
-      touch-action:manipulation;
-    }
-
-    .atelier-v2-hero-icon-btn{
-      width:44px;
-      min-width:44px;
-      height:44px;
-      touch-action:manipulation;
-    }
-
-    .atelier-v2-body{
-      width:100%;
-      gap:12px;
-      padding:
-        0
-        10px
-        calc(96px + env(safe-area-inset-bottom));
-    }
-
-    .atelier-v2-plan-card{
-      min-height:0;
-      border-radius:14px;
-    }
-
-    .atelier-v2-plan-head{
-      min-height:0;
-      align-items:flex-start;
-      flex-direction:column;
-      padding:12px;
-    }
-
-    .atelier-v2-plan-actions{
-      width:100%;
-    }
-
-    .atelier-v2-plan-actions .atelier-v2-btn.primary{
-      flex:1;
-      min-height:42px !important;
-    }
-
-    .atelier-v2-plan-icon-btn{
-      width:42px;
-      min-width:42px;
-      height:42px;
-    }
-
-    .atelier-v2-timeline{
-      gap:10px;
-      padding:8px 6px 24px;
-    }
-
-    .atelier-v2-reminder{
-      align-items:flex-start;
-      gap:9px;
-      padding:12px 10px;
-      border-radius:12px;
-    }
-
-    .atelier-v2-reminder > span:last-child{
-      max-width:42%;
-      white-space:normal !important;
-      text-align:center;
-    }
-
-    .atelier-v2-sidebar{
-      width:100%;
-      min-width:0;
-      height:auto;
-      min-height:0;
-      padding-top:16px;
-      margin-top:4px;
-      overflow:visible;
-      position:relative;
-      isolation:isolate;
-    }
-
-    .atelier-v2-sidebar > .web-meal-rail{
-      display:block !important;
-      width:100% !important;
-      max-width:100% !important;
-      height:auto !important;
-      min-height:0 !important;
-      overflow:visible !important;
-      border-left:0 !important;
-      background:transparent !important;
-    }
-
-    .atelier-v2-sidebar .web-meal-rail-scroll{
-      display:flex !important;
-      flex:none !important;
-      flex-direction:column !important;
-      width:100% !important;
-      height:auto !important;
-      min-height:0 !important;
-      overflow:visible !important;
-      scrollbar-gutter:auto !important;
-      padding:0 !important;
-      gap:14px !important;
-      position:static !important;
-      transform:none !important;
-    }
-
-    .atelier-v2-sidebar .web-meal-rail-scroll > section{
-      position:relative !important;
-      z-index:1;
-      flex:none !important;
-      width:100% !important;
-      max-width:100% !important;
-      height:auto !important;
-      min-height:0 !important;
-      margin:0 !important;
-      padding:16px !important;
-      overflow:visible !important;
-      border:1px solid var(--line) !important;
-      border-radius:16px;
-      background:var(--card);
-      box-shadow:0 7px 22px rgba(54,42,27,.065);
-    }
-
-    .atelier-v2-sidebar .web-meal-rail-scroll > section > div:first-child{
-      display:grid !important;
-      grid-template-columns:minmax(0,1fr) auto;
-      align-items:start !important;
-      gap:10px !important;
-      width:100%;
-      min-width:0;
-    }
-
-    .atelier-v2-sidebar .web-meal-rail-scroll > section > div:first-child > div:first-child{
-      min-width:0;
-      overflow-wrap:anywhere;
-    }
-
-    .atelier-v2-sidebar .web-meal-rail-scroll > section button{
-      min-height:44px;
-      touch-action:manipulation;
-    }
-
-    .atelier-v2-sidebar .web-meal-card-title,
-    .atelier-v2-sidebar .web-meal-card-subtitle{
-      white-space:normal !important;
-      overflow:visible !important;
-      text-overflow:clip !important;
-      overflow-wrap:anywhere;
-    }
-
-    .atelier-v2-modal-backdrop{
-      align-items:flex-end;
-      padding:0;
-    }
-
-    .atelier-v2-modal{
-      max-width:none;
-      max-height:92dvh;
-      border-radius:18px 18px 0 0;
-      padding-bottom:env(safe-area-inset-bottom);
-    }
-
-    .atelier-v2-modal-head{
-      padding:15px 14px;
-    }
-
-    .atelier-v2-modal-body{
-      max-height:calc(92dvh - 74px);
-      overflow-y:auto;
-      padding:16px 14px;
-      -webkit-overflow-scrolling:touch;
-    }
-
-    .atelier-v2-cover-modal{
-      max-width:none;
-    }
-
-    .atelier-v2-cover-search,
-    .atelier-v2-cover-grid{
-      grid-template-columns:1fr;
-    }
-
-    .atelier-v2-cover-search{
-      flex-direction:column;
-    }
-  }
   `;
 
   function injectAtelierCss() {
     if (document.getElementById('atelier-v2-refactor-css')) return;
-
     const style = document.createElement('style');
     style.id = 'atelier-v2-refactor-css';
-    style.textContent = ATELIER_CSS + `
-      .atelier-v2{
-        container-type:inline-size;
-      }
-
-      .atelier-v2 .atelier-v2-main{
-        padding:clamp(12px,2vw,28px);
-        gap:20px;
-        scroll-padding-top:20px;
-      }
-
-      .atelier-v2 .atelier-v2-hero{
-        flex-shrink:0;
-        width:100%;
-        max-width:1240px;
-        min-height:0;
-        margin:0 auto;
-        border-radius:18px;
-        box-shadow:none;
-        animation:none;
-      }
-
-      .atelier-v2 .atelier-v2-hero-inner{
-        min-height:0;
-        max-width:none;
-        padding:24px;
-      }
-
-      .atelier-v2 .atelier-v2-hero.has-cover .atelier-v2-hero-inner{
-        min-height:200px;
-      }
-
-      .atelier-v2 .atelier-v2-hero:not(.has-cover) .atelier-v2-hero-overlay{
-        background:var(--card);
-      }
-
-      .atelier-v2 .atelier-v2-hero-badges{
-        gap:8px;
-        margin-bottom:12px;
-      }
-
-      .atelier-v2 .atelier-v2-hero-title{
-        margin:0 0 10px;
-        font-size:clamp(28px,3vw,40px);
-        line-height:1.12;
-        overflow-wrap:anywhere;
-      }
-
-      .atelier-v2 .atelier-v2-hero-note{
-        max-width:70ch;
-        font-size:14px;
-        line-height:1.6;
-        overflow-wrap:anywhere;
-      }
-
-      .atelier-v2 .atelier-v2-hero-actions{
-        margin-top:16px;
-        gap:8px;
-      }
-
-      .atelier-v2 .atelier-v2-hero-btn,
-      .atelier-v2 .atelier-v2-hero-icon-btn{
-        min-height:44px;
-        border-radius:10px;
-        box-shadow:none;
-        font-weight:600;
-      }
-
-      .atelier-v2 .atelier-v2-body{
-        flex:0 0 auto;
-        width:100%;
-        max-width:1240px;
-        margin:0 auto;
-        padding:0 0 24px;
-        grid-template-columns:minmax(0,1fr) 280px;
-        gap:20px;
-        align-items:start;
-      }
-
-      .atelier-v2 .atelier-v2-plan-card{
-        min-height:0;
-        border-radius:18px;
-        box-shadow:none;
-      }
-
-      .atelier-v2 .atelier-v2-plan-head{
-        min-height:64px;
-        padding:16px 18px;
-        background:var(--card);
-        flex-wrap:wrap;
-      }
-
-      .atelier-v2 .atelier-v2-plan-title{
-        font-family:var(--font-serif);
-        font-size:23px;
-        line-height:1.2;
-        font-weight:400;
-      }
-
-      .atelier-v2 .atelier-v2-plan-actions{
-        flex-wrap:wrap;
-      }
-
-      .atelier-v2 .atelier-v2-btn{
-        min-height:44px;
-        border-radius:10px;
-        box-shadow:none;
-      }
-
-      .atelier-v2 .atelier-v2-sidebar{
-        padding:16px;
-        background:var(--card);
-        border:1px solid var(--line);
-        border-radius:18px;
-      }
-
-      .atelier-v2 .atelier-v2-timeline{
-        gap:12px;
-      }
-
-      .atelier-v2 .web-step-card-title{
-        overflow-wrap:anywhere;
-      }
-
-      .atelier-v2 button:focus-visible{
-        outline:2px solid var(--accent);
-        outline-offset:3px;
-      }
-
-      .day-spine{
-        background:var(--card);
-        box-shadow:none;
-      }
-
-      .day-spine .day-spine-head{
-        padding:20px 16px;
-        background:var(--card);
-      }
-
-      .day-spine .day-spine-title{
-        font-size:23px;
-        line-height:1.25;
-        overflow-wrap:anywhere;
-      }
-
-      .day-spine .day-spine-scroll{
-        padding:14px 10px 24px;
-      }
-
-      .day-spine .day-card{
-        border-radius:12px;
-        box-shadow:none;
-      }
-
-      .day-spine .day-card.active{
-        transform:none;
-        border-color:var(--accent);
-        background:var(--accent-soft);
-        box-shadow:none;
-      }
-
-      .day-spine .day-card-num{
-        box-shadow:none;
-      }
-
-      @container (max-width:820px){
-        .atelier-v2 .atelier-v2-body{
-          grid-template-columns:minmax(0,1fr);
-          gap:16px;
-        }
-
-        .atelier-v2 .atelier-v2-hero-inner{
-          padding:18px;
-        }
-
-        .atelier-v2 .atelier-v2-sidebar{
-          padding:14px;
-        }
-      }
-
-      @container (max-width:480px){
-        .atelier-v2 .atelier-v2-hero-inner{
-          padding:16px;
-        }
-
-        .atelier-v2 .atelier-v2-hero-title{
-          font-size:28px;
-        }
-
-        .atelier-v2 .atelier-v2-hero.has-cover .atelier-v2-hero-inner{
-          min-height:180px;
-        }
-
-        .atelier-v2 .atelier-v2-plan-head{
-          padding:14px;
-        }
-      }
-
-      @media(prefers-reduced-motion:reduce){
-        .atelier-v2 *,
-        .day-spine *{
-          animation:none !important;
-          transition:none !important;
-          scroll-behavior:auto !important;
-        }
-      }
-    `;
-    style.textContent += `
-      .workspace-redesign .atelier-v2.itinerary-layout {
-        --timeline-time-width: 72px;
-        --timeline-gap: 24px;
-      }
-
-      .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-main {
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-        padding: 16px;
-        padding-bottom: calc(28px + env(safe-area-inset-bottom, 0px));
-      }
-
-      .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-body {
-        display: block;
-        width: 100%;
-        max-width: none;
-        padding: 0;
-        margin: 0;
-      }
-
-      .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-content {
-        display: block;
-        min-width: 0;
-      }
-
-      .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-main > nav {
-        width: 100%;
-        min-width: 0;
-        max-width: 100%;
-        margin: 0 !important;
-        flex-shrink: 0;
-        overscroll-behavior-x: contain;
-      }
-
-      .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-hero {
-        width: 100%;
-        max-width: none;
-        margin: 0;
-        border-radius: 12px;
-        border: 1px solid var(--line);
-        box-shadow: none;
-      }
-
-      .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-hero-inner {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) 44px;
-        align-items: start;
-        gap: 6px 12px;
-        padding: 16px 20px;
-        min-height: 0;
-      }
-
-      .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-hero.has-cover .atelier-v2-hero-inner {
-        min-height: 150px;
-      }
-
-      .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-hero-title {
-        grid-column: 1;
-        margin: 0;
-        font-size: clamp(24px, 3vw, 30px);
-        line-height: 1.2;
-        overflow-wrap: anywhere;
-      }
-
-      .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-hero-badges {
-        grid-column: 1;
-        margin: 0;
-        gap: 8px;
-      }
-
-      .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-hero-note {
-        grid-column: 1 / -1;
-        margin: 4px 0 0;
-        font-size: 14px;
-        line-height: 1.5;
-        overflow-wrap: anywhere;
-      }
-
-      .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-hero-actions {
-        display: block;
-        grid-column: 2;
-        grid-row: 1 / span 2;
-        margin: 0;
-      }
-
-      .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-hero-actions[open] {
-        grid-column: 1 / -1;
-        grid-row: auto;
-      }
-
-      .atelier-v2-hero-actions > summary {
-        display: grid;
-        place-items: center;
-        width: 44px;
-        min-height: 44px;
-        margin-left: auto;
-        list-style: none;
-        border: 1px solid var(--line);
-        border-radius: 10px;
-        background: var(--card);
-        color: var(--text);
-        font-size: 24px;
-        cursor: pointer;
-      }
-
-      .atelier-v2-hero-actions > summary::-webkit-details-marker {
-        display: none;
-      }
-
-      .atelier-v2-hero-actions > summary:focus-visible {
-        outline: 2px solid var(--accent);
-        outline-offset: 3px;
-      }
-
-      .atelier-v2-day-actions-list {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        margin-top: 10px;
-      }
-
-      .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-plan-card {
-        border: 1px solid var(--line);
-        border-radius: 12px;
-        box-shadow: none;
-        min-width: 0;
-      }
-
-      .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-plan-head {
-        min-height: 0;
-        padding: 16px 18px;
-        gap: 16px;
-        background: transparent;
-        flex-wrap: wrap;
-      }
-
-      .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-plan-title {
-        margin: 0;
-        font-family: var(--font-serif);
-        font-size: 22px;
-        font-weight: 400;
-        line-height: 1.25;
-        color: var(--petrol);
-      }
-
-      .atelier-v2-plan-heading {
-        min-width: 0;
-        overflow-wrap: anywhere;
-      }
-
-      .atelier-v2-plan-count {
-        margin: 4px 0 0;
-        color: var(--muted);
-        font-size: 13px;
-        line-height: 1.5;
-      }
-
-      .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-plan-actions {
-        min-width: 0;
-        max-width: 100%;
-        flex-wrap: wrap;
-        gap: 8px;
-      }
-
-      .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-plan-actions .atelier-v2-btn {
-        min-height: 44px !important;
-        padding: 8px 12px !important;
-        border-radius: 10px !important;
-        font-size: 14px;
-        font-weight: 600;
-        line-height: 1.3;
-        white-space: normal;
-      }
-
-      .atelier-v2-plan-actions button:focus-visible {
-        outline: 2px solid var(--accent);
-        outline-offset: 3px;
-      }
-
-      .atelier-v2-save-status {
-        margin: 8px 0;
-        padding: 8px 12px;
-        border-radius: 8px;
-        background: var(--accent-soft);
-        color: var(--text);
-        font-size: 14px;
-        line-height: 1.5;
-      }
-
-      .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-timeline {
-        gap: 0;
-        padding: 0 18px 18px;
-      }
-
-      .workspace-redesign .itinerary-layout.atelier-v2 .web-step-card {
-        display: grid !important;
-        grid-template-columns: var(--timeline-time-width) minmax(0, 1fr);
-        align-items: stretch !important;
-        gap: var(--timeline-gap) !important;
-        padding: 20px 0 !important;
-        border: 0 !important;
-        border-radius: 0 !important;
-        background: transparent !important;
-        box-shadow: none !important;
-      }
-
-      .workspace-redesign .itinerary-layout.atelier-v2 .web-step-card[data-selected="true"] {
-        background: var(--accent-soft) !important;
-        border-radius: 8px !important;
-      }
-
-      .workspace-redesign .itinerary-layout.atelier-v2 .web-step-time-column {
-        position: relative;
-        min-width: 0;
-        padding-right: 6px;
-        overflow-wrap: anywhere;
-      }
-
-      .workspace-redesign .itinerary-layout.atelier-v2 .web-step-time-column::before {
-        content: '';
-        position: absolute;
-        top: 8px;
-        bottom: -32px;
-        right: calc(var(--timeline-gap) / -2);
-        width: 1px;
-        background: var(--line);
-        pointer-events: none;
-      }
-
-      .workspace-redesign .itinerary-layout.atelier-v2 .web-step-time-column::after {
-        content: '';
-        position: absolute;
-        top: 7px;
-        right: calc(var(--timeline-gap) / -2 - 5px);
-        width: 11px;
-        height: 11px;
-        border-radius: 50%;
-        background: var(--accent);
-        box-shadow: 0 0 0 3px var(--card);
-        pointer-events: none;
-      }
-
-      .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-drop:last-of-type .web-step-time-column::before {
-        bottom: 0;
-      }
-
-      .workspace-redesign .itinerary-layout.atelier-v2 .web-step-card-title {
-        font-size: clamp(20px, 2.2vw, 24px) !important;
-        line-height: 1.25 !important;
-      }
-
-      .workspace-redesign .itinerary-layout.atelier-v2 .web-step-card-content {
-        min-width: 0;
-      }
-
-      .workspace-redesign .itinerary-layout.atelier-v2 .web-step-card-content p {
-        overflow-wrap: anywhere;
-      }
-
-      .workspace-redesign .itinerary-layout.atelier-v2 .web-step-action-button {
-        min-height: 44px !important;
-        border-radius: 8px !important;
-        box-shadow: none !important;
-      }
-
-      .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-touch-order {
-        display: flex;
-        justify-content: flex-end;
-        gap: 6px;
-        padding-top: 8px;
-      }
-
-      .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-touch-order button {
-        min-width: 44px;
-        min-height: 44px;
-        border: 1px solid var(--line);
-        border-radius: 8px;
-        color: var(--text);
-        background: var(--card);
-        cursor: pointer;
-      }
-
-      .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-touch-order button:disabled {
-        opacity: .4;
-        cursor: default;
-      }
-
-      .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-add {
-        justify-content: flex-start;
-        min-height: 48px;
-        padding: 12px;
-        margin-top: 12px;
-        border: 1px dashed var(--line);
-        border-radius: 8px;
-        background: transparent;
-        color: var(--accent);
-      }
-
-      .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-empty {
-        min-height: 0;
-        margin: 16px 0;
-        padding: 24px 16px;
-        border: 1px dashed var(--line);
-        border-radius: 10px;
-        background: var(--inset);
-      }
-
-      .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-sidebar {
-        margin-top: 16px;
-        padding: 0;
-        border: 0;
-        border-radius: 0;
-        background: transparent;
-        box-shadow: none;
-        min-width: 0;
-      }
-
-      .workspace-redesign .itinerary-layout.atelier-v2 .web-meal-rail {
-        width: 100% !important;
-        height: auto !important;
-        overflow: visible !important;
-        border: 0 !important;
-        background: transparent !important;
-      }
-
-      .workspace-redesign .itinerary-layout.atelier-v2 .web-meal-rail-scroll {
-        flex: none !important;
-        overflow: visible !important;
-        scrollbar-gutter: auto !important;
-        padding: 0 !important;
-        gap: 12px !important;
-      }
-
-      .workspace-redesign .itinerary-layout.atelier-v2 .web-meal-rail-scroll > section {
-        padding: 12px !important;
-        border: 1px solid var(--line) !important;
-        border-radius: 12px;
-        background: var(--card);
-        overflow-wrap: anywhere;
-      }
-
-      .workspace-redesign .itinerary-layout.atelier-v2 .web-meal-rail button {
-        min-height: 44px;
-        max-width: 100%;
-      }
-
-      @container (min-width: 850px) {
-        .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-main {
-          display: grid;
-          grid-template-columns: minmax(0, 1fr) 280px;
-          grid-template-rows: auto auto auto;
-          align-content: start;
-          gap: 0 20px;
-          padding: 20px 24px 32px;
-        }
-
-        .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-main > nav {
-          grid-column: 1 / -1;
-          margin-bottom: 20px !important;
-        }
-
-        .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-body,
-        .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-content {
-          display: contents;
-        }
-
-        .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-hero {
-          grid-column: 1;
-          grid-row: 2;
-          border-bottom: 0;
-          border-radius: 12px 12px 0 0;
-        }
-
-        .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-plan-card {
-          grid-column: 1;
-          grid-row: 3;
-          border-top: 0;
-          border-radius: 0 0 12px 12px;
-        }
-
-        .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-sidebar {
-          grid-column: 2;
-          grid-row: 2 / span 2;
-          align-self: start;
-          margin: 0;
-        }
-      }
-
-      @container (max-width: 480px) {
-        .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-main {
-          --timeline-time-width: 58px;
-          --timeline-gap: 18px;
-          padding: 12px;
-          padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
-        }
-
-        .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-hero-inner {
-          padding: 16px;
-        }
-
-        .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-timeline {
-          padding: 0 12px 12px;
-        }
-
-        .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-plan-head {
-          padding: 12px;
-        }
-
-        .workspace-redesign .itinerary-layout.atelier-v2 .web-step-card {
-          padding: 16px 0 !important;
-        }
-      }
-    `;
+    style.textContent = ATELIER_CSS;
     document.head.appendChild(style);
   }
 
@@ -2524,6 +885,7 @@ return {
       step: null
     });
 
+    const [organizingSteps, setOrganizingSteps] = React.useState(false);
     const [dayEditorOpen, setDayEditorOpen] = React.useState(false);
     const [coverPickerOpen, setCoverPickerOpen] = React.useState(false);
     const [coverPositionY, setCoverPositionY] = React.useState(50);
@@ -3241,277 +1603,104 @@ function openAddStep(type, preset) {
     );
 
     return (
-      <div className="atelier-v2 itinerary-layout">
-        <div className="atelier-v2-main">
-          <nav
-            ref={dayNavRef}
-            aria-label="Journées du voyage"
-            style={{
-              position: 'relative',
-              display: 'flex',
-              flexShrink: 0,
-              gap: 6,
-              width: '100%',
-              maxWidth: 1240,
-              minWidth: 0,
-              margin: '0 auto',
-              padding: 6,
-              overflowX: 'auto',
-              background: 'var(--card)',
-              border: '1px solid var(--line)',
-              borderRadius: 14,
-              scrollbarWidth: 'thin'
-            }}
-          >
-            {days.map((item, index) => {
-              const selected = index === safeDayIndex;
-              const dateLabel = item.dateISO
-                ? formatDayDate(item.dateISO)
-                : 'Date à définir';
-
-              return (
-                <button
-                  key={item.id || index}
-                  type="button"
-                  aria-current={selected ? 'date' : undefined}
-                  aria-label={
-                    'Jour ' + (index + 1) + ', ' + dateLabel +
-                    ', ' + getDisplayDayTitle(item)
-                  }
-                  onClick={() => Store.set({
-                    selectedDayIndex: index,
-                    selectedStepId: null
-                  })}
-                  style={{
-                    flex: '0 0 auto',
-                    minWidth: 100,
-                    minHeight: 52,
-                    padding: '6px 12px',
-                    border: '1px solid ' + (
-                      selected ? 'var(--accent)' : 'transparent'
-                    ),
-                    borderRadius: 10,
-                    background: selected
-                      ? 'var(--accent)'
-                      : 'transparent',
-                    color: selected
-                      ? 'var(--accent-ink, #fff)'
-                      : 'var(--text)',
-                    font: 'inherit',
-                    textAlign: 'left',
-                    cursor: 'pointer'
-                  }}
-                >
-                  <span style={{
-                    display: 'block',
-                    fontSize: 14,
-                    fontWeight: 700
-                  }}>
-                    Jour {index + 1}
-                  </span>
-                  <span style={{
-                    display: 'block',
-                    marginTop: 4,
-                    fontSize: 12
-                  }}>
-                    {dateLabel}
-                  </span>
-                </button>
-              );
-            })}
-          </nav>
-
-          {/* ── Hero ── */}
-          <div
-  key={day.id || safeDayIndex}
-  className={
-    'atelier-v2-hero' +
-    (hasDayCover ? ' has-cover' : '') +
-    (hasDayCover && !isCoverCropLocked ? ' crop-editable' : '')
-  }
-  onPointerDown={handleCoverPointerDown}
-  onPointerMove={handleCoverPointerMove}
-  onPointerUp={handleCoverPointerUp}
-  onPointerCancel={() => {
-    cropDragRef.current = null;
-    setCoverPositionY(savedCoverPositionY);
-  }}
->
-            {hasDayCover && (
-              <img
-                className="atelier-v2-hero-img"
-                src={day.coverImageUrl}
-                alt={day.coverImageAlt || 'Photo de couverture du voyage'}
-                style={{ objectPosition: `center ${coverPositionY}%` }}
-                loading="eager"
-                decoding="async"
-                fetchPriority="high"
-                draggable="false"
-              />
-            )}
-
-            <div className="atelier-v2-hero-overlay" />
-
-            <div className="atelier-v2-hero-inner">
-              <div className="atelier-v2-hero-badges">
-                <span className="atelier-v2-hero-badge">
-                  Jour {safeDayIndex + 1}
-                </span>
-
-                {dayDate && (
-                  <span className="atelier-v2-hero-date">{dayDate}</span>
-                )}
-              </div>
-
-              <h1 className="atelier-v2-hero-title">{dayTitle}</h1>
-
-              {day.note && (
-                <p className="atelier-v2-hero-note">{day.note}</p>
-              )}
-
-              <details
-                className="atelier-v2-hero-actions"
-                onPointerDown={event => event.stopPropagation()}
-                onKeyDown={event => {
-                  if (event.key !== 'Escape') return;
-                  event.preventDefault();
-                  event.stopPropagation();
-                  event.currentTarget.open = false;
-                  event.currentTarget.querySelector('summary')?.focus();
-                }}
-              >
-                <summary
-                  aria-label="Actions de la journée"
-                  title="Actions de la journée"
-                >
-                  <span aria-hidden="true">⋯</span>
-                </summary>
-                <div className="atelier-v2-day-actions-list">
-  <button
-    type="button"
-    className="atelier-v2-hero-btn"
-    onClick={selectMapForDay}
-  >
-    <Icon name="map" size={14} />
-    Carte
-  </button>
-
-  <button
-    type="button"
-    className="atelier-v2-hero-btn"
-    onClick={() => setDayEditorOpen(true)}
-  >
-    Modifier
-  </button>
-
-  <button
-    type="button"
-    className="atelier-v2-hero-icon-btn"
-    title="Changer la photo"
-    aria-label="Changer la photo"
-    onClick={() => setCoverPickerOpen(true)}
-  >
-    <Icon name="camera" size={17} />
-  </button>
-
-  {hasDayCover && (
-    <button
-      type="button"
-      className="atelier-v2-hero-icon-btn"
-      title={isCoverCropLocked ? 'Déverrouiller le recadrage' : 'Verrouiller le recadrage'}
-      aria-label={isCoverCropLocked ? 'Déverrouiller le recadrage' : 'Verrouiller le recadrage'}
-      onClick={toggleCoverCropLock}
-    >
-      <Icon name={isCoverCropLocked ? 'lock' : 'unlock'} size={17} />
-    </button>
-  )}
-                </div>
-              </details>
-            </div>
-
-            {hasDayCover && day.coverSourceUrl && (
-              <a
-                className="atelier-v2-hero-credit"
-                href={day.coverSourceUrl}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Photo par {day.coverPhotographerName || 'Pexels'} via Pexels
-              </a>
-            )}
+      <div className="fv-itinerary">
+        <aside className="fv-days" aria-label="Journées du voyage">
+          <div className="fv-days-heading">
+            <span>Les journées</span><Icon name="cal" size={16} />
           </div>
-
-          {/* ── Body : 2/3 timeline + 1/3 sidebar ── */}
-          <div className="atelier-v2-body">
-            <section className="atelier-v2-content">
-              <div className="atelier-v2-plan-card">
-                <div className="atelier-v2-plan-head">
-                  <div className="atelier-v2-plan-heading">
-                    <h2 className="atelier-v2-plan-title">
-                      Programme du jour
-                    </h2>
-                    <p className="atelier-v2-plan-count">
-                      {timelineSteps.length
-                        ? timelineSteps.length +
-                          ' étape' +
-                          (timelineSteps.length > 1 ? 's' : '') +
-                          ' au programme'
-                        : 'Ajoute une activité ou un trajet.'}
-                    </p>
-                  </div>
-
-                  <div className="atelier-v2-plan-actions">
-                    {timelineSteps.filter(
-                      step =>
-                        String(
-                          step?.time || ''
-                        ).trim()
-                    ).length > 1 && (
-                      <button
-                        type="button"
-                        className="atelier-v2-btn"
-                        disabled={
-                          reorderingSteps
-                        }
-                        title="Classer les étapes renseignées par heure"
-                        onClick={
-                          sortTimelineByTime
-                        }
-                        style={{
-                          minHeight: 32,
-                          borderRadius: 8,
-                          padding: '0 10px'
-                        }}
-                      >
-                        {reorderingSteps
-                          ? 'Tri…'
-                          : '↕ Par heure'}
-                      </button>
-                    )}
-
-                    <button
-                      type="button"
-                      className="atelier-v2-btn primary"
-                      style={{
-                        minHeight: 32,
-                        borderRadius: 8,
-                        padding: '0 12px'
-                      }}
-                      aria-expanded={quickAdd.open}
-                      onClick={() => {
-                        setQuickAdd(function toggleQuickAdd(previous) {
-                          return {
-                            ...previous,
-                            open: !previous.open
-                          };
-                        });
-                      }}
-                    >
-                      {quickAdd.open ? 'Fermer' : '+ Ajouter'}
-                    </button>
-                  </div>
+          <div className="fv-days-list">
+            {days.map((item, index) => (
+              <button type="button" className="fv-day" key={item.id || index}
+                aria-current={index === safeDayIndex ? 'date' : undefined}
+                onClick={() => Store.set({ selectedDayIndex: index, selectedStepId: null })}>
+                <span className="fv-number">J{index + 1}</span>
+                <span><strong>{getDisplayDayTitle(item)}</strong>
+                  <small>{formatDayDate(item.dateISO) || 'Date à définir'}</small>
+                </span>
+              </button>
+            ))}
+          </div>
+          <button type="button" className="fv-button fv-organize"
+            onClick={() => window.dispatchEvent(new Event('open-day-organizer'))}>
+            <Icon name="cal" size={16} />Organiser les jours
+          </button>
+        </aside>
+        <section className="fv-main" aria-label="Programme de la journée">
+          <label className="fv-mobile-day">
+            Journée
+            <select aria-label="Choisir une journée" value={safeDayIndex}
+              onChange={event => Store.set({
+                selectedDayIndex: Number(event.target.value), selectedStepId: null
+              })}>
+              {days.map((item, index) => (
+                <option key={item.id || index} value={index}>
+                  J{index + 1} · {formatDayDate(item.dateISO)} · {getDisplayDayTitle(item)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="fv-daymeta">{dayDate}{day.city ? ' · ' + day.city : ''}</div>
+          <div className="fv-dayhead">
+            <h2>{dayTitle}</h2>
+            <button type="button" className="fv-iconbutton"
+              aria-label="Modifier la journée" onClick={() => setDayEditorOpen(true)}>
+              <Icon name="edit" size={17} />
+            </button>
+          </div>
+          {day.note && <p className="fv-intro">{day.note}</p>}
+          <details className="fv-day-options" key={'options-' + day.id}>
+            <summary>Options de la journée</summary>
+            <div className="fv-actions">
+              <button type="button" className="fv-button" onClick={selectMapForDay}>Carte du jour</button>
+              <button type="button" className="fv-button" onClick={() => setCoverPickerOpen(true)}>
+                <Icon name="camera" size={16} />Changer la photo
+              </button>
+              <button type="button" className="fv-button"
+                onClick={() => window.dispatchEvent(new Event('open-day-organizer'))}>
+                Organiser les jours
+              </button>
+            </div>
+            {hasDayCover && (
+              <>
+                <div className={'fv-cover-editor' + (isCoverCropLocked ? '' : ' unlocked')}
+                  onPointerDown={handleCoverPointerDown} onPointerMove={handleCoverPointerMove}
+                  onPointerUp={handleCoverPointerUp} onPointerCancel={() => {
+                    cropDragRef.current = null;
+                    setCoverPositionY(savedCoverPositionY);
+                  }}>
+                  <img src={day.coverImageUrl} alt={day.coverImageAlt || 'Photo de la journée'}
+                    style={{ objectPosition: `center ${coverPositionY}%` }}
+                    loading="lazy" decoding="async" draggable="false" />
                 </div>
-
+                <button type="button" className="fv-textbutton" onClick={toggleCoverCropLock}>
+                  {isCoverCropLocked ? 'Déverrouiller le recadrage' : 'Verrouiller le recadrage'}
+                </button>
+                {day.coverSourceUrl && (
+                  <a className="fv-credit" href={day.coverSourceUrl} target="_blank" rel="noreferrer">
+                    Photo par {day.coverPhotographerName || 'Pexels'} via Pexels
+                  </a>
+                )}
+              </>
+            )}
+          </details>
+          <div className="fv-program-head">
+            <span>{timelineSteps.length} étape{timelineSteps.length > 1 ? 's' : ''} au programme</span>
+            <button type="button" className="fv-textbutton" aria-pressed={organizingSteps}
+              onClick={() => setOrganizingSteps(value => !value)}>
+              ↕ {organizingSteps ? 'Terminer' : 'Organiser'}
+            </button>
+          </div>
+          {organizingSteps && (
+            <div className="fv-order-help">
+              <p>Déplace les étapes avec les flèches ou par glisser-déposer.</p>
+              {timelineSteps.filter(step => String(step?.time || '').trim()).length > 1 && (
+                <button type="button" className="fv-button" disabled={reorderingSteps}
+                  onClick={sortTimelineByTime}>
+                  {reorderingSteps ? 'Tri…' : 'Classer par heure'}
+                </button>
+              )}
+            </div>
+          )}
                 {quickAdd.open && (
 <form
                     className="atelier-v2-quick-add"
@@ -3799,50 +1988,24 @@ function openAddStep(type, preset) {
                   </div>
                 )}
 
-                <div className="atelier-v2-timeline">
-                {!timelineSteps.length && (
-                  <div
-                    className="atelier-v2-empty"
-                    role="status"
-                    aria-live="polite"
-                    style={{
-                      display: 'grid',
-                      justifyItems: 'start',
-                      gap: 8,
-                      textAlign: 'left',
-                      fontSize: 15,
-                      lineHeight: 1.6
-                    }}
-                  >
-                    <strong style={{ color: 'var(--text)' }}>
-                      Le programme reste à compléter
-                    </strong>
-                    <span>
-                      Ajoute tes visites et tes trajets avec « + Ajouter ».
-                      Les repas et les hébergements restent dans les panneaux
-                      de la journée.
-                    </span>
-                  </div>
-                )}
 
-                {reorderingSteps && (
-                  <div
-                    className="atelier-v2-save-status"
-                    role="status"
-                    aria-live="polite"
-                    aria-atomic="true"
-                  >
-                    Enregistrement du nouvel ordre…
-                  </div>
-                )}
-
+          {reorderingSteps && (
+            <p className="fv-muted" role="status" aria-live="polite">Enregistrement du nouvel ordre…</p>
+          )}
+          <div className="fv-program">
+            {!timelineSteps.length && (
+              <p className="fv-empty" role="status">
+                Aucune activité ni trajet pour cette journée. Ajoute une étape ci-dessous.
+                Les hébergements et repas restent dans les informations de la journée.
+              </p>
+            )}
                 {timelineSteps.map(function renderStep(step, index) {
                   return (
                     <div
                       key={step.id || index}
                       className={'atelier-v2-drop' + (dragOverIndex === index && dragIndex !== null && dragIndex !== index ? ' over' : '')}
                       draggable={
-                        !!step.id &&
+                        organizingSteps && !!step.id &&
                         !reorderingSteps &&
                         canUseNativeDrag
                       }
@@ -3883,12 +2046,12 @@ function openAddStep(type, preset) {
                         opacity: dragIndex === index ? 0.55 : 1,
                         cursor: reorderingSteps
                           ? 'wait'
-                          : step.id
+                          : organizingSteps && step.id
                             ? 'grab'
                             : 'default'
                       }}
                     >
-                      <div
+                      {organizingSteps && <div
                         className="atelier-v2-touch-order"
                         aria-label="Modifier l’ordre de cette étape"
                       >
@@ -3940,7 +2103,7 @@ function openAddStep(type, preset) {
                         >
                           ↓
                         </button>
-                      </div>
+                      </div>}
 
                       <window.StepCard
                         step={step}
@@ -3956,31 +2119,17 @@ function openAddStep(type, preset) {
                   );
                 })}
 
-                <button
-                  type="button"
-                  className="atelier-v2-add"
-                  onClick={() => openAddStep('activite')}
-                >
-                  <Icon name="plus" size={16} />
-                  Ajouter avec tous les détails
-                </button>
-                </div>
-              </div>
-            </section>
-
-            <div className="atelier-v2-sidebar">
-              <window.MealRail
-                trip={trip}
-                day={day}
-                dayIndex={safeDayIndex}
-                onEditStep={openEditorForStep}
-                onAddStep={openAddStep}
-                onReload={reloadTrip}
-              />
-            </div>
           </div>
-        </div>
-
+          <button type="button" className="fv-button fv-add" onClick={() => openAddStep('activite')}>
+            <Icon name="plus" size={16} />Ajouter une étape
+          </button>
+          <button type="button" className="fv-textbutton" aria-expanded={quickAdd.open}
+            onClick={() => setQuickAdd(previous => ({ ...previous, open: !previous.open }))}>
+            {quickAdd.open ? 'Fermer l’ajout rapide' : 'Ajout rapide'}
+          </button>
+        </section>
+        <window.MealRail trip={trip} day={day} dayIndex={safeDayIndex}
+          onEditStep={openEditorForStep} onAddStep={openAddStep} onReload={reloadTrip} />
                 {coverPickerOpen && (
           <TripCoverPickerModal
   tripId={trip.id}

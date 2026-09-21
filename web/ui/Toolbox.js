@@ -764,6 +764,19 @@ function PlaceholderWidget({ children }) {
       );
     }
 
+   if (activeTool === 'ideas-notes') {
+      return (
+        <div className="fv-notebooks">
+          {['ideas', 'dayNote', 'globalNote'].map(id => (
+            <section key={id}>
+              <h3>{TOOL_DEFINITIONS[id].label}</h3>
+              {renderToolContent(id)}
+            </section>
+          ))}
+        </div>
+      );
+    }
+
     if (activeTool && TOOL_DEFINITIONS[activeTool]) {
       return (
         <section className="workspace-tool-detail">
@@ -918,44 +931,30 @@ function PlaceholderWidget({ children }) {
 
   function WorkspaceTools() {
     const { trip } = Store.useStore(state => ({ trip: state.trip }));
-
-    function openTool(tool) {
-      window.dispatchEvent(new CustomEvent('open-workspace-tools', {
-        detail: { tool }
-      }));
-    }
+    const openTool = tool => window.dispatchEvent(
+      new CustomEvent('open-workspace-tools', { detail: { tool } })
+    );
 
     return (
-      <section className="workspace-tools" aria-label="Outils du voyage">
+      <section className="fv-tools" aria-label="Outils du voyage">
         <h3>À portée de main</h3>
-        <div className="workspace-tools-grid">
-          {[
-            { id: 'globalNote', label: 'Notes', icon: 'file' },
-            { id: 'checklist', label: 'Checklist', icon: 'check' },
-            { id: 'ideas', label: 'Idées', icon: 'sparkle' }
-          ].map(tool => (
-            <button type="button" key={tool.id} onClick={() => openTool(tool.id)}>
-              <Icon name={tool.icon} size={18} />
-              <span>{tool.label}</span>
-            </button>
-          ))}
-          <button
-            type="button"
-            onClick={() => {
-              if (trip && window.TripPrint?.open) {
-                window.TripPrint.open(trip);
-              } else {
-                Store.showToast('L’export PDF est indisponible.');
-              }
-            }}
-          >
-            <Icon name="print" size={18} />
-            <span>Imprimer / PDF</span>
+        <div className="fv-toolgroup">
+          <button type="button" className="fv-tool" onClick={() => openTool('ideas-notes')}>
+            <Icon name="file" size={18} /><span>Idées & notes</span>
+          </button>
+          <button type="button" className="fv-tool" onClick={() => openTool('checklist')}>
+            <Icon name="check" size={18} /><span>Checklist</span>
+          </button>
+          <button type="button" className="fv-tool" onClick={() => {
+            if (trip && window.TripPrint?.open) window.TripPrint.open(trip);
+            else Store.showToast('L’export PDF est indisponible.');
+          }}>
+            <Icon name="print" size={18} /><span>Imprimer / PDF</span>
+          </button>
+          <button type="button" className="fv-tool" onClick={() => openTool(null)}>
+            <Icon name="gear" size={18} /><span>Tous les outils</span>
           </button>
         </div>
-        <button type="button" className="workspace-all-tools" onClick={() => openTool(null)}>
-          Tous les outils <span aria-hidden="true">→</span>
-        </button>
       </section>
     );
   }

@@ -389,10 +389,22 @@ test(
         ).first()
       ).toBeVisible();
 
-      await page.setViewportSize({
+     await page.setViewportSize({
         width: 390,
         height: 844
       });
+
+      async function openDayOrganizer() {
+        await page.locator('.fv-day-options > summary').click();
+        await page.locator('.fv-day-options').getByRole('button', {
+          name: 'Organiser les jours', exact: true
+        }).click();
+        await expect(page.getByRole('dialog', {
+          name: 'Organiser les jours'
+        })).toBeVisible();
+      }
+
+      await openDayOrganizer();
 
       const firstDayCard =
         page.locator(
@@ -460,6 +472,8 @@ test(
           'domcontentloaded'
       });
 
+      await openDayOrganizer();
+
       const persistedDayNotes =
         await page
           .locator(
@@ -506,6 +520,74 @@ test(
       ).toContainText(
         FIRST_STEP_LABEL
       );
+
+      await expect(
+        timelineSteps.nth(1)
+      ).toContainText(
+        SECOND_STEP_LABEL
+      );
+
+      await page.getByRole('button', { name: '↕ Organiser', exact: true }).click();
+
+      await timelineSteps
+        .nth(0)
+        .getByRole('button', {
+          name:
+            'Déplacer l’étape vers le bas',
+          exact: true
+        })
+        .click();
+
+      await expect(
+        page.getByText(
+          'Nouvel ordre enregistré.',
+          {
+            exact: true
+          }
+        )
+      ).toBeVisible();
+
+      await page.reload({
+        waitUntil:
+          'domcontentloaded'
+      });
+
+      await openDayOrganizer();
+
+      await page
+        .locator(
+          '.day-card'
+        )
+        .filter({
+          hasText:
+            FIRST_DAY_NOTE
+        })
+        .locator(
+          '.day-card-select'
+        )
+        .click();
+
+      const persistedSteps =
+        page.locator(
+          '.atelier-v2-drop'
+        );
+
+      await expect(
+        persistedSteps
+      ).toHaveCount(2);
+
+      await expect(
+        persistedSteps.nth(0)
+      ).toContainText(
+        SECOND_STEP_LABEL
+      );
+
+      await expect(
+        persistedSteps.nth(1)
+      ).toContainText(
+        FIRST_STEP_LABEL
+      );
+```
 
       await expect(
         timelineSteps.nth(1)
@@ -696,7 +778,7 @@ test(
 
       await page
         .getByRole('button', {
-          name: 'Docs',
+          name: 'Documents',
           exact: true
         })
         .click();

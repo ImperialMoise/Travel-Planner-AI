@@ -452,7 +452,7 @@
       }
     }
 
-    return (
+  return (
       <article
         className="web-step-card"
         data-selected={selected ? 'true' : 'false'}

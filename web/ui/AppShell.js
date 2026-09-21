@@ -4311,307 +4311,6 @@
     `;
 
     style.textContent += `
-      .workspace-trip-header {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) auto;
-        align-items: start;
-        flex-shrink: 0;
-        gap: 12px;
-        padding: 16px clamp(16px, 3vw, 36px);
-        background: var(--bg);
-      }
-
-      .workspace-trip-heading { min-width: 0; }
-
-      .workspace-back {
-        display: inline-flex;
-        align-items: center;
-        min-height: 44px;
-        padding: 0;
-        border: 0;
-        background: transparent;
-        color: var(--muted);
-        font: inherit;
-        font-size: 13px;
-        cursor: pointer;
-      }
-
-      .workspace-trip-title {
-        margin-top: 4px;
-        color: #183e35;
-        font-family: var(--font-serif);
-        font-size: clamp(24px, 3vw, 36px);
-        line-height: 1.15;
-        overflow-wrap: anywhere;
-      }
-
-      .workspace-trip-dates {
-        margin-top: 6px;
-        color: var(--muted);
-        font-size: 14px;
-        line-height: 1.4;
-      }
-
-      .workspace-trip-menu {
-        position: relative;
-        align-self: start;
-        margin-top: 4px;
-      }
-
-      .workspace-trip-menu > summary {
-        display: grid;
-        place-items: center;
-        width: 44px;
-        height: 44px;
-        list-style: none;
-        border: 1px solid var(--line);
-        border-radius: 10px;
-        background: var(--card);
-        color: #183e35;
-        cursor: pointer;
-        font-size: 24px;
-      }
-
-      .workspace-trip-menu > summary::-webkit-details-marker {
-        display: none;
-      }
-
-      .workspace-trip-menu-items {
-        position: absolute;
-        z-index: 80;
-        top: calc(100% + 8px);
-        right: 0;
-        width: min(240px, calc(100vw - 32px));
-        padding: 6px;
-        border: 1px solid var(--line);
-        border-radius: 12px;
-        background: var(--card);
-        box-shadow: 0 8px 28px rgba(24, 62, 53, .12);
-      }
-
-      .workspace-trip-menu-items > button {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        width: 100%;
-        min-height: 44px;
-        padding: 10px 12px;
-        border: 0;
-        border-radius: 8px;
-        background: transparent;
-        color: var(--text);
-        font: inherit;
-        font-size: 14px;
-        text-align: left;
-        cursor: pointer;
-      }
-
-      .workspace-trip-menu-items > button:hover {
-        background: var(--inset);
-      }
-
-      .workspace-trip-menu :is(summary, button):focus-visible,
-      .workspace-back:focus-visible {
-        outline: 2px solid var(--accent);
-        outline-offset: 3px;
-      }
-
-      @media (max-width: 600px) {
-        .workspace-trip-header { padding: 8px 16px 12px; }
-        .workspace-trip-title { font-size: 24px; }
-        .workspace-trip-dates { font-size: 13px; }
-      }
-
-      .workspace-redesign .atelier-v2 .web-step-card {
-        border: 0 !important;
-        border-bottom: 1px solid var(--line) !important;
-        border-radius: 0 !important;
-        box-shadow: none !important;
-      }
-
-      .workspace-redesign .atelier-v2 .web-step-card-title {
-        font-size: 22px !important;
-      }
-
-      @media (min-width: 1100px) {
-        .app-shell.workspace-redesign {
-          box-sizing: border-box;
-          padding-left: 220px;
-        }
-
-        .workspace-redesign > .topbar {
-          position: fixed;
-          inset: 0 auto 0 0;
-          width: 220px;
-          height: 100dvh;
-          display: flex;
-          flex-direction: column;
-          align-items: stretch;
-          justify-content: flex-start;
-          gap: 28px;
-          padding: 28px 16px 20px;
-          border-right: 1px solid var(--line);
-          border-bottom: 0;
-          background: var(--card);
-          box-shadow: none;
-        }
-
-        .workspace-redesign .topbar-left {
-          display: flex;
-          flex-direction: column;
-          align-items: stretch;
-          gap: 24px;
-        }
-
-        .workspace-redesign .topbar-brand {
-          display: block;
-          white-space: normal;
-          font-family: var(--font-serif);
-          font-size: 27px;
-          line-height: 1.1;
-        }
-
-        .workspace-redesign .topbar-brand-long,
-        .workspace-redesign .topbar-brand-suffix {
-          display: block;
-        }
-
-        .workspace-redesign .topbar-brand-short {
-          display: none;
-        }
-
-        .workspace-redesign .trip-switcher-btn {
-          width: 100%;
-          max-width: 100%;
-        }
-
-        .workspace-redesign .topbar-center {
-          display: flex;
-          flex-direction: column;
-          align-items: stretch;
-          justify-content: flex-start;
-          flex: 0 0 auto;
-          gap: 24px;
-        }
-
-        .workspace-redesign .topbar-center .topbar-nav {
-          display: flex;
-          flex-direction: column;
-          align-items: stretch;
-          width: 100%;
-          padding: 0;
-          border: 0;
-          background: transparent;
-          gap: 6px;
-          overflow: visible;
-        }
-
-        .workspace-redesign .topbar .topbar-nav-btn {
-          width: 100%;
-          min-height: 48px;
-          padding: 12px 16px;
-          text-align: left;
-          font-size: 15px;
-          border-radius: 9px;
-          box-shadow: none;
-        }
-
-        .workspace-redesign .topbar .topbar-nav-btn.active {
-          background: var(--inset);
-          color: var(--text);
-          border-color: transparent;
-          box-shadow: inset 3px 0 0 var(--accent);
-        }
-
-        .workspace-redesign .workspace-mode {
-          width: 100%;
-        }
-
-        .workspace-redesign .workspace-mode-btn {
-          min-width: 0;
-          flex: 1;
-          padding-right: 6px;
-          padding-left: 6px;
-        }
-
-        .workspace-redesign .topbar-right {
-          margin-top: auto;
-          width: 100%;
-        }
-
-        .workspace-redesign .topbar-account {
-          width: 100%;
-          display: flex;
-          flex-wrap: wrap;
-          justify-content: flex-start;
-          gap: 8px;
-          padding-left: 0;
-          border-left: 0;
-        }
-
-        .workspace-redesign .atelier-v2 .atelier-v2-main {
-          display: grid;
-          grid-template-columns: minmax(0, 1fr) 280px;
-          grid-template-rows: auto auto auto;
-          align-content: start;
-          column-gap: 18px;
-          row-gap: 0;
-          padding-top: 0;
-        }
-
-        .workspace-redesign .atelier-v2-main > nav {
-          grid-column: 1 / -1;
-          margin-bottom: 20px !important;
-          padding: 3px !important;
-          border-radius: 9px !important;
-        }
-
-        .workspace-redesign .atelier-v2-main > nav button {
-          min-height: 48px !important;
-          border-radius: 7px !important;
-        }
-
-        .workspace-redesign .atelier-v2-body,
-        .workspace-redesign .atelier-v2-content {
-          display: contents;
-        }
-
-        .workspace-redesign .atelier-v2 .atelier-v2-hero {
-          grid-column: 1;
-          grid-row: 2;
-          width: 100%;
-          margin: 0;
-          border-radius: 12px 12px 0 0;
-          border-bottom: 0;
-          box-shadow: none;
-        }
-
-        .workspace-redesign .atelier-v2 .atelier-v2-hero-title {
-          font-size: 28px;
-          line-height: 1.2;
-        }
-
-        .workspace-redesign .atelier-v2 .atelier-v2-plan-card {
-          grid-column: 1;
-          grid-row: 3;
-          border-radius: 0 0 12px 12px;
-          border-top: 0;
-          box-shadow: none;
-        }
-
-        .workspace-redesign .atelier-v2 .atelier-v2-sidebar {
-          grid-column: 2;
-          grid-row: 2 / span 2;
-          align-self: start;
-          min-width: 0;
-          padding: 14px;
-          border-radius: 12px;
-          box-shadow: none;
-        }
-      }
-    `;
-
-    style.textContent += `
       .home-library.home-library-v2 {
         padding: 32px clamp(16px, 4vw, 48px) 48px;
       }
@@ -5337,17 +5036,11 @@ const closeDayOrganizer = React.useCallback(() => {
 React.useEffect(() => {
   setDaySpineOpen(false);
 }, [activeTripId]);
-const [toolboxCollapsed, setToolboxCollapsed] = React.useState(
-  () => localStorage.getItem('toolbox_collapsed') === 'true'
-);
-
-function toggleToolboxCollapsed() {
-  setToolboxCollapsed(current => {
-    const next = !current;
-    localStorage.setItem('toolbox_collapsed', String(next));
-    return next;
-  });
-}
+React.useEffect(() => {
+  const open = () => setDaySpineOpen(true);
+  window.addEventListener('open-day-organizer', open);
+  return () => window.removeEventListener('open-day-organizer', open);
+}, []);
 
     const CurrentView = appMode === 'travel'
   ? window.TravelModeView
@@ -5366,7 +5059,8 @@ function toggleToolboxCollapsed() {
 
     return (
       <div
-  className={'app-shell' + (user && trip && activeTripId ? ' workspace-a' : '')}
+  className={'app-shell' + (user && trip && activeTripId ? ' fv-app' : '')}
+  data-workspace-accent={trip?.accentTheme || 'forest'}
   data-focus={desktopFocusMode ? 'true' : 'false'}
   style={{
     '--trip-accent': accent.accent,
@@ -5435,116 +5129,46 @@ function toggleToolboxCollapsed() {
               )}
 
               <section className="app-view">
-                <header className="workspace-trip-header">
-                  <div className="workspace-trip-heading">
-                    <button
-                      type="button"
-                      className="workspace-back"
-                      onClick={() => Store.set({
-                        activeTripId: null,
-                        trip: null,
-                        selectedDayIndex: 0,
-                        selectedStepId: null
-                      })}
-                    >
-                      Mes voyages
-                    </button>
 
-                    <div className="workspace-trip-title">
-                      {trip.name || 'Mon voyage'}
-                    </div>
-
-                    {(trip.startDate || trip.endDate) && (
-                      <div className="workspace-trip-dates">
-                        {[
-                          trip.startDate && formatDayDate(trip.startDate),
-                          trip.endDate && formatDayDate(trip.endDate)
-                        ].filter(Boolean).join(' — ')}
-                      </div>
-                    )}
+                <header className="fv-tripbar">
+                  <div>
+                    <h1>{trip.name || 'Mon voyage'}</h1>
+                    <p className="fv-tripdates">
+                      {[
+                        trip.startDate && formatDayDate(trip.startDate),
+                        trip.endDate && formatDayDate(trip.endDate)
+                      ].filter(Boolean).join(' — ')}
+                      {trip.days?.length ? ' · ' + trip.days.length + ' jours' : ''}
+                    </p>
                   </div>
-
-                  <details
-                    key={String(trip.id) + '-' + view + '-' + appMode}
-                    className="workspace-trip-menu"
-                    onKeyDown={event => {
-                      if (event.key !== 'Escape') return;
-                      event.preventDefault();
-                      event.stopPropagation();
-                      event.currentTarget.open = false;
-                      event.currentTarget.querySelector('summary')?.focus();
-                    }}
-                  >
-                    <summary
-                      aria-label="Actions du voyage"
-                      title="Actions du voyage"
-                    >
-                      <span aria-hidden="true">⋯</span>
-                    </summary>
-
-                    <div className="workspace-trip-menu-items">
-                      {appMode !== 'travel' && (
-                        <button
-                          type="button"
-                          onClick={event => {
-                            event.currentTarget.closest('details').open = false;
-                            setToolboxOpen(true);
-                          }}
-                        >
-                          <Icon name="gear" size={16} />
-                          Outils du voyage
-                        </button>
-                      )}
-
-                      <button
-                        type="button"
-                        aria-haspopup="dialog"
-                        onClick={event => {
-                          event.currentTarget.closest('details').open = false;
-                          setDaySpineOpen(true);
-                        }}
-                      >
-                        <Icon name="cal" size={16} />
-                        Organiser les jours
+                  <div className="fv-actions">
+                    {(appMode === 'travel' || view !== 'itinerary') && (
+                      <button type="button" className="fv-button" onClick={() => setToolboxOpen(true)}>
+                        <Icon name="gear" size={16} />Outils
                       </button>
-                    </div>
-                  </details>
-                </header>
-
-                <div className="workspace-canvas">
-                  {appMode !== 'travel' &&
-                    view === 'itinerary' &&
-                    !isNarrowShell &&
-                    !desktopFocusMode &&
-                    !daySpineOpen && (
-                      <div className="workspace-days">
-                        <div className="workspace-days-heading">
-                          <strong>Les journées</strong>
-                          <button
-                            type="button"
-                            className="workspace-action"
-                            onClick={() => setDaySpineOpen(true)}
-                          >
-                            Organiser
-                          </button>
-                        </div>
-                        <DaySpine width="100%" />
-                      </div>
                     )}
-
-                  <div className="workspace-page">
-                    {CurrentView ? (
-                      <CurrentView />
-                    ) : (
-                      <div style={{ padding: 32, color: 'var(--muted)' }}>
-                        Vue inconnue : {view}
-                      </div>
-                    )}
+                    <button type="button" className="fv-button" onClick={() => Store.set({
+                      settingsInitialSection: 'share', settingsOpen: true
+                    })}>
+                      <Icon name="users" size={16} />Partager
+                    </button>
+                    <button type="button" className="fv-button" onClick={() => Store.set({
+                      settingsInitialSection: 'trips', settingsOpen: true
+                    })}>
+                      <Icon name="gear" size={16} />Gérer le voyage
+                    </button>
                   </div>
+                </header>
+                <div className={'fv-page' + (
+                  appMode === 'plan' && view === 'itinerary' ? ' fv-page-itinerary' : ''
+                )}>
+                  {CurrentView ? <CurrentView /> : (
+                    <p className="fv-empty">Vue inconnue : {view}</p>
+                  )}
                 </div>
               </section>
 
-              {appMode !== 'travel' && toolboxOpen && window.Toolbox && (
+              {toolboxOpen && window.Toolbox && (
                 <ModalShell
                   title="Outils du voyage"
                   onClose={closeWorkspaceTools}
@@ -5560,21 +5184,6 @@ function toggleToolboxCollapsed() {
             </>
           )}
         </main>
-
-        {user && activeTripId && trip && (
-          <MobileWorkspaceNav />
-        )}
-
-        {appMode !== 'travel' && isNarrowShell && user && activeTripId && trip && (
-          <button
-            type="button"
-            className="app-floating tools"
-            onClick={() => setToolboxOpen(true)}
-            title="Ouvrir la boîte à outils"
-          >
-            <Icon name="gear" size={20} />
-          </button>
-        )}
 
         {user && window.ReminderNotifier && (
           <window.ReminderNotifier
@@ -6116,6 +5725,92 @@ function toggleFocusMode() {
     focusMode: nextFocusMode
   });
 }
+
+
+    if (user && trip) {
+      return (
+        <header className="fv-top">
+          <div className="fv-brandrow">
+            <button type="button" className="fv-brand" onClick={() => Store.set({
+              activeTripId: null, trip: null, selectedDayIndex: 0, selectedStepId: null
+            })}>
+              <Icon name="map" size={22} />La Fabrique à Voyages
+            </button>
+            <div className="fv-breadcrumb" ref={menuRef}>
+              <button type="button" className="fv-textbutton" onClick={() => Store.set({
+                activeTripId: null, trip: null, selectedDayIndex: 0, selectedStepId: null
+              })}>Mes voyages</button>
+              <span aria-hidden="true">/</span>
+              <button type="button" className="fv-textbutton" aria-expanded={tripMenuOpen}
+                onClick={() => setTripMenuOpen(open => !open)}>
+                {trip.name || 'Mon voyage'} <Icon name="chevdown" size={13} />
+              </button>
+              {tripMenuOpen && (
+                <div className="fv-trip-menu" onKeyDown={event => {
+                  if (event.key === 'Escape') {
+                    setTripMenuOpen(false);
+                    menuRef.current?.querySelector('[aria-expanded]')?.focus();
+                  }
+                }}>
+                  {trips.map(item => (
+                    <button type="button" key={item.id}
+                      aria-current={item.id === activeTripId ? 'true' : undefined}
+                      onClick={() => { setTripMenuOpen(false); selectTrip(item.id); }}>
+                      {item.name}
+                    </button>
+                  ))}
+                  <button type="button" onClick={() => {
+                    setTripMenuOpen(false); setNewTripOpen(true);
+                  }}>+ Nouveau voyage</button>
+                </div>
+              )}
+            </div>
+            <div className="fv-account">
+              <button type="button" className="fv-iconbutton" aria-label="Paramètres"
+                onClick={() => Store.set({ settingsInitialSection: 'account', settingsOpen: true })}>
+                <Icon name="gear" size={17} />
+              </button>
+              <button type="button" className="fv-iconbutton" aria-pressed={focusMode}
+                title={focusMode ? 'Réafficher les panneaux' : 'Activer le mode Focus'}
+                aria-label={focusMode ? 'Réafficher les panneaux' : 'Activer le mode Focus'}
+                onClick={toggleFocusMode}>
+                <Icon name={focusMode ? 'expand' : 'eye'} size={17} />
+              </button>
+              <button type="button" className="fv-avatar"
+                aria-label={'Ouvrir le profil de ' + (displayName || 'mon compte')}
+                onClick={() => Store.set({ settingsOpen: true })}>
+                {isGuestUser ? 'Enregistrer' : initials}
+              </button>
+            </div>
+          </div>
+          <div className="fv-navrow">
+            <nav className="fv-tabs" aria-label="Sections du voyage">
+              {['itinerary', 'map', 'budget', 'docs', 'summary'].map(id => {
+                const item = navItems.find(item => item.id === id);
+                return (
+                  <button type="button" className="fv-tab" key={id}
+                    aria-current={appMode !== 'travel' && view === id ? 'page' : undefined}
+                    onClick={() => { setAppMode('plan'); Store.set({ view: id }); }}>
+                    {item.label}
+                  </button>
+                );
+              })}
+            </nav>
+            <div className="fv-mode" role="group" aria-label="Mode d’utilisation">
+              <button type="button" aria-pressed={appMode === 'plan'}
+                onClick={() => setAppMode('plan')}>Préparer</button>
+              <button type="button" aria-pressed={appMode === 'travel'}
+                onClick={() => setAppMode('travel')}>Voyager →</button>
+            </div>
+          </div>
+          {newTripOpen && (
+            <NewTripModal initialGuidedOpen={newTripGuidedOpen} onClose={() => {
+              setNewTripOpen(false); setNewTripGuidedOpen(false);
+            }} />
+          )}
+        </header>
+      );
+    }
 
     return (
       <header className={'topbar' + (compact ? ' compact' : '')}>

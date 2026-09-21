@@ -912,86 +912,18 @@ function EmptyLodgingCard({ onAdd }) {
     ]);
 
     return (
-      <div style={{
-        border: '1px solid var(--outline-variant)',
-        background: 'var(--surface-container-lowest,#fff)',
-        borderRadius: 12,
-        padding: 11
-      }}>
-        <div style={{
-          display: 'flex',
-          alignItems: 'flex-start',
-          gap: 9
-        }}>
-          <div style={{
-            width: 30,
-            height: 30,
-            borderRadius: 10,
-            background: 'var(--accent-soft)',
-            color: 'var(--accent)',
-            display: 'grid',
-            placeItems: 'center',
-            flexShrink: 0
-          }}>
-            ☁
-          </div>
-
-          <div style={{ minWidth: 0 }}>
-            <div style={{
-              fontSize: 12.5,
-              fontWeight: 900,
-              color: 'var(--text)'
-            }}>
-              {weather.title}
-            </div>
-
-            <div style={{
-              marginTop: 2,
-              fontSize: 12,
-              lineHeight: '17px',
-              color: 'var(--muted)'
-            }}>
-              {weather.text}
-            </div>
-          </div>
+      <div className="fv-weather">
+        <div className="fv-weather-summary">
+          <span aria-hidden="true">☁</span>
+          <div><strong>{weather.title}</strong><p>{weather.text}</p></div>
         </div>
-
-        {weather.details.length > 0 && (
-          <div style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: 5,
-            marginTop: 9
-          }}>
-            {weather.details.map(function renderDetail(item, index) {
-              return (
-                <span
-                  key={index}
-                  style={{
-                    borderRadius: 999,
-                    background: 'var(--inset)',
-                    color: 'var(--muted)',
-                    fontSize: 10.5,
-                    lineHeight: '15px',
-                    padding: '4px 7px'
-                  }}
-                >
-                  {item}
-                </span>
-              );
-            })}
-          </div>
+        {!!weather.details.length && (
+          <details className="fv-rail-details">
+            <summary>Détails météo</summary>
+            <ul>{weather.details.map((item, index) => <li key={index}>{item}</li>)}</ul>
+          </details>
         )}
-
-        <div style={{
-          marginTop: 8,
-          color: 'var(--faint)',
-          fontSize: 9.5,
-          lineHeight: '14px',
-          fontFamily: 'var(--font-mono, ui-monospace)'
-        }}>
-          {weather.source}
-        </div>
+        <small>{weather.source}</small>
       </div>
     );
   }
@@ -1004,11 +936,6 @@ function EmptyLodgingCard({ onAdd }) {
     onAddStep,
     onReload
   }) {
-const [openSections, setOpenSections] = React.useState({
-      restaurants: false,
-      lodging: false,
-      weather: false
-    });
 
     const restaurants = getRestaurants(day);
     const stays =
@@ -1019,15 +946,6 @@ const [openSections, setOpenSections] = React.useState({
 
     const tonightStay =
       stays.find(item => item.status !== 'checkout') || null;
-
-    function toggleSection(key) {
-      setOpenSections(function update(prev) {
-        return {
-          ...prev,
-          [key]: !prev[key]
-        };
-      });
-    }
 
     function addRestaurant() {
       if (onAddStep) {
@@ -1054,165 +972,65 @@ const [openSections, setOpenSections] = React.useState({
       }
     }
 
-    return (
-      <aside
-        className="web-meal-rail"
-        style={{
-          width: 292,
-          flexShrink: 0,
-          height: '100%',
-          minHeight: 0,
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
-          borderLeft: '1px solid var(--outline-variant)',
-          background: 'var(--bg)'
-        }}
-      >
-        <div
-          className="web-meal-rail-scroll"
-          style={{
-            flex: '1 1 0',
-            minHeight: 0,
-            overflowY: 'auto',
-            overflowX: 'hidden',
-            scrollbarGutter: 'stable',
-            padding: '16px 14px 22px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 12
-          }}
-        >
-          {window.WorkspaceTools && <window.WorkspaceTools />}
-
-          <window.RailSection
-            noBorder
-            kicker="Hébergement"
-            title={tonightStay ? 'Cette nuit' : 'Hébergement'}
-            subtitle={
-              tonightStay
-                ? lodgingName(tonightStay.step) +
-                  ' · Nuit ' +
-                  Math.min(
-                    tonightStay.nightNumber || 1,
-                    tonightStay.nights || 1
-                  ) +
-                  '/' + (tonightStay.nights || 1)
-                : stays.length
-                  ? 'Départ aujourd’hui · ' + lodgingName(stays[0].step)
-                  : 'Aucun hébergement pour cette nuit.'
-            }
-            icon="bed"
-            open={openSections.lodging}
-            onToggle={() => toggleSection('lodging')}
-          >
-            {stays.length ? (
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection:
-                    'column',
-                  gap: 8
-                }}
-              >
-                {stays.map(
-                  function renderStay(
-                    currentStay,
-                    index
-                  ) {
-                    return (
-                      <LodgingCard
-                        key={
-                          String(
-                            currentStay
-                              .step
-                              ?.id ||
-                              index
-                          ) +
-                          '-' +
-                          currentStay
-                            .status
-                        }
-                        stay={
-                          currentStay
-                        }
-                        day={day}
-                        trip={trip}
-                        onEditStep={
-                          onEditStep
-                        }
-                      />
-                    );
-                  }
-                )}
+   return (
+      <aside className="fv-right" aria-label="Outils et informations de la journée">
+        {window.WorkspaceTools && <window.WorkspaceTools />}
+        <section className="fv-rail-section">
+          <h3>Cette nuit</h3>
+          {tonightStay ? (
+            <div className="fv-stay">
+              <strong>{lodgingName(tonightStay.step)}</strong>
+              <p>{[formatDate(tonightStay.startISO), formatDate(tonightStay.endISO)]
+                .filter(Boolean).join(' — ')} · {tonightStay.nights || 1} nuit{tonightStay.nights > 1 ? 's' : ''}</p>
+              <span className="fv-night">
+                Nuit {Math.min(tonightStay.nightNumber || 1, tonightStay.nights || 1)} sur {tonightStay.nights || 1}
+              </span>
+            </div>
+          ) : <p className="fv-muted">Aucun hébergement pour cette nuit.</p>}
+          {stays.length > 0 && (
+            <details className="fv-rail-details" key={'stays-' + day?.id}>
+              <summary>{stays.length > 1 ? 'Voir les réservations' : 'Voir la réservation'} ↗</summary>
+              <div className="fv-reservations">
+                {stays.map((stay, index) => (
+                  <LodgingCard key={String(stay.step?.id || index) + '-' + stay.status}
+                    stay={stay} day={day} trip={trip} onEditStep={onEditStep} />
+                ))}
               </div>
-            ) : (
-              <EmptyLodgingCard
-                onAdd={addLodging}
-              />
-            )}
-          </window.RailSection>
-
-          <window.RailSection
-            kicker="Où manger"
-            title="Où manger ?"
-            subtitle={restaurants.length
-              ? restaurants.length + ' adresse' + (restaurants.length > 1 ? 's' : '') + ' prévue' + (restaurants.length > 1 ? 's' : '')
-              : 'Ajoute les repas importants de la journée.'}
-            icon="fork"
-            open={openSections.restaurants}
-            onToggle={() => toggleSection('restaurants')}
-            actions={
-              <window.RailActionButton
-                title="Ajouter un restaurant"
-                onClick={addRestaurant}
-                primary
-              >
-                +
-              </window.RailActionButton>
-            }
-          >
-            {restaurants.length ? (
-              <div style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 10
-              }}>
-                {restaurants.map(function renderRestaurant(step) {
-                  return (
-                    <RestaurantCard
-                      key={step.id || step.stepIndex || step.label}
-                      step={step}
-                      day={day}
-                      trip={trip}
-                      onEditStep={onEditStep}
-                      onReload={onReload}
-                    />
-                  );
-                })}
+            </details>
+          )}
+          <button type="button" className="fv-textbutton" onClick={addLodging}>
+            + Ajouter un hébergement
+          </button>
+        </section>
+        <section className="fv-rail-section">
+          <h3>À table</h3>
+          {restaurants.length ? (
+            <>
+              <div className="fv-meal">
+                <strong>{stepDisplayName(restaurants[0], 'Restaurant')}</strong>
+                <small>{stepRangeLabel(restaurants[0]) || 'Horaire libre'}
+                  {restaurants.length > 1 ? ' · ' + restaurants.length + ' adresses' : ''}
+                </small>
               </div>
-            ) : (
-              <window.RailEmptyState
-                actionLabel="Ajouter un restaurant"
-                actionIcon="fork"
-                onAction={addRestaurant}
-              >
-                Aucun restaurant prévu pour cette journée.
-              </window.RailEmptyState>
-            )}
-          </window.RailSection>
-
-          <window.RailSection
-            kicker="Conditions"
-            title="Météo"
-            subtitle="Prévision ou tendance pour cette journée."
-            icon="sparkle"
-            open={openSections.weather}
-            onToggle={() => toggleSection('weather')}
-          >
-            <WeatherBlock day={day} />
-          </window.RailSection>
-        </div>
+              <details className="fv-rail-details" key={'meals-' + day?.id}>
+                <summary>Voir les repas ›</summary>
+                <div className="fv-reservations">
+                  {restaurants.map((step, index) => (
+                    <RestaurantCard key={step.id || index} step={step} day={day}
+                      trip={trip} onEditStep={onEditStep} onReload={onReload} />
+                  ))}
+                </div>
+              </details>
+            </>
+          ) : <p className="fv-muted">Aucun repas prévu.</p>}
+          <button type="button" className="fv-textbutton" onClick={addRestaurant}>
+            + Ajouter un restaurant
+          </button>
+        </section>
+        <section className="fv-rail-section">
+          <h3>Météo</h3>
+          <WeatherBlock day={day} />
+        </section>
       </aside>
     );
   }

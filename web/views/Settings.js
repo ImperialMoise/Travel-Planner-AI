@@ -45,7 +45,13 @@ const SETTINGS_SECTIONS = {
 
 function SettingsModal() {
   const { user, trips, activeTripId, trip } = Store.useStore();
-  const [section, setSection] = React.useState('account');
+  const [section, setSection] = React.useState(() => {
+    const requested = Store.get().settingsInitialSection;
+    return SETTINGS_SECTIONS[requested] ? requested : 'account';
+  });
+  React.useEffect(() => {
+    Store.set({ settingsInitialSection: null });
+  }, []);
   const compact = useSettingsCompact();
   const dialogRef = React.useRef(null);
   const close = () => Store.set({ settingsOpen: false });

@@ -2194,7 +2194,6 @@ function openAddStep(type, preset) {
         )}
         {coverPickerOpen && (
           <TripCoverPickerModal
-```
   tripId={trip.id}
   tripName={trip.name}
   day={day}

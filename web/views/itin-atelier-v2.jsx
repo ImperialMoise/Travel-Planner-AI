@@ -1640,16 +1640,27 @@ function openAddStep(type, preset) {
             </select>
           </label>
           <div className="fv-daymeta">{dayDate}{day.city ? ' · ' + day.city : ''}</div>
+
           <div className="fv-dayhead">
             <h2>{dayTitle}</h2>
-            <button type="button" className="fv-iconbutton"
-              aria-label="Modifier la journée" onClick={() => setDayEditorOpen(true)}>
-              <Icon name="edit" size={17} />
-            </button>
-          </div>
-          {day.note && <p className="fv-intro">{day.note}</p>}
-          <details className="fv-day-options" key={'options-' + day.id}>
-            <summary>Options de la journée</summary>
+            <div className="fv-day-controls">
+              <button type="button" className="fv-iconbutton"
+                aria-label="Modifier la journée" title="Modifier la journée"
+                onClick={() => setDayEditorOpen(true)}>
+                <Icon name="edit" size={17} />
+              </button>
+              <details className="fv-day-options" key={'options-' + day.id}
+                onKeyDown={event => {
+                  if (event.key !== 'Escape') return;
+                  event.preventDefault();
+                  event.stopPropagation();
+                  event.currentTarget.open = false;
+                  event.currentTarget.querySelector('summary')?.focus();
+                }}>
+                <summary aria-label="Options de la journée" title="Options de la journée">
+                  <span aria-hidden="true">⋯</span>
+                </summary>
+                <div className="fv-day-options-panel">
             <div className="fv-actions">
               <button type="button" className="fv-button" onClick={selectMapForDay}>Carte du jour</button>
               <button type="button" className="fv-button" onClick={() => setCoverPickerOpen(true)}>
@@ -1682,7 +1693,12 @@ function openAddStep(type, preset) {
                 )}
               </>
             )}
-          </details>
+
+                </div>
+              </details>
+            </div>
+          </div>
+          {day.note && <p className="fv-intro">{day.note}</p>}
           <div className="fv-program-head">
             <span>{timelineSteps.length} étape{timelineSteps.length > 1 ? 's' : ''} au programme</span>
             <button type="button" className="fv-textbutton" aria-pressed={organizingSteps}

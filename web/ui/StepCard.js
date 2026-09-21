@@ -452,208 +452,63 @@
       }
     }
 
-  return (
-      <article
-        className="web-step-card"
-        data-selected={selected ? 'true' : 'false'}
-        onClick={selectStep}
-        style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          alignItems: 'flex-start',
-          gap: 16,
-          padding: 18,
-          minWidth: 0,
-          borderRadius: 14,
-          border: '1px solid ' + (
-            selected ? 'var(--accent)' : 'var(--line)'
-          ),
-          borderLeft: '3px solid ' + tone.accent,
-          background: selected
-            ? 'var(--accent-soft)'
-            : 'var(--card)',
-          boxShadow: 'none'
-        }}
-      >
-        <div
-          className="web-step-time-column"
-          style={{
-            flex: '0 0 76px',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'flex-start',
-            gap: 5
-          }}
-        >
-          <strong style={{
-            fontSize: startTime ? 16 : 12,
-            lineHeight: 1.4,
-            color: startTime ? 'var(--text)' : 'var(--muted)',
-            fontVariantNumeric: 'tabular-nums'
-          }}>
-            {startTime || 'Horaire libre'}
-          </strong>
 
-          {endTime && (
-            <span style={{ fontSize: 13, color: 'var(--muted)' }}>
-              → {endTime}
-            </span>
-          )}
-
-          {duration && (
-            <span style={{ fontSize: 12, color: 'var(--muted)' }}>
-              {duration}
-            </span>
-          )}
+    return (
+      <article className="fv-event" data-selected={selected ? 'true' : 'false'}>
+        <div className="fv-time">
+          <strong>{startTime || 'Libre'}</strong>
+          {endTime && <small>{endTime}</small>}
         </div>
-
-        <div
-          className="web-step-card-content"
-          style={{
-            flex: '1 1 180px',
-            minWidth: 0,
-            paddingRight: 0,
-            overflowWrap: 'anywhere'
-          }}
-        >
-          <div style={{
-            marginBottom: 8,
-            color: tone.accent,
-            display: 'flex',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            gap: 8,
-            fontSize: 12,
-            fontWeight: 600
-          }}>
-            <Icon name={stepIcon(step)} size={14} />
-            {tone.label}
-            {important && <span>★ Étape clé</span>}
-          </div>
-
-          <h3
-            className="web-step-card-title"
-            style={{
-              margin: '0 0 8px',
-              fontFamily: 'var(--font-serif)',
-              fontSize: 23,
-              lineHeight: 1.25,
-              fontWeight: 400,
-              color: 'var(--text)'
-            }}
-          >
-            {title}
-          </h3>
-
-          {subtitle && (
-            <p style={{
-              margin: '0 0 10px',
-              color: 'var(--muted)',
-              fontSize: 14,
-              lineHeight: 1.5
-            }}>
-              {subtitle}
-            </p>
-          )}
-
-          {step.note && (
-            String(step.note).length > 180 ? (
-              <details
-                key={step.id}
-                style={{ margin: '0 0 12px' }}
-                onClick={event => event.stopPropagation()}
-              >
-                <summary style={{
-                  display: 'list-item',
-                  minHeight: 44,
-                  padding: '10px 0',
-                  boxSizing: 'border-box',
-                  color: 'var(--petrol)',
-                  fontSize: 14,
-                  fontWeight: 600,
-                  cursor: 'pointer'
-                }}>
-                  Notes de l’étape
-                </summary>
-                <p style={{
-                  margin: '4px 0 8px',
-                  color: 'var(--text)',
-                  fontSize: 16,
-                  lineHeight: 1.6,
-                  whiteSpace: 'pre-wrap',
-                  overflowWrap: 'anywhere'
-                }}>
-                  {step.note}
-                </p>
-              </details>
-            ) : (
-              <p style={{
-                margin: '0 0 12px',
-                color: 'var(--text)',
-                fontSize: 16,
-                lineHeight: 1.6,
-                whiteSpace: 'pre-wrap',
-                overflowWrap: 'anywhere'
-              }}>
-                {step.note}
-              </p>
-            )
-          )}
-
-          <div style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            alignItems: 'center',
-            gap: 8
-          }}>
-            <ActionButton title="Modifier cette étape" onClick={editStep}>
-              Modifier
-            </ActionButton>
-
-            <ActionButton
-              title={hasCoords ? 'Voir sur la carte' : 'Localiser cette étape'}
-              onClick={openOnMap}
-            >
-              <Icon name="map" size={14} />
-              {hasCoords ? 'Carte' : 'Localiser'}
-            </ActionButton>
-
-            {documentUrl && (
-              <ActionButton
-                title="Ouvrir le document lié"
-                onClick={openDocument}
-              >
-                <Icon name="paperclip" size={14} />
-                Document
-              </ActionButton>
+        <details className="fv-event-body" onToggle={event => {
+          if (event.currentTarget.open) selectStep();
+        }}>
+          <summary>
+            <span className="fv-kind">
+              <Icon name={stepIcon(step)} size={13} />
+              {tone.label}
+              {important && <span>★ Étape clé</span>}
+            </span>
+            <span className="fv-event-title">
+              <span>{title}</span>
+              <span className="fv-chevron" aria-hidden="true">›</span>
+            </span>
+            {step.note && (
+              <span className="fv-event-note">
+                {String(step.note).length > 180
+                  ? String(step.note).slice(0, 180) + '…'
+                  : step.note}
+              </span>
             )}
-
-            <button
-              type="button"
-              className="web-step-action-button"
-              aria-pressed={important}
-              aria-label={important
-                ? 'Retirer des étapes clés'
-                : 'Marquer comme étape clé'}
-              onClick={toggleImportant}
-              style={{
-                minWidth: 44,
-                minHeight: 44,
-                padding: 8,
-                border: '1px solid var(--outline-variant)',
-                borderRadius: 10,
-                background: important
-                  ? 'var(--accent-soft)'
-                  : 'var(--card)',
-                color: important ? 'var(--accent)' : 'var(--muted)',
-                fontSize: 20,
-                cursor: 'pointer'
-              }}
-            >
-              <span aria-hidden="true">{important ? '★' : '☆'}</span>
-            </button>
+            {(subtitle || duration) && (
+              <span className="fv-event-meta">
+                {subtitle && <span><Icon name="pin" size={13} />{subtitle}</span>}
+                {duration && <span><Icon name="clock" size={13} />{duration}</span>}
+              </span>
+            )}
+          </summary>
+          <div className="fv-event-details">
+            {step.note && String(step.note).length > 180 && (
+              <p className="fv-full-note">{step.note}</p>
+            )}
+            <div className="fv-actions">
+              <button type="button" className="fv-button" onClick={editStep}>
+                Modifier
+              </button>
+              <button type="button" className="fv-button" onClick={openOnMap}>
+                <Icon name="map" size={14} />{hasCoords ? 'Carte' : 'Localiser'}
+              </button>
+              {documentUrl && (
+                <button type="button" className="fv-button" onClick={openDocument}>
+                  <Icon name="paperclip" size={14} />Document
+                </button>
+              )}
+              <button type="button" className="fv-button"
+                aria-pressed={important} onClick={toggleImportant}>
+                {important ? '★ Retirer des étapes clés' : '☆ Marquer comme étape clé'}
+              </button>
+            </div>
           </div>
-        </div>
+        </details>
       </article>
     );
   }

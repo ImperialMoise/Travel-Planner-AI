@@ -565,7 +565,7 @@ function PlaceholderWidget({ children }) {
   );
 }
 
-  function Toolbox({ width = 320 }) {
+  function Toolbox({ width = 320, activeTool = null }) {
     const {
       trip,
       selectedDayIndex = 0,
@@ -764,6 +764,15 @@ function PlaceholderWidget({ children }) {
       );
     }
 
+    if (activeTool && TOOL_DEFINITIONS[activeTool]) {
+      return (
+        <section className="workspace-tool-detail">
+          <h3>{TOOL_DEFINITIONS[activeTool].label}</h3>
+          {renderToolContent(activeTool)}
+        </section>
+      );
+    }
+
     return (
       <aside
         style={{
@@ -907,6 +916,51 @@ function PlaceholderWidget({ children }) {
     );
   }
 
+  function WorkspaceTools() {
+    const { trip } = Store.useStore(state => ({ trip: state.trip }));
+
+    function openTool(tool) {
+      window.dispatchEvent(new CustomEvent('open-workspace-tools', {
+        detail: { tool }
+      }));
+    }
+
+    return (
+      <section className="workspace-tools" aria-label="Outils du voyage">
+        <h3>À portée de main</h3>
+        <div className="workspace-tools-grid">
+          {[
+            { id: 'globalNote', label: 'Notes', icon: 'file' },
+            { id: 'checklist', label: 'Checklist', icon: 'check' },
+            { id: 'ideas', label: 'Idées', icon: 'sparkle' }
+          ].map(tool => (
+            <button type="button" key={tool.id} onClick={() => openTool(tool.id)}>
+              <Icon name={tool.icon} size={18} />
+              <span>{tool.label}</span>
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={() => {
+              if (trip && window.TripPrint?.open) {
+                window.TripPrint.open(trip);
+              } else {
+                Store.showToast('L’export PDF est indisponible.');
+              }
+            }}
+          >
+            <Icon name="print" size={18} />
+            <span>Imprimer / PDF</span>
+          </button>
+        </div>
+        <button type="button" className="workspace-all-tools" onClick={() => openTool(null)}>
+          Tous les outils <span aria-hidden="true">→</span>
+        </button>
+      </section>
+    );
+  }
+
+  window.WorkspaceTools = WorkspaceTools;
   window.Toolbox = Toolbox;
   window.ToolboxV2 = Toolbox;
 })();

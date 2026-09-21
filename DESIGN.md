@@ -1,29 +1,42 @@
 # Référence de design — La Fabrique à Voyages
 
 ## Direction validée
-Un carnet de voyage contemporain : chaleureux, lisible et précis.
-Conserver l’identité blanc cassé, vert forêt, ocre et titres à empattements.
-La maquette validée guide la structure, pas uniquement les couleurs.
+Maquette A « espace de préparation » comme référence structurelle.
+Maquette B uniquement pour les cartes et la présentation des réservations.
+Ne pas revenir à une navigation générale verticale sur ordinateur.
 
-## Principes obligatoires
-- Préserver les fonctionnalités et les données existantes.
-- Séparer la présentation publique de l’espace de travail.
-- Afficher directement Mes voyages quand l’utilisateur retrouve ses itinéraires.
-- Donner la priorité au contenu plutôt qu’aux commandes.
-- Une action principale par zone ; actions secondaires regroupées.
-- Éviter les cartes imbriquées, titres répétés et panneaux permanents inutiles.
-- Photos pertinentes ; remplacement sobre si aucune photo n’est disponible.
-- Deux familles typographiques maximum, espacements et boutons cohérents.
-- Sur mobile : commandes accessibles, aucun chevauchement, contenu lisible.
-- Conserver les fonctions même lorsqu’on déplace leur point d’accès.
+## Structure obligatoire
+- Pages du voyage dans la navigation du haut.
+- Journées dans une colonne de gauche sur ordinateur.
+- Programme central de largeur maîtrisée.
+- Outils nommés et directement accessibles à droite, avec les informations du jour.
+- Couverture de journée facultative et compacte.
+- Sur petit écran, replier les panneaux sans perdre leurs fonctions.
+- Préserver le mode Focus et le mode Voyager.
+
+## Apparence
+- Blanc cassé et vert forêt par défaut ; accents personnalisés conservés.
+- Thème sombre charbon, textes clairs et contrastes adaptés.
+- Titres à empattements, commandes et texte courant sans empattements.
+- Boutons tactiles de 44 px minimum, hiérarchie simple et cartes sobres.
+- Les règles de la structure A sont centralisées dans web/workspace-a.css.
+- L’ancienne classe workspace-redesign ne doit plus piloter cette structure.
+
+## Fonctionnement
+- Réutiliser les composants, états, gestionnaires et API existants.
+- Ne pas réécrire l’authentification, les sauvegardes ou les règles métier.
+- Chaque commande déplacée doit rester accessible.
+- Aucun changement de données ni nouvelle fonctionnalité pour cette refonte.
+- APK séparée du site web.
 
 ## Lots
-1. Bibliothèque directe, cartes lisibles, recherche et catégories.
-2. Itinéraire : dates compactes, programme central, hébergement et météo discrets.
-3. Harmonisation carte, budget, documents, profil puis APK séparément.
+1. Structure A, cartes de B, raccourcis des outils et thèmes clair/sombre.
+2. Harmonisation des voyages, carte, budget, documents, bilan et profil.
+3. Validation visuelle et fonctionnelle, puis nettoyage des anciens styles inactifs.
 
 ## Validation
-Vérifier ordinateur et largeurs mobiles 360, 390 et 430 px.
-Vérifier voyage rempli, journée vide, titre long et absence de photo.
-Vérifier clavier, chargements, erreurs et menus.
-Ne pas déclarer terminé ce qui est seulement codé ou non déployé.
+Ordinateur et mobiles 360, 390 et 430 px ; thèmes clair et sombre.
+Voyage rempli, journée vide, titre long, couverture présente ou absente.
+Navigation clavier, fenêtres, outils, organisation des jours et étapes.
+Connexion, chargement, sauvegarde, partage, duplication et impression.
+Ne jamais confondre syntaxe valide, build réussi et parcours réellement vérifié.

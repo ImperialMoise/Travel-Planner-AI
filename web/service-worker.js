@@ -1,5 +1,5 @@
 const CACHE_NAME =
-  'la-fabrique-static-v4';
+  'la-fabrique-static-v5';
 
 const OFFLINE_URL =
   '/offline.html';
@@ -11,6 +11,7 @@ const PRECACHE_URLS = [
   HOME_URL,
   OFFLINE_URL,
   '/styles.css',
+  '/workspace-a.css',
   '/app.bundle.js',
   '/manifest.webmanifest',
   '/icons/app-icon-192.svg',

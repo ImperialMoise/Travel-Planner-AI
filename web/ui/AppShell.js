@@ -395,7 +395,7 @@
   };
 
   function getTripAccent(theme) {
-    return TRIP_ACCENTS[theme] || TRIP_ACCENTS.ochre;
+    return TRIP_ACCENTS[theme] || TRIP_ACCENTS.forest;
   }
 
   const APP_SHELL_CSS = `
@@ -5313,7 +5313,22 @@
     const toolWidth = isCompactShell ? 280 : 320;
 
 const [toolboxOpen, setToolboxOpen] = React.useState(false);
+const [activeWorkspaceTool, setActiveWorkspaceTool] = React.useState(null);
 const [daySpineOpen, setDaySpineOpen] = React.useState(false);
+
+React.useEffect(() => {
+  function openWorkspaceTools(event) {
+    setActiveWorkspaceTool(event.detail?.tool || null);
+    setToolboxOpen(true);
+  }
+  window.addEventListener('open-workspace-tools', openWorkspaceTools);
+  return () => window.removeEventListener('open-workspace-tools', openWorkspaceTools);
+}, []);
+
+function closeWorkspaceTools() {
+  setToolboxOpen(false);
+  setActiveWorkspaceTool(null);
+}
 
 const closeDayOrganizer = React.useCallback(() => {
   setDaySpineOpen(false);
@@ -5351,8 +5366,10 @@ function toggleToolboxCollapsed() {
 
     return (
       <div
-  className={'app-shell' + (user && trip && activeTripId ? ' workspace-redesign' : '')}
+  className={'app-shell' + (user && trip && activeTripId ? ' workspace-a' : '')}
+  data-focus={desktopFocusMode ? 'true' : 'false'}
   style={{
+    '--trip-accent': accent.accent,
     '--accent': accent.accent,
     '--accent-soft': accent.soft,
     '--accent-ink': accent.ink,
@@ -5494,79 +5511,51 @@ function toggleToolboxCollapsed() {
                   </details>
                 </header>
 
-                {CurrentView ? (
-                  <CurrentView />
-                ) : (
-                  <div
-                    style={{
-                      padding: 40,
-                      color: 'var(--muted)'
-                    }}
-                  >
-                    Vue inconnue : {view}
-                  </div>
-                )}
-              </section>
+                <div className="workspace-canvas">
+                  {appMode !== 'travel' &&
+                    view === 'itinerary' &&
+                    !isNarrowShell &&
+                    !desktopFocusMode &&
+                    !daySpineOpen && (
+                      <div className="workspace-days">
+                        <div className="workspace-days-heading">
+                          <strong>Les journées</strong>
+                          <button
+                            type="button"
+                            className="workspace-action"
+                            onClick={() => setDaySpineOpen(true)}
+                          >
+                            Organiser
+                          </button>
+                        </div>
+                        <DaySpine width="100%" />
+                      </div>
+                    )}
 
-              {appMode !== 'travel' &&
-                view !== 'itinerary' &&
-                !isNarrowShell &&
-                !desktopFocusMode &&
-                window.Toolbox && (
-  <div style={{
-    width: toolboxCollapsed ? 48 : toolWidth + 48,
-    height: '100%',
-    flexShrink: 0,
-    display: 'flex',
-    background: 'var(--surface-container-low, var(--bg-2))',
-    borderLeft: '1px solid var(--outline-variant, var(--line))'
-  }}>
-    {!toolboxCollapsed && (
-      <div style={{ width: toolWidth, minWidth: 0, height: '100%' }}>
-        <window.Toolbox width="100%" />
-      </div>
-    )}
-
-    <button
-      type="button"
-      onClick={toggleToolboxCollapsed}
-      title={toolboxCollapsed ? 'Déployer la boîte à outils' : 'Ranger la boîte à outils'}
-      aria-label={toolboxCollapsed ? 'Déployer la boîte à outils' : 'Ranger la boîte à outils'}
-      style={{
-        width: 48,
-        minWidth: 48,
-        height: '100%',
-        border: 'none',
-        borderLeft: toolboxCollapsed ? 'none' : '1px solid var(--outline-variant, var(--line))',
-        background: 'transparent',
-        color: 'var(--accent)',
-        cursor: 'pointer',
-        display: 'grid',
-        placeItems: 'start center',
-        paddingTop: 18
-      }}
-    >
-      <Icon name={toolboxCollapsed ? 'chevleft' : 'chevright'} size={19} />
-    </button>
-  </div>
-)}
-
-              {appMode !== 'travel' && toolboxOpen && window.Toolbox && (
-                <div
-                  className="app-overlay right"
-                  onClick={() => setToolboxOpen(false)}
-                >
-                  <div
-                    onClick={event => event.stopPropagation()}
-                    style={{
-                      height: '100%',
-                      maxWidth: 330,
-                      width: '88vw'
-                    }}
-                  >
-                    <window.Toolbox width="100%" />
+                  <div className="workspace-page">
+                    {CurrentView ? (
+                      <CurrentView />
+                    ) : (
+                      <div style={{ padding: 32, color: 'var(--muted)' }}>
+                        Vue inconnue : {view}
+                      </div>
+                    )}
                   </div>
                 </div>
+              </section>
+
+              {appMode !== 'travel' && toolboxOpen && window.Toolbox && (
+                <ModalShell
+                  title="Outils du voyage"
+                  onClose={closeWorkspaceTools}
+                >
+                  <div className="workspace-tool-dialog">
+                    <window.Toolbox
+                      width="100%"
+                      activeTool={activeWorkspaceTool}
+                    />
+                  </div>
+                </ModalShell>
               )}
             </>
           )}

@@ -1083,6 +1083,8 @@ const [openSections, setOpenSections] = React.useState({
             gap: 12
           }}
         >
+          {window.WorkspaceTools && <window.WorkspaceTools />}
+
           <window.RailSection
             noBorder
             kicker="Hébergement"

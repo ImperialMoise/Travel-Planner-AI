@@ -1445,15 +1445,63 @@
 
       .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-plan-head {
         min-height: 0;
-        padding: 14px 18px;
-        gap: 12px;
+        padding: 16px 18px;
+        gap: 16px;
         background: transparent;
+        flex-wrap: wrap;
       }
 
       .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-plan-title {
-        font-family: inherit;
+        margin: 0;
+        font-family: var(--font-serif);
+        font-size: 22px;
+        font-weight: 400;
+        line-height: 1.25;
+        color: var(--petrol);
+      }
+
+      .atelier-v2-plan-heading {
+        min-width: 0;
+        overflow-wrap: anywhere;
+      }
+
+      .atelier-v2-plan-count {
+        margin: 4px 0 0;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.5;
+      }
+
+      .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-plan-actions {
+        min-width: 0;
+        max-width: 100%;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-plan-actions .atelier-v2-btn {
+        min-height: 44px !important;
+        padding: 8px 12px !important;
+        border-radius: 10px !important;
         font-size: 14px;
         font-weight: 600;
+        line-height: 1.3;
+        white-space: normal;
+      }
+
+      .atelier-v2-plan-actions button:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 3px;
+      }
+
+      .atelier-v2-save-status {
+        margin: 8px 0;
+        padding: 8px 12px;
+        border-radius: 8px;
+        background: var(--accent-soft);
+        color: var(--text);
+        font-size: 14px;
+        line-height: 1.5;
       }
 
       .workspace-redesign .itinerary-layout.atelier-v2 .atelier-v2-timeline {
@@ -3398,24 +3446,18 @@ function openAddStep(type, preset) {
             <section className="atelier-v2-content">
               <div className="atelier-v2-plan-card">
                 <div className="atelier-v2-plan-head">
-<div>
-                      <div className="atelier-v2-plan-title">
-                        Programme du jour
-                      </div>
-
-                    <div style={{
-                      marginTop: 2,
-                      color: 'var(--muted)',
-                      fontSize: 11.5,
-                      lineHeight: '16px'
-                    }}>
+                  <div className="atelier-v2-plan-heading">
+                    <h2 className="atelier-v2-plan-title">
+                      Programme du jour
+                    </h2>
+                    <p className="atelier-v2-plan-count">
                       {timelineSteps.length
                         ? timelineSteps.length +
                           ' étape' +
                           (timelineSteps.length > 1 ? 's' : '') +
-                          ' dans cette journée'
-                        : 'Journée à construire'}
-                    </div>
+                          ' au programme'
+                        : 'Ajoute une activité ou un trajet.'}
+                    </p>
                   </div>
 
                   <div className="atelier-v2-plan-actions">
@@ -3759,50 +3801,36 @@ function openAddStep(type, preset) {
 
                 <div className="atelier-v2-timeline">
                 {!timelineSteps.length && (
-<div
+                  <div
                     className="atelier-v2-empty"
                     role="status"
                     aria-live="polite"
                     style={{
                       display: 'grid',
-                      justifyItems: 'center',
-                      gap: 6,
-                      textAlign: 'center'
+                      justifyItems: 'start',
+                      gap: 8,
+                      textAlign: 'left',
+                      fontSize: 15,
+                      lineHeight: 1.6
                     }}
                   >
-                    <span
-                      aria-hidden="true"
-                      style={{
-                        width: 34,
-                        height: 34,
-                        borderRadius: 11,
-                        background: 'var(--accent-soft)',
-                        color: 'var(--accent)',
-                        display: 'grid',
-                        placeItems: 'center',
-                        fontSize: 17
-                      }}
-                    >
-                      ✦
-                    </span>
-
                     <strong style={{ color: 'var(--text)' }}>
-                      Cette journée est encore libre
+                      Le programme reste à compléter
                     </strong>
-
                     <span>
-                      Utilise « + Ajouter » pour prévoir une activité ou un
-                      transport. Retrouve les repas, hébergements et la météo
-                      dans les panneaux complémentaires de cette journée.
+                      Ajoute tes visites et tes trajets avec « + Ajouter ».
+                      Les repas et les hébergements restent dans les panneaux
+                      de la journée.
                     </span>
                   </div>
                 )}
 
                 {reorderingSteps && (
                   <div
-                    className="atelier-v2-empty"
+                    className="atelier-v2-save-status"
                     role="status"
                     aria-live="polite"
+                    aria-atomic="true"
                   >
                     Enregistrement du nouvel ordre…
                   </div>

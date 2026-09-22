@@ -587,7 +587,6 @@ test(
       ).toContainText(
         FIRST_STEP_LABEL
       );
-```
       const accessibilityIssues =
 
         await page.evaluate(

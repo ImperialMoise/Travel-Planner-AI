@@ -8,6 +8,10 @@ B peut inspirer les détails de réservation, jamais transformer la timeline en 
 ## Espace connecté
 - En-tête sur deux niveaux : marque, voyages et profil ; puis onglets et Préparer/Voyager.
 - Bandeau du voyage : titre, dates, Partager et Gérer le voyage.
+- Navigation et bandeau du voyage partagent le même fond et les mêmes alignements ; éviter trois barres de couleurs empilées.
+- Nom du voyage affiché en titre ; sélection explicite « Changer de voyage » en haut, disponible aussi sur petit écran.
+- Préparer/Voyager sont les deux états d’un même sélecteur ; paramètres, Focus et profil restent accessibles.
+- Sur téléphone : marque et compte, puis Voyages et modes sur une ligne, puis onglets défilables.
 - Itinéraire à trois colonnes : journées, programme, outils et informations.
 - Programme sans cartes encadrées : heure, ligne verticale, catégorie, titre sans empattements, note et lieu.
 - Actions Modifier, Carte, Document et Étape clé dans le détail dépliable de l’étape.

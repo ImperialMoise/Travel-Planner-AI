@@ -5730,26 +5730,31 @@ function toggleFocusMode() {
 }
 
 
+
     if (user && trip) {
       return (
         <header className="fv-top">
           <div className="fv-brandrow">
-            <button type="button" className="fv-brand" onClick={() => Store.set({
+            <button type="button" className="fv-brand" aria-label="La Fabrique à Voyages — Mes voyages" onClick={() => Store.set({
               activeTripId: null, trip: null, selectedDayIndex: 0, selectedStepId: null
             })}>
-              <Icon name="map" size={22} />La Fabrique à Voyages
+              <Icon name="map" size={22} /><span>La Fabrique<span className="fv-brand-suffix"> à Voyages</span></span>
             </button>
             <div className="fv-breadcrumb" ref={menuRef}>
               <button type="button" className="fv-textbutton" onClick={() => Store.set({
                 activeTripId: null, trip: null, selectedDayIndex: 0, selectedStepId: null
               })}>Mes voyages</button>
-              <span aria-hidden="true">/</span>
-              <button type="button" className="fv-textbutton" aria-expanded={tripMenuOpen}
+              <button type="button" className="fv-trip-switch" aria-expanded={tripMenuOpen}
+                aria-label={'Changer de voyage — ' + (trip.name || 'Mon voyage')}
+                aria-controls={tripMenuOpen ? 'fv-trip-switcher-panel' : undefined}
                 onClick={() => setTripMenuOpen(open => !open)}>
-                {trip.name || 'Mon voyage'} <Icon name="chevdown" size={13} />
+                <Icon name="map" size={16} />
+                <span className="fv-switch-long">Changer de voyage</span>
+                <span className="fv-switch-short">Voyages</span>
+                <Icon name="chevdown" size={14} />
               </button>
               {tripMenuOpen && (
-                <div className="fv-trip-menu" onKeyDown={event => {
+                <div className="fv-trip-menu" id="fv-trip-switcher-panel" onKeyDown={event => {
                   if (event.key === 'Escape') {
                     setTripMenuOpen(false);
                     menuRef.current?.querySelector('[aria-expanded]')?.focus();
@@ -5769,7 +5774,7 @@ function toggleFocusMode() {
               )}
             </div>
             <div className="fv-account">
-              <button type="button" className="fv-iconbutton" aria-label="Paramètres"
+              <button type="button" className="fv-iconbutton" aria-label="Paramètres" title="Paramètres"
                 onClick={() => Store.set({ settingsInitialSection: 'account', settingsOpen: true })}>
                 <Icon name="gear" size={17} />
               </button>
@@ -5779,7 +5784,8 @@ function toggleFocusMode() {
                 onClick={toggleFocusMode}>
                 <Icon name={focusMode ? 'expand' : 'eye'} size={17} />
               </button>
-              <button type="button" className="fv-avatar"
+              <button type="button" className="fv-avatar" title={displayName || 'Mon compte'}
+                data-guest={isGuestUser ? 'true' : undefined}
                 aria-label={'Ouvrir le profil de ' + (displayName || 'mon compte')}
                 onClick={() => Store.set({ settingsOpen: true })}>
                 {isGuestUser ? 'Enregistrer' : initials}
@@ -5814,6 +5820,7 @@ function toggleFocusMode() {
         </header>
       );
     }
+
 
     return (
       <header className={'topbar' + (compact ? ' compact' : '')}>

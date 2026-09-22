@@ -220,59 +220,60 @@
     );
   }
 
-  function monthClimateHint(day) {
-    const iso = safeString(day && day.dateISO);
-    const month = iso ? Number(iso.slice(5, 7)) : 0;
-    const city = getWeatherLocation(day) || 'la destination';
 
-    const hints = {
-      1: 'Janvier est souvent froid dans l’hémisphère nord et chaud dans l’hémisphère sud. Prévois une vérification locale avant le départ.',
-      2: 'Février peut être frais ou instable selon la région. Prévois une marge pour pluie, vent ou froid.',
-      3: 'Mars est une période de transition : météo variable, couches légères recommandées.',
-      4: 'Avril peut être changeant, avec alternance de pluie et d’éclaircies.',
-      5: 'Mai est souvent doux, mais les averses restent possibles selon la destination.',
-      6: 'Juin est généralement plus chaud, avec parfois des épisodes orageux.',
-      7: 'Juillet est souvent chaud. Prévois eau, protection solaire et pauses.',
-      8: 'Août est souvent chaud et parfois humide selon la destination.',
-      9: 'Septembre est souvent agréable, mais la météo peut changer vite en bord de mer ou montagne.',
-      10: 'Octobre peut être plus frais et parfois pluvieux. Prévois une veste légère et une option intérieure.',
-      11: 'Novembre est souvent plus froid ou humide. Prévois des vêtements chauds et imperméables.',
-      12: 'Décembre peut être froid dans l’hémisphère nord. Vérifie aussi les risques de neige ou fortes pluies.'
-    };
+  function weatherAvailability(day) {
+    const city = getWeatherLocation(day);
+    const iso = safeString(day && day.dateISO);
+    const date = /^\d{4}-\d{2}-\d{2}$/.test(iso) ? new Date(iso + 'T12:00:00') : null;
+    const now = new Date();
+    const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+    const offset = date && !Number.isNaN(date.getTime())
+      ? Math.round((Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) - today) / 86400000)
+      : null;
+
+    let reason = '';
+    let text = 'La prévision locale est indisponible pour cette journée.';
+    if (offset === null) {
+      reason = 'date';
+      text = 'Renseigne la date de la journée pour consulter la météo.';
+    } else if (offset < 0) {
+      reason = 'past';
+      text = 'Aucune donnée météo historique n’est chargée pour cette journée.';
+    } else if (!city) {
+      reason = 'location';
+      text = 'Renseigne une ville dans la journée pour consulter la météo.';
+    } else if (offset > 15) {
+      reason = 'future';
+      text = 'Cette date est trop éloignée pour une prévision. Consulte cette rubrique à l’approche du départ.';
+    }
 
     return {
-      title: city,
-      text: hints[month] || 'Prévision exacte indisponible pour cette date. Utilise cette tendance générale et vérifie la météo quelques jours avant.',
-      details: [
-        'Prévision exacte indisponible pour cette date',
-        'Tendance générale basée sur le mois du voyage',
-        'À confirmer quelques jours avant le départ'
-      ],
-      source: 'Tendance générale · à confirmer avec Open-Meteo'
+      kind: 'unavailable',
+      eligible: !reason,
+      reason,
+      title: city || 'Météo locale',
+      text,
+      dateLabel: formatDate(iso),
+      details: [],
+      source: ''
     };
   }
 
-  async function fetchWeatherSummary(day) {
+  async function fetchWeatherSummary(day, signal) {
+    const fallback = weatherAvailability(day);
+    if (!fallback.eligible) return fallback;
     const city = getWeatherLocation(day);
     const dateISO = safeString(day && day.dateISO);
-
-    if (!day || !city || !dateISO) {
-      return monthClimateHint(day);
-    }
 
     try {
       const geoUrl =
         'https://geocoding-api.open-meteo.com/v1/search?name=' +
-        encodeURIComponent(city) +
-        '&count=1&language=fr&format=json';
-
-      const geoRes = await fetch(geoUrl);
+        encodeURIComponent(city) + '&count=1&language=fr&format=json';
+      const geoRes = await fetch(geoUrl, { signal });
+      if (!geoRes.ok) return fallback;
       const geoJson = await geoRes.json();
       const place = geoJson && geoJson.results && geoJson.results[0];
-
-      if (!place) {
-        return monthClimateHint(day);
-      }
+      if (!place) return fallback;
 
       const weatherUrl =
         'https://api.open-meteo.com/v1/forecast' +
@@ -282,38 +283,40 @@
         '&timezone=auto' +
         '&start_date=' + encodeURIComponent(dateISO) +
         '&end_date=' + encodeURIComponent(dateISO);
-
-      const weatherRes = await fetch(weatherUrl);
+      const weatherRes = await fetch(weatherUrl, { signal });
+      if (!weatherRes.ok) return fallback;
       const weatherJson = await weatherRes.json();
+      const daily = weatherJson && weatherJson.daily;
+      if (!daily || !Array.isArray(daily.time)) return fallback;
+      const index = daily.time.indexOf(dateISO);
+      if (index < 0) return fallback;
 
-      if (!weatherJson || !weatherJson.daily || !weatherJson.daily.time || !weatherJson.daily.time.length) {
-        return monthClimateHint(day);
-      }
-
-      const daily = weatherJson.daily;
-      const max = daily.temperature_2m_max && daily.temperature_2m_max[0];
-      const min = daily.temperature_2m_min && daily.temperature_2m_min[0];
-      const rain = daily.precipitation_sum && daily.precipitation_sum[0];
-      const rainProb = daily.precipitation_probability_max && daily.precipitation_probability_max[0];
+      const numberAt = values => {
+        const value = values && values[index];
+        return value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value))
+          ? Number(value) : null;
+      };
+      const min = numberAt(daily.temperature_2m_min);
+      const max = numberAt(daily.temperature_2m_max);
+      const rain = numberAt(daily.precipitation_sum);
+      const rainProb = numberAt(daily.precipitation_probability_max);
+      if ([min, max, rain, rainProb].every(value => value === null)) return fallback;
 
       return {
+        kind: 'forecast',
         title: place.name || city,
-        text: 'Prévision météo connectée pour cette journée.',
+        text: min !== null && max !== null
+          ? Math.round(min) + ' à ' + Math.round(max) + ' °C'
+          : 'Prévision locale disponible',
+        dateLabel: formatDate(dateISO),
         details: [
-          Number.isFinite(Number(min)) && Number.isFinite(Number(max))
-            ? 'Températures : ' + Math.round(min) + '°C à ' + Math.round(max) + '°C'
-            : 'Températures indisponibles',
-          Number.isFinite(Number(rainProb))
-            ? 'Risque de pluie : ' + Math.round(rainProb) + '%'
-            : 'Risque de pluie indisponible',
-          Number.isFinite(Number(rain))
-            ? 'Précipitations : ' + Number(rain).toFixed(1) + ' mm'
-            : 'Précipitations indisponibles'
-        ],
-        source: 'Source : Open-Meteo · modèle météo best_match'
+          rainProb !== null ? 'Risque de pluie : ' + Math.round(rainProb) + ' %' : '',
+          rain !== null ? 'Précipitations : ' + rain.toFixed(1) + ' mm' : ''
+        ].filter(Boolean),
+        source: 'Source : Open-Meteo'
       };
     } catch (error) {
-      return monthClimateHint(day);
+      return fallback;
     }
   }
 
@@ -886,44 +889,54 @@ function EmptyLodgingCard({ onAdd }) {
     );
   }
 
-  function WeatherBlock({ day }) {
-    const [weather, setWeather] = React.useState(function initialWeather() {
-      return monthClimateHint(day);
-    });
+ function WeatherBlock({ day }) {
+    const key = [day?.id, day?.dateISO, getWeatherLocation(day)].join('|');
+    const [result, setResult] = React.useState(null);
+    const fallback = weatherAvailability(day);
+    const weather = result?.key === key ? result.weather : fallback;
 
     React.useEffect(function loadWeather() {
       let cancelled = false;
+      const controller = new AbortController();
+      const initial = weatherAvailability(day);
+      setResult({
+        key,
+        weather: initial.eligible
+          ? { ...initial, kind: 'loading', text: 'Chargement de la prévision locale…' }
+          : initial
+      });
+      if (!initial.eligible) return () => controller.abort();
 
-      setWeather(monthClimateHint(day));
-
-      fetchWeatherSummary(day).then(function updateWeather(nextWeather) {
-        if (!cancelled && nextWeather) {
-          setWeather(nextWeather);
-        }
+      const timeout = window.setTimeout(() => controller.abort(), 10000);
+      fetchWeatherSummary(day, controller.signal).then(nextWeather => {
+        window.clearTimeout(timeout);
+        if (!cancelled) setResult({ key, weather: nextWeather });
       });
 
       return function cleanup() {
         cancelled = true;
+        window.clearTimeout(timeout);
+        controller.abort();
       };
-    }, [
-      day && day.dateISO,
-      day && day.city,
-      day && day.region
-    ]);
+    }, [key]);
 
     return (
-      <div className="fv-weather">
+      <div className="fv-weather" aria-busy={weather.kind === 'loading'}>
         <div className="fv-weather-summary">
-          <span aria-hidden="true">☁</span>
-          <div><strong>{weather.title}</strong><p>{weather.text}</p></div>
+          <Icon name="cal" size={18} />
+          <div>
+            <strong>{weather.title}</strong>
+            {weather.dateLabel && <span className="fv-weather-date">{weather.dateLabel}</span>}
+            <p>{weather.text}</p>
+          </div>
         </div>
         {!!weather.details.length && (
-          <details className="fv-rail-details">
+          <details className="fv-rail-details" key={'weather-' + key}>
             <summary>Détails météo</summary>
             <ul>{weather.details.map((item, index) => <li key={index}>{item}</li>)}</ul>
           </details>
         )}
-        <small>{weather.source}</small>
+        {weather.source && <small>{weather.source}</small>}
       </div>
     );
   }
@@ -976,20 +989,22 @@ function EmptyLodgingCard({ onAdd }) {
       <aside className="fv-right" aria-label="Outils et informations de la journée">
         {window.WorkspaceTools && <window.WorkspaceTools />}
         <section className="fv-rail-section">
-          <h3>Cette nuit</h3>
+          <h3>{day?.dateISO ? 'Nuit du ' + formatDate(day.dateISO) : 'Hébergement'}</h3>
           {tonightStay ? (
             <div className="fv-stay">
               <strong>{lodgingName(tonightStay.step)}</strong>
               <p>{[formatDate(tonightStay.startISO), formatDate(tonightStay.endISO)]
                 .filter(Boolean).join(' — ')} · {tonightStay.nights || 1} nuit{tonightStay.nights > 1 ? 's' : ''}</p>
-              <span className="fv-night">
-                Nuit {Math.min(tonightStay.nightNumber || 1, tonightStay.nights || 1)} sur {tonightStay.nights || 1}
-              </span>
+              {tonightStay.nights > 1 && (
+                <span className="fv-night">
+                  Nuit {Math.min(tonightStay.nightNumber || 1, tonightStay.nights)} sur {tonightStay.nights}
+                </span>
+              )}
             </div>
           ) : <p className="fv-muted">Aucun hébergement pour cette nuit.</p>}
           {stays.length > 0 && (
             <details className="fv-rail-details" key={'stays-' + day?.id}>
-              <summary>{stays.length > 1 ? 'Voir les réservations' : 'Voir la réservation'} ↗</summary>
+              <summary>{stays.length > 1 ? 'Détails des séjours' : 'Détails du séjour'}</summary>
               <div className="fv-reservations">
                 {stays.map((stay, index) => (
                   <LodgingCard key={String(stay.step?.id || index) + '-' + stay.status}
@@ -1008,12 +1023,12 @@ function EmptyLodgingCard({ onAdd }) {
             <>
               <div className="fv-meal">
                 <strong>{stepDisplayName(restaurants[0], 'Restaurant')}</strong>
-                <small>{stepRangeLabel(restaurants[0]) || 'Horaire libre'}
+                <small>{stepRangeLabel(restaurants[0]) || 'Horaire à préciser'}
                   {restaurants.length > 1 ? ' · ' + restaurants.length + ' adresses' : ''}
                 </small>
               </div>
               <details className="fv-rail-details" key={'meals-' + day?.id}>
-                <summary>Voir les repas ›</summary>
+                <summary>Détails des repas</summary>
                 <div className="fv-reservations">
                   {restaurants.map((step, index) => (
                     <RestaurantCard key={step.id || index} step={step} day={day}
@@ -1022,7 +1037,7 @@ function EmptyLodgingCard({ onAdd }) {
                 </div>
               </details>
             </>
-          ) : <p className="fv-muted">Aucun repas prévu.</p>}
+          ) : <p className="fv-muted">Repas libres — aucune adresse ajoutée.</p>}
           <button type="button" className="fv-textbutton" onClick={addRestaurant}>
             + Ajouter un restaurant
           </button>

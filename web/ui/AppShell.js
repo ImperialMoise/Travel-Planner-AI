@@ -5134,10 +5134,13 @@ React.useEffect(() => {
                   <div>
                     <h1>{trip.name || 'Mon voyage'}</h1>
                     <p className="fv-tripdates">
-                      {[
-                        trip.startDate && formatDayDate(trip.startDate),
-                        trip.endDate && formatDayDate(trip.endDate)
-                      ].filter(Boolean).join(' — ')}
+
+                      {[trip.startDate, trip.endDate].filter(Boolean).map(iso => {
+                        const date = new Date(String(iso).slice(0, 10) + 'T12:00:00');
+                        return Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString('fr-FR', {
+                          day: 'numeric', month: 'short', year: 'numeric'
+                        });
+                      }).filter(Boolean).join(' — ')}
                       {trip.days?.length ? ' · ' + trip.days.length + ' jours' : ''}
                     </p>
                   </div>

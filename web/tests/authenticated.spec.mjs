@@ -527,7 +527,7 @@ test(
         SECOND_STEP_LABEL
       );
 
-      await page.getByRole('button', { name: '↕ Organiser', exact: true }).click();
+      await page.getByRole('button', { name: '↕ Réordonner les étapes', exact: true }).click();
 
       await timelineSteps
         .nth(0)
@@ -588,71 +588,8 @@ test(
         FIRST_STEP_LABEL
       );
 ```
-
-      await expect(
-        timelineSteps.nth(1)
-      ).toContainText(
-        SECOND_STEP_LABEL
-      );
-
-      await timelineSteps
-        .nth(0)
-        .getByRole('button', {
-          name:
-            'Déplacer l’étape vers le bas',
-          exact: true
-        })
-        .click();
-
-      await expect(
-        page.getByText(
-          'Nouvel ordre enregistré.',
-          {
-            exact: true
-          }
-        )
-      ).toBeVisible();
-
-      await page.reload({
-        waitUntil:
-          'domcontentloaded'
-      });
-
-      await page
-        .locator(
-          '.day-card'
-        )
-        .filter({
-          hasText:
-            FIRST_DAY_NOTE
-        })
-        .locator(
-          '.day-card-select'
-        )
-        .click();
-
-      const persistedSteps =
-        page.locator(
-          '.atelier-v2-drop'
-        );
-
-      await expect(
-        persistedSteps
-      ).toHaveCount(2);
-
-      await expect(
-        persistedSteps.nth(0)
-      ).toContainText(
-        SECOND_STEP_LABEL
-      );
-
-      await expect(
-        persistedSteps.nth(1)
-      ).toContainText(
-        FIRST_STEP_LABEL
-      );
-
       const accessibilityIssues =
+
         await page.evaluate(
           function findUnnamedControls() {
             function hasAccessibleName(

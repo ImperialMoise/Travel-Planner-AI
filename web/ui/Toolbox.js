@@ -952,7 +952,13 @@ function PlaceholderWidget({ children }) {
             <Icon name="print" size={18} /><span>Imprimer / PDF</span>
           </button>
           <button type="button" className="fv-tool" onClick={() => openTool(null)}>
-            <Icon name="gear" size={18} /><span>Tous les outils</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+              <rect x="3" y="3" width="7" height="7" rx="1.5" />
+              <rect x="14" y="3" width="7" height="7" rx="1.5" />
+              <rect x="3" y="14" width="7" height="7" rx="1.5" />
+              <rect x="14" y="14" width="7" height="7" rx="1.5" />
+            </svg><span>Tous les outils</span>
           </button>
         </div>
       </section>

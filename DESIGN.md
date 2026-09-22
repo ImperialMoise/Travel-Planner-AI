@@ -49,4 +49,15 @@ Vérifier 360, 390, 430, 900 et 1440 px, en clair et sombre.
 Journée remplie, vide, longue note, long titre, hébergements intermédiaires et départ.
 Tester clavier, outils, éditeurs, déplacements, sauvegarde, partage, duplication et impression.
 Une analyse syntaxique ou un rendu React hors navigateur ne remplace pas le test visuel et interactif.
-```
+
+## Réglages validés après l’audit de septembre 2026
+- Grille commune au bandeau et à l’espace connecté : largeur fluide, plafond de confort 1 760 px pour l’ensemble des trois colonnes, pas un programme isolé au milieu d’une page étirée.
+- Journées 220–250 px, informations 300–340 px ; programme dans l’espace restant avec 24–32 px de marge intérieure.
+- Conserver DM Sans et DM Serif Display ; travailler l’échelle typographique avant d’ajouter des polices.
+- Titre du voyage 30–36 px, titre de journée 28–32 px, étapes 17–18 px, texte courant 15–16 px, informations secondaires 13–14 px.
+- Action principale Ajouter une étape clairement contrastée ; Ajout rapide adjacent et secondaire. Les deux parcours restent disponibles.
+- Diagnostics discrets et actionnables ; ambre pour conflits ou enchaînements serrés, pas pour toute donnée manquante.
+- Heure manquante : Horaire à préciser, jamais Libre par défaut.
+- Nuit datée, compteur pour les séjours de plusieurs nuits seulement, détails internes sans flèche de lien externe.
+- Pas de conseil météo mensuel générique présenté comme une prévision locale. Lieu, date et état d’indisponibilité explicites.
+- Les contrôles de syntaxe et rendus hors navigateur ne constituent pas une validation visuelle.

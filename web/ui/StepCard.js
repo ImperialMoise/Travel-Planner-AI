@@ -456,7 +456,7 @@
     return (
       <article className="fv-event" data-selected={selected ? 'true' : 'false'}>
         <div className="fv-time">
-          <strong>{startTime || 'Libre'}</strong>
+          <strong>{startTime || '—'}</strong>
           {endTime && <small>{endTime}</small>}
         </div>
         <details className="fv-event-body" onToggle={event => {
@@ -479,10 +479,12 @@
                   : step.note}
               </span>
             )}
-            {(subtitle || duration) && (
+
+            {(!startTime || subtitle || duration) && (
               <span className="fv-event-meta">
-                {subtitle && <span><Icon name="pin" size={13} />{subtitle}</span>}
-                {duration && <span><Icon name="clock" size={13} />{duration}</span>}
+                {!startTime && <span className="fv-unscheduled"><Icon name="clock" size={15} />Horaire à préciser</span>}
+                {subtitle && <span><Icon name="pin" size={15} />{subtitle}</span>}
+                {duration && <span><Icon name="clock" size={15} />{duration}</span>}
               </span>
             )}
           </summary>

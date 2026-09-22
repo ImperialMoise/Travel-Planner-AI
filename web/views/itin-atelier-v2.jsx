@@ -1705,10 +1705,12 @@ function openAddStep(type, preset) {
           {day.note && <p className="fv-intro">{day.note}</p>}
           <div className="fv-program-head">
             <span>{timelineSteps.length} étape{timelineSteps.length > 1 ? 's' : ''} au programme</span>
-            <button type="button" className="fv-textbutton" aria-pressed={organizingSteps}
-              onClick={() => setOrganizingSteps(value => !value)}>
-              ↕ {organizingSteps ? 'Terminer' : 'Organiser'}
-            </button>
+            {(timelineSteps.length > 1 || organizingSteps) && (
+              <button type="button" className="fv-textbutton" aria-pressed={organizingSteps}
+                onClick={() => setOrganizingSteps(value => !value)}>
+                ↕ {organizingSteps ? 'Terminer' : 'Réordonner les étapes'}
+              </button>
+            )}
           </div>
           {organizingSteps && (
             <div className="fv-order-help">
@@ -1887,126 +1889,31 @@ function openAddStep(type, preset) {
                   </form>
                 )}
 
-                {dayPlanWarnings.length > 0 && (
-<div
-                    className="atelier-v2-diagnostics"
-                    role="status"
-                    aria-label="Points à vérifier dans cette journée"
-                    style={{
-                      margin: '10px 14px 0',
-                      border: '1px solid rgba(150,100,13,.22)',
-                      borderRadius: 11,
-                      background: 'var(--accent-soft)',
-                      padding: '8px 10px',
-                      display: 'flex',
-                      alignItems: 'flex-start',
-                      flexWrap: 'wrap',
-                      gap: 7
-                    }}
-                  >
-                    <span style={{
-                      borderRadius: 999,
-                      background: 'var(--accent)',
-                      color: 'var(--accent-ink)',
-                      padding: '3px 7px',
-                      fontSize: 9.5,
-                      lineHeight: '14px',
-                      fontWeight: 900,
-                      textTransform: 'uppercase',
-                      letterSpacing: '.08em',
-                      whiteSpace: 'nowrap'
+
+          {dayPlanWarnings.length > 0 && (
+            <div className="fv-diagnostics" role="status"
+              aria-label="Points à vérifier dans cette journée"
+              data-attention={dayPlanWarnings.some(warning =>
+                warning.id === 'overlap' || warning.id === 'tight') ? 'true' : 'false'}>
+              <span className="fv-diagnostics-label">À vérifier</span>
+              <div className="fv-diagnostics-items">
+                {dayPlanWarnings.map(warning => warning.stepId ? (
+                  <button type="button" key={warning.id}
+                    title="Modifier la première étape concernée"
+                    onClick={() => {
+                      const targetStep = timelineSteps.find(step =>
+                        String(step.id) === String(warning.stepId));
+                      if (targetStep) openEditorForStep(day, targetStep);
                     }}>
-                      À vérifier
+                    <span>{warning.label}</span>
+                    <span className="fv-diagnostics-action">
+                      {warning.id === 'missing-time' ? 'Préciser l’horaire' : 'Vérifier l’étape'} →
                     </span>
-
-                    <div
-                      className="atelier-v2-diagnostic-items"
-                      style={{
-                        flex: '1 1 220px',
-                        display: 'flex',
-                        flexWrap: 'wrap',
-                        gap: '4px 12px',
-                        color: 'var(--muted)',
-                        fontSize: 11.5,
-                        lineHeight: '17px'
-                      }}
-                    >
-{dayPlanWarnings.map(
-                        function renderWarning(
-                          warning
-                        ) {
-                          const content = (
-                            <>
-                              <span
-                                aria-hidden="true"
-                                style={{
-                                  color: 'var(--accent)',
-                                  fontWeight: 900
-                                }}
-                              >
-                                •
-                              </span>{' '}
-                              {warning.label}
-                            </>
-                          );
-
-                          if (!warning.stepId) {
-                            return (
-                              <span
-                                key={warning.id}
-                              >
-                                {content}
-                              </span>
-                            );
-                          }
-
-                          return (
-                            <button
-                              key={warning.id}
-                              type="button"
-                              title="Modifier la première étape concernée"
-                              onClick={() => {
-                                const targetStep =
-                                  timelineSteps.find(
-                                    step =>
-                                      String(
-                                        step.id
-                                      ) ===
-                                      String(
-                                        warning.stepId
-                                      )
-                                  );
-
-                                if (targetStep) {
-                                  openEditorForStep(
-                                    day,
-                                    targetStep
-                                  );
-                                }
-                              }}
-                              style={{
-                                border: 0,
-                                background: 'transparent',
-                                color: 'var(--muted)',
-                                padding: 0,
-                                fontFamily: 'inherit',
-                                fontSize: 'inherit',
-                                lineHeight: 'inherit',
-                                textAlign: 'left',
-                                textDecoration: 'underline',
-                                textDecorationStyle: 'dotted',
-                                textUnderlineOffset: 3,
-                                cursor: 'pointer'
-                              }}
-                            >
-                              {content}
-                            </button>
-                          );
-                        }
-                      )}
-                    </div>
-                  </div>
-                )}
+                  </button>
+                ) : <p key={warning.id}>{warning.label}</p>)}
+              </div>
+            </div>
+          )}
 
 
           {reorderingSteps && (
@@ -2140,13 +2047,16 @@ function openAddStep(type, preset) {
                 })}
 
           </div>
-          <button type="button" className="fv-button fv-add" onClick={() => openAddStep('activite')}>
-            <Icon name="plus" size={16} />Ajouter une étape
-          </button>
-          <button type="button" className="fv-textbutton" aria-expanded={quickAdd.open}
-            onClick={() => setQuickAdd(previous => ({ ...previous, open: !previous.open }))}>
-            {quickAdd.open ? 'Fermer l’ajout rapide' : 'Ajout rapide'}
-          </button>
+
+          <div className="fv-add-actions">
+            <button type="button" className="fv-button fv-add" onClick={() => openAddStep('activite')}>
+              <Icon name="plus" size={18} />Ajouter une étape
+            </button>
+            <button type="button" className="fv-button fv-quick-toggle" aria-expanded={quickAdd.open}
+              onClick={() => setQuickAdd(previous => ({ ...previous, open: !previous.open }))}>
+              {quickAdd.open ? 'Fermer l’ajout rapide' : 'Ajout rapide'}
+            </button>
+          </div>
           </div>
         </section>
         <window.MealRail trip={trip} day={day} dayIndex={safeDayIndex}

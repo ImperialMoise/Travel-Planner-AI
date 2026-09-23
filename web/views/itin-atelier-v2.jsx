@@ -1625,7 +1625,7 @@ function openAddStep(type, preset) {
     );
 
     return (
-      <div className="fv-itinerary"><div className="fv-itinerary" data-density={timelineSteps.length < 2 ? 'light' : 'full'}>
+      <div className="fv-itinerary" data-density={timelineSteps.length < 2 ? 'light' : 'full'}>
         <aside className="fv-days" aria-label="Journées du voyage">
           <div className="fv-days-heading">
             <span>Les journées</span><Icon name="cal" size={16} />

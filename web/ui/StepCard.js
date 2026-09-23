@@ -209,122 +209,6 @@
     };
   }
 
-  function Pill({ children, tone, icon, strong }) {
-    return (
-      <span style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 5,
-        padding: strong ? '5px 9px' : '4px 10px',
-        borderRadius: strong ? 999 : 6,
-        background: tone && tone.soft ? tone.soft : 'var(--soft)',
-        color: tone && tone.accent ? tone.accent : 'var(--muted)',
-        fontFamily: strong ? 'inherit' : 'var(--font-mono, ui-monospace)',
-        fontSize: strong ? 10 : 10,
-        fontWeight: strong ? 900 : 700,
-        letterSpacing: strong ? '.14em' : 'normal',
-        textTransform: strong ? 'uppercase' : 'none'
-      }}>
-        {icon ? <Icon name={icon} size={12} /> : null}
-        {children}
-      </span>
-    );
-  }
-
-  function IconButton({
-    title,
-    children,
-    onClick,
-    active,
-    danger,
-    top,
-    right
-  }) {
-    return (
-      <button
-        className="web-step-icon-button"
-        type="button"
-        title={title}
-        onClick={onClick}
-        style={{
-          position: 'absolute',
-          top,
-          right,
-          zIndex: 4,
-          width: 30,
-          height: 30,
-          borderRadius: 999,
-          border: active
-            ? '1px solid rgba(180,132,62,.45)'
-            : danger
-              ? '1px solid rgba(192,86,63,.35)'
-              : '1px solid var(--outline-variant)',
-          background: active
-            ? 'var(--accent)'
-            : danger
-              ? 'rgba(192,86,63,.10)'
-              : 'var(--inset)',
-          color: active
-            ? 'var(--accent-ink)'
-            : danger
-              ? '#c0563f'
-              : 'var(--text)',
-          display: 'grid',
-          placeItems: 'center',
-          cursor: 'pointer',
-          fontFamily: 'inherit',
-          fontSize: 14,
-          lineHeight: 1,
-          boxShadow: active ? '0 6px 14px rgba(180,132,62,.22)' : 'none'
-        }}
-      >
-        {children}
-      </button>
-    );
-  }
-
-  function ActionButton({
-    children,
-    onClick,
-    title,
-    accent,
-    muted,
-    disabled
-  }) {
-    return (
-      <button
-        className="web-step-action-button"
-        type="button"
-        title={title}
-        onClick={onClick}
-        disabled={disabled}
-        style={{
-          border: '1px solid var(--outline-variant)',
-          background: accent ? 'var(--accent-soft)' : 'var(--inset)',
-          color: disabled
-            ? 'var(--faint)'
-            : accent
-              ? 'var(--accent)'
-              : muted
-                ? 'var(--muted)'
-                : 'var(--text)',
-          borderRadius: 10,
-          minHeight: 44,
-          padding: '8px 12px',
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 6,
-          cursor: disabled ? 'not-allowed' : 'pointer',
-          fontFamily: 'inherit',
-          fontSize: 11,
-          fontWeight: 800
-        }}
-      >
-        {children}
-      </button>
-    );
-  }
-
   function StepCard({
     step,
     day,
@@ -462,7 +346,7 @@
         <details className="fv-event-body" onToggle={event => {
           if (event.currentTarget.open) selectStep();
         }}>
-          <summary>
+          <summary aria-label={'Détails de l’étape : ' + title}>
             <span className="fv-kind">
               <Icon name={stepIcon(step)} size={13} />
               {tone.label}
@@ -470,7 +354,7 @@
             </span>
             <span className="fv-event-title">
               <span>{title}</span>
-              <span className="fv-chevron" aria-hidden="true">›</span>
+              <span className="fv-event-affordance" aria-hidden="true"><span>Détails</span><span className="fv-chevron">›</span></span>
             </span>
             {step.note && (
               <span className="fv-event-note">
@@ -518,3 +402,4 @@
   window.StepCard = StepCard;
   window.ItineraryStepCard = StepCard;
 })();
+

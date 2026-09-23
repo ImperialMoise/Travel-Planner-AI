@@ -988,8 +988,8 @@ function EmptyLodgingCard({ onAdd }) {
    return (
       <aside className="fv-right" aria-label="Outils et informations de la journée">
         {window.WorkspaceTools && <window.WorkspaceTools />}
-        <section className="fv-rail-section">
-          <h3>{day?.dateISO ? 'Nuit du ' + formatDate(day.dateISO) : 'Hébergement'}</h3>
+        <section className="fv-rail-section fv-night-section">
+          <h3><Icon name="bed" size={18} />{day?.dateISO ? 'Nuit du ' + formatDate(day.dateISO) : 'Hébergement'}</h3>
           {tonightStay ? (
             <div className="fv-stay">
               <strong>{lodgingName(tonightStay.step)}</strong>
@@ -1017,8 +1017,8 @@ function EmptyLodgingCard({ onAdd }) {
             + Ajouter un hébergement
           </button>
         </section>
-        <section className="fv-rail-section">
-          <h3>À table</h3>
+        <section className="fv-rail-section" data-empty={restaurants.length ? undefined : 'true'}>
+          <h3><Icon name="fork" size={18} />À table</h3>
           {restaurants.length ? (
             <>
               <div className="fv-meal">
@@ -1042,8 +1042,8 @@ function EmptyLodgingCard({ onAdd }) {
             + Ajouter un restaurant
           </button>
         </section>
-        <section className="fv-rail-section">
-          <h3>Météo</h3>
+        <section className="fv-rail-section fv-weather-section">
+          <h3><Icon name="cal" size={18} />Météo</h3>
           <WeatherBlock day={day} />
         </section>
       </aside>

@@ -1625,7 +1625,7 @@ function openAddStep(type, preset) {
     );
 
     return (
-      <div className="fv-itinerary">
+      <div className="fv-itinerary"><div className="fv-itinerary" data-density={timelineSteps.length < 2 ? 'light' : 'full'}>
         <aside className="fv-days" aria-label="Journées du voyage">
           <div className="fv-days-heading">
             <span>Les journées</span><Icon name="cal" size={16} />
@@ -1662,7 +1662,10 @@ function openAddStep(type, preset) {
               ))}
             </select>
           </label>
-          <div className="fv-daymeta">{dayDate}{day.city ? ' · ' + day.city : ''}</div>
+          <div className="fv-daymeta">
+            <span className="fv-day-index">Jour {safeDayIndex + 1}</span>
+            <span>{dayDate}{day.city ? ' · ' + day.city : ''}</span>
+          </div>
 
           <div className="fv-dayhead">
             <h2>{dayTitle}</h2>
@@ -1704,7 +1707,10 @@ function openAddStep(type, preset) {
           </div>
           {day.note && <p className="fv-intro">{day.note}</p>}
           <div className="fv-program-head">
-            <span>{timelineSteps.length} étape{timelineSteps.length > 1 ? 's' : ''} au programme</span>
+            <div className="fv-program-label">
+              <h3>Programme</h3>
+              <span>{timelineSteps.length} étape{timelineSteps.length > 1 ? 's' : ''} au programme</span>
+            </div>
             {(timelineSteps.length > 1 || organizingSteps) && (
               <button type="button" className="fv-textbutton" aria-pressed={organizingSteps}
                 onClick={() => setOrganizingSteps(value => !value)}>
@@ -1921,10 +1927,12 @@ function openAddStep(type, preset) {
           )}
           <div className="fv-program">
             {!timelineSteps.length && (
-              <p className="fv-empty" role="status">
-                Aucune activité ni trajet pour cette journée. Ajoute une étape ci-dessous.
-                Les hébergements et repas restent dans les informations de la journée.
-              </p>
+           <div className="fv-empty" role="status">
+                <span className="fv-empty-mark" aria-hidden="true"><Icon name="map" size={24} /></span>
+                <h3>Une journée à composer</h3>
+                <p>Aucune activité ni trajet pour cette journée. Commence par une visite ou un déplacement.</p>
+                <p>Les hébergements et repas restent dans les informations de la journée.</p>
+              </div>
             )}
                 {timelineSteps.map(function renderStep(step, index) {
                   return (

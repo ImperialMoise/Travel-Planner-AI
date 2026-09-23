@@ -5059,7 +5059,7 @@ React.useEffect(() => {
 
     return (
       <div
-  className={'app-shell' + (user && trip && activeTripId ? ' fv-app' : '')}
+  className={'app-shell' + (user ? ' fv-app' : '')}
   data-workspace-accent={trip?.accentTheme || 'forest'}
   data-focus={desktopFocusMode ? 'true' : 'false'}
   style={{
@@ -5731,9 +5731,9 @@ function toggleFocusMode() {
 
 
 
-    if (user && trip) {
+    if (user) {
       return (
-        <header className="fv-top">
+        <header className="fv-top" data-has-trip={trip ? 'true' : 'false'}>
           <div className="fv-brandrow">
             <button type="button" className="fv-brand" aria-label="La Fabrique à Voyages — Mes voyages" onClick={() => Store.set({
               activeTripId: null, trip: null, selectedDayIndex: 0, selectedStepId: null
@@ -5745,7 +5745,7 @@ function toggleFocusMode() {
                 activeTripId: null, trip: null, selectedDayIndex: 0, selectedStepId: null
               })}>Mes voyages</button>
               <button type="button" className="fv-trip-switch" aria-expanded={tripMenuOpen}
-                aria-label={'Changer de voyage — ' + (trip.name || 'Mon voyage')}
+                aria-label={'Changer de voyage — ' + (trip?.name || 'Mes voyages')}
                 aria-controls={tripMenuOpen ? 'fv-trip-switcher-panel' : undefined}
                 onClick={() => setTripMenuOpen(open => !open)}>
                 <Icon name="map" size={16} />
@@ -5778,12 +5778,12 @@ function toggleFocusMode() {
                 onClick={() => Store.set({ settingsInitialSection: 'account', settingsOpen: true })}>
                 <Icon name="gear" size={17} />
               </button>
-              <button type="button" className="fv-iconbutton" aria-pressed={focusMode}
+              {trip && <button type="button" className="fv-iconbutton" aria-pressed={focusMode}
                 title={focusMode ? 'Réafficher les panneaux' : 'Activer le mode Focus'}
                 aria-label={focusMode ? 'Réafficher les panneaux' : 'Activer le mode Focus'}
                 onClick={toggleFocusMode}>
                 <Icon name={focusMode ? 'expand' : 'eye'} size={17} />
-              </button>
+              </button>}
               <button type="button" className="fv-avatar" title={displayName || 'Mon compte'}
                 data-guest={isGuestUser ? 'true' : undefined}
                 aria-label={'Ouvrir le profil de ' + (displayName || 'mon compte')}
@@ -5792,7 +5792,7 @@ function toggleFocusMode() {
               </button>
             </div>
           </div>
-          <div className="fv-navrow">
+          {trip && <div className="fv-navrow">
             <nav className="fv-tabs" aria-label="Sections du voyage">
               {['itinerary', 'map', 'budget', 'docs', 'summary'].map(id => {
                 const item = navItems.find(item => item.id === id);
@@ -5811,7 +5811,7 @@ function toggleFocusMode() {
               <button type="button" aria-pressed={appMode === 'travel'}
                 onClick={() => setAppMode('travel')}>Voyager →</button>
             </div>
-          </div>
+          </div>}
           {newTripOpen && (
             <NewTripModal initialGuidedOpen={newTripGuidedOpen} onClose={() => {
               setNewTripOpen(false); setNewTripGuidedOpen(false);

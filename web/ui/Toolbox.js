@@ -1095,6 +1095,7 @@ function PlaceholderWidget({ children }) {
     );
   }
 
+  window.WorkspaceToolDefinitions = TOOL_DEFINITIONS;
   window.WorkspaceTools = WorkspaceTools;
   window.Toolbox = Toolbox;
   window.ToolboxV2 = Toolbox;

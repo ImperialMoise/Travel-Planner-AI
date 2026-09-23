@@ -4945,6 +4945,69 @@
   );
 }
 
+ function WorkspaceToolPanel({ activeTool, onSelect, onClose }) {
+    const headingRef = React.useRef(null);
+    const { trip, selectedDayIndex, selectedStepId } = Store.useStore(state => ({
+      trip: state.trip,
+      selectedDayIndex: state.selectedDayIndex || 0,
+      selectedStepId: state.selectedStepId
+    }));
+    const definitions = window.WorkspaceToolDefinitions || {};
+    const day = trip?.days?.[selectedDayIndex];
+    const title = activeTool === 'ideas-notes'
+      ? 'Idées & notes' : definitions[activeTool]?.label || 'Tous les outils';
+    const step = (trip?.days || []).flatMap(item => item.steps || [])
+      .find(item => String(item.id) === String(selectedStepId));
+    const context = activeTool === 'around'
+      ? (step?.title || step?.name || 'Sélectionne une étape dans le programme.')
+      : ['checklist', 'dayNote', 'score', 'ideas-notes'].includes(activeTool)
+        ? (day ? 'Jour ' + (selectedDayIndex + 1) + (day.title ? ' · ' + day.title : '') : 'Aucune journée sélectionnée')
+        : 'Voyage entier';
+
+    React.useEffect(() => {
+      headingRef.current?.focus({ preventScroll: true });
+    }, []);
+
+    return (
+      <aside id="workspace-tools-panel" className="fv-tool-panel"
+        aria-labelledby="workspace-tools-title"
+        onKeyDown={event => {
+          if (event.key === 'Escape' && !event.defaultPrevented &&
+              !event.target.closest('[role="dialog"], [role="alertdialog"]')) {
+            event.preventDefault();
+            event.stopPropagation();
+            onClose();
+          }
+        }}>
+        <header className="fv-tool-panel-header">
+          <div>
+            <p>Outils du voyage</p>
+            <h2 id="workspace-tools-title" ref={headingRef} tabIndex={-1}>{title}</h2>
+          </div>
+          <button type="button" className="fv-button" onClick={onClose}
+            aria-label="Fermer les outils et revenir au voyage">Fermer</button>
+        </header>
+        <div className="fv-tool-panel-context">
+          <strong>{trip?.name || 'Mon voyage'}</strong>
+          <span>{context}</span>
+        </div>
+        <label className="fv-tool-panel-select">
+          Changer d’outil
+          <select value={activeTool || ''} onChange={event => onSelect(event.target.value || null)}>
+            <option value="">Tous les outils</option>
+            <option value="ideas-notes">Idées & notes</option>
+            {Object.values(definitions).map(tool => (
+              <option key={tool.id} value={tool.id}>{tool.label}</option>
+            ))}
+          </select>
+        </label>
+        <div className="fv-tool-panel-body">
+          <window.Toolbox width="100%" activeTool={activeTool} />
+        </div>
+      </aside>
+    );
+  }
+
   function AppShell() {
     injectCss();
 
@@ -5014,19 +5077,35 @@
 const [toolboxOpen, setToolboxOpen] = React.useState(false);
 const [activeWorkspaceTool, setActiveWorkspaceTool] = React.useState(null);
 const [daySpineOpen, setDaySpineOpen] = React.useState(false);
+const toolOpenerRef = React.useRef(null);
 
 React.useEffect(() => {
   function openWorkspaceTools(event) {
+    if (!document.activeElement?.closest('#workspace-tools-panel')) {
+      toolOpenerRef.current = document.activeElement;
+    }
     setActiveWorkspaceTool(event.detail?.tool || null);
     setToolboxOpen(true);
+    window.requestAnimationFrame(() => {
+      document.getElementById('workspace-tools-title')?.focus({ preventScroll: true });
+    });
   }
   window.addEventListener('open-workspace-tools', openWorkspaceTools);
   return () => window.removeEventListener('open-workspace-tools', openWorkspaceTools);
 }, []);
 
-function closeWorkspaceTools() {
+React.useEffect(() => {
   setToolboxOpen(false);
   setActiveWorkspaceTool(null);
+}, [activeTripId, user?.id]);
+
+function closeWorkspaceTools() {
+  setToolboxOpen(false);
+  window.requestAnimationFrame(() => {
+    const opener = toolOpenerRef.current;
+    if (opener?.isConnected && opener.getClientRects().length) opener.focus();
+    else document.getElementById('workspace-tools-trigger')?.focus();
+  });
 }
 
 const closeDayOrganizer = React.useCallback(() => {
@@ -5097,6 +5176,7 @@ React.useEffect(() => {
                 <main
           id="app-main-content"
           className="app-main"
+          data-tools-open={toolboxOpen && user && trip ? 'true' : 'false'}
           tabIndex="-1"
         >
           {!user ? (
@@ -5145,11 +5225,14 @@ React.useEffect(() => {
                     </p>
                   </div>
                   <div className="fv-actions">
-                    {(appMode === 'travel' || view !== 'itinerary') && (
-                      <button type="button" className="fv-button" onClick={() => setToolboxOpen(true)}>
-                        <Icon name="gear" size={16} />Outils
-                      </button>
-                    )}
+                    <button id="workspace-tools-trigger" type="button" className="fv-button"
+                      aria-expanded={toolboxOpen} aria-controls="workspace-tools-panel"
+                      onClick={() => {
+                        if (toolboxOpen) closeWorkspaceTools();
+                        else window.dispatchEvent(new CustomEvent('open-workspace-tools'));
+                      }}>
+                      <Icon name="gear" size={16} />Outils
+                    </button>
                     <button type="button" className="fv-button" onClick={() => Store.set({
                       settingsInitialSection: 'share', settingsOpen: true
                     })}>
@@ -5172,17 +5255,11 @@ React.useEffect(() => {
               </section>
 
               {toolboxOpen && window.Toolbox && (
-                <ModalShell
-                  title="Outils du voyage"
+                <WorkspaceToolPanel
+                  activeTool={activeWorkspaceTool}
+                  onSelect={setActiveWorkspaceTool}
                   onClose={closeWorkspaceTools}
-                >
-                  <div className="workspace-tool-dialog">
-                    <window.Toolbox
-                      width="100%"
-                      activeTool={activeWorkspaceTool}
-                    />
-                  </div>
-                </ModalShell>
+                />
               )}
             </>
           )}

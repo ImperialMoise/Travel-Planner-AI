@@ -929,38 +929,168 @@ function PlaceholderWidget({ children }) {
     );
   }
 
+  const SHORTCUT_KEY = 'fabrique_tool_shortcuts_v1';
+  const SHORTCUT_EVENT = 'fabrique-tool-shortcuts-changed';
+  const SHORTCUTS = [
+    { id: 'ideas-notes', label: 'Idées & notes', icon: 'file', context: 'Voyage et journée' },
+    { id: 'checklist', label: 'Checklist', icon: 'check', context: 'Journée sélectionnée' },
+    { id: 'print', label: 'Imprimer / PDF', icon: 'print', context: 'Voyage entier' },
+    ...Object.values(TOOL_DEFINITIONS)
+      .filter(tool => tool.id !== 'checklist')
+      .map(tool => ({
+        ...tool,
+        context: ['dayNote', 'score'].includes(tool.id)
+          ? 'Journée sélectionnée'
+          : tool.id === 'around' ? 'Étape sélectionnée' : 'Voyage'
+      }))
+  ];
+  const DEFAULT_SHORTCUTS = ['ideas-notes', 'checklist', 'print'];
+
+  function readShortcuts() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(SHORTCUT_KEY));
+      if (Array.isArray(saved)) {
+        return [...new Set(saved.filter(id => SHORTCUTS.some(tool => tool.id === id)))];
+      }
+    } catch (error) {}
+    return DEFAULT_SHORTCUTS.slice();
+  }
+
   function WorkspaceTools() {
     const { trip } = Store.useStore(state => ({ trip: state.trip }));
-    const openTool = tool => window.dispatchEvent(
-      new CustomEvent('open-workspace-tools', { detail: { tool } })
-    );
+    const [favorites, setFavorites] = React.useState(readShortcuts);
+    const [editing, setEditing] = React.useState(false);
+    const [message, setMessage] = React.useState('');
+    const catalogueId = React.useId();
+    const [catalogueOpen, setCatalogueOpen] = React.useState(false);
+
+    React.useEffect(() => {
+      const sync = event => {
+        if (event.type === SHORTCUT_EVENT) setFavorites(event.detail.slice());
+        else if (event.key === SHORTCUT_KEY || event.key === null) setFavorites(readShortcuts());
+      };
+      window.addEventListener(SHORTCUT_EVENT, sync);
+      window.addEventListener('storage', sync);
+      return () => {
+        window.removeEventListener(SHORTCUT_EVENT, sync);
+        window.removeEventListener('storage', sync);
+      };
+    }, []);
+
+    function save(next, announcement) {
+      setFavorites(next);
+      let persisted = true;
+      try {
+        localStorage.setItem(SHORTCUT_KEY, JSON.stringify(next));
+      } catch (error) {
+        persisted = false;
+      }
+      window.dispatchEvent(new CustomEvent(SHORTCUT_EVENT, { detail: next }));
+      setMessage(announcement + (persisted ? '' : ' Sauvegarde indisponible : changement temporaire.'));
+    }
+
+    function toggleFavorite(tool) {
+      const pinned = favorites.includes(tool.id);
+      save(
+        pinned ? favorites.filter(id => id !== tool.id) : [...favorites, tool.id],
+        tool.label + (pinned ? ' désépinglé. Son contenu est conservé.' : ' épinglé.')
+      );
+    }
+
+    function move(id, direction) {
+      const next = favorites.slice();
+      const index = next.indexOf(id);
+      const target = index + direction;
+      if (index < 0 || target < 0 || target >= next.length) return;
+      [next[index], next[target]] = [next[target], next[index]];
+      save(next, SHORTCUTS.find(tool => tool.id === id).label + ' : position ' + (target + 1) + '.');
+    }
+
+    function openTool(id) {
+      if (id === 'print') {
+        if (trip && window.TripPrint?.open) window.TripPrint.open(trip);
+        else Store.showToast('L’export PDF est indisponible.');
+        return;
+      }
+      window.dispatchEvent(new CustomEvent('open-workspace-tools', { detail: { tool: id } }));
+    }
 
     return (
       <section className="fv-tools" aria-label="Outils du voyage">
-        <h3>À portée de main</h3>
-        <div className="fv-toolgroup">
-          <button type="button" className="fv-tool" onClick={() => openTool('ideas-notes')}>
-            <Icon name="file" size={18} /><span>Idées & notes</span>
-          </button>
-          <button type="button" className="fv-tool" onClick={() => openTool('checklist')}>
-            <Icon name="check" size={18} /><span>Checklist</span>
-          </button>
-          <button type="button" className="fv-tool" onClick={() => {
-            if (trip && window.TripPrint?.open) window.TripPrint.open(trip);
-            else Store.showToast('L’export PDF est indisponible.');
-          }}>
-            <Icon name="print" size={18} /><span>Imprimer / PDF</span>
-          </button>
-          <button type="button" className="fv-tool" onClick={() => openTool(null)}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
-              <rect x="3" y="3" width="7" height="7" rx="1.5" />
-              <rect x="14" y="3" width="7" height="7" rx="1.5" />
-              <rect x="3" y="14" width="7" height="7" rx="1.5" />
-              <rect x="14" y="14" width="7" height="7" rx="1.5" />
-            </svg><span>Tous les outils</span>
+        <div className="fv-tools-heading">
+          <h3>À portée de main</h3>
+          <button type="button" className="fv-tools-control"
+            aria-expanded={editing}
+            onClick={() => {
+              setEditing(value => !value);
+              if (!editing) setCatalogueOpen(true);
+            }}>
+            {editing ? 'Terminer' : 'Personnaliser'}
           </button>
         </div>
+        <div className="fv-toolgroup">
+          {favorites.map((id, index) => {
+            const tool = SHORTCUTS.find(item => item.id === id);
+            return (
+              <div className="fv-shortcut" key={id}>
+                <button type="button" className="fv-tool" onClick={() => openTool(id)}>
+                  <Icon name={tool.icon} size={18} /><span>{tool.label}</span>
+                </button>
+                {editing && (
+                  <div className="fv-shortcut-order" role="group" aria-label={'Position de ' + tool.label}>
+                    <button type="button" className="fv-tools-control"
+                      aria-label={'Avancer ' + tool.label}
+                      aria-disabled={index === 0}
+                      onClick={() => move(id, -1)}>←</button>
+                    <span>{index + 1}</span>
+                    <button type="button" className="fv-tools-control"
+                      aria-label={'Reculer ' + tool.label}
+                      aria-disabled={index === favorites.length - 1}
+                      onClick={() => move(id, 1)}>→</button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        {!favorites.length && (
+          <p className="fv-tools-hint">Aucun favori. Tous tes outils restent disponibles ci-dessous.</p>
+        )}
+        <button type="button" className="fv-tools-catalogue-toggle"
+          aria-expanded={catalogueOpen} aria-controls={catalogueId}
+          onClick={() => setCatalogueOpen(value => !value)}>
+          Tous les outils <span aria-hidden="true">{catalogueOpen ? '−' : '+'}</span>
+        </button>
+        <div id={catalogueId} hidden={!catalogueOpen}>
+          <p className="fv-tools-hint">
+            Ouvre un outil ou épingle son raccourci. Les favoris sont enregistrés dans ce navigateur.
+          </p>
+          <ul className="fv-tools-catalogue">
+            {SHORTCUTS.map(tool => (
+              <li key={tool.id}>
+                <button type="button" className="fv-catalogue-open" onClick={() => openTool(tool.id)}>
+                  <span>{tool.label}</span><small>{tool.context}</small>
+                </button>
+                <button type="button" className="fv-tools-control"
+                  aria-label={'Épingler ' + tool.label}
+                  aria-pressed={favorites.includes(tool.id)}
+                  onClick={() => toggleFavorite(tool)}>
+                  <span aria-hidden="true">{favorites.includes(tool.id) ? '★' : '☆'}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+          <button type="button" className="fv-tools-catalogue-toggle" onClick={() => openTool(null)}>
+            Ouvrir la boîte à outils complète <span aria-hidden="true">→</span>
+          </button>
+          {editing && (
+            <button type="button" className="fv-tools-control"
+              onClick={() => save(DEFAULT_SHORTCUTS.slice(), 'Raccourcis par défaut restaurés.')}>
+              Restaurer les raccourcis
+            </button>
+          )}
+        </div>
+        <p className="fv-tools-status" role="status" aria-live="polite">{message}</p>
       </section>
     );
   }

@@ -63,9 +63,32 @@ Retirer les anciens composants locaux inutilisés quand leur absence d’usage e
 styles.css reste nécessaire pour les vues et composants pas encore migrés : ne pas le supprimer globalement sans inventorier leurs usages.
 Ne pas annoncer toutes les pages refaites après le seul cadre connecté.
 
+## Outils
+- Refaire leur présentation en clair et sombre avec les composants communs.
+- Auditer leur pertinence, leurs intitulés et leur contexte : voyage, journée ou étape.
+- Conserver tous les contenus et gestionnaires existants.
+- Rendre les raccourcis épinglables, désépinglables et réordonnables.
+- Désépingler masque un raccourci, sans supprimer ses données.
+- Autoriser une liste de favoris vide et proposer une restauration des raccourcis par défaut.
+- Préserver les préférences existantes lors de leur migration.
+- Enregistrer les préférences dans ce navigateur ; ne pas promettre de synchronisation entre appareils.
+- Fournir un catalogue accessible depuis les pages du voyage.
+- Sur ordinateur, ouvrir les outils dans un panneau latéral non bloquant.
+- Sur mobile, utiliser un panneau adapté à l’écran et au clavier virtuel.
+- Prévoir ensuite un panneau unique détachable sur ordinateur : déplacement, redimensionnement, réduction, réancrage et réinitialisation.
+- Garder le panneau flottant dans la zone visible après redimensionnement de l’écran.
+- Proposer des commandes sans glissement et accessibles au clavier pour chaque déplacement.
+- Afficher explicitement le voyage, le jour ou l’étape concernés.
+
 ## Suite
-Harmoniser Carte, Budget, Documents et Bilan, puis Voyager et les formulaires/fenêtres secondaires.
+1. Stabiliser la compilation et valider le cadre graphique actuel.
+2. Refaire les outils : catalogue, favoris, ordre et panneau latéral/mobile.
+3. Harmoniser Carte, Budget, Documents et Bilan.
+4. Harmoniser Voyager, formulaires, fenêtres secondaires et paramètres.
+5. Ajouter le panneau détachable sur ordinateur si les usages le justifient.
+6. Vérifier les parcours complets, le responsive, les deux thèmes et l’accessibilité.
 La vitrine publique et l’APK restent des lots distincts.
+La publication Play Store reste reportée.
 
 ## Validation
 Contrôler journées remplie, légère et vide ; séjours intermédiaires/départs ; longs titres et notes.

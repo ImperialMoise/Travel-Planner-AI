@@ -4951,73 +4951,125 @@
       left: v?.offsetLeft || 0, top: v?.offsetTop || 0 };
   }
 
-  function toolWindowRect(viewport, position, minimized) {
-    const mobile = viewport.width < 760;
-    const margin = Math.min(12, viewport.width / 10, viewport.height / 10);
-    const width = Math.min(420, viewport.width - margin * 2);
-    const height = Math.min(minimized ? 72 : 620, viewport.height - margin * 2);
-    const minX = viewport.left + margin, minY = viewport.top + margin;
-    const maxX = viewport.left + viewport.width - width - margin;
-    const maxY = viewport.top + viewport.height - height - margin;
+  function toolBounds(v) {
+    const margin = Math.min(12, v.width / 10, v.height / 10);
+    return { left: v.left + margin, top: v.top + margin,
+      width: v.width - margin * 2, height: v.height - margin - Math.min(80, v.height / 4) };
+  }
+
+  function toolWindowRect(viewport, geometry, minimized, slot = 0) {
+    const b = toolBounds(viewport);
+    const clamp = (value, min, max) => Math.max(min, Math.min(value, max));
+    const width = clamp(geometry?.width ?? 420, Math.min(300, b.width), b.width);
+    const height = minimized ? Math.min(68, b.height)
+      : clamp(geometry?.height ?? 580, Math.min(240, b.height), b.height);
+    const offset = (slot % 6) * 28;
     return {
-      left: mobile ? minX : Math.max(minX, Math.min(position?.x ?? maxX, maxX)),
-      top: mobile ? maxY : Math.max(minY, Math.min(position?.y ?? (viewport.top + 190), maxY)),
-      width: mobile ? viewport.width - margin * 2 : width, height, mobile
+      left: clamp(geometry?.left ?? (b.left + b.width - width - offset), b.left, b.left + b.width - width),
+      top: clamp(geometry?.top ?? (b.top + 112 + offset), b.top, b.top + b.height - height),
+      width, height
     };
   }
 
-  function WorkspaceToolPanel({ activeTool, onSelect, onClose }) {
-    const headingRef = React.useRef(null);
-    const dragRef = React.useRef(null);
+  function resizeToolRect(rect, edge, dx, dy, viewport) {
+    const b = toolBounds(viewport);
+    const clamp = (value, min, max) => Math.max(min, Math.min(value, max));
+    let left = rect.left, top = rect.top, right = left + rect.width, bottom = top + rect.height;
+    const minW = Math.min(300, b.width), minH = Math.min(240, b.height);
+    if (edge.includes('w')) left = clamp(left + dx, b.left, right - minW);
+    if (edge.includes('e')) right = clamp(right + dx, left + minW, b.left + b.width);
+    if (edge.includes('n')) top = clamp(top + dy, b.top, bottom - minH);
+    if (edge.includes('s')) bottom = clamp(bottom + dy, top + minH, b.top + b.height);
+    return { left, top, width: right - left, height: bottom - top };
+  }
+
+  function workspaceToolIds(id) {
+    if (id === 'ideas-notes') return ['ideas', 'dayNote', 'globalNote'];
+    return Object.prototype.hasOwnProperty.call(window.WorkspaceToolDefinitions || {}, id) ? [id] : [];
+  }
+
+  function WorkspaceToolPanel({ tool, slot, level, minimized, onFront, onMinimize, onClose }) {
+    const gesture = React.useRef(null);
     const [viewport, setViewport] = React.useState(toolViewport);
-    const [position, setPosition] = React.useState(null);
-    const [minimized, setMinimized] = React.useState(false);
+    const [geometry, setGeometry] = React.useState(null);
     const { trip, selectedDayIndex, selectedStepId } = Store.useStore(state => ({
-      trip: state.trip, selectedDayIndex: state.selectedDayIndex || 0,
-      selectedStepId: state.selectedStepId
+      trip: state.trip, selectedDayIndex: state.selectedDayIndex || 0, selectedStepId: state.selectedStepId
     }));
-    const definitions = window.WorkspaceToolDefinitions || {};
-    const tool = activeTool === 'ideas-notes' || definitions[activeTool] ? activeTool : 'checklist';
-    const title = tool === 'ideas-notes' ? 'Idées & notes' : definitions[tool]?.label || 'Checklist';
+    const title = window.WorkspaceToolDefinitions?.[tool]?.label || 'Outil';
     const day = trip?.days?.[selectedDayIndex];
     const step = (trip?.days || []).flatMap(item => item.steps || [])
       .find(item => String(item.id) === String(selectedStepId));
     const context = tool === 'around'
       ? (step?.title || step?.name || 'Sélectionne une étape dans le programme.')
-      : ['checklist', 'dayNote', 'score', 'ideas-notes'].includes(tool)
+      : ['checklist', 'dayNote', 'score'].includes(tool)
         ? (day ? 'Jour ' + (selectedDayIndex + 1) + (day.title ? ' · ' + day.title : '') : 'Aucune journée sélectionnée')
         : 'Voyage entier';
-    const rect = toolWindowRect(viewport, position, minimized);
+    const rect = toolWindowRect(viewport, geometry, minimized, slot);
+    const panelId = 'workspace-tool-' + tool;
 
     React.useEffect(() => {
-      const resize = () => setViewport(toolViewport());
-      const restore = () => setMinimized(false);
-      window.addEventListener('resize', resize);
-      window.visualViewport?.addEventListener('resize', resize);
-      window.visualViewport?.addEventListener('scroll', resize);
-      window.addEventListener('open-workspace-tools', restore);
-      headingRef.current?.focus({ preventScroll: true });
+      const update = () => { gesture.current = null; setViewport(toolViewport()); };
+      window.addEventListener('resize', update);
+      window.visualViewport?.addEventListener('resize', update);
+      window.visualViewport?.addEventListener('scroll', update);
       return () => {
-        window.removeEventListener('resize', resize);
-        window.visualViewport?.removeEventListener('resize', resize);
-        window.visualViewport?.removeEventListener('scroll', resize);
-        window.removeEventListener('open-workspace-tools', restore);
+        window.removeEventListener('resize', update);
+        window.visualViewport?.removeEventListener('resize', update);
+        window.visualViewport?.removeEventListener('scroll', update);
       };
     }, []);
-    React.useEffect(() => { setMinimized(false); }, [tool]);
 
-    function place(side) {
-      const r = toolWindowRect(viewport, null, minimized);
-      setPosition(side === 'left' ? { x: viewport.left + 12, y: r.top }
-        : side === 'right' ? { x: viewport.left + viewport.width - r.width - 12, y: r.top } : null);
+    function start(event, edge) {
+      if (event.button !== 0 || !event.isPrimary) return;
+      event.preventDefault();
+      event.currentTarget.focus({ preventScroll: true });
+      event.currentTarget.setPointerCapture(event.pointerId);
+      gesture.current = { id: event.pointerId, x: event.clientX, y: event.clientY, rect, edge };
     }
 
+    function move(event) {
+      const g = gesture.current;
+      if (g?.id !== event.pointerId) return;
+      const dx = event.clientX - g.x, dy = event.clientY - g.y;
+      if (g.edge === 'move') {
+        setGeometry(current => ({ ...current, left: g.rect.left + dx, top: g.rect.top + dy }));
+      } else setGeometry(resizeToolRect(g.rect, g.edge, dx, dy, viewport));
+    }
+
+    function finish(event) {
+      if (gesture.current?.id !== event.pointerId) return;
+      gesture.current = null;
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+
+    function keyboard(event, edge) {
+      const delta = { ArrowLeft: [-16, 0], ArrowRight: [16, 0], ArrowUp: [0, -16], ArrowDown: [0, 16] }[event.key];
+      if (!delta) return;
+      event.preventDefault();
+      const factor = event.shiftKey ? 4 : 1;
+      if (edge === 'move') setGeometry(current => ({ ...current,
+        left: rect.left + delta[0] * factor, top: rect.top + delta[1] * factor }));
+      else setGeometry(resizeToolRect(rect, edge, delta[0] * factor, delta[1] * factor, viewport));
+    }
+
+    function handleProps(edge) {
+      return {
+        onPointerDown: event => start(event, edge), onPointerMove: move,
+        onPointerUp: finish, onPointerCancel: finish,
+        onLostPointerCapture: () => { gesture.current = null; },
+        onKeyDown: event => keyboard(event, edge)
+      };
+    }
+
+    const edges = { n:'haut', ne:'coin supérieur droit', e:'droite', se:'coin inférieur droit',
+      s:'bas', sw:'coin inférieur gauche', w:'gauche', nw:'coin supérieur gauche' };
+
     return (
-      <aside id="workspace-tools-panel" className="fv-floating-tool"
-        data-mobile={rect.mobile ? 'true' : 'false'}
+      <aside id={panelId} className="fv-floating-tool"
         data-minimized={minimized ? 'true' : 'false'}
-        style={{ left: rect.left, top: rect.top, width: rect.width, height: rect.height }}
-        aria-labelledby="workspace-tools-title"
+        style={{ left: rect.left, top: rect.top, width: rect.width, height: rect.height, zIndex: 650 + level }}
+        aria-labelledby={panelId + '-title'}
+        onPointerDownCapture={onFront} onFocusCapture={onFront}
         onKeyDown={event => {
           if (event.key === 'Escape' && !event.defaultPrevented &&
               !event.target.closest('[role="dialog"], [role="alertdialog"]')) {
@@ -5025,55 +5077,122 @@
           }
         }}>
         <header className="fv-floating-tool-header">
-          {!rect.mobile && <button type="button" className="fv-tools-control fv-tool-drag"
-            aria-label="Déplacer la fenêtre : glisser ou utiliser les flèches du clavier"
-            onPointerDown={event => {
-              if (event.button !== 0) return;
-              event.currentTarget.setPointerCapture(event.pointerId);
-              dragRef.current = { id: event.pointerId, x: event.clientX, y: event.clientY,
-                left: rect.left, top: rect.top };
-            }}
-            onPointerMove={event => {
-              const drag = dragRef.current;
-              if (drag?.id !== event.pointerId) return;
-              setPosition({ x: drag.left + event.clientX - drag.x, y: drag.top + event.clientY - drag.y });
-            }}
-            onPointerUp={() => { dragRef.current = null; }}
-            onPointerCancel={() => { dragRef.current = null; }}
-            onLostPointerCapture={() => { dragRef.current = null; }}
-            onKeyDown={event => {
-              const delta = { ArrowLeft: [-24, 0], ArrowRight: [24, 0], ArrowUp: [0, -24], ArrowDown: [0, 24] }[event.key];
-              if (!delta) return;
-              event.preventDefault();
-              setPosition({ x: rect.left + delta[0], y: rect.top + delta[1] });
-            }}>⠿</button>}
-          <h2 id="workspace-tools-title" ref={headingRef} tabIndex={-1} title={title}>{title}</h2>
-          <button type="button" className="fv-tools-control"
-            aria-expanded={!minimized} aria-controls="workspace-tool-content"
-            aria-label={minimized ? 'Rétablir l’outil' : 'Réduire l’outil'}
-            onClick={() => setMinimized(value => !value)}>{minimized ? '＋' : '−'}</button>
-          <button type="button" className="fv-tools-control" aria-label="Fermer l’outil" onClick={onClose}>×</button>
+          <button type="button" className="fv-tools-control fv-tool-drag"
+            aria-label={'Déplacer ' + title + ' : glisser ou utiliser les flèches'}
+            {...handleProps('move')}>⠿</button>
+          <h2 id={panelId + '-title'} tabIndex={-1} title={title}>{title}</h2>
+          <button type="button" className="fv-tools-control" aria-expanded={!minimized}
+            aria-controls={panelId + '-content'} aria-label={minimized ? 'Rétablir ' + title : 'Réduire ' + title}
+            onClick={onMinimize}>{minimized ? '＋' : '−'}</button>
+          <button type="button" className="fv-tools-control" aria-label={'Fermer ' + title} onClick={onClose}>×</button>
         </header>
-        <div id="workspace-tool-content" className="fv-floating-tool-content" hidden={minimized}>
-          <div className="fv-floating-tool-context">
-            <strong>{trip?.name || 'Mon voyage'}</strong><span>{context}</span>
-          </div>
-          <div className="fv-floating-tool-options">
-            <label>Outil
-              <select value={tool} onChange={event => onSelect(event.target.value)}>
-                <option value="ideas-notes">Idées & notes</option>
-                {Object.values(definitions).map(item => <option key={item.id} value={item.id}>{item.label}</option>)}
-              </select>
-            </label>
-            {!rect.mobile && <div className="fv-floating-tool-placement" role="group" aria-label="Position de la fenêtre">
-              <button type="button" className="fv-tools-control" onClick={() => place('left')}>À gauche</button>
-              <button type="button" className="fv-tools-control" onClick={() => place('right')}>À droite</button>
-              <button type="button" className="fv-tools-control" onClick={() => place('reset')}>Replacer</button>
-            </div>}
-          </div>
+        <div id={panelId + '-content'} className="fv-floating-tool-content" hidden={minimized}>
+          <div className="fv-floating-tool-context"><strong>{trip?.name || 'Mon voyage'}</strong><span>{context}</span></div>
+          <details className="fv-floating-tool-options">
+            <summary>Position et taille</summary>
+            <div className="fv-floating-tool-placement">
+              <button type="button" className="fv-tools-control" onClick={() => {
+                setGeometry({ ...rect, left: toolBounds(viewport).left });
+              }}>À gauche</button>
+              <button type="button" className="fv-tools-control" onClick={() => {
+                const b = toolBounds(viewport);
+                setGeometry({ ...rect, left: b.left + b.width - rect.width });
+              }}>À droite</button>
+              <button type="button" className="fv-tools-control" onClick={() => setGeometry(null)}>Réinitialiser</button>
+            </div>
+            <div className="fv-floating-tool-placement">
+              <button type="button" className="fv-tools-control" onClick={() => setGeometry({ ...rect, width: 340, height: 420 })}>Compacte</button>
+              <button type="button" className="fv-tools-control" onClick={() => setGeometry({ ...rect, width: 640, height: 680 })}>Grande</button>
+            </div>
+            <p>Glisse un bord ou un coin. Au clavier : flèches sur une poignée, Maj pour accélérer.</p>
+          </details>
           <window.Toolbox width="100%" activeTool={tool} />
         </div>
+        {!minimized && Object.entries(edges).map(([edge, label]) => (
+          <button key={edge} type="button" className={'fv-tool-resize fv-tool-resize-' + edge}
+            aria-label={'Redimensionner ' + title + ' — ' + label} title={'Redimensionner — ' + label}
+            {...handleProps(edge)} />
+        ))}
       </aside>
+    );
+  }
+
+  function WorkspaceToolWindows() {
+    const [windows, setWindows] = React.useState([]);
+    const openers = React.useRef({});
+    const serial = React.useRef(0);
+
+    function front(id) {
+      setWindows(current => {
+        const item = current.find(entry => entry.id === id);
+        if (!item || current[current.length - 1] === item) return current;
+        return [...current.filter(entry => entry.id !== id), item];
+      });
+    }
+
+    function restore(id) {
+      setWindows(current => {
+        const item = current.find(entry => entry.id === id);
+        return item ? [...current.filter(entry => entry.id !== id), { ...item, minimized: false }] : current;
+      });
+      window.requestAnimationFrame(() => document.getElementById('workspace-tool-' + id + '-title')?.focus({ preventScroll: true }));
+    }
+
+    React.useEffect(() => {
+      const open = event => {
+        const requested = event.detail?.tools || [event.detail?.tool || 'checklist'];
+        const ids = [...new Set((Array.isArray(requested) ? requested : []).flatMap(workspaceToolIds))];
+        if (!ids.length) return;
+        const opener = document.activeElement;
+        ids.forEach(id => { if (!opener?.closest('.fv-floating-tool')) openers.current[id] = opener; });
+        const slots = Object.fromEntries(ids.map(id => [id, serial.current++]));
+        setWindows(current => {
+          let next = current.slice();
+          ids.forEach(id => {
+            const existing = next.find(item => item.id === id);
+            next = [...next.filter(item => item.id !== id),
+              { id, slot: existing?.slot ?? slots[id], minimized: false }];
+          });
+          return next;
+        });
+        window.requestAnimationFrame(() =>
+          document.getElementById('workspace-tool-' + ids[ids.length - 1] + '-title')?.focus({ preventScroll: true }));
+      };
+      window.addEventListener('open-workspace-tools', open);
+      return () => window.removeEventListener('open-workspace-tools', open);
+    }, []);
+
+    function close(id) {
+      setWindows(current => current.filter(item => item.id !== id));
+      window.requestAnimationFrame(() => {
+        const opener = openers.current[id];
+        if (opener?.isConnected && opener.getClientRects().length) opener.focus({ preventScroll: true });
+        else document.getElementById('workspace-tools-trigger')?.focus({ preventScroll: true });
+        delete openers.current[id];
+      });
+    }
+
+    return (
+      <>
+        {windows.slice().sort((a, b) => a.slot - b.slot).map(item => <WorkspaceToolPanel key={item.id} tool={item.id}
+          slot={item.slot} level={windows.findIndex(entry => entry.id === item.id)} minimized={item.minimized}
+          onFront={() => front(item.id)}
+          onMinimize={() => setWindows(current => current.map(entry =>
+            entry.id === item.id ? { ...entry, minimized: !entry.minimized } : entry))}
+          onClose={() => close(item.id)} />)}
+        {!!windows.length && <nav className="fv-window-dock" aria-label="Fenêtres d’outils ouvertes">
+          {windows.map(item => <button type="button" key={item.id} className="fv-tools-control"
+            aria-label={'Rétablir ' + window.WorkspaceToolDefinitions[item.id].label}
+            onClick={() => restore(item.id)}>
+            {window.WorkspaceToolDefinitions[item.id].label}{item.minimized ? ' · réduite' : ''}
+          </button>)}
+          <button type="button" className="fv-tools-control" aria-label="Ajouter des outils"
+            onClick={() => {
+              document.getElementById('workspace-tools-trigger')?.focus({ preventScroll: true });
+              window.dispatchEvent(new CustomEvent('choose-workspace-tools'));
+            }}>＋</button>
+        </nav>}
+      </>
     );
   }
 
@@ -5143,39 +5262,7 @@
     const sideWidth = isCompactShell ? 260 : 300;
     const toolWidth = isCompactShell ? 280 : 320;
 
-const [toolboxOpen, setToolboxOpen] = React.useState(false);
-const [activeWorkspaceTool, setActiveWorkspaceTool] = React.useState(null);
 const [daySpineOpen, setDaySpineOpen] = React.useState(false);
-const toolOpenerRef = React.useRef(null);
-
-React.useEffect(() => {
-  function openWorkspaceTools(event) {
-    if (!document.activeElement?.closest('#workspace-tools-panel')) {
-      toolOpenerRef.current = document.activeElement;
-    }
-    setActiveWorkspaceTool(event.detail?.tool || 'checklist');
-    setToolboxOpen(true);
-    window.requestAnimationFrame(() => {
-      document.getElementById('workspace-tools-title')?.focus({ preventScroll: true });
-    });
-  }
-  window.addEventListener('open-workspace-tools', openWorkspaceTools);
-  return () => window.removeEventListener('open-workspace-tools', openWorkspaceTools);
-}, []);
-
-React.useEffect(() => {
-  setToolboxOpen(false);
-  setActiveWorkspaceTool(null);
-}, [activeTripId, user?.id]);
-
-function closeWorkspaceTools() {
-  setToolboxOpen(false);
-  window.requestAnimationFrame(() => {
-    const opener = toolOpenerRef.current;
-    if (opener?.isConnected && opener.getClientRects().length) opener.focus();
-    else document.getElementById('workspace-tools-trigger')?.focus();
-  });
-}
 
 const closeDayOrganizer = React.useCallback(() => {
   setDaySpineOpen(false);
@@ -5315,12 +5402,8 @@ React.useEffect(() => {
                 </div>
               </section>
 
-              {toolboxOpen && window.Toolbox && (
-                <WorkspaceToolPanel
-                  activeTool={activeWorkspaceTool}
-                  onSelect={setActiveWorkspaceTool}
-                  onClose={closeWorkspaceTools}
-                />
+              {window.Toolbox && (
+                <WorkspaceToolWindows key={String(activeTripId) + ':' + String(user?.id)} />
               )}
             </>
           )}
@@ -5879,16 +5962,17 @@ function toggleFocusMode() {
               <Icon name="map" size={22} /><span>La Fabrique<span className="fv-brand-suffix"> à Voyages</span></span>
             </button>
             <div className="fv-breadcrumb" ref={menuRef}>
-              <button type="button" className="fv-textbutton" onClick={() => Store.set({
+              <button type="button" className="fv-library-link" onClick={() => Store.set({
                 activeTripId: null, trip: null, selectedDayIndex: 0, selectedStepId: null
-              })}>Mes voyages</button>
+              })}><Icon name="map" size={16} />Mes voyages</button>
               <button type="button" className="fv-trip-switch" aria-expanded={tripMenuOpen}
                 aria-label={'Changer de voyage — ' + (trip?.name || 'Mes voyages')}
                 aria-controls={tripMenuOpen ? 'fv-trip-switcher-panel' : undefined}
                 onClick={() => setTripMenuOpen(open => !open)}>
                 <Icon name="map" size={16} />
-                <span className="fv-switch-long">Changer de voyage</span>
-                <span className="fv-switch-short">Voyages</span>
+                <span className="fv-switch-label"><small>Changer de voyage</small>
+                  <strong title={trip?.name || 'Choisir un voyage'}>{trip?.name || 'Choisir un voyage'}</strong>
+                </span>
                 <Icon name="chevdown" size={14} />
               </button>
               {tripMenuOpen && (
@@ -5911,6 +5995,12 @@ function toggleFocusMode() {
                 </div>
               )}
             </div>
+            {trip && <div className="fv-mode" role="group" aria-label="Mode d’utilisation">
+              <button type="button" aria-pressed={appMode === 'plan'} title="Organiser et modifier le voyage"
+                onClick={() => setAppMode('plan')}><Icon name="cal" size={16} />Préparer</button>
+              <button type="button" aria-pressed={appMode === 'travel'} title="Consulter le programme pendant le séjour"
+                onClick={() => setAppMode('travel')}><Icon name="pin" size={16} />Voyager</button>
+            </div>}
             <div className="fv-account">
               <button type="button" className="fv-iconbutton" aria-label="Paramètres" title="Paramètres"
                 onClick={() => Store.set({ settingsInitialSection: 'account', settingsOpen: true })}>
@@ -5931,6 +6021,7 @@ function toggleFocusMode() {
             </div>
           </div>
           {trip && <div className="fv-navrow">
+            <span className="fv-nav-caption">Dans ce voyage</span>
             <nav className="fv-tabs" aria-label="Sections du voyage">
               {['itinerary', 'map', 'budget', 'docs', 'summary'].map(id => {
                 const item = navItems.find(item => item.id === id);
@@ -5943,12 +6034,7 @@ function toggleFocusMode() {
                 );
               })}
             </nav>
-            <div className="fv-mode" role="group" aria-label="Mode d’utilisation">
-              <button type="button" aria-pressed={appMode === 'plan'}
-                onClick={() => setAppMode('plan')}>Préparer</button>
-              <button type="button" aria-pressed={appMode === 'travel'}
-                onClick={() => setAppMode('travel')}>Voyager →</button>
-            </div>
+
           </div>}
           {newTripOpen && (
             <NewTripModal initialGuidedOpen={newTripGuidedOpen} onClose={() => {

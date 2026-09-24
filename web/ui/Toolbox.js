@@ -592,12 +592,13 @@ function PlaceholderWidget({ children }) {
     const selectedStep = findSelectedStep(trip, selectedStepId);
 
     React.useEffect(function persistToolbox() {
+      if (activeTool) return;
       writeStorage({
         tools,
         open: openMap,
         ideasIntroduced: true
       });
-    }, [tools, openMap]);
+    }, [tools, openMap, activeTool]);
 
     function toggleTool(id) {
       setOpenMap(function update(prev) {
@@ -960,23 +961,38 @@ function PlaceholderWidget({ children }) {
     const { trip } = Store.useStore(state => ({ trip: state.trip }));
     const [favorites, setFavorites] = React.useState(readShortcuts);
     const [editing, setEditing] = React.useState(false);
+    const [selection, setSelection] = React.useState([]);
     const [message, setMessage] = React.useState('');
+    const [dragging, setDragging] = React.useState(null);
+    const [dropTarget, setDropTarget] = React.useState(null);
+    const gesture = React.useRef(null);
     const catalogueId = React.useId();
     const menuRef = React.useRef(null);
     const triggerRef = React.useRef(null);
+
+    function choose() {
+      setSelection([]);
+      setEditing(true);
+      window.requestAnimationFrame(() => document.getElementById(catalogueId)?.querySelector('input')?.focus());
+    }
+
+    React.useEffect(() => {
+      window.addEventListener('choose-workspace-tools', choose);
+      return () => window.removeEventListener('choose-workspace-tools', choose);
+    }, [catalogueId]);
+
     React.useEffect(() => {
       if (!editing) return;
-      const dismiss = event => {
-        if (!menuRef.current?.contains(event.target)) setEditing(false);
-      };
+      const dismiss = event => { if (!menuRef.current?.contains(event.target)) setEditing(false); };
       document.addEventListener('pointerdown', dismiss);
       return () => document.removeEventListener('pointerdown', dismiss);
     }, [editing]);
 
     React.useEffect(() => {
       const sync = event => {
-        if (event.type === SHORTCUT_EVENT) setFavorites(event.detail.slice());
-        else if (event.key === SHORTCUT_KEY || event.key === null) setFavorites(readShortcuts());
+        if (event.type === SHORTCUT_EVENT && Array.isArray(event.detail)) {
+          setFavorites([...new Set(event.detail.filter(id => SHORTCUTS.some(tool => tool.id === id)))]);
+        } else if (event.key === SHORTCUT_KEY || event.key === null) setFavorites(readShortcuts());
       };
       window.addEventListener(SHORTCUT_EVENT, sync);
       window.addEventListener('storage', sync);
@@ -989,113 +1005,148 @@ function PlaceholderWidget({ children }) {
     function save(next, announcement) {
       setFavorites(next);
       let persisted = true;
-      try {
-        localStorage.setItem(SHORTCUT_KEY, JSON.stringify(next));
-      } catch (error) {
-        persisted = false;
-      }
+      try { localStorage.setItem(SHORTCUT_KEY, JSON.stringify(next)); } catch (error) { persisted = false; }
       window.dispatchEvent(new CustomEvent(SHORTCUT_EVENT, { detail: next }));
       setMessage(announcement + (persisted ? '' : ' Sauvegarde indisponible : changement temporaire.'));
     }
 
-    function toggleFavorite(tool) {
-      const pinned = favorites.includes(tool.id);
-      save(
-        pinned ? favorites.filter(id => id !== tool.id) : [...favorites, tool.id],
-        tool.label + (pinned ? ' désépinglé. Son contenu est conservé.' : ' épinglé.')
-      );
-    }
-
     function move(id, direction) {
-      const next = favorites.slice();
-      const index = next.indexOf(id);
-      const target = index + direction;
+      const next = favorites.slice(), index = next.indexOf(id), target = index + direction;
       if (index < 0 || target < 0 || target >= next.length) return;
       [next[index], next[target]] = [next[target], next[index]];
-      save(next, SHORTCUTS.find(tool => tool.id === id).label + ' : position ' + (target + 1) + '.');
+      save(next, 'Raccourci déplacé en position ' + (target + 1) + '.');
+    }
+
+    function remove(id) {
+      const tool = SHORTCUTS.find(item => item.id === id);
+      save(favorites.filter(item => item !== id), tool.label + ' retiré de la barre. Son contenu est conservé.');
+      triggerRef.current?.focus();
     }
 
     function openTool(id) {
-      setEditing(false);
       if (id === 'print') {
         if (trip && window.TripPrint?.open) window.TripPrint.open(trip);
         else Store.showToast('L’export PDF est indisponible.');
-        return;
+      } else window.dispatchEvent(new CustomEvent('open-workspace-tools', { detail: { tool: id } }));
+    }
+
+    function addSelection() {
+      if (!selection.length) return;
+      save([...new Set([...favorites, ...selection])], 'Raccourcis ajoutés.');
+      setEditing(false);
+      triggerRef.current?.focus();
+      const tools = selection.filter(id => id !== 'print');
+      if (tools.length) window.dispatchEvent(new CustomEvent('open-workspace-tools', { detail: { tools } }));
+      setSelection([]);
+    }
+
+    function dragStart(event, id) {
+      if (event.button !== 0 || !event.isPrimary) return;
+      event.preventDefault();
+      event.currentTarget.focus({ preventScroll: true });
+      event.currentTarget.setPointerCapture(event.pointerId);
+      gesture.current = { pointerId: event.pointerId, id, target: id };
+      setDragging(id); setDropTarget(id);
+    }
+
+    function dragMove(event) {
+      const g = gesture.current;
+      if (g?.pointerId !== event.pointerId) return;
+      const chip = document.elementFromPoint(event.clientX, event.clientY)?.closest('[data-tool-shortcut]');
+      if (chip && menuRef.current?.contains(chip)) {
+        g.target = chip.dataset.toolShortcut;
+        setDropTarget(g.target);
       }
-      window.dispatchEvent(new CustomEvent('open-workspace-tools', { detail: { tool: id } }));
+      const list = menuRef.current?.querySelector('.fv-toolstrip-favorites');
+      if (list) {
+        const r = list.getBoundingClientRect();
+        if (event.clientX > r.right - 32) list.scrollLeft += 16;
+        else if (event.clientX < r.left + 32) list.scrollLeft -= 16;
+      }
+    }
+
+    function dragEnd(event, cancel = false) {
+      const g = gesture.current;
+      if (g?.pointerId !== event.pointerId) return;
+      gesture.current = null; setDragging(null); setDropTarget(null);
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+      if (cancel || g.id === g.target) return;
+      const from = favorites.indexOf(g.id), to = favorites.indexOf(g.target);
+      if (from < 0 || to < 0) return;
+      const next = favorites.slice();
+      next.splice(from, 1); next.splice(to, 0, g.id);
+      save(next, 'Raccourci déplacé en position ' + (to + 1) + '.');
     }
 
     return (
-      <section className="fv-toolstrip" aria-label="Outils du voyage">
+      <section className="fv-toolstrip" aria-label="Outils du voyage" ref={menuRef}
+        onKeyDown={event => {
+          if (event.key === 'Escape' && editing) {
+            event.preventDefault(); event.stopPropagation(); setEditing(false); triggerRef.current?.focus();
+          }
+        }}>
         <div className="fv-toolstrip-favorites">
+          <button id="workspace-tools-trigger" ref={triggerRef} type="button"
+            className="fv-toolstrip-button fv-toolstrip-add" aria-expanded={editing} aria-controls={catalogueId}
+            onClick={() => editing ? setEditing(false) : choose()}>＋ Outils</button>
           {favorites.map(id => {
             const tool = SHORTCUTS.find(item => item.id === id);
             return (
-              <button key={id} type="button" className="fv-toolstrip-button" onClick={() => openTool(id)}>
-                <Icon name={tool.icon} size={16} /><span>{tool.label}</span>
-              </button>
+              <div key={id} className="fv-tool-chip" data-tool-shortcut={id}
+                data-dragging={dragging === id ? 'true' : undefined}
+                data-drop={dropTarget === id && dragging !== id ? 'true' : undefined}>
+                <button type="button" className="fv-tool-chip-grip"
+                  title={'Déplacer ' + tool.label}
+                  aria-label={'Déplacer ' + tool.label + ' : glisser ou utiliser les flèches gauche et droite'}
+                  onPointerDown={event => dragStart(event, id)} onPointerMove={dragMove}
+                  onPointerUp={event => dragEnd(event)} onPointerCancel={event => dragEnd(event, true)}
+                  onLostPointerCapture={event => dragEnd(event, true)}
+                  onKeyDown={event => {
+                    if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
+                    event.preventDefault(); move(id, event.key === 'ArrowLeft' ? -1 : 1);
+                  }}>⠿</button>
+                <button type="button" className="fv-toolstrip-button" onClick={() => openTool(id)}>
+                  <Icon name={tool.icon} size={16} /><span>{tool.label}</span>
+                </button>
+                <button type="button" className="fv-tool-chip-remove" title={'Retirer ' + tool.label}
+                  aria-label={'Retirer le raccourci ' + tool.label} onClick={() => remove(id)}>×</button>
+              </div>
             );
           })}
-          {!favorites.length && <span className="fv-toolstrip-empty">Épingle tes outils utiles.</span>}
+          {!!favorites.length && <button type="button" className="fv-tools-control"
+            aria-label="Ajouter d’autres outils" aria-expanded={editing} aria-controls={catalogueId}
+            onClick={choose}>＋</button>}
         </div>
-        <div className="fv-toolstrip-settings" ref={menuRef}
-          onKeyDown={event => {
-            if (event.key === 'Escape' && editing) {
-              event.preventDefault();
-              event.stopPropagation();
-              setEditing(false);
-              triggerRef.current?.focus();
-            }
-          }}>
-          <button id="workspace-tools-trigger" ref={triggerRef} type="button"
-            className="fv-toolstrip-button" aria-expanded={editing} aria-controls={catalogueId}
-            onClick={() => setEditing(value => !value)}>
-            <Icon name="gear" size={16} />Personnaliser
-          </button>
-          <div id={catalogueId} className="fv-toolstrip-menu" hidden={!editing}>
-            <div className="fv-toolstrip-menu-heading">
-              <strong>Mes raccourcis</strong>
-              <button type="button" className="fv-tools-control" onClick={() => {
-                setEditing(false); triggerRef.current?.focus();
-              }}>Terminer</button>
-            </div>
-            <p>Les étoiles ajoutent ou retirent un favori. Les flèches changent son ordre.</p>
-            <ul>
-              {SHORTCUTS.map(tool => {
-                const index = favorites.indexOf(tool.id);
-                return (
-                  <li key={tool.id}>
-                    <button type="button" className="fv-toolstrip-open" onClick={() => openTool(tool.id)}>
-                      <span>{tool.label}</span><small>{tool.context}</small>
-                    </button>
-                    <div className="fv-toolstrip-order">
-                      {index >= 0 && (
-                        <>
-                          <button type="button" className="fv-tools-control"
-                            aria-label={'Avancer ' + tool.label} aria-disabled={index === 0}
-                            onClick={() => move(tool.id, -1)}>←</button>
-                          <span aria-label={'Position ' + (index + 1)}>{index + 1}</span>
-                          <button type="button" className="fv-tools-control"
-                            aria-label={'Reculer ' + tool.label} aria-disabled={index === favorites.length - 1}
-                            onClick={() => move(tool.id, 1)}>→</button>
-                        </>
-                      )}
-                      <button type="button" className="fv-tools-control"
-                        aria-label={'Épingler ' + tool.label} aria-pressed={index >= 0}
-                        onClick={() => toggleFavorite(tool)}>
-                        <span aria-hidden="true">{index >= 0 ? '★' : '☆'}</span>
-                      </button>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-            <button type="button" className="fv-tools-control"
-              onClick={() => save(DEFAULT_SHORTCUTS.slice(), 'Raccourcis par défaut restaurés.')}>
-              Restaurer les raccourcis
-            </button>
-            <p>Préférences enregistrées dans ce navigateur. Aucun contenu n’est supprimé.</p>
+        <div id={catalogueId} className="fv-toolstrip-menu" hidden={!editing}>
+          <div className="fv-toolstrip-menu-heading">
+            <strong>Ajouter des outils</strong>
+            <button type="button" className="fv-tools-control" aria-label="Fermer le choix des outils"
+              onClick={() => { setEditing(false); triggerRef.current?.focus(); }}>×</button>
           </div>
+          <p>Coche un ou plusieurs outils. Ils s’ouvriront sans déplacer ta page.</p>
+          <ul>
+            {SHORTCUTS.map(tool => (
+              <li key={tool.id}>
+                <label className="fv-tool-choice">
+                  <input type="checkbox" checked={selection.includes(tool.id)} onChange={event => {
+                    const checked = event.target.checked;
+                    setSelection(current => checked ? [...current, tool.id] : current.filter(id => id !== tool.id));
+                  }} />
+                  <span>{tool.label}<small>{tool.id === 'print' ? 'Raccourci PDF — ouvre l’impression au clic' : tool.context}
+                    {favorites.includes(tool.id) ? ' · déjà dans la barre' : ''}</small></span>
+                </label>
+              </li>
+            ))}
+          </ul>
+          <div className="fv-toolstrip-menu-actions">
+            <button type="button" className="fv-toolstrip-button fv-toolstrip-add"
+              disabled={!selection.length} onClick={addSelection}>
+              Ajouter et ouvrir{selection.length ? ' (' + selection.length + ')' : ''}
+            </button>
+            <button type="button" className="fv-tools-control"
+              onClick={() => save(DEFAULT_SHORTCUTS.slice(), 'Raccourcis par défaut restaurés.')}>Raccourcis par défaut</button>
+          </div>
+          <p>Les poignées déplacent les raccourcis ; les croix les retirent sans effacer leur contenu. Idées & notes ouvre ses trois carnets séparément.</p>
         </div>
         <span className="screen-reader-only" role="status" aria-live="polite">{message}</span>
       </section>

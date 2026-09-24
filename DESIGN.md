@@ -18,11 +18,12 @@ Les références Airbnb, Apple et Nike inspirent la hiérarchie, pas une copie d
 
 ## Navigation
 - Un même en-tête pour Mes voyages et l’espace de préparation.
-- Avec un voyage ouvert : onglets et modes Préparer/Voyager disponibles.
-- Sans voyage : ne pas afficher des onglets ou un mode Focus sans objet.
-- Changement de voyage disponible à toutes les largeurs ; nom complet accessible.
-- Titre du voyage, dates, Partager, Gérer et Outils réutilisent les commandes existantes.
-- En petit écran, navigation et modes se réorganisent sans masquer les fonctions.
+- Première rangée : marque, accès à la bibliothèque, sélecteur portant le nom du voyage actif, modes Préparer/Voyager, compte.
+- Distinguer Mes voyages (bibliothèque) de Changer de voyage (sélecteur), sans masquer la bibliothèque sur tablette.
+- Modes en commande segmentée contrastée ; pages du voyage dans une rangée séparée, onglet actif souligné.
+- Sans voyage : pas de modes ni d’onglets sans objet.
+- Titre du voyage, dates, Partager et Gérer réutilisent les commandes existantes.
+- Sur téléphone, réorganiser les rangées et faire défiler les onglets, sans supprimer de fonction.
 
 ## Itinéraire
 - Ensemble fluide, plafond de confort 1 560 px ; ne pas étirer une étape sur toute la largeur d’un grand écran.
@@ -64,18 +65,19 @@ styles.css reste nécessaire pour les vues et composants pas encore migrés : ne
 Ne pas annoncer toutes les pages refaites après le seul cadre connecté.
 
 ## Outils
-- Les favoris sont dans une barre sous le titre du voyage, sur toutes ses pages.
-- La colonne droite contient uniquement les informations du jour : nuit, repas et météo.
-- Personnaliser ouvre un menu compact pour épingler, désépingler et ordonner les raccourcis.
-- Aucun écran Tous les outils : chaque widget s’ouvre directement.
-- Conserver les préférences locales et tous les contenus des widgets.
-- Sur ordinateur, une seule fenêtre flottante non modale ; son ouverture ne change aucune colonne.
-- Fenêtre déplaçable au pointeur, au clavier et par boutons de placement.
-- Réduire conserve le widget monté ; fermer revient au déclencheur.
-- Garder la fenêtre dans la zone visible après redimensionnement.
-- Sur téléphone, panneau flottant adapté à la zone visible et au clavier virtuel.
-- Afficher le voyage et le contexte du jour ou de l’étape.
-- Clair/sombre, focus visible et commandes d’au moins 44 px.
+- Barre sous le titre du voyage, indépendante des informations nuit, repas et météo.
+- « + Outils » à gauche : sélection multiple ; petit + après les raccourcis.
+- Raccourcis surélevés au survol/focus, déplaçables par poignée ou flèches clavier ; croix pour désépingler sans effacer le contenu.
+- Garder la clé locale fabrique_tool_shortcuts_v1 et l’ordre des favoris existants.
+- Plusieurs fenêtres non modales simultanées, une par outil ; cliquer à nouveau ramène au premier plan.
+- Idées & notes ouvre ses trois carnets dans leurs fenêtres respectives, sans éditeurs dupliqués.
+- Aucune ouverture ne réduit, déplace ou masque la colonne des journées.
+- Déplacement au pointeur et au clavier ; taille ajustable par les quatre coins et les quatre côtés.
+- Commandes alternatives de position/taille ; rester dans la zone visible, y compris après changement de taille ou clavier virtuel.
+- Réduire conserve le widget monté ; barre inférieure pour retrouver les fenêtres ; fermer retourne à un déclencheur.
+- Changer de page garde les fenêtres ; changer de voyage ou de compte les ferme.
+- Voyage et contexte du jour/de l’étape visibles, thèmes clair/sombre et focus conservés.
+- Boutons de 44 px ; poignées de redimensionnement complétées par des commandes de taille accessibles.
 
 ## Carte
 - Recherche et choix du jour dans une barre au-dessus du plan.
@@ -85,9 +87,16 @@ Ne pas annoncer toutes les pages refaites après le seul cadre connecté.
 - Contrôles tactiles de 44 px, clair/sombre et défilement des petits écrans.
 - Une seule définition de styles de carte ; pas de surcharges contradictoires dans styles.css.
 
+## Budget, Documents et Bilan
+- Même palette, typographie et commandes que l’itinéraire ; styles dans workspace-a.css.
+- Budget : totaux prioritaires, dépenses modifiables et soldes conservés ; voyageurs dans une section dédiée.
+- Documents : recherche/catégorie, liste et aperçu distincts ; les actions ne recouvrent pas le fichier. Résumé par groupes, pas de fausse chronologie.
+- Bilan : quatre indicateurs majeurs, autres chiffres conservés en détail ; progression de dates explicitement distincte des activités réalisées.
+- Ne pas modifier les calculs, opérations de stockage ni autorisations pendant ce lot.
+
 ## Suite
-1. Valider barre d’outils, fenêtre flottante et carte avec les données réelles.
-2. Harmoniser Budget, Documents et Bilan.
+1. Valider navigation, outils multi-fenêtres et carte avec les données réelles.
+2. Valider Budget, Documents et Bilan refondus.
 3. Harmoniser Voyager, formulaires, fenêtres secondaires et paramètres.
 4. Vérifier les parcours, le responsive, les deux thèmes et l’accessibilité.
 La vitrine publique et l’APK restent des lots distincts.

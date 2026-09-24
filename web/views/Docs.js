@@ -112,559 +112,97 @@ function DocsView() {
     filteredDocs = filteredDocs.filter(d => (d.name || '').toLowerCase().includes(q));
   }
 
-  // ══════════════════════════════════════════════════════════
-  // Styles Atelier v2
-  // ══════════════════════════════════════════════════════════
-  const card = {
-    background: 'var(--card)', border: '1px solid var(--line)',
-    borderRadius: 16, boxShadow: 'var(--shadow)'
-  };
-  const kicker = {
-    fontSize: 11, fontWeight: 700, letterSpacing: '.16em',
-    textTransform: 'uppercase', color: 'var(--accent)'
-  };
-  const serif = 'var(--font-serif)';
-  const tabBtn = on => ({
-    flex: 1, border: 'none', cursor: 'pointer', padding: '9px 0',
-    borderRadius: 999, fontSize: 13, fontWeight: 700,
-    background: on ? 'var(--accent)' : 'transparent',
-    color: on ? 'var(--accent-ink)' : 'var(--muted)',
-    transition: 'all .2s', fontFamily: 'inherit'
-  });
-  const chipStyle = (active) => ({
-    display: 'inline-flex', alignItems: 'center', gap: 6,
-    padding: '6px 13px', borderRadius: 999, fontSize: 12, fontWeight: 700,
-    cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all .2s',
-    border: '1px solid ' + (active ? 'var(--accent)' : 'var(--line)'),
-    background: active ? 'var(--accent)' : 'transparent',
-    color: active ? 'var(--accent-ink)' : 'var(--muted)',
-    fontFamily: 'inherit'
-  });
-  const inp = {
-    width: '100%', padding: '10px 12px 10px 36px',
-    border: '1px solid var(--line)', borderRadius: 11,
-    background: 'var(--inset)', color: 'var(--text)',
-    fontFamily: 'inherit', fontSize: 14, outline: 'none'
-  };
+  function documentRow(doc) {
+    const meta = catMeta(doc.category);
+    return <button type="button" key={doc.id} className="fv-document-row" aria-pressed={doc.id === selectedId}
+      onClick={() => { setTab('detail'); setSelectedId(doc.id); }} title={doc.name}>
+      <span className="fv-symbol"><Icon name={doc.mime?.includes('image') ? 'camera' : meta.icon} size={20} /></span>
+      <span className="fv-document-name"><strong>{doc.name}</strong><small>{meta.label} · {formatDocSize(doc.size) || 'Fichier'}</small></span>
+      <span className="fv-filetype">{(doc.mime || '').split('/').pop().toUpperCase() || 'FICHIER'}</span>
+    </button>;
+  }
 
-
-  // ══════════════════════════════════════════════════════════
-  // ONGLET RÉSUMÉ — Vue Timeline chronologique
-  // ══════════════════════════════════════════════════════════
   const renderResume = () => {
-    // Grouper les documents par section de la timeline
     const sections = TIMELINE_SECTIONS.map(sec => ({
-      ...sec,
-      docs: documents.filter(d => sec.categories.includes(d.category))
-    })).filter(sec => sec.docs.length > 0); // Ne montrer que les sections avec des docs
-
-    if (total === 0) {
-      return (
-        <div style={{ ...card, padding: '52px 24px', textAlign: 'center', marginTop: 8 }}>
-          <Icon name="folder" size={44} style={{ color: 'var(--faint)', margin: '0 auto 14px', display: 'block' }} />
-          <div style={{ fontFamily: serif, fontStyle: 'italic', fontSize: 22, color: 'var(--text)', marginBottom: 8 }}>
-            Aucun document
-          </div>
-          <p style={{ color: 'var(--muted)', fontSize: 13, margin: 0, lineHeight: 1.6 }}>
-            Ajoute tes billets, réservations ou passeports<br/>pour les voir apparaître dans la timeline.
-          </p>
-        </div>
-      );
-    }
-
-    return (
-      <div style={{ position: 'relative', paddingTop: 8 }}>
-        {/* Ligne verticale de la timeline (desktop uniquement) */}
-        <div style={{
-          position: 'absolute', left: '50%', top: 0, bottom: 0,
-          width: 1, background: 'var(--line)', transform: 'translateX(-0.5px)',
-          display: window.innerWidth < 700 ? 'none' : 'block'
-        }} />
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 48 }}>
-          {sections.map((sec, si) => {
-            const isRight = si % 2 === 0; // Alterne gauche/droite
-
-            return (
-              <div key={sec.id} style={{
-                position: 'relative',
-                display: 'flex', alignItems: 'flex-start',
-                flexDirection: window.innerWidth < 700 ? 'column' : (isRight ? 'row' : 'row-reverse'),
-                gap: window.innerWidth < 700 ? 12 : 0
-              }}>
-
-                {/* Côté titre (50%) */}
-                <div style={{
-                  width: window.innerWidth < 700 ? '100%' : '50%',
-                  textAlign: window.innerWidth < 700 ? 'left' : (isRight ? 'right' : 'left'),
-                  padding: window.innerWidth < 700 ? '0' : (isRight ? '0 32px 0 0' : '0 0 0 32px'),
-                  paddingTop: 2
-                }}>
-                  <div style={{ fontFamily: serif, fontStyle: 'italic', fontSize: 22, color: 'var(--text)' }}>
-                    {sec.label}
-                  </div>
-                  <div style={{ fontSize: 13, color: 'var(--muted)', marginTop: 2 }}>
-                    {sec.subtitle}
-                  </div>
-                </div>
-
-                {/* Point sur la timeline (desktop) */}
-                {window.innerWidth >= 700 && (
-                  <div style={{
-                    position: 'absolute', left: '50%', top: 6,
-                    width: 12, height: 12, borderRadius: '50%',
-                    background: sec.dotColor, border: '2.5px solid var(--bg)',
-                    transform: 'translateX(-50%)', zIndex: 2,
-                    boxShadow: '0 0 0 3px ' + sec.dotColor + '30'
-                  }} />
-                )}
-
-                {/* Côté documents (50%) */}
-                <div style={{
-                  width: window.innerWidth < 700 ? '100%' : '50%',
-                  padding: window.innerWidth < 700 ? '0' : (isRight ? '0 0 0 32px' : '0 32px 0 0'),
-                  display: 'flex', flexDirection: 'column', gap: 10
-                }}>
-                  {sec.docs.map(doc => {
-                    const meta = catMeta(doc.category);
-                    const isImage = doc.mime?.includes('image');
-                    return (
-                      <div key={doc.id}
-                        onClick={() => { setTab('detail'); setSelectedId(doc.id); }}
-                        style={{
-                          ...card, display: 'flex', alignItems: 'center',
-                          gap: 14, padding: '14px 16px', cursor: 'pointer',
-                          transition: 'box-shadow .2s, border-color .2s'
-                        }}>
-
-                        {/* Icône */}
-                        <div style={{
-                          width: 42, height: 42, borderRadius: 12,
-                          background: meta.tone + '18', color: meta.tone,
-                          display: 'grid', placeItems: 'center', flexShrink: 0,
-                          transition: 'background .2s'
-                        }}>
-                          <Icon name={isImage ? 'camera' : meta.icon} size={20} />
-                        </div>
-
-                        {/* Infos */}
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{
-                            fontSize: 14.5, fontWeight: 700, color: 'var(--text)',
-                            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
-                          }}>
-                            {doc.name}
-                          </div>
-                          <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>
-                            {(doc.mime || 'FICHIER').split('/').pop().toUpperCase()}
-                            {doc.size ? ' · ' + formatDocSize(doc.size) : ''}
-                          </div>
-                        </div>
-
-                        {/* Badge catégorie */}
-                        <span style={{
-                          padding: '4px 10px', borderRadius: 999, fontSize: 10.5,
-                          fontWeight: 800, letterSpacing: '.04em', textTransform: 'uppercase',
-                          background: meta.tone + '18', color: meta.tone,
-                          whiteSpace: 'nowrap'
-                        }}>
-                          {meta.label}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
+      ...sec, docs: documents.filter(d => sec.categories.includes(d.category))
+    })).filter(sec => sec.docs.length > 0);
+    return sections.length ? <div className="fv-document-groups">
+      {sections.map(sec => <section className="fv-panel" key={sec.id}>
+        <header className="fv-panel-head"><div><h2>{sec.label}</h2><p>{sec.subtitle}</p></div><span>{sec.docs.length}</span></header>
+        <div className="fv-document-list">{sec.docs.map(documentRow)}</div>
+      </section>)}
+    </div> : <div className="fv-panel fv-empty-note"><Icon name="folder" size={32} /><h2>Aucun document</h2><p>Ajoute tes billets, réservations et fichiers avec le bouton Ajouter.</p></div>;
   };
 
-
-  // ══════════════════════════════════════════════════════════
-  // ONGLET DÉTAIL — Vue explorateur (liste + prévisualisation)
-  // ══════════════════════════════════════════════════════════
-const renderDetail = () => (
-    <div
-      className={'web-docs-detail' + (selected ? ' has-selection' : '')}
-      style={{
-        display: 'grid',
-        gridTemplateColumns: window.innerWidth < 700 ? '1fr' : '380px 1fr',
-        gap: 0,
-        minHeight: 'calc(100vh - 240px)',
-        ...card,
-        overflow: 'hidden',
-        marginTop: 8
-      }}
-    >
-
-      {/* ── Panneau gauche : recherche + filtres + liste ── */}
-<div className="web-docs-list-panel" style={{
-        display: 'flex', flexDirection: 'column',
-        borderRight: window.innerWidth >= 700 ? '1px solid var(--line)' : 'none',
-        background: 'var(--card)'
-      }}>
-
-        {/* Barre de recherche */}
-<div className="web-docs-search-area" style={{ padding: '18px 18px 0' }}>
-          <div style={{ position: 'relative', marginBottom: 14 }}>
-            <Icon name="search" size={16} style={{
-              position: 'absolute', left: 11, top: '50%',
-              transform: 'translateY(-50%)', color: 'var(--faint)'
-            }} />
-            <input
-              type="search"
-              aria-label="Rechercher un document"
-              value={searchQ}
-              onChange={e => setSearchQ(e.target.value)}
-              placeholder="Rechercher un billet, une réservation…"
-              style={inp}
-            />
-          </div>
-
-          {/* Chips filtre */}
-         <div className="web-docs-filters" style={{ display: 'flex', gap: 6, flexWrap: 'wrap', paddingBottom: 14, borderBottom: '1px solid var(--line)' }}>
-            <button onClick={() => setFilter('__all__')} style={chipStyle(filter === '__all__')}>Tous</button>
-            {DOC_CATEGORIES.map(cat => (
-              <button key={cat.id} onClick={() => setFilter(cat.id)} style={chipStyle(filter === cat.id)}>
-                {cat.label}
-              </button>
-            ))}
-          </div>
+  const renderDetail = () => (
+    <div className={'fv-document-explorer' + (selected ? ' has-selection' : '')}>
+      <section className="fv-document-library" aria-label="Liste des documents">
+        <div className="fv-document-search">
+          <label>Rechercher un document<input type="search" value={searchQ}
+            onChange={e => setSearchQ(e.target.value)} placeholder="Nom du billet, de la réservation…" /></label>
+          <label>Catégorie<select value={filter} onChange={e => setFilter(e.target.value)}>
+            <option value="__all__">Toutes les catégories</option>
+            {DOC_CATEGORIES.map(cat => <option key={cat.id} value={cat.id}>{cat.label}</option>)}
+          </select></label>
+          <span className="fv-muted" role="status">{filteredDocs.length} document{filteredDocs.length > 1 ? 's' : ''}</span>
         </div>
-
-        {/* Liste scrollable */}
-        <div className="web-docs-list" style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '12px 14px' }}>
-          {filteredDocs.length === 0 ? (
-            <div className="docs-empty-state" role="status">
-              <strong>
-                {total === 0 ? 'Tes documents de voyage, au même endroit' : 'Aucun document correspondant'}
-              </strong>
-              <p>
-                {total === 0
-                  ? 'Utilise « Ajouter » pour conserver un billet, une réservation ou une image.'
-                  : 'Essaie un autre nom ou affiche toutes les catégories.'}
-              </p>
-              {total > 0 && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSearchQ('');
-                    setFilter('__all__');
-                  }}
-                >
-                  Réinitialiser les filtres
-                </button>
-              )}
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {filteredDocs.map(doc => {
-                const meta = catMeta(doc.category);
-                const isSelected = doc.id === selectedId;
-                const isImage = doc.mime?.includes('image');
-                return (
-                  <button
-                    className="web-docs-list-item"
-                    type="button"
-                    aria-pressed={isSelected}
-                    title={doc.name}
-                    key={doc.id}
-                    onClick={() => setSelectedId(doc.id)}
-                    style={{
-                      width: '100%', textAlign: 'left', cursor: 'pointer',
-                      padding: '14px 14px', borderRadius: 14,
-                      border: '1px solid ' + (isSelected ? 'var(--accent)' : 'var(--line)'),
-                      background: isSelected ? 'var(--accent-soft)' : 'var(--card)',
-                      boxShadow: isSelected ? '0 2px 8px rgba(0,0,0,.06)' : 'none',
-                      transition: 'all .15s', display: 'flex', alignItems: 'flex-start', gap: 12,
-                      fontFamily: 'inherit'
-                    }}>
-
-                    {/* Icône */}
-                    <div style={{
-                      width: 44, height: 44, borderRadius: 12, flexShrink: 0,
-                      background: isSelected ? meta.tone + '22' : 'var(--inset)',
-                      color: isSelected ? meta.tone : 'var(--muted)',
-                      display: 'grid', placeItems: 'center',
-                      border: '1px solid var(--line)'
-                    }}>
-                      <Icon name={isImage ? 'camera' : meta.icon} size={20} />
-                    </div>
-
-                    {/* Infos */}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 2 }}>
-                        <div style={{
-                          fontSize: 14, fontWeight: 700, color: 'var(--text)',
-                          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
-                        }}>
-                          {doc.name}
-                        </div>
-                        <span style={{ fontSize: 11.5, color: 'var(--faint)', flexShrink: 0 }}>
-                          {new Date(doc.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
-                        </span>
-                      </div>
-                      <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 6, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {formatDocSize(doc.size)}
-                      </div>
-                      {/* Tags */}
-                      <div style={{ display: 'flex', gap: 5 }}>
-                        <span style={{
-                          padding: '2px 8px', borderRadius: 4, fontSize: 10, fontWeight: 800,
-                          letterSpacing: '.04em', textTransform: 'uppercase',
-                          background: meta.tone + '18', color: meta.tone
-                        }}>{meta.label}</span>
-                        <span style={{
-                          padding: '2px 8px', borderRadius: 4, fontSize: 10, fontWeight: 800,
-                          letterSpacing: '.04em', textTransform: 'uppercase',
-                          background: 'var(--inset)', color: 'var(--muted)',
-                          border: '1px solid var(--line)'
-                        }}>{(doc.mime || '').split('/').pop().toUpperCase() || 'FICHIER'}</span>
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          )}
+        <div className="fv-document-list">
+          {filteredDocs.length ? filteredDocs.map(documentRow) : <div className="fv-empty-note" role="status">
+            <h2>{total === 0 ? 'Tes documents, au même endroit' : 'Aucun document correspondant'}</h2>
+            <p>{total === 0 ? 'Utilise Ajouter pour conserver un billet, une réservation ou une image.' : 'Essaie un autre nom ou affiche toutes les catégories.'}</p>
+            {total > 0 && <button type="button" className="fv-control" onClick={() => { setSearchQ(''); setFilter('__all__'); }}>Réinitialiser les filtres</button>}
+          </div>}
         </div>
-      </div>
-
-      {/* ── Panneau droit : prévisualisation ── */}
-      <div className="web-docs-preview-panel" style={{
-        display: window.innerWidth < 700 && !selected ? 'none' : 'flex',
-        flexDirection: 'column', background: 'var(--inset)', position: 'relative',
-        minHeight: window.innerWidth < 700 ? 300 : 'auto'
-      }}>
-        {selected ? (
-          <>
-            {/* Boutons d'action flottants */}
-           <div className="web-docs-preview-actions" style={{
-              position: 'absolute', top: 18, right: 20, zIndex: 5,
-              display: 'flex', gap: 8, alignItems: 'center'
-            }}>
-              <button
-                type="button"
-                className="web-docs-mobile-back"
-                onClick={() => setSelectedId(null)}
-                style={{
-                  minHeight: 38,
-                  padding: '0 12px',
-                  borderRadius: 999,
-                  background: 'var(--card)',
-                  border: '1px solid var(--line)',
-                  boxShadow: 'var(--shadow)',
-                  alignItems: 'center',
-                  gap: 6,
-                  cursor: 'pointer',
-                  color: 'var(--text)',
-                  fontFamily: 'inherit',
-                  fontWeight: 700
-                }}
-              >
-                <Icon name="x" size={15} />
-                Retour
-              </button>
-
-              {selectedUrl && (
-                <>
-                  <button onClick={() => { if (selectedUrl) window.open(selectedUrl, '_blank'); }}
-                    title="Ouvrir"
-                    style={{
-                      width: 38, height: 38, borderRadius: '50%',
-                      background: 'var(--card)', border: '1px solid var(--line)',
-                      boxShadow: 'var(--shadow)', display: 'grid', placeItems: 'center',
-                      cursor: 'pointer', color: 'var(--text)'
-                    }}>
-                    <Icon name="share" size={16} />
-                  </button>
-
-                  <a href={selectedUrl} download={selected.name}
-                    style={{
-                      display: 'inline-flex', alignItems: 'center', gap: 7,
-                      padding: '8px 16px', borderRadius: 999, fontSize: 12.5, fontWeight: 700,
-                      background: 'var(--accent)', color: 'var(--accent-ink)',
-                      textDecoration: 'none', boxShadow: 'var(--shadow)',
-                      fontFamily: 'inherit'
-                    }}>
-                    <Icon name="download" size={15} />
-                    Télécharger
-                  </a>
-                </>
-              )}
-
-              <button
-                type="button"
-                className="web-docs-delete-action"
-                onClick={() => deleteDoc(selected.id)}
-                disabled={busy}
-                style={{
-                  minHeight: 38,
-                  padding: '0 12px',
-                  borderRadius: 999,
-                  border: '1px solid rgba(192,86,63,.35)',
-                  background: 'var(--card)',
-                  color: '#c0563f',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  cursor: busy ? 'default' : 'pointer',
-                  fontFamily: 'inherit',
-                  fontWeight: 700
-                }}
-              >
-                <Icon name="x" size={14} />
-                Supprimer
-              </button>
-            </div>
-
-            {/* Zone de prévisualisation */}
-            <div className="web-docs-preview-zone" style={{
-              flex: 1, padding: '24px 32px', overflow: 'auto',
-              display: 'grid', placeItems: 'center'
-            }}>
-              {!selectedUrl ? (
-                <div style={{ color: 'var(--muted)', fontSize: 14 }}>Chargement…</div>
-              ) : selectedType === 'image' ? (
-                /* Aperçu image dans un "papier" */
-                <div style={{
-                  background: 'var(--card)', borderRadius: 16,
-                  boxShadow: '0 8px 30px rgba(0,0,0,.06)', border: '1px solid var(--line)',
-                  overflow: 'hidden', maxWidth: '100%'
-                }}>
-                  <img src={selectedUrl} alt={selected.name}
-                    style={{ maxWidth: '100%', maxHeight: 'calc(100vh - 340px)', display: 'block' }} />
-                  <div style={{
-                    padding: '12px 18px', borderTop: '1px solid var(--line)',
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    fontSize: 11, color: 'var(--faint)', letterSpacing: '.08em', textTransform: 'uppercase'
-                  }}>
-                    <span>{selected.name}</span>
-                    <span>{formatDocSize(selected.size)}</span>
-                  </div>
-                </div>
-              ) : selectedType === 'pdf' ? (
-                /* Aperçu PDF dans un cadre "papier" */
-                <div className="web-docs-pdf-preview" style={{
-                  width: '100%', maxWidth: 720,
-                  background: 'var(--card)', borderRadius: 16,
-                  boxShadow: '0 8px 30px rgba(0,0,0,.06)', border: '1px solid var(--line)',
-                  overflow: 'hidden', display: 'flex', flexDirection: 'column'
-                }}>
-                  <iframe src={selectedUrl} title={selected.name}
-                    style={{ width: '100%', height: 'calc(100vh - 340px)', border: 0, background: '#fff' }} />
-                  <div style={{
-                    padding: '10px 18px', borderTop: '1px solid var(--line)',
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    fontSize: 11, color: 'var(--faint)', letterSpacing: '.08em', textTransform: 'uppercase'
-                  }}>
-                    <span>{selected.name}</span>
-                    <span>{formatDocSize(selected.size)}</span>
-                  </div>
-                </div>
-              ) : (
-                <div style={{ textAlign: 'center', color: 'var(--muted)' }}>
-                  <Icon name="file" size={44} style={{ display: 'block', margin: '0 auto 12px', color: 'var(--faint)' }} />
-                  <div style={{ fontFamily: serif, fontStyle: 'italic', fontSize: 18 }}>Aperçu indisponible</div>
-                  <p style={{ fontSize: 13, marginTop: 6 }}>Ce fichier peut être téléchargé mais pas prévisualisé ici.</p>
-                </div>
-              )}
-            </div>
-          </>
-        ) : (
-          /* Aucun document sélectionné */
-          <div style={{ flex: 1, display: 'grid', placeItems: 'center', textAlign: 'center', padding: 30 }}>
-            <div>
-              <Icon name="eye" size={44} style={{ display: 'block', margin: '0 auto 14px', color: 'var(--faint)' }} />
-              <div style={{ fontFamily: serif, fontStyle: 'italic', fontSize: 22, color: 'var(--text)', marginBottom: 6 }}>
-                Prévisualisation
-              </div>
-              <p style={{ color: 'var(--muted)', fontSize: 13, margin: 0 }}>
-                Sélectionne un document dans la liste pour l'afficher ici.
-              </p>
-            </div>
+      </section>
+      <section className="fv-document-preview" aria-label="Aperçu du document">
+        {selected ? <>
+          <header className="fv-preview-header">
+            <div><small>{catMeta(selected.category).label}</small><h2>{selected.name}</h2>
+              <p>{formatDocSize(selected.size)}{selected.createdAt && !Number.isNaN(new Date(selected.createdAt).getTime())
+                ? ' · Ajouté le ' + new Date(selected.createdAt).toLocaleDateString('fr-FR') : ''}</p></div>
+            <button type="button" className="fv-control" onClick={() => setSelectedId(null)}>Retour à la liste</button>
+          </header>
+          <div className="fv-preview-actions">
+            {selectedUrl && <>
+              <a className="fv-control" href={selectedUrl} target="_blank" rel="noopener noreferrer"><Icon name="share" size={16} />Ouvrir</a>
+              <a className="fv-control fv-control-primary" href={selectedUrl} download={selected.name}><Icon name="download" size={16} />Télécharger</a>
+            </>}
+            <button type="button" className="fv-control fv-control-danger" onClick={() => deleteDoc(selected.id)} disabled={busy}><Icon name="x" size={16} />Supprimer</button>
           </div>
-        )}
-      </div>
+          <div className="fv-preview-stage">
+            {!selectedUrl ? <p className="fv-muted" role="status">Chargement de l’aperçu…</p>
+              : selectedType === 'image' ? <img src={selectedUrl} alt={selected.name} />
+              : selectedType === 'pdf' ? <iframe src={selectedUrl} title={selected.name} />
+              : <div className="fv-empty-note"><Icon name="file" size={32} /><h2>Aperçu indisponible</h2><p>Utilise Ouvrir ou Télécharger pour consulter ce fichier.</p></div>}
+          </div>
+        </> : <div className="fv-empty-note"><Icon name="eye" size={32} /><h2>Un document à consulter ?</h2><p>Sélectionne un fichier dans la liste. Son aperçu et ses actions apparaîtront ici.</p></div>}
+      </section>
     </div>
   );
 
-
-  // ══════════════════════════════════════════════════════════
-  // RENDU PRINCIPAL
-  // ══════════════════════════════════════════════════════════
   return (
-   <div
-      className="web-docs-page"
-      style={{ flex: 1, minHeight: 'calc(100vh - 60px)', overflowY: 'auto' }}
-    >
-      <div
-        className="web-docs-container"
-        style={{ maxWidth: tab === 'detail' ? 1200 : 860, margin: '0 auto', padding: '24px 22px 40px', transition: 'max-width .3s' }}
-      >
-
-        {/* ── En-tête ── */}
-        <div className="web-docs-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12, marginBottom: 18 }}>
-          <div>
-<div style={kicker}>Organisation du voyage</div>
-<h1 className="workspace-page-title">Documents</h1>
-<p className="workspace-page-description">
-  Retrouve tes billets, réservations et fichiers.
-</p>
-            <p style={{ color: 'var(--muted)', fontSize: 13, margin: '4px 0 0' }}>
-              {trip?.name || 'Mon voyage'} · {total} document{total > 1 ? 's' : ''}
-            </p>
-          </div>
-
-         {/* Bouton upload */}
-          <div className="web-docs-upload-controls" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            <select value={uploadCat} onChange={e => setUploadCat(e.target.value)}
-              style={{
-                border: '1px solid var(--line)', background: 'var(--inset)', color: 'var(--text)',
-                borderRadius: 10, padding: '8px 10px', fontSize: 13, fontFamily: 'inherit'
-              }}>
+    <div className="web-docs-page fv-workpage">
+      <div className="fv-workcontent">
+        <header className="fv-workhead">
+          <div><span className="fv-eyebrow">Le dossier du voyage</span><h1>Documents</h1><p>{total} document{total > 1 ? 's' : ''} · Billets, réservations et fichiers utiles.</p></div>
+          <div className="fv-upload">
+            <label>Classer dans<select value={uploadCat} disabled={busy} onChange={e => setUploadCat(e.target.value)}>
               {DOC_CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
-            </select>
-
-            <button onClick={() => inputRef.current?.click()} disabled={busy}
-              style={{
-                border: 'none', background: 'var(--accent)', color: 'var(--accent-ink)',
-                borderRadius: 11, padding: '9px 16px', fontWeight: 700, cursor: 'pointer',
-                display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 13,
-                fontFamily: 'inherit', opacity: busy ? .6 : 1
-              }}>
-              <Icon name="plus" size={14} />
-              {busy ? 'Envoi…' : 'Ajouter'}
+            </select></label>
+            <button type="button" className="fv-control fv-control-primary" onClick={() => inputRef.current?.click()} disabled={busy}>
+              <Icon name="plus" size={18} />{busy ? 'Envoi…' : 'Ajouter'}
             </button>
-
-            <input ref={inputRef} type="file" multiple accept="image/*,.pdf"
-              onChange={e => addFiles(e.target.files)} hidden />
+            <input ref={inputRef} type="file" aria-label="Choisir des documents" multiple accept="image/*,.pdf" onChange={e => addFiles(e.target.files)} hidden />
           </div>
+        </header>
+        <div className="fv-subnav" role="group" aria-label="Vues des documents">
+          <button type="button" aria-pressed={tab === 'detail'} onClick={() => setTab('detail')}>Détail</button>
+          <button type="button" aria-pressed={tab === 'resume'} onClick={() => setTab('resume')}>Résumé</button>
         </div>
-
-        {/* ── Onglets Résumé / Détail ── */}
-        <div className="web-docs-tabs" style={{
-          display: 'flex', gap: 2, background: 'var(--inset)',
-          border: '1px solid var(--line)', borderRadius: 999,
-          padding: 3, marginBottom: 20
-        }}>
-          <button style={tabBtn(tab === 'resume')} onClick={() => setTab('resume')}>
-            Résumé
-          </button>
-          <button style={tabBtn(tab === 'detail')} onClick={() => setTab('detail')}>
-            Détail
-          </button>
-        </div>
-
-        {/* ── Contenu de l'onglet actif ── */}
         {tab === 'resume' && renderResume()}
         {tab === 'detail' && renderDetail()}
       </div>
     </div>
   );
 }
-
 window.DocsView = DocsView;

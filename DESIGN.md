@@ -77,9 +77,17 @@ Ne pas annoncer toutes les pages refaites après le seul cadre connecté.
 - Afficher le voyage et le contexte du jour ou de l’étape.
 - Clair/sombre, focus visible et commandes d’au moins 44 px.
 
+## Carte
+- Recherche et choix du jour dans une barre au-dessus du plan.
+- Réglages cartographiques distincts des outils du voyage.
+- Fiche du jour compacte : points localisés, notes réelles et accès à l’itinéraire.
+- Aucun encart météo fictif ni date de démonstration pour un voyage non daté.
+- Contrôles tactiles de 44 px, clair/sombre et défilement des petits écrans.
+- Une seule définition de styles de carte ; pas de surcharges contradictoires dans styles.css.
+
 ## Suite
-1. Valider barre d’outils et fenêtre flottante avec les données réelles.
-2. Harmoniser Carte, Budget, Documents et Bilan.
+1. Valider barre d’outils, fenêtre flottante et carte avec les données réelles.
+2. Harmoniser Budget, Documents et Bilan.
 3. Harmoniser Voyager, formulaires, fenêtres secondaires et paramètres.
 4. Vérifier les parcours, le responsive, les deux thèmes et l’accessibilité.
 La vitrine publique et l’APK restent des lots distincts.

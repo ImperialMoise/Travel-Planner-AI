@@ -176,496 +176,69 @@ function mvFmtDate(iso){const d=new Date(iso);return d.getDate()+' '+MONTHS_MAP[
 
 /* ═══ CSS ═══ */
 const MV_CSS=`
-.mv-map-wrap.map-redesign {
-  overflow: hidden;
-}
-
-.mv-map-wrap.map-redesign .web-map-search {
-  top: max(12px, env(safe-area-inset-top, 0px)) !important;
-  left: max(12px, env(safe-area-inset-left, 0px)) !important;
-  right: 120px !important;
-  max-width: 440px !important;
-  z-index: 25;
-}
-
-.map-search-v2 {
-  position: absolute;
-}
-
-.map-search-v2 .map-search-field {
-  position: relative;
-}
-
-.map-search-v2 .map-search-field input {
-  width: 100%;
-  height: 48px;
-  box-sizing: border-box;
-  padding: 10px 44px 10px 38px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--card);
-  color: var(--text);
-  font: inherit;
-  font-size: 16px;
-  box-shadow: 0 3px 12px rgba(0,0,0,.08);
-}
-
-.map-search-v2 input::-webkit-search-cancel-button {
-  -webkit-appearance: none;
-}
-
-.map-search-v2 .map-search-icon {
-  position: absolute;
-  left: 13px;
-  top: 16px;
-  color: var(--accent);
-  pointer-events: none;
-}
-
-.map-search-v2 .map-search-clear {
-  position: absolute;
-  top: 2px;
-  right: 2px;
-  display: grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--muted);
-  cursor: pointer;
-}
-
-.map-search-v2 .map-search-feedback,
-.map-search-v2 .map-search-results,
-.map-search-v2 .map-search-retry {
-  box-sizing: border-box;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--card);
-  color: var(--text);
-  box-shadow: 0 3px 12px rgba(0,0,0,.08);
-}
-
-.map-search-v2 .map-search-feedback {
-  margin-top: 8px;
-  padding: 12px;
-  font-size: 13px;
-  line-height: 1.5;
-}
-
-.map-search-v2 .map-search-retry {
-  margin-top: 6px;
-  min-height: 44px;
-  padding: 8px 14px;
-  font: inherit;
-  cursor: pointer;
-}
-
-.map-search-v2 .map-search-results {
-  list-style: none;
-  padding: 4px;
-  margin: 8px 0 0;
-  max-height: min(300px, 38dvh);
-  overflow-y: auto;
-  overscroll-behavior: contain;
-}
-
-.map-search-v2 .map-search-results button {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  width: 100%;
-  padding: 12px 10px;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--text);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-.map-search-v2 .map-search-results button:hover {
-  background: var(--accent-soft);
-}
-
-.map-search-v2 .map-search-results button > span:first-child {
-  flex-shrink: 0;
-  padding-top: 2px;
-  color: var(--accent);
-}
-
-.map-search-v2 .map-search-results button > span:last-child {
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-
-.map-search-v2 .map-search-results strong,
-.map-search-v2 .map-search-results small {
-  display: block;
-  line-height: 1.45;
-}
-
-.map-search-v2 .map-search-results strong {
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.map-search-v2 .map-search-results small {
-  margin-top: 3px;
-  font-size: 12px;
-  color: var(--muted);
-}
-
-.mv-map-wrap.map-redesign .web-map-toolbox {
-  top: max(12px, env(safe-area-inset-top, 0px));
-  right: max(12px, env(safe-area-inset-right, 0px));
-  bottom: max(12px, env(safe-area-inset-bottom, 0px));
-}
-
-.mv-map-wrap.map-redesign .web-map-toolbox summary {
-  min-height: 48px;
-  border-radius: 10px;
-}
-
-.mv-map-wrap.map-redesign .web-map-day-card,
-.mv-map-wrap.map-redesign .web-map-found-place {
-  bottom: max(12px, env(safe-area-inset-bottom, 0px)) !important;
-  border-radius: 12px !important;
-  max-height: 45% !important;
-  background: var(--card);
-  box-shadow: 0 4px 18px rgba(0,0,0,.10) !important;
-  overflow-wrap: anywhere;
-}
-
-.mv-map-wrap.map-redesign .mv-card-head {
-  padding: 12px 14px;
-}
-
-.mv-map-wrap.map-redesign .web-map-found-place button,
-.mv-map-wrap.map-redesign .web-map-pick-banner button {
-  min-width: 44px;
-  min-height: 44px;
-  flex-shrink: 0;
-}
-
-.mv-map-wrap.map-redesign .web-map-pick-banner {
-  right: 12px !important;
-  top: calc(max(12px, env(safe-area-inset-top, 0px)) + 58px) !important;
-  padding: 10px 12px !important;
-  font-size: 13px !important;
-}
-
-.mv-map-wrap.map-redesign input:focus-visible,
-.mv-map-wrap.map-redesign button:focus-visible,
-.mv-map-wrap.map-redesign summary:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
-@media (max-width: 480px) {
-  .mv-map-wrap.map-redesign .web-map-day-card,
-  .mv-map-wrap.map-redesign .web-map-found-place {
-    width: calc(100% - 24px) !important;
-  }
-
-  .map-search-v2 .map-search-results button {
-    padding: 12px 8px;
-  }
-}
-.map-redesign .web-map-search{
-  top:12px !important;
-  left:12px !important;
-  right:132px !important;
-  width:auto !important;
-  max-width:440px !important;
-  transform:none !important;
-}
-
-.map-redesign .web-map-search input{
-  min-height:46px;
-  font-size:16px !important;
-  border-radius:12px !important;
-  background:var(--card) !important;
-}
-
-.map-redesign .web-map-search button{
-  min-height:44px;
-}
-
-.map-redesign .web-map-toolbox{
-  position:absolute;
-  top:12px;
-  right:12px;
-  bottom:12px;
-  width:180px;
-  max-width:calc(100% - 24px);
-  z-index:24;
-  pointer-events:none;
-}
-
-.map-redesign .web-map-toolbox summary{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:8px;
-  width:fit-content;
-  min-height:46px;
-  margin-left:auto;
-  padding:0 14px;
-  border:1px solid var(--line);
-  border-radius:12px;
-  background:var(--card);
-  color:var(--text);
-  font-size:13px;
-  font-weight:600;
-  cursor:pointer;
-  list-style:none;
-  pointer-events:auto;
-}
-
-.map-redesign .web-map-toolbox summary::-webkit-details-marker{
-  display:none;
-}
-
-.map-redesign .web-map-toolbox .web-map-controls{
-  position:relative !important;
-  top:auto !important;
-  right:auto !important;
-  width:100% !important;
-  max-height:calc(100% - 56px);
-  margin-top:8px;
-  padding:8px;
-  overflow-y:auto;
-  overscroll-behavior:contain;
-  border:1px solid var(--line);
-  border-radius:14px;
-  background:var(--card);
-  box-shadow:0 6px 20px rgba(0,0,0,.10);
-  pointer-events:auto;
-}
-
-.map-redesign .web-map-controls > button,
-.map-redesign .web-map-controls > div,
-.map-redesign .web-map-controls > div > button{
-  width:100% !important;
-  flex-shrink:0;
-  box-shadow:none !important;
-  background:var(--card) !important;
-}
-
-.map-redesign .web-map-controls button{
-  min-height:44px;
-}
-
-.map-redesign .web-map-control-label{
-  display:inline !important;
-}
-
-.map-redesign .web-map-readout{
-  display:flex !important;
-}
-
-.map-redesign .web-map-controls > div > div.mv-glass{
-  position:static !important;
-  width:100% !important;
-  margin-top:6px;
-  box-shadow:none;
-}
-
-.map-redesign .web-map-day-card,
-.map-redesign .web-map-found-place{
-  left:12px !important;
-  right:auto !important;
-  bottom:12px !important;
-  width:360px !important;
-  max-width:calc(100% - 24px) !important;
-  max-height:55% !important;
-  overflow:auto !important;
-  overscroll-behavior:contain;
-  border-radius:16px !important;
-}
-
-.map-redesign .web-map-day-card .mv-card{
-  width:100% !important;
-  max-width:none !important;
-  max-height:none !important;
-  background:var(--card) !important;
-  box-shadow:none !important;
-}
-
-.map-redesign .web-map-day-card .mv-card-head{
-  background:var(--card) !important;
-}
-
-.map-redesign .mv-card-toggle,
-.map-redesign .mv-card-foot button,
-.map-redesign .web-map-found-place button{
-  min-height:44px;
-}
-
-.map-redesign .web-map-pick-banner{
-  top:68px !important;
-  left:12px !important;
-  right:132px !important;
-  max-width:none !important;
-  transform:none !important;
-  border-radius:12px !important;
-  background:var(--card) !important;
-}
-
-.map-redesign button:focus-visible,
-.map-redesign summary:focus-visible{
-  outline:2px solid var(--accent);
-  outline-offset:3px;
-}
-.mv-frame{flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden}
-.mv-body{flex:1;display:flex;min-height:0}
-.mv-spine{width:258px;flex-shrink:0;border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0;background:var(--card)}
-.mv-spine-list{flex:1;overflow-y:auto;padding:8px 14px 12px;position:relative}
-.mv-spine-line{position:absolute;left:30px;top:16px;bottom:16px;width:2px;background:var(--line2)}
-.mv-map-wrap{flex:1;position:relative;min-width:0;background:var(--inset)}
-.mv-map-loading{position:absolute;inset:0;z-index:40;display:grid;place-items:center;padding:24px;text-align:center;background:var(--inset);color:var(--muted);font-size:14px;font-weight:700}
-.mv-map-loading[data-error="true"]{color:#b44738}
-#mv-map{position:absolute;inset:0}
-#mv-map .maplibregl-ctrl-attrib{font-size:9px;background:rgba(255,255,255,.7);border-radius:8px 0 0 0}
-.mv-card{
-  width:320px;
-  max-width:calc(100vw - 36px);
-  max-height:calc(100dvh - 180px);
-  display:flex;
-  flex-direction:column;
-  background:var(--card);
-  border:1px solid var(--line);
-  border-radius:18px;
-  box-shadow:0 18px 50px rgba(31,46,40,.22);
-  overflow:hidden;
-}
-.mv-card .mv-hero{position:relative;height:120px;background:linear-gradient(150deg,hsl(152,36%,64%),hsl(152,40%,50%))}
-.mv-card.mv-r-busan .mv-hero{background:linear-gradient(150deg,hsl(30,42%,62%),hsl(30,46%,48%))}
-.mv-card.mv-r-vol .mv-hero{background:linear-gradient(150deg,hsl(212,28%,60%),hsl(212,32%,46%))}
-.mv-card .mv-hero-ov{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(18,30,24,0) 36%,rgba(13,26,20,.72))}
-.mv-card .mv-hero-tag{position:absolute;right:12px;top:11px;font-size:9px;letter-spacing:.12em;color:rgba(255,255,255,.85);text-shadow:0 1px 5px rgba(0,0,0,.5);text-transform:uppercase;pointer-events:none;font-family:var(--font-mono,ui-monospace)}
-.mv-card .mv-hero-cap{position:absolute;left:16px;right:16px;bottom:12px;color:#fff;pointer-events:none}
-.mv-card .mv-hero-pill{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:700;margin-bottom:5px;text-shadow:0 1px 6px rgba(0,0,0,.5)}
-.mv-card .mv-hj{font-family:var(--font-serif);font-style:italic;font-size:28px;line-height:.82;text-shadow:0 2px 12px rgba(0,0,0,.5)}
-.mv-card .mv-hn{font-family:var(--font-serif);font-style:italic;font-size:17.5px;line-height:1.05;text-shadow:0 2px 10px rgba(0,0,0,.55)}
-.mv-card-body{
-  padding:13px 15px 15px;
-  max-height:150px;
-  overflow:hidden;
-  min-height:0;
-}
-.mv-card-body.expanded{
-  max-height:calc(100dvh - 340px);
-  overflow-y:auto;
-}
-.mv-card-steps{
-  display:none;
-}
-.mv-card-body.expanded .mv-card-steps{
-  display:block;
-}
-  .mv-steps-heading{
-  margin:0 0 8px;
-  color:var(--muted);
-  font-family:var(--font-mono);
-  font-size:10px;
-  font-weight:900;
-  letter-spacing:.12em;
-  text-transform:uppercase;
-}
-
-.mv-step-row{
-  width:100%;
-  border:1px solid rgba(212,196,179,.72);
-  border-radius:12px;
-  padding:9px 10px;
-  display:grid;
-  grid-template-columns:30px minmax(0, 1fr);
-  align-items:center;
-  gap:10px;
-  background:rgba(255,255,255,.7);
-  color:var(--text);
-  font-family:inherit;
-  text-align:left;
-  cursor:pointer;
-}
-
-.mv-step-row + .mv-step-row{
-  margin-top:7px;
-}
-
-.mv-step-row:hover{
-  border-color:var(--accent);
-  background:var(--accent-soft);
-}
-
-.mv-step-ico{
-  width:30px;
-  height:30px;
-  border-radius:9px;
-  display:grid;
-  place-items:center;
-  background:rgba(213,231,221,.82);
-  color:var(--secondary);
-}
-
-.mv-step-txt{
-  min-width:0;
-  display:grid;
-  gap:2px;
-}
-
-.mv-step-txt strong{
-  overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap;
-  font-size:13px;
-  line-height:17px;
-  font-weight:900;
-}
-
-.mv-step-meta{
-  display:flex;
-  flex-wrap:wrap;
-  gap:5px;
-  color:var(--muted);
-  font-size:11px;
-  line-height:14px;
-}
-
-.mv-step-meta span + span::before{
-  content:'·';
-  margin-right:5px;
-  color:var(--faint);
-}
-.mv-card-body::-webkit-scrollbar{width:3px}
-.mv-card-body::-webkit-scrollbar-thumb{background:var(--outline-variant);border-radius:3px}
-.mv-card-note{font-size:12px;color:var(--muted);font-style:italic;line-height:1.5;margin-bottom:11px}
-.mv-step-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line2);cursor:pointer}
-.mv-step-row:last-child{border-bottom:none}
-.mv-step-row:hover .mv-step-name{color:var(--accent)}
-.mv-step-row[data-missing="1"]{border:1px dashed var(--outline-variant);border-radius:10px;padding:8px 10px;margin:6px 0;background:var(--accent-soft);}
-.mv-step-row[data-missing="1"] .mv-step-ic{background:var(--card);}
-.mv-step-row[data-missing="1"]:hover{background:var(--accent);}
-.mv-step-row[data-missing="1"]:hover .mv-step-name,
-.mv-step-row[data-missing="1"]:hover .mv-step-sub,
-.mv-step-row[data-missing="1"]:hover .mv-step-time{color:var(--accent-ink);}
-.mv-step-ic{width:30px;height:30px;border-radius:9px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;flex-shrink:0}
-.mv-step-name{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)}
-.mv-step-sub{font-size:11px;color:var(--muted)}
-.mv-step-time{font-family:var(--font-mono,ui-monospace);font-size:11px;color:var(--muted);flex-shrink:0}
-.mv-card-foot{display:flex;gap:8px;margin-top:12px;padding-top:11px;border-top:1px solid var(--line)}
-.mv-card-foot button{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:7px;border:none;border-radius:10px;padding:9px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;background:var(--accent-soft);color:var(--accent)}
-.mv-card-foot button:hover{background:var(--accent);color:var(--accent-ink)}
-.mv-welcome-pad{padding:18px}
-.mv-welcome-line{font-size:12.5px;color:var(--muted);line-height:1.55;margin-top:8px}
-.mv-legend{display:flex;flex-direction:column;gap:8px;margin-top:14px;padding-top:13px;border-top:1px solid var(--line2)}
-.mv-lg-row{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--text)}
-.mv-lg-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0;border:2px solid var(--card);box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.mv-frame { flex:1;display:flex;flex-direction:column;min-height:0;min-width:0; }
+.mv-workspace-map { color:var(--text);font-family:var(--font-sans);padding:0 24px 20px; }
+.mv-map-toolbar { display:flex;align-items:center;flex-wrap:wrap;gap:8px;position:relative;z-index:50;padding:12px;background:var(--card);border:1px solid var(--line);border-radius:16px 16px 0 0;flex-shrink:0; }
+.web-map-search { position:relative;flex:1 1 280px;min-width:160px; }
+.map-search-field { position:relative; }
+.map-search-field input { width:100%;height:46px;padding:10px 44px 10px 38px;border:1px solid var(--line);border-radius:10px;background:var(--inset);color:var(--text);font:400 16px var(--font-sans); }
+.map-search-field input::-webkit-search-cancel-button { -webkit-appearance:none; }
+.map-search-icon { position:absolute;left:13px;top:15px;color:var(--muted);pointer-events:none; }
+.map-search-clear { position:absolute;right:1px;top:1px;display:grid;place-items:center;width:44px;height:44px;padding:0;border:0;background:transparent;color:var(--muted);cursor:pointer; }
+.map-search-feedback,.map-search-results { position:absolute;top:100%;left:0;right:0;z-index:2;margin:8px 0 0;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--text);box-shadow:0 8px 28px #0002;font-size:13px; }
+.map-search-results { list-style:none;padding:4px;max-height:min(300px,38dvh);overflow:auto;overscroll-behavior:contain; }
+.map-search-results button { display:flex;align-items:flex-start;gap:10px;width:100%;min-height:44px;padding:12px 10px;border:0;border-radius:8px;background:none;color:var(--text);font:inherit;text-align:left;cursor:pointer; }
+.map-search-results button:hover { background:var(--inset); }
+.map-search-results strong,.map-search-results small { display:block;line-height:1.45;overflow-wrap:anywhere; }
+.map-search-results small { margin-top:3px;font-size:12px;color:var(--muted); }
+.map-search-results button>span:first-child { flex-shrink:0; }
+.map-search-retry { min-height:44px;margin-top:8px;padding:8px 14px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--text);font:inherit;cursor:pointer; }
+.web-map-search:has(.map-search-retry) .map-search-feedback { position:static; }
+.mv-map-day-select { flex:0 1 240px;min-width:140px; }
+.mv-map-day-select select { width:100%;min-height:46px;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--text);font:400 14px var(--font-sans);text-overflow:ellipsis; }
+.mv-map-button,.web-map-toolbox summary { display:inline-flex;align-items:center;justify-content:center;gap:8px;min-width:44px;min-height:46px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--text);font:500 13px/1.4 var(--font-sans);cursor:pointer; }
+.mv-map-button:hover,.web-map-toolbox summary:hover { background:var(--inset); }
+.mv-map-button[aria-pressed="true"] { background:var(--fv-primary,var(--accent));color:var(--fv-onprimary,var(--accent-ink));border-color:transparent; }
+.web-map-toolbox summary { list-style:none; }
+.web-map-toolbox summary::-webkit-details-marker { display:none; }
+.web-map-controls { position:absolute;top:calc(100% + 8px);right:0;display:grid;gap:10px;width:min(280px,100%);max-height:min(440px,50dvh);overflow:auto;overscroll-behavior:contain;padding:14px;background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:0 8px 28px #0002; }
+.mv-map-control-group { display:flex;gap:6px; }
+.mv-map-control-group button { flex:1; }
+.mv-map-section-label { font-size:12px;font-weight:600;color:var(--muted); }
+.web-map-readout { font-size:12px;text-align:center;color:var(--muted);padding:6px; }
+.mv-map-wrap { flex:1;position:relative;min-width:0;min-height:0;background:var(--inset);overflow:hidden;border:1px solid var(--line);border-top:0;border-radius:0 0 16px 16px; }
+#mv-map { position:absolute;inset:0; }
+#mv-map .maplibregl-ctrl-attrib { font-size:11px; }
+.mv-map-loading { position:absolute;inset:0;z-index:40;display:grid;place-items:center;padding:24px;text-align:center;background:var(--inset);color:var(--muted);font-size:14px; }
+.mv-map-loading[data-error="true"] { color:var(--text); }
+.web-map-pick-banner { position:absolute;left:12px;right:12px;top:12px;z-index:25;display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--card);font-size:13px; }
+.web-map-pick-banner button { margin-left:auto;flex-shrink:0;min-width:44px;min-height:44px; }
+.web-map-day-card,.web-map-found-place { position:absolute;left:12px;bottom:32px;z-index:5;width:360px;max-width:calc(100% - 24px);max-height:55%;overflow:auto;overscroll-behavior:contain;border:1px solid var(--line);border-radius:16px;background:var(--card);box-shadow:0 8px 24px #0002; }
+.mv-card { width:100%;color:var(--text);background:var(--card); }
+.mv-card-head { padding:14px 16px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;border-bottom:1px solid var(--line); }
+.mv-card-title,.mv-found-title { font:600 18px/1.3 var(--font-sans);margin-top:4px;overflow-wrap:anywhere; }
+.mv-card-status { font-size:12px;color:var(--muted); }
+.mv-card-toggle { flex-shrink:0;min-width:44px;min-height:44px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--text);font:inherit;cursor:pointer; }
+.mv-card-body { padding:12px 16px 16px; }
+.mv-card-summary { margin:0;font-size:13px;color:var(--muted); }
+.mv-card-note { margin:10px 0;padding:10px;background:var(--inset);border-radius:10px;font-size:13px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere; }
+.mv-card-steps { display:none;margin-top:12px;border-top:1px solid var(--line);padding-top:12px; }
+.mv-card-body.expanded .mv-card-steps { display:block; }
+.mv-steps-heading { font-size:12px;font-weight:600;color:var(--muted);margin:0 0 8px; }
+.mv-step-row { display:flex;align-items:center;gap:10px;width:100%;min-height:48px;padding:10px 0;border:0;border-bottom:1px solid var(--line);background:transparent;color:var(--text);font:inherit;text-align:left;cursor:pointer; }
+.mv-step-row:hover,.mv-step-row.is-active { background:var(--inset); }
+.mv-step-ico,.mv-step-ic { display:grid;place-items:center;width:30px;height:30px;flex-shrink:0;border-radius:8px;background:var(--inset);color:var(--text); }
+.mv-step-txt { min-width:0; }
+.mv-step-txt strong { font-size:14px;font-weight:600;line-height:1.4;overflow-wrap:anywhere; }
+.mv-step-meta { display:flex;flex-wrap:wrap;gap:6px;margin-top:3px;font-size:12px;color:var(--muted); }
+.mv-step-empty { padding:12px 0;font-size:13px;color:var(--muted); }
+.mv-card-foot { display:flex;gap:8px;flex-wrap:wrap;margin-top:12px; }
+.mv-card-foot button { flex:1;min-height:44px;padding:8px 10px;display:flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--text);font:500 12px/1.4 var(--font-sans);cursor:pointer; }
+.mv-card-foot button:first-child { background:var(--fv-primary,var(--accent));color:var(--fv-onprimary,var(--accent-ink));border-color:transparent; }
+.mv-welcome-pad { padding:16px; }
+.mv-welcome-line { font-size:13px;line-height:1.5;color:var(--muted);margin-top:8px; }
+.web-map-found-place button { min-width:44px;min-height:44px; }
+.mv-glass { background:var(--card);border:1px solid var(--line);border-radius:12px; }
 .mv-pin{cursor:pointer;width:30px;height:30px}
 .mv-pin .badge{width:30px;height:30px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;font-family:var(--font-mono,ui-monospace);font-weight:700;font-size:12.5px;border:2.5px solid var(--card);box-shadow:0 3px 9px rgba(31,46,40,.4);transition:transform .2s}
 .mv-r-busan .badge{background:#c98a3c}
@@ -682,316 +255,23 @@ const MV_CSS=`
 .mv-step-label{margin-top:4px;padding:3px 8px;border-radius:6px;font-size:10.5px;font-weight:700;color:var(--text);max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;opacity:0;transition:opacity .2s;pointer-events:none}
 .mv-step-pin:hover .mv-step-label{opacity:1}
 .mv-time-pill{padding:4px 10px;border-radius:999px;font-size:10px;font-weight:700;display:flex;align-items:center;gap:4px;white-space:nowrap;pointer-events:none;box-shadow:0 2px 8px rgba(0,0,0,.1)}
-@keyframes routeFlow{to{line-dashoffset:-20px}}
-.mv-ctrl{display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:13px;box-shadow:var(--shadow);overflow:hidden}
-.mv-ctrl button{width:42px;height:42px;border:none;background:transparent;color:var(--text);cursor:pointer;display:grid;place-items:center}
-.mv-ctrl button:hover{background:var(--accent-soft);color:var(--accent)}
-.mv-ctrl button+button{border-top:1px solid var(--line2)}
-.mv-readout{font-family:var(--font-mono,ui-monospace);font-size:10.5px;letter-spacing:.04em;color:var(--muted);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:7px 11px;box-shadow:var(--shadow);white-space:nowrap}
-.mv-readout b{color:var(--accent);font-weight:700}
-.mv-glass{background:rgba(254,249,239,0.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(130,117,103,0.15);border-radius:12px;box-shadow:0 2px 8px rgba(82,98,91,0.06)}
-html.dark .mv-glass{background:rgba(21,48,42,0.8);border-color:rgba(255,255,255,0.08)}
-.mv-glass-btn{border:none;background:transparent;color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;padding:8px 14px;font-size:12.5px;font-weight:700;font-family:inherit;transition:all .15s;border-radius:10px;white-space:nowrap}
-.mv-glass-btn:hover{background:var(--accent-soft);color:var(--accent)}
-.mv-glass-btn.active{background:var(--accent);color:var(--accent-ink)}
 
-.mv-card{
-  width:340px;
-  max-width:calc(100vw - 32px);
-  background:rgba(254,249,239,.86);
-  backdrop-filter:blur(16px);
-  -webkit-backdrop-filter:blur(16px);
-  border:1px solid rgba(212,196,179,.88);
-  border-radius:22px;
-  box-shadow:0 22px 52px rgba(45,73,63,.16);
-  overflow:hidden;
-  color:var(--text);
+.mv-workspace-map :is(button,input,select,summary):focus-visible { outline:3px solid var(--fv-focus,var(--accent));outline-offset:2px; }
+.mv-workspace-map button:disabled { opacity:.5;cursor:not-allowed; }
+@media(max-width:760px) {
+  .mv-workspace-map { padding:0 12px 12px; }
+  .web-map-search { flex-basis:100%; }
+  .mv-map-day-select { flex:1;min-width:100px; }
+  .mv-map-toolbar { gap:6px;padding:8px; }
+  .mv-map-button,.web-map-toolbox summary { font-size:12px;padding:8px; }
+  .web-map-day-card,.web-map-found-place { width:calc(100% - 24px);max-height:45%; }
 }
-
-.mv-card-head{
-  padding:16px 18px 15px;
-  background:rgba(255,255,255,.72);
-  border-bottom:1px solid rgba(45,73,63,.10);
-  display:flex;
-  align-items:flex-start;
-  justify-content:space-between;
-  gap:14px;
+@media(max-height:560px) {
+  .mv-workspace-map { overflow:auto; }
+  .mv-map-wrap { flex:1 0 260px; }
 }
-
-.mv-card-status{
-  display:flex;
-  align-items:center;
-  gap:7px;
-  font-family:var(--font-mono);
-  font-size:10.5px;
-  line-height:14px;
-  letter-spacing:.16em;
-  text-transform:uppercase;
-  color:var(--muted);
-  font-weight:900;
-}
-
-.mv-live-dot{
-  width:8px;
-  height:8px;
-  border-radius:999px;
-  background:#5c8a6f;
-  box-shadow:0 0 0 4px rgba(92,138,111,.12);
-  flex-shrink:0;
-}
-
-.mv-card-title{
-  margin-top:5px;
-  font-family:var(--font-serif);
-  font-size:24px;
-  line-height:29px;
-  color:var(--text);
-}
-
-.mv-card-toggle{
-  width:32px;
-  height:32px;
-  border-radius:999px;
-  border:none;
-  background:transparent;
-  color:var(--muted);
-  cursor:pointer;
-  display:grid;
-  place-items:center;
-  font-size:20px;
-  font-weight:900;
-}
-
-.mv-card-toggle:hover{
-  background:rgba(248,243,233,.9);
-  color:var(--accent);
-}
-
-.mv-card-body{
-  padding:14px;
-  background:rgba(248,243,233,.62);
-  max-height:262px;
-  overflow:hidden;
-  transition:max-height .22s ease;
-}
-
-.mv-card-body.expanded{
-  max-height:calc(100vh - 180px);
-  overflow:auto;
-}
-
-.mv-bento{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:10px;
-}
-
-.mv-mini-tile{
-  min-height:98px;
-  background:rgba(255,255,255,.72);
-  border:1px solid rgba(212,196,179,.72);
-  border-radius:14px;
-  padding:12px;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  text-align:center;
-}
-
-.mv-mini-icon{
-  width:28px;
-  height:28px;
-  border-radius:999px;
-  background:rgba(213,231,221,.65);
-  color:var(--secondary);
-  display:grid;
-  place-items:center;
-  margin-bottom:7px;
-}
-
-.mv-mini-value{
-  color:var(--text);
-  font-size:14px;
-  line-height:18px;
-  font-weight:900;
-}
-
-.mv-mini-label{
-  margin-top:2px;
-  color:var(--muted);
-  font-size:11.5px;
-  line-height:15px;
-}
-
-.mv-main-step{
-  grid-column:1 / -1;
-  background:rgba(255,255,255,.78);
-  border:1px solid rgba(212,196,179,.78);
-  border-radius:14px;
-  padding:12px;
-  display:flex;
-  align-items:flex-start;
-  gap:12px;
-}
-
-.mv-main-step-icon{
-  width:42px;
-  height:42px;
-  border-radius:12px;
-  background:rgba(213,231,221,.82);
-  color:var(--secondary);
-  display:grid;
-  place-items:center;
-  flex-shrink:0;
-}
-
-.mv-main-title{
-  color:var(--text);
-  font-size:14px;
-  line-height:18px;
-  font-weight:900;
-}
-
-.mv-main-sub{
-  margin-top:3px;
-  color:var(--muted);
-  font-size:12px;
-  line-height:17px;
-  display:-webkit-box;
-  -webkit-line-clamp:2;
-  -webkit-box-orient:vertical;
-  overflow:hidden;
-}
-
-.mv-card-note{
-  margin-top:10px;
-  padding:10px 12px;
-  border-radius:13px;
-  background:rgba(255,255,255,.58);
-  border:1px dashed rgba(212,196,179,.86);
-  color:var(--muted);
-  font-size:12px;
-  line-height:17px;
-}
-
-.mv-card-steps{
-  display:none;
-  margin-top:12px;
-  padding-top:10px;
-  border-top:1px solid rgba(212,196,179,.7);
-}
-
-.mv-card-body.expanded .mv-card-steps{
-  display:block;
-}
-
-.mv-card-foot{
-  margin-top:12px;
-  display:flex;
-  gap:8px;
-}
-
-.mv-card-foot button{
-  flex:1;
-  min-height:38px;
-  border-radius:999px;
-  border:1px solid rgba(212,196,179,.88);
-  background:rgba(255,255,255,.72);
-  color:var(--text);
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  gap:7px;
-  font-family:var(--font-mono);
-  font-size:10.5px;
-  font-weight:900;
-  letter-spacing:.08em;
-  text-transform:uppercase;
-  cursor:pointer;
-}
-
-.mv-card-foot button:first-child{
-  background:var(--accent);
-  border-color:var(--accent);
-  color:var(--accent-ink);
-}
-
-.mv-card-foot button:hover{
-  transform:translateY(-1px);
-  box-shadow:0 8px 18px rgba(82,98,91,.10);
-}
-
-/* Carte du jour : seule la liste des étapes défile */
-.mv-card-body{
-  display:flex;
-  flex-direction:column;
-  min-height:0;
-  overflow:hidden;
-}
-
-.mv-card-body.expanded{
-  overflow:hidden;
-}
-
-.mv-card-body.expanded .mv-card-steps{
-  display:block;
-  flex:1;
-  min-height:0;
-  overflow-y:auto;
-  overscroll-behavior:contain;
-  padding-right:2px;
-}
-
-.mv-card-foot{
-  flex-shrink:0;
-}
-
-/* Couleurs identiques aux catégories du reste du site */
-.mv-step-row{
-  --step-accent:#827567;
-  --step-soft:rgba(130,117,103,.12);
-  border-color:var(--step-soft);
-}
-
-.mv-step-row:hover,
-.mv-step-row.is-active{
-  border-color:var(--step-accent);
-  background:var(--step-soft);
-}
-
-.mv-step-row.is-active{
-  box-shadow:0 0 0 2px var(--step-soft);
-}
-
-.mv-step-ico{
-  background:var(--step-soft);
-  color:var(--step-accent);
-}
-
-.mv-step-activite{
-  --step-accent:#496f92;
-  --step-soft:rgba(73,111,146,.12);
-}
-
-.mv-step-restaurant{
-  --step-accent:#b4843e;
-  --step-soft:rgba(180,132,62,.14);
-}
-
-.mv-step-logement{
-  --step-accent:#9a6508;
-  --step-soft:rgba(154,101,8,.12);
-}
-
-.mv-step-transport{
-  --step-accent:#597b72;
-  --step-soft:rgba(89,123,114,.12);
-}
-
-.mv-step-autre{
-  --step-accent:#827567;
-  --step-soft:rgba(130,117,103,.12);
+@media(prefers-reduced-motion:reduce) {
+  .mv-pin .badge,.mv-step-dot,.mv-step-label { transition:none; }
 }
 `;
 
@@ -1011,11 +291,10 @@ function mapStepCoords(step) {
 
 function tripToMapTrip(realTrip) {
   if (!realTrip || !Array.isArray(realTrip.days) || !realTrip.days.length) {
-    return MAP_TRIP;
+    return { name: realTrip?.name || 'Voyage', dates: '', days: [] };
   }
 
   const days = realTrip.days.map(function(day, index) {
-    const fallback = MAP_TRIP.days[index % MAP_TRIP.days.length];
 
     const steps = (day.steps || []).reduce(function(list, step) {
       const coords = mapStepCoords(step);
@@ -1067,8 +346,8 @@ function tripToMapTrip(realTrip) {
     return {
       id: day.id,
       n: day.index != null ? day.index + 1 : index + 1,
-      date: day.dateISO || fallback.date,
-      wd: fallback.wd,
+      date: day.dateISO || '',
+      wd: '',
       region: day.title || realTrip.destination || realTrip.name || 'Voyage',
       city: day.title || realTrip.destination || realTrip.name || 'Journée',
       title: day.title || 'Journée ' + (index + 1),
@@ -1164,6 +443,23 @@ function MapView(){
 
   return '';
 }, [mapLocateStep, realTrip]);
+  React.useEffect(() => {
+    let frame;
+    const resize = () => {
+      window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(() => mapRef.current?.resize());
+    };
+    const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(resize) : null;
+    if (mapEl.current) observer?.observe(mapEl.current);
+    window.addEventListener('resize', resize);
+    resize();
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener('resize', resize);
+      window.cancelAnimationFrame(frame);
+    };
+  }, [mapLibraryState]);
+
   const firstRender=React.useRef(true);
   React.useEffect(()=>{
   if (firstRender.current) {
@@ -1387,134 +683,50 @@ if(src)src.setData({type:'Feature',geometry:route.geometry});
   }
 
   // ── Cards ──
-  function renderWelcome(){if(!cardRef.current)return;var nbDays=T.days?T.days.length:0;var nbSteps=0;T.days.forEach(function(d){nbSteps+=(d.steps||[]).length;});cardRef.current.innerHTML='<div class="mv-card"><div class="mv-welcome-pad"><div style="font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--accent)">Le voyage</div><div style="font-family:var(--font-serif);font-style:italic;font-size:24px;margin-top:3px;color:var(--text)">'+T.name+'</div><div class="mv-welcome-line">'+nbDays+' jours · '+nbSteps+' étapes sur la carte.<br>Utilise « Organiser les jours » pour choisir une journée.</div></div></div>';}
-  function renderDayCard(i) {
-  if (!cardRef.current) return;
-
-  const d = T.days[i];
-
-  if (!d) return;
-
-  const rc = regionClass(d.region);
-  const pc = regionPretty(d.region);
-  const date = fmtDate(d.date) || 'Date à définir';
-
-  const locatedSteps = d.steps.filter(function keepLocated(step) {
-    return !!step.c;
-  });
-
-  const mealCount = d.steps.filter(function keepMeal(step) {
-    return step.t === 'restaurant';
-  }).length;
-
-  const lodgingCount = d.steps.filter(function keepLodging(step) {
-    return step.t === 'logement';
-  }).length;
-
-  const mainStep =
-    d.steps.find(function findActivity(step) {
-      return step.t === 'activite';
-    }) ||
-    d.steps.find(function findMeal(step) {
-      return step.t === 'restaurant';
-    }) ||
-    d.steps[0] ||
-    null;
-
-  const mainIcon = mainStep ? mvStepIcon(mainStep) : 'pin';
-  const mainTitle = mainStep ? mainStep.l : 'Aucune étape prévue';
-  const mainSub = mainStep && mainStep.s
-    ? mainStep.s
-    : mainStep
-      ? 'Ajoute une description pour compléter cette étape.'
-      : 'Ajoute une première étape pour commencer à construire cette journée.';
-
-  const mealLabel = mealCount
-    ? mealCount + ' repas'
-    : 'Repas à prévoir';
-
-  const lodgingLabel = lodgingCount
-    ? lodgingCount + ' nuit' + (lodgingCount > 1 ? 's' : '')
-    : 'Où dormir ?';
-
-  let rows = '';
-
-  d.steps.forEach(function renderStepRow(s, idx) {
-    const ic = mvStepIcon(s);
-    const time = s.time ? '<span>' + s.time + '</span>' : '';
-    const type = s.t ? '<span>' + s.t + '</span>' : '';
-    const meta = time || type
-      ? '<div class="mv-step-meta">' + time + type + '</div>'
-      : '';
-
-    rows +=
-      '<button class="mv-step-row mv-step-' + (s.t || 'autre') + '" data-step="' + idx + '">' +
-        '<span class="mv-step-ico">' + mvSvg(ic, 14) + '</span>' +
-        '<span class="mv-step-txt">' +
-          '<strong>' + s.l + '</strong>' +
-          meta +
-        '</span>' +
-      '</button>';
-  });
-
-  if (!rows) {
-    rows =
-      '<div class="mv-step-empty">' +
-        'Aucune étape pour cette journée.' +
-      '</div>';
+ function mapEscape(value) {
+    return String(value ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;');
   }
 
-  cardRef.current.innerHTML =
-    '<div class="mv-card ' + rc + '">' +
-      '<div class="mv-card-head">' +
-        '<div>' +
-          '<div class="mv-card-status">' +
-            '<span class="mv-live-dot"></span>' +
-            '<span>J' + (i + 1) + ' · ' + date + '</span>' +
-          '</div>' +
-          '<div class="mv-card-title">' + d.title + '</div>' +
-        '</div>' +
-        '<button id="mv-toggle-btn" class="mv-card-toggle" type="button" title="Déplier la journée">⌃</button>' +
-      '</div>' +
+  function renderWelcome() {
+    if (!cardRef.current) return;
+    const count = T.days.reduce((total, day) => total + (day.steps || []).length, 0);
+    cardRef.current.innerHTML =
+      '<div class="mv-card"><div class="mv-welcome-pad">' +
+      '<div class="mv-card-status">Vue du voyage</div>' +
+      '<div class="mv-card-title">' + mapEscape(T.name) + '</div>' +
+      '<div class="mv-welcome-line">' + T.days.length + ' jours · ' + count + ' points localisés.' +
+      '<br>' + (T.days.length ? 'Choisis une journée dans le sélecteur au-dessus de la carte.' : 'Ajoute une journée dans l’itinéraire pour commencer.') +
+      '</div></div></div>';
+  }
 
+  function renderDayCard(i) {
+    if (!cardRef.current) return;
+    const d = T.days[i];
+    if (!d) return;
+    const date = d.date && !Number.isNaN(new Date(d.date).getTime()) ? fmtDate(d.date) : 'Date à définir';
+    const labels = { activite: 'Activité', restaurant: 'Restaurant', logement: 'Hébergement', transport: 'Transport', autre: 'Étape' };
+    const rows = d.steps.map((step, index) =>
+      '<button type="button" class="mv-step-row" data-step="' + index + '">' +
+      '<span class="mv-step-ico">' + mvSvg(mvStepIcon(step), 14) + '</span>' +
+      '<span class="mv-step-txt"><strong>' + mapEscape(step.l) + '</strong>' +
+      '<span class="mv-step-meta"><span>' + mapEscape(step.time || 'Horaire libre') +
+      '</span><span>' + mapEscape(labels[step.t] || 'Étape') + '</span></span></span></button>'
+    ).join('') || '<div class="mv-step-empty">Aucun point localisé pour cette journée. Complète les lieux dans l’itinéraire.</div>';
+
+    cardRef.current.innerHTML =
+      '<div class="mv-card"><div class="mv-card-head"><div>' +
+      '<div class="mv-card-status">J' + (i + 1) + ' · ' + mapEscape(date) + '</div>' +
+      '<div class="mv-card-title">' + mapEscape(d.title) + '</div></div>' +
+      '<button id="mv-toggle-btn" class="mv-card-toggle" type="button" aria-label="Afficher les étapes" aria-expanded="false" aria-controls="mv-map-day-steps" title="Déplier la journée">⌃</button></div>' +
       '<div id="mv-card-body" class="mv-card-body">' +
-        '<div class="mv-bento">' +
-          '<div class="mv-mini-tile">' +
-            '<span class="mv-mini-icon">☀</span>' +
-            '<span class="mv-mini-value">Préparation</span>' +
-            '<span class="mv-mini-label">Météo à compléter</span>' +
-          '</div>' +
-
-          '<div class="mv-mini-tile">' +
-            '<span class="mv-mini-icon">' + mvSvg('route', 15) + '</span>' +
-            '<span class="mv-mini-value">' + locatedSteps.length + '/' + d.steps.length + ' étapes</span>' +
-            '<span class="mv-mini-label">' + mealLabel + ' · ' + lodgingLabel + '</span>' +
-          '</div>' +
-
-          '<div class="mv-main-step">' +
-            '<span class="mv-main-step-icon">' + mvSvg(mainIcon, 20) + '</span>' +
-            '<span>' +
-              '<span class="mv-main-title">' + mainTitle + '</span>' +
-              '<span class="mv-main-sub">' + mainSub + '</span>' +
-            '</span>' +
-          '</div>' +
-        '</div>' +
-
-        '<div class="mv-card-note">' +
-          (d.note ? d.note : 'Aucune note pour ce jour. Ajoute un repère ou une intention de voyage.') +
-        '</div>' +
-
-        '<div class="mv-card-steps">' +
-         '<p class="mv-steps-heading">Étapes de la journée</p>' +
-       rows +
-        '</div>' +
-
-        '<div class="mv-card-foot">' +
-             '<button id="mv-itinerary-btn" type="button">' + mvSvg('route', 14) + 'Voir dans l’itinéraire</button>' +
-             '<button id="mv-expand-btn" type="button">' + mvSvg('chevdown', 12) + 'Étapes (' + d.steps.length + ')</button>' +
-        '</div>' +
-      '</div>' +
-    '</div>';
+      '<p class="mv-card-summary">' + d.steps.length + ' points localisés dans cette journée.</p>' +
+      (d.note ? '<div class="mv-card-note">' + mapEscape(d.note) + '</div>' : '') +
+      '<div id="mv-map-day-steps" class="mv-card-steps"><p class="mv-steps-heading">Lieux de la journée</p>' + rows + '</div>' +
+      '<div class="mv-card-foot">' +
+      '<button id="mv-itinerary-btn" type="button">' + mvSvg('route', 14) + 'Voir dans l’itinéraire</button>' +
+      '<button id="mv-expand-btn" type="button" aria-expanded="false" aria-controls="mv-map-day-steps">Étapes (' + d.steps.length + ')</button>' +
+      '</div></div></div>';
 
   const map = mapRef.current;
 
@@ -1568,9 +780,11 @@ if (itineraryBtn) {
     if (toggleBtn) {
       toggleBtn.textContent = expanded ? '⌄' : '⌃';
       toggleBtn.title = expanded ? 'Replier la journée' : 'Déplier la journée';
+      toggleBtn.setAttribute('aria-expanded', String(expanded));
     }
 
     if (expandBtn) {
+      expandBtn.setAttribute('aria-expanded', String(expanded));
       expandBtn.innerHTML = mvSvg(expanded ? 'chevup' : 'chevdown', 12) +
         (expanded ? 'Replier' : 'Étapes (' + d.steps.length + ')');
     }
@@ -2241,49 +1455,11 @@ Store.set({
     return()=>map.off('mousemove',onMove);
   });
 
-  return(
+return (
     <>
-    <style>{MV_CSS}</style>
-    <div className="mv-map-wrap map-redesign" style={{flex:1}}>
-      <div id="mv-map" ref={mapEl}/>
-
-      {mapLibraryState !== 'ready' && (
-        <div
-          className="mv-map-loading"
-          data-error={
-            mapLibraryState === 'error'
-              ? 'true'
-              : 'false'
-          }
-          role={
-            mapLibraryState === 'error'
-              ? 'alert'
-              : 'status'
-          }
-          aria-live="polite"
-        >
-          {mapLibraryState === 'error'
-            ? 'Impossible de charger la carte. Vérifie ta connexion puis recharge la page.'
-            : 'Chargement de la carte…'}
-        </div>
-      )}
-      {/* Bannière mode pick */}
-      {pickMode && (
-        <div className="mv-glass web-map-pick-banner" style={{
-          position:'absolute', top:66, left:'50%', transform:'translateX(-50%)', zIndex:20,
-          padding:'10px 20px', borderRadius:999, display:'flex', alignItems:'center', gap:10,
-          fontSize:13, fontWeight:700, color:'var(--accent)',
-          boxShadow:'0 4px 20px rgba(0,0,0,.12)'
-        }}>
-          <Icon name="pin" size={16}/>
-          {pickMode === 'locate-step'
-  ? 'Cliquez sur la position exacte de ' + (locatingStepName || 'cette étape')
-  : 'Cliquez sur la carte pour choisir un point'}
-          <button onClick={() => Store.set({ mapPickMode: null, mapLocateStep: null })} style={{border:'none',background:'transparent',color:'var(--faint)',cursor:'pointer',padding:2,marginLeft:4}}><Icon name="x" size={14}/></button>
-        </div>
-      )}
-
-      {/* ═══ RECHERCHE (centre haut) ═══ */}
+      <style>{MV_CSS}</style>
+      <div className="mv-frame mv-workspace-map">
+        <div className="mv-map-toolbar" aria-label="Recherche et navigation sur la carte">
       <div
         className="web-map-search map-search-v2"
         onKeyDown={event => {
@@ -2379,201 +1555,109 @@ Store.set({
         )}
       </div>
 
-      {/* ═══ CONTRÔLES (droite) ═══ */}
-<details className="web-map-toolbox">
-  <summary>
-    <Icon name="map" size={16} />
-    Outils
-  </summary>
-  <div
-    className="web-map-controls"
-    style={{
-      display:'flex',
-      flexDirection:'column',
-      gap:8,
-      alignItems:'stretch'
-    }}
-  >
 
-  {/* Recentrer / Vue globale */}
-  <button
-    onClick={sel!=null?showGlobe:fitAll}
-    className="mv-glass"
-    style={{
-      height:44,
-      width:'100%',
-      display:'flex',
-      alignItems:'center',
-      justifyContent:'center',
-      gap:8,
-      padding:'0 14px',
-      border:'none',
-      cursor:'pointer',
-      fontSize:13,
-      fontWeight:700,
-      fontFamily:'inherit',
-      color:'var(--text)',
-      borderRadius:14
-    }}
-  >
-    <Icon name="expand" size={14}/>
-    <span className="web-map-control-label">{sel!=null?'Vue globale':'Recentrer'}</span>
-  </button>
+        <label className="mv-map-day-select">
+          <span className="screen-reader-only">Journée affichée sur la carte</span>
+          <select value={sel == null ? '' : String(sel)} disabled={mapLibraryState !== 'ready'}
+            onChange={event => {
+              stopTour();
+              if (event.target.value === '') fitAll();
+              else doSelect(Number(event.target.value), true);
+            }}>
+            <option value="">Tout le voyage</option>
+            {T.days.map((day, index) => (
+              <option key={index} value={index}>J{index + 1} · {day.title || day.city || 'Journée'}</option>
+            ))}
+          </select>
+        </label>
+        <button type="button" className="mv-map-button" disabled={mapLibraryState !== 'ready'}
+          onClick={sel != null ? showGlobe : fitAll}>
+          <Icon name="expand" size={16}/><span>{sel != null ? 'Vue globale' : 'Recentrer'}</span>
+        </button>
+        <details className="web-map-toolbox" onKeyDown={event => {
+          if (event.key === 'Escape') {
+            event.preventDefault(); event.stopPropagation();
+            event.currentTarget.open = false;
+            event.currentTarget.querySelector('summary')?.focus();
+          }
+        }}>
+          <summary><Icon name="map" size={16}/>Réglages</summary>
+          <div className="web-map-controls">
+            <div className="mv-map-control-group" role="group" aria-label="Zoom et orientation">
+              <button type="button" className="mv-map-button" aria-label="Zoomer"
+                onClick={() => { spinRef.current=false; mapRef.current?.zoomIn({duration:400}); }}>＋</button>
+              <button type="button" className="mv-map-button" aria-label="Dézoomer"
+                onClick={() => { spinRef.current=false; mapRef.current?.zoomOut({duration:400}); }}>−</button>
+              <button type="button" className="mv-map-button" aria-label="Remettre le nord en haut"
+                onClick={() => mapRef.current?.easeTo({bearing:0,pitch:0,duration:600})}>
+                <svg ref={needleRef} width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M12 3l3.2 8L12 9.4 8.8 11z" fill="currentColor"/>
+                  <path d="M12 9.4 8.8 13 12 21l3.2-8z" stroke="currentColor"/>
+                </svg>
+              </button>
+            </div>
+            <span className="mv-map-section-label">Fond de carte</span>
+            <div className="mv-map-control-group" role="group" aria-label="Fond de carte">
+              <button type="button" className="mv-map-button" aria-pressed={curStyle === 'minimal'}
+                onClick={() => { setCurStyle('minimal'); setLayersOpen(false); }}>Plan</button>
+              <button type="button" className="mv-map-button" aria-pressed={curStyle === 'sat'}
+                onClick={() => { setCurStyle('sat'); setLayersOpen(false); }}>Satellite</button>
+            </div>
+            <button type="button" className="mv-map-button" aria-pressed={touring}
+              disabled={!T.days.length || mapLibraryState !== 'ready'}
+              onClick={() => { if(tourRef.current.on) stopTour(); else startTour(); }}>
+              <Icon name="route" size={16}/>{touring ? 'Arrêter le survol' : 'Survoler le voyage'}
+            </button>
+            <button type="button" className="mv-map-button" onClick={geolocate}>
+              <Icon name="pin" size={16}/>Ma position
+            </button>
+            <div className="web-map-readout" ref={readoutRef}>
+              <b>GLOBE</b><span> · z1.6</span>
+            </div>
+          </div>
+        </details>
 
-  {/* Bloc principal */}
-  <div className="mv-glass" style={{display:'flex',flexDirection:'column',borderRadius:18,overflow:'hidden',width:'100%'}}>
-
-    <button
-      className="mv-glass-btn"
-      style={{height:44,width:'100%',padding:'0 14px',justifyContent:'center'}}
-      onClick={()=>{spinRef.current=false;mapRef.current?.zoomIn({duration:400});}}
-      title="Zoomer"
-    >
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round">
-        <path d="M12 5v14M5 12h14"/>
-      </svg>
-    </button>
-
-    <div style={{height:1,background:'var(--line2)'}}/>
-
-    <button
-      className="mv-glass-btn"
-      style={{height:44,width:'100%',padding:'0 14px',justifyContent:'center'}}
-      onClick={()=>{spinRef.current=false;mapRef.current?.zoomOut({duration:400});}}
-      title="Dézoomer"
-    >
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round">
-        <path d="M5 12h14"/>
-      </svg>
-    </button>
-
-    <div style={{height:1,background:'var(--line2)'}}/>
-
-    <button
-      className="mv-glass-btn"
-      style={{height:44,width:'100%',padding:'0 14px',justifyContent:'center'}}
-      onClick={()=>mapRef.current?.easeTo({bearing:0,pitch:0,duration:600})}
-      title="Remettre l’orientation"
-    >
-      <svg ref={needleRef} width="18" height="18" viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 3l3.2 8L12 9.4 8.8 11z" fill="var(--accent)" stroke="var(--accent)" strokeWidth="1.5"/>
-        <path d="M12 9.4 8.8 13 12 21l3.2-8z" fill="var(--muted)" stroke="var(--muted)" strokeWidth="1.5"/>
-      </svg>
-    </button>
-  </div>
-
-  {/* Fond de carte */}
-  <div style={{position:'relative',width:'100%'}}>
-    <button
-      className="mv-glass"
-      style={{
-        height:44,
-        width:'100%',
-        display:'flex',
-        alignItems:'center',
-        justifyContent:'center',
-        gap:8,
-        padding:'0 14px',
-        border:'none',
-        cursor:'pointer',
-        color:layersOpen?'var(--accent)':'var(--text)',
-        borderRadius:14
-      }}
-      onClick={()=>setLayersOpen(p=>!p)}
-      title="Fond de carte"
-    >
-      <Icon name="map" size={16}/>
-      <span className="web-map-control-label">Affichage</span>
-    </button>
-
-    {layersOpen&&(
-      <div className="mv-glass" style={{position:'absolute',top:'calc(100% + 6px)',right:0,width:'100%',padding:8,borderRadius:16}}>
-        <div style={{fontSize:10,fontWeight:800,color:'var(--faint)',textTransform:'uppercase',letterSpacing:'.08em',marginBottom:6,paddingLeft:4}}>
-          Fond de carte
         </div>
-        <button className={'mv-glass-btn'+(curStyle==='minimal'?' active':'')} style={{width:'100%',height:38,justifyContent:'flex-start',padding:'0 12px'}} onClick={()=>{setCurStyle('minimal');setLayersOpen(false);}}>
-          Plan
-        </button>
-        <button className={'mv-glass-btn'+(curStyle==='sat'?' active':'')} style={{width:'100%',height:38,justifyContent:'flex-start',padding:'0 12px'}} onClick={()=>{setCurStyle('sat');setLayersOpen(false);}}>
-          Satellite
-        </button>
-      </div>
-    )}
-  </div>
+        <div className="mv-map-wrap map-redesign">
+      <div id="mv-map" ref={mapEl}/>
 
-  {/* Survoler */}
-  <button
-    onClick={()=>{if(tourRef.current.on)stopTour();else startTour();}}
-    className={'mv-glass-btn mv-glass'+(touring?' active':'')}
-    style={{
-      height:44,
-      width:'100%',
-      padding:'0 14px',
-      justifyContent:'center',
-      borderRadius:14
-    }}
-  >
-    <Icon name="route" size={14}/>
-    <span className="web-map-control-label">{touring?'Stop':'Survoler'}</span>
-  </button>
+      {mapLibraryState !== 'ready' && (
+        <div
+          className="mv-map-loading"
+          data-error={
+            mapLibraryState === 'error'
+              ? 'true'
+              : 'false'
+          }
+          role={
+            mapLibraryState === 'error'
+              ? 'alert'
+              : 'status'
+          }
+          aria-live="polite"
+        >
+          {mapLibraryState === 'error'
+            ? 'Impossible de charger la carte. Vérifie ta connexion puis recharge la page.'
+            : 'Chargement de la carte…'}
+        </div>
+      )}
+      {/* Bannière mode pick */}
+      {pickMode && (
+        <div className="mv-glass web-map-pick-banner" role="status">
+          <Icon name="pin" size={16}/>
+          {pickMode === 'locate-step'
+  ? 'Cliquez sur la position exacte de ' + (locatingStepName || 'cette étape')
+  : 'Cliquez sur la carte pour choisir un point'}
+          <button type="button" aria-label="Annuler le placement sur la carte" onClick={() => Store.set({ mapPickMode: null, mapLocateStep: null })} style={{border:'none',background:'transparent',color:'var(--faint)',cursor:'pointer',padding:2,marginLeft:4}}><Icon name="x" size={14}/></button>
+        </div>
+      )}
 
-  {/* Ma position */}
-  <button
-    onClick={geolocate}
-    className="mv-glass"
-    style={{
-      height:44,
-      width:'100%',
-      border:'none',
-      cursor:'pointer',
-      color:'var(--text)',
-      display:'flex',
-      alignItems:'center',
-      justifyContent:'center',
-      gap:8,
-      borderRadius:14
-    }}
-    title="Ma position"
-  >
-    <Icon name="pin" size={16}/>
-    <span className="web-map-control-label">Position</span>
-  </button>
-
-  {/* Readout */}
-  <div
-    className="mv-glass web-map-readout"
-    style={{
-      minHeight:44,
-      width:'100%',
-      padding:'0 14px',
-      borderRadius:14,
-      display:'flex',
-      alignItems:'center',
-      justifyContent:'center',
-      gap:6
-    }}
-    ref={readoutRef}
-  >
-    <b style={{color:'var(--text)',fontSize:13}}>GLOBE</b>
-    <span style={{color:'var(--muted)',fontSize:12,fontFamily:'var(--font-mono)'}}>· z1.6</span>
-  </div>
-  </div>
-</details>
 
       {/* ═══ LIEU TROUVÉ (au-dessus de la carte du jour) ═══ */}
 {foundPlace && !editorOpen && (
   <div
     className="mv-glass web-map-found-place"
-    style={{
-      position:'absolute',
-      left:16,
-      bottom:352,
-      zIndex:6,
-      width:320,
-      borderRadius:18,
-      overflow:'hidden',
-      boxShadow:'0 18px 50px rgba(31,46,40,.22)'
-    }}
+
   >
     <div style={{padding:16}}>
       <div style={{display:'flex',gap:10,alignItems:'flex-start',marginBottom:12}}>
@@ -2593,15 +1677,7 @@ Store.set({
         </div>
 
         <div style={{flex:1,minWidth:0}}>
-          <div
-            style={{
-              fontFamily:'var(--font-serif)',
-              fontStyle:'italic',
-              fontSize:17,
-              color:'var(--text)',
-              lineHeight:1.15
-            }}
-          >
+          <div className="mv-found-title">
             {foundPlace.name}
           </div>
           <div style={{fontSize:11,color:'var(--muted)',marginTop:2}}>
@@ -2706,16 +1782,7 @@ Store.set({
 <div
   className="web-map-day-card"
   ref={cardRef}
-  style={{
-    display:foundPlace && !editorOpen ? 'none' : 'block',
-    position:'absolute',
-    left:16,
-    bottom:16,
-    zIndex:5,
-    maxWidth:'calc(100% - 32px)',
-    maxHeight:'calc(100% - 96px)',
-    pointerEvents:'auto'
-  }}
+  style={{ display:foundPlace && !editorOpen ? 'none' : 'block' }}
 />
 
 {editorOpen && foundPlace && window.StepEditor && React.createElement(window.StepEditor,{
@@ -2733,7 +1800,9 @@ Store.set({
   onClose:onEditorClose,
   onSaved:onEditorSaved
 })}
-    </div>
+
+        </div>
+      </div>
     </>
   );
 }

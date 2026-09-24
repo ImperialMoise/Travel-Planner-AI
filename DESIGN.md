@@ -35,7 +35,7 @@ Les références Airbnb, Apple et Nike inspirent la hiérarchie, pas une copie d
 - Numéro du jour, date et ville puis titre ; section Programme séparée des commandes de la journée.
 - Journée vide : état dessiné avec une explication et les actions de création existantes.
 - Pas de grande bannière photo : photo et recadrage restent dans les options de la journée.
-- Outils compacts à droite ; séjour mis en évidence, repas et météo secondaires.
+- Favoris dans le bandeau du voyage ; à droite, séjour mis en évidence, repas et météo secondaires.
 - Nuit datée, compteur si plusieurs nuits ; aucun faux conseil météo présenté comme prévision.
 - En petit écran : sélecteur de jour, programme, outils et informations dans un défilement naturel.
 - Conserver Focus et les modes de réorganisation existants.
@@ -64,29 +64,24 @@ styles.css reste nécessaire pour les vues et composants pas encore migrés : ne
 Ne pas annoncer toutes les pages refaites après le seul cadre connecté.
 
 ## Outils
-- Refaire leur présentation en clair et sombre avec les composants communs.
-- Auditer leur pertinence, leurs intitulés et leur contexte : voyage, journée ou étape.
-- Conserver tous les contenus et gestionnaires existants.
-- Rendre les raccourcis épinglables, désépinglables et réordonnables.
-- Désépingler masque un raccourci, sans supprimer ses données.
-- Autoriser une liste de favoris vide et proposer une restauration des raccourcis par défaut.
-- Préserver les préférences existantes lors de leur migration.
-- Enregistrer les préférences dans ce navigateur ; ne pas promettre de synchronisation entre appareils.
-- Fournir un catalogue accessible depuis les pages du voyage.
-- Sur ordinateur, ouvrir les outils dans un panneau latéral non bloquant.
-- Sur mobile, utiliser un panneau adapté à l’écran et au clavier virtuel.
-- Prévoir ensuite un panneau unique détachable sur ordinateur : déplacement, redimensionnement, réduction, réancrage et réinitialisation.
-- Garder le panneau flottant dans la zone visible après redimensionnement de l’écran.
-- Proposer des commandes sans glissement et accessibles au clavier pour chaque déplacement.
-- Afficher explicitement le voyage, le jour ou l’étape concernés.
+- Les favoris sont dans une barre sous le titre du voyage, sur toutes ses pages.
+- La colonne droite contient uniquement les informations du jour : nuit, repas et météo.
+- Personnaliser ouvre un menu compact pour épingler, désépingler et ordonner les raccourcis.
+- Aucun écran Tous les outils : chaque widget s’ouvre directement.
+- Conserver les préférences locales et tous les contenus des widgets.
+- Sur ordinateur, une seule fenêtre flottante non modale ; son ouverture ne change aucune colonne.
+- Fenêtre déplaçable au pointeur, au clavier et par boutons de placement.
+- Réduire conserve le widget monté ; fermer revient au déclencheur.
+- Garder la fenêtre dans la zone visible après redimensionnement.
+- Sur téléphone, panneau flottant adapté à la zone visible et au clavier virtuel.
+- Afficher le voyage et le contexte du jour ou de l’étape.
+- Clair/sombre, focus visible et commandes d’au moins 44 px.
 
 ## Suite
-1. Stabiliser la compilation et valider le cadre graphique actuel.
-2. Refaire les outils : catalogue, favoris, ordre et panneau latéral/mobile.
-3. Harmoniser Carte, Budget, Documents et Bilan.
-4. Harmoniser Voyager, formulaires, fenêtres secondaires et paramètres.
-5. Ajouter le panneau détachable sur ordinateur si les usages le justifient.
-6. Vérifier les parcours complets, le responsive, les deux thèmes et l’accessibilité.
+1. Valider barre d’outils et fenêtre flottante avec les données réelles.
+2. Harmoniser Carte, Budget, Documents et Bilan.
+3. Harmoniser Voyager, formulaires, fenêtres secondaires et paramètres.
+4. Vérifier les parcours, le responsive, les deux thèmes et l’accessibilité.
 La vitrine publique et l’APK restent des lots distincts.
 La publication Play Store reste reportée.
 

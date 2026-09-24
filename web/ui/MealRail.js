@@ -986,8 +986,7 @@ function EmptyLodgingCard({ onAdd }) {
     }
 
    return (
-      <aside className="fv-right" aria-label="Outils et informations de la journée">
-        {window.WorkspaceTools && <window.WorkspaceTools />}
+      <aside className="fv-right" aria-label="Informations de la journée">
         <section className="fv-rail-section fv-night-section">
           <h3><Icon name="bed" size={18} />{day?.dateISO ? 'Nuit du ' + formatDate(day.dateISO) : 'Hébergement'}</h3>
           {tonightStay ? (

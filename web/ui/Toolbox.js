@@ -962,7 +962,16 @@ function PlaceholderWidget({ children }) {
     const [editing, setEditing] = React.useState(false);
     const [message, setMessage] = React.useState('');
     const catalogueId = React.useId();
-    const [catalogueOpen, setCatalogueOpen] = React.useState(false);
+    const menuRef = React.useRef(null);
+    const triggerRef = React.useRef(null);
+    React.useEffect(() => {
+      if (!editing) return;
+      const dismiss = event => {
+        if (!menuRef.current?.contains(event.target)) setEditing(false);
+      };
+      document.addEventListener('pointerdown', dismiss);
+      return () => document.removeEventListener('pointerdown', dismiss);
+    }, [editing]);
 
     React.useEffect(() => {
       const sync = event => {
@@ -1007,6 +1016,7 @@ function PlaceholderWidget({ children }) {
     }
 
     function openTool(id) {
+      setEditing(false);
       if (id === 'print') {
         if (trip && window.TripPrint?.open) window.TripPrint.open(trip);
         else Store.showToast('L’export PDF est indisponible.');
@@ -1016,81 +1026,78 @@ function PlaceholderWidget({ children }) {
     }
 
     return (
-      <section className="fv-tools" aria-label="Outils du voyage">
-        <div className="fv-tools-heading">
-          <h3>À portée de main</h3>
-          <button type="button" className="fv-tools-control"
-            aria-expanded={editing}
-            onClick={() => {
-              setEditing(value => !value);
-              if (!editing) setCatalogueOpen(true);
-            }}>
-            {editing ? 'Terminer' : 'Personnaliser'}
-          </button>
-        </div>
-        <div className="fv-toolgroup">
-          {favorites.map((id, index) => {
+      <section className="fv-toolstrip" aria-label="Outils du voyage">
+        <div className="fv-toolstrip-favorites">
+          {favorites.map(id => {
             const tool = SHORTCUTS.find(item => item.id === id);
             return (
-              <div className="fv-shortcut" key={id}>
-                <button type="button" className="fv-tool" onClick={() => openTool(id)}>
-                  <Icon name={tool.icon} size={18} /><span>{tool.label}</span>
-                </button>
-                {editing && (
-                  <div className="fv-shortcut-order" role="group" aria-label={'Position de ' + tool.label}>
-                    <button type="button" className="fv-tools-control"
-                      aria-label={'Avancer ' + tool.label}
-                      aria-disabled={index === 0}
-                      onClick={() => move(id, -1)}>←</button>
-                    <span>{index + 1}</span>
-                    <button type="button" className="fv-tools-control"
-                      aria-label={'Reculer ' + tool.label}
-                      aria-disabled={index === favorites.length - 1}
-                      onClick={() => move(id, 1)}>→</button>
-                  </div>
-                )}
-              </div>
+              <button key={id} type="button" className="fv-toolstrip-button" onClick={() => openTool(id)}>
+                <Icon name={tool.icon} size={16} /><span>{tool.label}</span>
+              </button>
             );
           })}
+          {!favorites.length && <span className="fv-toolstrip-empty">Épingle tes outils utiles.</span>}
         </div>
-        {!favorites.length && (
-          <p className="fv-tools-hint">Aucun favori. Tous tes outils restent disponibles ci-dessous.</p>
-        )}
-        <button type="button" className="fv-tools-catalogue-toggle"
-          aria-expanded={catalogueOpen} aria-controls={catalogueId}
-          onClick={() => setCatalogueOpen(value => !value)}>
-          Tous les outils <span aria-hidden="true">{catalogueOpen ? '−' : '+'}</span>
-        </button>
-        <div id={catalogueId} hidden={!catalogueOpen}>
-          <p className="fv-tools-hint">
-            Ouvre un outil ou épingle son raccourci. Les favoris sont enregistrés dans ce navigateur.
-          </p>
-          <ul className="fv-tools-catalogue">
-            {SHORTCUTS.map(tool => (
-              <li key={tool.id}>
-                <button type="button" className="fv-catalogue-open" onClick={() => openTool(tool.id)}>
-                  <span>{tool.label}</span><small>{tool.context}</small>
-                </button>
-                <button type="button" className="fv-tools-control"
-                  aria-label={'Épingler ' + tool.label}
-                  aria-pressed={favorites.includes(tool.id)}
-                  onClick={() => toggleFavorite(tool)}>
-                  <span aria-hidden="true">{favorites.includes(tool.id) ? '★' : '☆'}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-          <button type="button" className="fv-tools-catalogue-toggle" onClick={() => openTool(null)}>
-            Ouvrir la boîte à outils complète <span aria-hidden="true">→</span>
+        <div className="fv-toolstrip-settings" ref={menuRef}
+          onKeyDown={event => {
+            if (event.key === 'Escape' && editing) {
+              event.preventDefault();
+              event.stopPropagation();
+              setEditing(false);
+              triggerRef.current?.focus();
+            }
+          }}>
+          <button id="workspace-tools-trigger" ref={triggerRef} type="button"
+            className="fv-toolstrip-button" aria-expanded={editing} aria-controls={catalogueId}
+            onClick={() => setEditing(value => !value)}>
+            <Icon name="gear" size={16} />Personnaliser
           </button>
-          {editing && (
+          <div id={catalogueId} className="fv-toolstrip-menu" hidden={!editing}>
+            <div className="fv-toolstrip-menu-heading">
+              <strong>Mes raccourcis</strong>
+              <button type="button" className="fv-tools-control" onClick={() => {
+                setEditing(false); triggerRef.current?.focus();
+              }}>Terminer</button>
+            </div>
+            <p>Les étoiles ajoutent ou retirent un favori. Les flèches changent son ordre.</p>
+            <ul>
+              {SHORTCUTS.map(tool => {
+                const index = favorites.indexOf(tool.id);
+                return (
+                  <li key={tool.id}>
+                    <button type="button" className="fv-toolstrip-open" onClick={() => openTool(tool.id)}>
+                      <span>{tool.label}</span><small>{tool.context}</small>
+                    </button>
+                    <div className="fv-toolstrip-order">
+                      {index >= 0 && (
+                        <>
+                          <button type="button" className="fv-tools-control"
+                            aria-label={'Avancer ' + tool.label} aria-disabled={index === 0}
+                            onClick={() => move(tool.id, -1)}>←</button>
+                          <span aria-label={'Position ' + (index + 1)}>{index + 1}</span>
+                          <button type="button" className="fv-tools-control"
+                            aria-label={'Reculer ' + tool.label} aria-disabled={index === favorites.length - 1}
+                            onClick={() => move(tool.id, 1)}>→</button>
+                        </>
+                      )}
+                      <button type="button" className="fv-tools-control"
+                        aria-label={'Épingler ' + tool.label} aria-pressed={index >= 0}
+                        onClick={() => toggleFavorite(tool)}>
+                        <span aria-hidden="true">{index >= 0 ? '★' : '☆'}</span>
+                      </button>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
             <button type="button" className="fv-tools-control"
               onClick={() => save(DEFAULT_SHORTCUTS.slice(), 'Raccourcis par défaut restaurés.')}>
               Restaurer les raccourcis
             </button>
-          )}
+            <p>Préférences enregistrées dans ce navigateur. Aucun contenu n’est supprimé.</p>
+          </div>
         </div>
-        <p className="fv-tools-status" role="status" aria-live="polite">{message}</p>
+        <span className="screen-reader-only" role="status" aria-live="polite">{message}</span>
       </section>
     );
   }

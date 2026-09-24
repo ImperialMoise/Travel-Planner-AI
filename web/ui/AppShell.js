@@ -4945,64 +4945,133 @@
   );
 }
 
- function WorkspaceToolPanel({ activeTool, onSelect, onClose }) {
+  function toolViewport() {
+    const v = window.visualViewport;
+    return { width: v?.width || window.innerWidth, height: v?.height || window.innerHeight,
+      left: v?.offsetLeft || 0, top: v?.offsetTop || 0 };
+  }
+
+  function toolWindowRect(viewport, position, minimized) {
+    const mobile = viewport.width < 760;
+    const margin = Math.min(12, viewport.width / 10, viewport.height / 10);
+    const width = Math.min(420, viewport.width - margin * 2);
+    const height = Math.min(minimized ? 72 : 620, viewport.height - margin * 2);
+    const minX = viewport.left + margin, minY = viewport.top + margin;
+    const maxX = viewport.left + viewport.width - width - margin;
+    const maxY = viewport.top + viewport.height - height - margin;
+    return {
+      left: mobile ? minX : Math.max(minX, Math.min(position?.x ?? maxX, maxX)),
+      top: mobile ? maxY : Math.max(minY, Math.min(position?.y ?? (viewport.top + 190), maxY)),
+      width: mobile ? viewport.width - margin * 2 : width, height, mobile
+    };
+  }
+
+  function WorkspaceToolPanel({ activeTool, onSelect, onClose }) {
     const headingRef = React.useRef(null);
+    const dragRef = React.useRef(null);
+    const [viewport, setViewport] = React.useState(toolViewport);
+    const [position, setPosition] = React.useState(null);
+    const [minimized, setMinimized] = React.useState(false);
     const { trip, selectedDayIndex, selectedStepId } = Store.useStore(state => ({
-      trip: state.trip,
-      selectedDayIndex: state.selectedDayIndex || 0,
+      trip: state.trip, selectedDayIndex: state.selectedDayIndex || 0,
       selectedStepId: state.selectedStepId
     }));
     const definitions = window.WorkspaceToolDefinitions || {};
+    const tool = activeTool === 'ideas-notes' || definitions[activeTool] ? activeTool : 'checklist';
+    const title = tool === 'ideas-notes' ? 'Idées & notes' : definitions[tool]?.label || 'Checklist';
     const day = trip?.days?.[selectedDayIndex];
-    const title = activeTool === 'ideas-notes'
-      ? 'Idées & notes' : definitions[activeTool]?.label || 'Tous les outils';
     const step = (trip?.days || []).flatMap(item => item.steps || [])
       .find(item => String(item.id) === String(selectedStepId));
-    const context = activeTool === 'around'
+    const context = tool === 'around'
       ? (step?.title || step?.name || 'Sélectionne une étape dans le programme.')
-      : ['checklist', 'dayNote', 'score', 'ideas-notes'].includes(activeTool)
+      : ['checklist', 'dayNote', 'score', 'ideas-notes'].includes(tool)
         ? (day ? 'Jour ' + (selectedDayIndex + 1) + (day.title ? ' · ' + day.title : '') : 'Aucune journée sélectionnée')
         : 'Voyage entier';
+    const rect = toolWindowRect(viewport, position, minimized);
 
     React.useEffect(() => {
+      const resize = () => setViewport(toolViewport());
+      const restore = () => setMinimized(false);
+      window.addEventListener('resize', resize);
+      window.visualViewport?.addEventListener('resize', resize);
+      window.visualViewport?.addEventListener('scroll', resize);
+      window.addEventListener('open-workspace-tools', restore);
       headingRef.current?.focus({ preventScroll: true });
+      return () => {
+        window.removeEventListener('resize', resize);
+        window.visualViewport?.removeEventListener('resize', resize);
+        window.visualViewport?.removeEventListener('scroll', resize);
+        window.removeEventListener('open-workspace-tools', restore);
+      };
     }, []);
+    React.useEffect(() => { setMinimized(false); }, [tool]);
+
+    function place(side) {
+      const r = toolWindowRect(viewport, null, minimized);
+      setPosition(side === 'left' ? { x: viewport.left + 12, y: r.top }
+        : side === 'right' ? { x: viewport.left + viewport.width - r.width - 12, y: r.top } : null);
+    }
 
     return (
-      <aside id="workspace-tools-panel" className="fv-tool-panel"
+      <aside id="workspace-tools-panel" className="fv-floating-tool"
+        data-mobile={rect.mobile ? 'true' : 'false'}
+        data-minimized={minimized ? 'true' : 'false'}
+        style={{ left: rect.left, top: rect.top, width: rect.width, height: rect.height }}
         aria-labelledby="workspace-tools-title"
         onKeyDown={event => {
           if (event.key === 'Escape' && !event.defaultPrevented &&
               !event.target.closest('[role="dialog"], [role="alertdialog"]')) {
-            event.preventDefault();
-            event.stopPropagation();
-            onClose();
+            event.preventDefault(); event.stopPropagation(); onClose();
           }
         }}>
-        <header className="fv-tool-panel-header">
-          <div>
-            <p>Outils du voyage</p>
-            <h2 id="workspace-tools-title" ref={headingRef} tabIndex={-1}>{title}</h2>
-          </div>
-          <button type="button" className="fv-button" onClick={onClose}
-            aria-label="Fermer les outils et revenir au voyage">Fermer</button>
+        <header className="fv-floating-tool-header">
+          {!rect.mobile && <button type="button" className="fv-tools-control fv-tool-drag"
+            aria-label="Déplacer la fenêtre : glisser ou utiliser les flèches du clavier"
+            onPointerDown={event => {
+              if (event.button !== 0) return;
+              event.currentTarget.setPointerCapture(event.pointerId);
+              dragRef.current = { id: event.pointerId, x: event.clientX, y: event.clientY,
+                left: rect.left, top: rect.top };
+            }}
+            onPointerMove={event => {
+              const drag = dragRef.current;
+              if (drag?.id !== event.pointerId) return;
+              setPosition({ x: drag.left + event.clientX - drag.x, y: drag.top + event.clientY - drag.y });
+            }}
+            onPointerUp={() => { dragRef.current = null; }}
+            onPointerCancel={() => { dragRef.current = null; }}
+            onLostPointerCapture={() => { dragRef.current = null; }}
+            onKeyDown={event => {
+              const delta = { ArrowLeft: [-24, 0], ArrowRight: [24, 0], ArrowUp: [0, -24], ArrowDown: [0, 24] }[event.key];
+              if (!delta) return;
+              event.preventDefault();
+              setPosition({ x: rect.left + delta[0], y: rect.top + delta[1] });
+            }}>⠿</button>}
+          <h2 id="workspace-tools-title" ref={headingRef} tabIndex={-1} title={title}>{title}</h2>
+          <button type="button" className="fv-tools-control"
+            aria-expanded={!minimized} aria-controls="workspace-tool-content"
+            aria-label={minimized ? 'Rétablir l’outil' : 'Réduire l’outil'}
+            onClick={() => setMinimized(value => !value)}>{minimized ? '＋' : '−'}</button>
+          <button type="button" className="fv-tools-control" aria-label="Fermer l’outil" onClick={onClose}>×</button>
         </header>
-        <div className="fv-tool-panel-context">
-          <strong>{trip?.name || 'Mon voyage'}</strong>
-          <span>{context}</span>
-        </div>
-        <label className="fv-tool-panel-select">
-          Changer d’outil
-          <select value={activeTool || ''} onChange={event => onSelect(event.target.value || null)}>
-            <option value="">Tous les outils</option>
-            <option value="ideas-notes">Idées & notes</option>
-            {Object.values(definitions).map(tool => (
-              <option key={tool.id} value={tool.id}>{tool.label}</option>
-            ))}
-          </select>
-        </label>
-        <div className="fv-tool-panel-body">
-          <window.Toolbox width="100%" activeTool={activeTool} />
+        <div id="workspace-tool-content" className="fv-floating-tool-content" hidden={minimized}>
+          <div className="fv-floating-tool-context">
+            <strong>{trip?.name || 'Mon voyage'}</strong><span>{context}</span>
+          </div>
+          <div className="fv-floating-tool-options">
+            <label>Outil
+              <select value={tool} onChange={event => onSelect(event.target.value)}>
+                <option value="ideas-notes">Idées & notes</option>
+                {Object.values(definitions).map(item => <option key={item.id} value={item.id}>{item.label}</option>)}
+              </select>
+            </label>
+            {!rect.mobile && <div className="fv-floating-tool-placement" role="group" aria-label="Position de la fenêtre">
+              <button type="button" className="fv-tools-control" onClick={() => place('left')}>À gauche</button>
+              <button type="button" className="fv-tools-control" onClick={() => place('right')}>À droite</button>
+              <button type="button" className="fv-tools-control" onClick={() => place('reset')}>Replacer</button>
+            </div>}
+          </div>
+          <window.Toolbox width="100%" activeTool={tool} />
         </div>
       </aside>
     );
@@ -5084,7 +5153,7 @@ React.useEffect(() => {
     if (!document.activeElement?.closest('#workspace-tools-panel')) {
       toolOpenerRef.current = document.activeElement;
     }
-    setActiveWorkspaceTool(event.detail?.tool || null);
+    setActiveWorkspaceTool(event.detail?.tool || 'checklist');
     setToolboxOpen(true);
     window.requestAnimationFrame(() => {
       document.getElementById('workspace-tools-title')?.focus({ preventScroll: true });
@@ -5176,7 +5245,6 @@ React.useEffect(() => {
                 <main
           id="app-main-content"
           className="app-main"
-          data-tools-open={toolboxOpen && user && trip ? 'true' : 'false'}
           tabIndex="-1"
         >
           {!user ? (
@@ -5225,14 +5293,6 @@ React.useEffect(() => {
                     </p>
                   </div>
                   <div className="fv-actions">
-                    <button id="workspace-tools-trigger" type="button" className="fv-button"
-                      aria-expanded={toolboxOpen} aria-controls="workspace-tools-panel"
-                      onClick={() => {
-                        if (toolboxOpen) closeWorkspaceTools();
-                        else window.dispatchEvent(new CustomEvent('open-workspace-tools'));
-                      }}>
-                      <Icon name="gear" size={16} />Outils
-                    </button>
                     <button type="button" className="fv-button" onClick={() => Store.set({
                       settingsInitialSection: 'share', settingsOpen: true
                     })}>
@@ -5245,6 +5305,7 @@ React.useEffect(() => {
                     </button>
                   </div>
                 </header>
+                {window.WorkspaceTools && <window.WorkspaceTools />}
                 <div className={'fv-page' + (
                   appMode === 'plan' && view === 'itinerary' ? ' fv-page-itinerary' : ''
                 )}>

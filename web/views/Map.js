@@ -441,6 +441,7 @@ function MapView(){
     }
   }
 
+  
   return '';
 }, [mapLocateStep, realTrip]);
   React.useEffect(() => {

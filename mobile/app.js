@@ -3,6 +3,7 @@ import { Geolocation } from '@capacitor/geolocation';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { Share } from '@capacitor/share';
 import '../web/ui/TripBackup.js';
+import '../web/ui/itinerary-utils.js';
 
 function hasMobileLocationPermission(status) {
   return (
@@ -392,18 +393,21 @@ let mobileGuidedError = '';
 let mobileDayCoverBusy = false;
 let pendingMobileNotificationTripId = null;
 let pendingMobileNotificationReminderId = null;
-let mobileWorkspaceMode =
-  localStorage.getItem('mobile_workspace_mode') === 'travel'
-    ? 'travel'
-    : 'prepare';
+function readMobileWorkspaceMode() {
+  try {
+    const saved = localStorage.getItem('mobile_workspace_mode');
+    if (saved === 'travel' || saved === 'prepare') return saved;
+  } catch (_) {}
+  return Capacitor.isNativePlatform() ? 'travel' : 'prepare';
+}
+let mobileWorkspaceMode = readMobileWorkspaceMode();
 
 function setMobileWorkspaceMode(mode) {
   mobileWorkspaceMode = mode === 'travel' ? 'travel' : 'prepare';
 
-  localStorage.setItem(
-    'mobile_workspace_mode',
-    mobileWorkspaceMode
-  );
+  try {
+    localStorage.setItem('mobile_workspace_mode', mobileWorkspaceMode);
+  } catch (_) {}
 }
 
 const MOBILE_TRIP_ACCENTS = {
@@ -2886,6 +2890,7 @@ ${nextTrip ? `
         <button
           type="button"
           data-action="open-trip"
+          data-workspace-mode="prepare"
           data-trip-id="${nextTrip.id}"
         >
           <span class="material-symbols-outlined">
@@ -10331,10 +10336,96 @@ function renderTripDayMode(editable = false) {
   `;
 }
 
+function mobileJourneyToday(now = new Date()) {
+  return [now.getFullYear(), String(now.getMonth() + 1).padStart(2, '0'), String(now.getDate()).padStart(2, '0')].join('-');
+}
+function mobileJourneySnapshot(days, dayIndex, timeline, now = new Date()) {
+  const today = mobileJourneyToday(now), isToday = days[dayIndex]?.dateISO === today;
+  const minutes = now.getHours() * 60 + now.getMinutes();
+  const entries = timeline.map((step, index) => ({ step, index }))
+    .filter(({ step }) => !['logement', 'lodging'].includes(String(step.rawStep?.type || '').toLowerCase()))
+    .sort((a, b) => (mobileTimeToMinutes(a.step.time) ?? Infinity) - (mobileTimeToMinutes(b.step.time) ?? Infinity) || a.index - b.index);
+  const next = !isToday ? entries[0] : entries.find(({ step }) => {
+    const start = mobileTimeToMinutes(step.time), end = mobileTimeToMinutes(step.rawStep?.timeEnd);
+    return start !== null && (start >= minutes || (end !== null && end + (step.rawStep?.nextDay ? 1440 : 0) > minutes));
+  }) || entries.find(({ step }) => mobileTimeToMinutes(step.time) === null);
+  const normalizedDays = days.map(day => ({ ...day, steps: (day.steps || []).map(step => {
+    if (!['lodging', 'logement'].includes(String(step.type).toLowerCase())) return step;
+    const start = step.dateStart || day.dateISO;
+    const duration = start && step.dateEnd ? window.ItineraryUtils.diffDays(start, step.dateEnd) : 0;
+    return { ...step, type: 'logement', nights: duration > 0 ? duration : step.nights || step.nuits || 1 };
+  }) }));
+  const stays = window.ItineraryUtils.findLodgingStaysForDay(normalizedDays, dayIndex);
+  return { entries, next, isToday, today, stays: stays.filter(stay => stay.status !== 'checkout') };
+}
+function renderMobileJourney() {
+  applyMobileTripAccent(activeTrip?.accentTheme || activeTrip?.accent_theme || 'forest');
+  const day = getActiveItineraryDay(), days = activeTrip?.days || [], index = mobileItineraryDayIndex;
+  const now = new Date(), data = mobileJourneySnapshot(days, index, getCurrentTimelineSteps(), now);
+  const todayIndex = days.findIndex(item => item.dateISO === data.today), next = data.next;
+  const icon = name => '<span class="material-symbols-outlined" aria-hidden="true">' + name + '</span>';
+  const period = day?.dateISO ? formatDateLabel(day.dateISO, '') : 'Date à préciser';
+  const cover = day?.coverImageUrl || day?.cover_image_url || activeTrip?.coverImageUrl || activeTrip?.cover_image_url || '';
+  const nextLabel = !data.isToday ? 'Première étape du jour' : next && mobileTimeToMinutes(next.step.time) === null ? 'À horaire libre' : 'Votre prochain repère';
+  app.innerHTML = `
+    <div class="mobile-shell journey-shell">${topbar()}
+      <main class="journey-main">
+        <header class="journey-heading"><div><span class="journey-eyebrow">Carnet de voyage</span><h1>${escapeHtml(activeTrip?.name || 'Mon voyage')}</h1></div>
+          <button class="journey-prepare" type="button" data-action="itinerary">${icon('edit_calendar')}Préparer</button></header>
+        ${days.length ? `
+          <nav class="journey-days" aria-label="Journées du voyage">
+            <button type="button" data-action="travel-previous-day" aria-label="Journée précédente" ${index === 0 ? 'disabled' : ''}>${icon('chevron_left')}</button>
+            <label><span>Jour ${index + 1} sur ${days.length}</span><select id="journey-day-select" aria-label="Choisir une journée">
+              ${days.map((item, i) => `<option value="${i}" ${i === index ? 'selected' : ''}>J${i + 1} · ${escapeHtml(item.title || item.dateISO || 'Journée')}</option>`).join('')}</select></label>
+            <button type="button" data-action="travel-next-day" aria-label="Journée suivante" ${index >= days.length - 1 ? 'disabled' : ''}>${icon('chevron_right')}</button>
+          </nav>
+          ${todayIndex >= 0 && todayIndex !== index ? `<button class="journey-today" type="button" data-action="itinerary-day" data-day-index="${todayIndex}">Revenir à aujourd’hui</button>` : ''}
+          <section class="journey-hero ${cover ? 'has-cover' : ''}">
+            ${cover ? `<img src="${escapeHtml(cover)}" alt="" decoding="async">` : ''}
+            <div><span>${data.isToday ? 'Aujourd’hui · ' : ''}${escapeHtml(period)}</span><h2>${escapeHtml(day?.title || 'Ma journée')}</h2>
+              <p>${data.entries.length} étape${data.entries.length > 1 ? 's' : ''} · à votre rythme</p></div></section>
+          <nav class="journey-essentials" aria-label="Essentiels">
+            <button type="button" data-action="map">${icon('map')}<strong>Carte</strong></button>
+            <button type="button" data-action="docs">${icon('confirmation_number')}<strong>Billets</strong></button>
+            <button type="button" data-action="budget">${icon('payments')}<strong>Dépenses</strong></button></nav>
+          <div class="journey-layout">
+            <section class="journey-next journey-card"><span class="journey-eyebrow">${nextLabel}</span>
+              ${next ? `<p class="journey-time">${escapeHtml(next.step.time || 'Sans horaire')}</p><h2>${escapeHtml(next.step.title)}</h2>
+                <p class="journey-description">${escapeHtml(next.step.description || '')}</p>
+                <div class="journey-actions"><button class="journey-primary" type="button" data-action="show-step-on-map" data-step-index="${next.index}">${icon('map')}Carte</button>
+                  <button type="button" data-action="activity-detail" data-step-index="${next.index}">${icon('description')}Détails</button></div>
+                ` : `<h2>${data.entries.length ? 'Plus d’horaire à venir' : 'Journée libre'}</h2><p class="journey-description">${data.entries.length ? 'Toutes vos étapes restent consultables dans le programme.' : 'Aucune étape ajoutée pour cette journée.'}</p>
+                  <button class="journey-prepare" type="button" data-action="itinerary">Ouvrir le planificateur</button>`}
+              ${data.isToday ? `<div class="journey-clock"><small>Repère à ${now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}, heure de cet appareil. Ne valide aucune activité.</small>
+                <button type="button" data-action="travel" aria-label="Actualiser le repère horaire">${icon('refresh')}</button></div>` : ''}</section>
+            <section class="journey-night journey-card"><h2>${icon('bed')}Cette nuit</h2>
+              ${data.stays.length ? data.stays.map(stay => `<article><h3>${escapeHtml(getStepDisplayTitle(stay.step))}</h3>
+                <p>${escapeHtml(stay.step.lieu || 'Adresse à compléter')}</p><p>Nuit ${stay.nightNumber} sur ${stay.nights}</p>
+                <details><summary>Détails du séjour</summary><p>${escapeHtml(stay.startISO || '')} → ${escapeHtml(stay.endISO || '')}</p>
+                  <p>Arrivée : ${escapeHtml(stay.step.timeCheckIn || 'à préciser')} · Départ : ${escapeHtml(stay.step.timeCheckOut || 'à préciser')}</p>
+                  ${stay.step.ref ? `<p>Référence : ${escapeHtml(stay.step.ref)}</p>` : ''}${stay.step.note ? `<p>${escapeHtml(stay.step.note)}</p>` : ''}</details></article>`).join('') : '<p>Aucun hébergement indiqué pour cette nuit.</p>'}
+              <button type="button" data-action="docs">${icon('folder')}Mes réservations</button></section>
+            <section class="journey-program journey-card"><header><h2>Tout le programme</h2><span>${data.entries.length} étape${data.entries.length > 1 ? 's' : ''}</span></header>
+              ${data.entries.length ? `<ol>${data.entries.map(entry => `<li ${entry === next ? 'data-next="true"' : ''}>
+                <span class="journey-row-time">${escapeHtml(entry.step.time || 'Libre')}</span><div>
+                  <button class="journey-step" type="button" data-action="activity-detail" data-step-index="${entry.index}"><strong>${escapeHtml(entry.step.title)}</strong>${icon('chevron_right')}</button>
+                  <p>${escapeHtml(entry.step.description || '')}</p><button class="journey-map-link" type="button" data-action="show-step-on-map" data-step-index="${entry.index}">${icon('map')}Carte</button>
+                </div></li>`).join('')}</ol>` : '<p class="journey-description">Le programme apparaîtra ici une fois préparé.</p>'}</section>
+          </div>
+        ` : `<section class="journey-card"><h2>Aucune journée pour le moment</h2><p>Préparez votre premier programme pour retrouver ici vos étapes et réservations.</p><button class="journey-prepare" type="button" data-action="itinerary">Préparer le voyage</button></section>`}
+      </main>${bottomNav('plan')}
+    </div>`;
+  document.getElementById('journey-day-select')?.addEventListener('change', event => {
+    const selected = Number(event.target.value);
+    if (!Number.isInteger(selected) || selected < 0 || selected >= days.length) return;
+    mobileItineraryDayIndex = selected; renderTravelMode();
+  });
+}
 function renderTravelMode() {
   setMobileWorkspaceMode('travel');
-  renderTripDayMode(false);
+  renderMobileJourney();
 }
+
 
 function renderActivityDetail() {
   const detail = activeActivityDetail;
@@ -10356,7 +10447,7 @@ function renderActivityDetail() {
   app.innerHTML = `
     <div class="mobile-shell activity-detail-shell">
       <header class="activity-detail-topbar glass-panel">
-        <button type="button" data-action="itinerary" aria-label="Retour au programme">
+        <button type="button" data-action="${mobileWorkspaceMode === 'travel' ? 'travel' : 'itinerary'}" aria-label="Retour au programme">
           <span class="material-symbols-outlined" aria-hidden="true">arrow_back</span>
         </button>
 
@@ -13826,12 +13917,18 @@ async function handleCreateBoard() {
 
 async function handleOpenTrip(
   tripId,
-  workspaceMode = 'prepare'
+  workspaceMode = mobileWorkspaceMode
 ) {
   if (!tripId || !window.SB) return;
 
   activeTrip = await window.SB.loadTrip(tripId);
-  mobileItineraryDayIndex = 0;
+  const todayIndex = (activeTrip.days || []).findIndex(
+    day => day.dateISO === mobileJourneyToday()
+  );
+  mobileItineraryDayIndex =
+    workspaceMode === 'travel' && todayIndex >= 0
+      ? todayIndex
+      : 0;
 
   navigate(
     workspaceMode === 'travel'
@@ -15258,7 +15355,9 @@ if (action === 'open-trip-travel') {
   if (action === 'open-trip') {
   const tripId = event.target.closest('[data-trip-id]')?.dataset.tripId;
   document.querySelector('.mobile-trip-menu-backdrop')?.remove();
-  handleOpenTrip(tripId);
+  const requestedMode =
+    event.target.closest('[data-workspace-mode]')?.dataset.workspaceMode;
+  handleOpenTrip(tripId, requestedMode || mobileWorkspaceMode);
   return;
 }
 

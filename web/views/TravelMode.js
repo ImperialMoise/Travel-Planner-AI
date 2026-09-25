@@ -1,942 +1,4 @@
 (function initTravelMode() {
-  const TRAVEL_MODE_CSS = `
-    .travel-mode {
-      flex: 1;
-      min-width: 0;
-      min-height: 0;
-      overflow: auto;
-      padding: 30px;
-      background:
-        radial-gradient(
-          circle at 8% 0,
-          rgba(150, 100, 13, 0.09),
-          transparent 28rem
-        ),
-        linear-gradient(180deg, var(--bg), var(--inset));
-      scroll-behavior: smooth;
-    }
-
-    .travel-mode-shell {
-      width: min(1240px, 100%);
-      margin: 0 auto;
-    }
-
-    .travel-mode-hero {
-      position: relative;
-      min-height: 260px;
-      overflow: hidden;
-      padding: 34px;
-      border: 1px solid rgba(150, 100, 13, 0.18);
-      border-radius: 24px;
-      background: var(--card);
-      background-position: center;
-      background-size: cover;
-      box-shadow: 0 20px 54px rgba(54, 42, 27, 0.12);
-    }
-
-    .travel-mode-hero.has-cover::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background:
-        linear-gradient(
-          90deg,
-          rgba(13, 27, 23, 0.78) 0%,
-          rgba(13, 27, 23, 0.48) 52%,
-          rgba(13, 27, 23, 0.16) 100%
-        );
-    }
-
-    .travel-mode-hero-content {
-      position: relative;
-      z-index: 1;
-      max-width: 720px;
-    }
-
-    .travel-mode-kicker {
-      width: fit-content;
-      padding: 6px 10px;
-      border: 1px solid rgba(150, 100, 13, 0.18);
-      border-radius: 999px;
-      background: var(--accent-soft);
-      color: var(--accent);
-      font-family: var(--font-mono);
-      font-size: 11px;
-      font-weight: 900;
-      letter-spacing: 0.13em;
-      text-transform: uppercase;
-    }
-
-    .travel-mode-date {
-      margin-top: 12px;
-      color: var(--muted);
-      font-size: 14px;
-      font-weight: 800;
-    }
-
-    .travel-mode-title {
-      max-width: 680px;
-      margin: 7px 0 0;
-      color: var(--text);
-      font-family: var(--font-serif);
-      font-size: clamp(34px, 5vw, 52px);
-      font-weight: 500;
-      line-height: 1.08;
-      letter-spacing: -0.035em;
-    }
-
-    .travel-mode-hero.has-cover .travel-mode-kicker,
-    .travel-mode-hero.has-cover .travel-mode-date,
-    .travel-mode-hero.has-cover .travel-mode-title {
-      color: #fff;
-      text-shadow: 0 2px 14px rgba(0, 0, 0, 0.32);
-    }
-
-    .travel-mode-hero.has-cover .travel-mode-kicker {
-      border-color: rgba(255, 255, 255, 0.28);
-      background: rgba(255, 255, 255, 0.14);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-    }
-
-    .travel-mode-day-nav {
-      display: flex;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-top: 24px;
-    }
-
-    .travel-mode-icon-btn {
-      width: 46px;
-      height: 46px;
-      padding: 0;
-      border: 1px solid rgba(150, 100, 13, 0.18);
-      border-radius: 13px;
-      display: grid;
-      place-items: center;
-      background: var(--card);
-      color: var(--text);
-      cursor: pointer;
-      box-shadow: 0 5px 16px rgba(54, 42, 27, 0.08);
-      touch-action: manipulation;
-      transition:
-        transform 0.18s ease,
-        border-color 0.18s ease,
-        background 0.18s ease,
-        box-shadow 0.18s ease;
-    }
-
-    .travel-mode-icon-btn:disabled {
-      opacity: 0.42;
-      cursor: default;
-      box-shadow: none;
-    }
-
-    .travel-mode-day-label {
-      min-width: 128px;
-      min-height: 46px;
-      display: grid;
-      place-items: center;
-      padding: 0 13px;
-      border: 1px solid rgba(150, 100, 13, 0.16);
-      border-radius: 13px;
-      background: var(--card);
-      color: var(--text);
-      box-shadow: 0 5px 16px rgba(54, 42, 27, 0.06);
-      font-size: 13px;
-      font-weight: 900;
-      text-align: center;
-    }
-
-    .travel-mode-today-btn {
-      min-height: 46px;
-      padding: 0 16px;
-      border: 1px solid rgba(150, 100, 13, 0.22);
-      border-radius: 13px;
-      background: var(--accent-soft);
-      color: var(--accent);
-      cursor: pointer;
-      font-family: inherit;
-      font-size: 12px;
-      font-weight: 900;
-      touch-action: manipulation;
-      transition:
-        transform 0.18s ease,
-        background 0.18s ease,
-        box-shadow 0.18s ease;
-    }
-
-    .travel-mode-progress {
-      width: min(360px, 100%);
-      height: 6px;
-      margin-top: 14px;
-      overflow: hidden;
-      border-radius: 999px;
-      background: rgba(150, 100, 13, 0.12);
-    }
-
-    .travel-mode-progress span {
-      display: block;
-      height: 100%;
-      border-radius: inherit;
-      background: var(--accent);
-      transition: width 0.3s ease;
-    }
-
-    .travel-mode-hero.has-cover .travel-mode-progress {
-      background: rgba(255, 255, 255, 0.22);
-    }
-
-    .travel-mode-hero.has-cover .travel-mode-progress span {
-      background: #fff;
-    }
-
-    .travel-quick-tools {
-      margin-top: 22px;
-    }
-
-    .travel-quick-tools-head {
-      margin-bottom: 10px;
-      color: var(--muted);
-      font-family: var(--font-mono);
-      font-size: 10px;
-      font-weight: 900;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-    }
-
-    .travel-quick-tools-row {
-      display: flex;
-      gap: 10px;
-      overflow-x: auto;
-      padding: 2px 2px 8px;
-      scrollbar-width: none;
-      scroll-snap-type: x proximity;
-      overscroll-behavior-x: contain;
-    }
-
-    .travel-quick-tools-row::-webkit-scrollbar {
-      display: none;
-    }
-
-    .travel-quick-tool {
-      min-width: 150px;
-      min-height: 46px;
-      flex: 0 0 auto;
-      padding: 0 15px;
-      border: 1px solid rgba(150, 100, 13, 0.16);
-      border-radius: 14px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 7px;
-      background: var(--card);
-      color: var(--text);
-      cursor: pointer;
-      box-shadow: 0 5px 16px rgba(54, 42, 27, 0.055);
-      font-family: inherit;
-      font-size: 12px;
-      font-weight: 900;
-      white-space: nowrap;
-      scroll-snap-align: start;
-      touch-action: manipulation;
-      transition:
-        transform 0.18s ease,
-        background 0.18s ease,
-        border-color 0.18s ease,
-        box-shadow 0.18s ease;
-    }
-
-    .travel-quick-tool.active {
-      border-color: var(--accent);
-      background: var(--accent);
-      color: var(--accent-ink);
-      box-shadow: 0 7px 20px var(--accent-shadow);
-    }
-
-    .travel-quick-panel {
-      margin-top: 14px;
-      padding: 20px;
-      border: 1px solid rgba(150, 100, 13, 0.16);
-      border-radius: 20px;
-      background: var(--card);
-      box-shadow: 0 10px 30px rgba(54, 42, 27, 0.07);
-    }
-
-    .travel-quick-panel-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 14px;
-      color: var(--text);
-      font-size: 13px;
-    }
-
-    .travel-mode-grid {
-      display: grid;
-      grid-template-columns:
-        minmax(0, 1.35fr)
-        minmax(260px, 0.65fr);
-      gap: 18px;
-      margin-top: 20px;
-    }
-
-    .travel-mode-panel {
-      padding: 22px;
-      border: 1px solid rgba(150, 100, 13, 0.14);
-      border-radius: 20px;
-      background: var(--card);
-      box-shadow: 0 9px 28px rgba(54, 42, 27, 0.065);
-    }
-
-    .travel-mode-grid > .travel-mode-panel:first-child {
-      border-color: rgba(150, 100, 13, 0.22);
-      background:
-        linear-gradient(
-          135deg,
-          var(--card),
-          var(--accent-soft)
-        );
-    }
-
-    .travel-mode-panel-kicker {
-      color: var(--accent);
-      font-family: var(--font-mono);
-      font-size: 10px;
-      font-weight: 900;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-    }
-
-    .travel-mode-next-time {
-      margin-top: 16px;
-      color: var(--accent);
-      font-family: var(--font-mono);
-      font-size: 14px;
-      font-weight: 900;
-    }
-
-    .travel-mode-next-title {
-      margin-top: 7px;
-      font-family: var(--font-serif);
-      font-size: clamp(25px, 3vw, 34px);
-      line-height: 1.12;
-      letter-spacing: -0.025em;
-    }
-
-    .travel-mode-place {
-      margin-top: 8px;
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.55;
-    }
-
-    .travel-mode-map-btn {
-      min-height: 46px;
-      margin-top: 18px;
-      padding: 0 16px;
-      border: 1px solid var(--accent);
-      border-radius: 12px;
-      background: var(--accent);
-      color: var(--accent-ink);
-      cursor: pointer;
-      box-shadow: 0 7px 18px var(--accent-shadow);
-      font-family: inherit;
-      font-size: 12px;
-      font-weight: 900;
-      touch-action: manipulation;
-      transition:
-        transform 0.18s ease,
-        box-shadow 0.18s ease;
-    }
-
-    .travel-mode-list {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      margin-top: 16px;
-    }
-
-    .travel-mode-item {
-      display: grid;
-      grid-template-columns: 62px minmax(0, 1fr);
-      gap: 14px;
-      padding: 14px;
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      background: var(--inset);
-      transition:
-        transform 0.18s ease,
-        border-color 0.18s ease,
-        box-shadow 0.18s ease;
-    }
-
-    .travel-mode-item-time {
-      color: var(--accent);
-      font-family: var(--font-mono);
-      font-size: 12px;
-      font-weight: 900;
-    }
-
-    .travel-mode-item-title {
-      font-size: 14px;
-      font-weight: 900;
-      line-height: 1.4;
-    }
-
-    .travel-mode-empty {
-      margin-top: 13px;
-      padding: 12px 0;
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.5;
-    }
-
-    .travel-mode button:focus-visible {
-      outline: 3px solid rgba(150, 100, 13, 0.24);
-      outline-offset: 3px;
-    }
-
-    @media (hover: hover) and (pointer: fine) {
-      .travel-mode-icon-btn:not(:disabled):hover,
-      .travel-mode-today-btn:hover,
-      .travel-quick-tool:hover,
-      .travel-mode-map-btn:hover {
-        transform: translateY(-2px);
-      }
-
-      .travel-mode-icon-btn:not(:disabled):hover {
-        border-color: var(--accent);
-        background: var(--accent-soft);
-      }
-
-      .travel-quick-tool:hover {
-        border-color: var(--accent);
-        background: var(--accent-soft);
-        color: var(--accent);
-      }
-
-      .travel-quick-tool.active:hover {
-        background: var(--accent);
-        color: var(--accent-ink);
-      }
-
-      .travel-mode-item:hover {
-        transform: translateY(-2px);
-        border-color: rgba(150, 100, 13, 0.24);
-        box-shadow: 0 8px 20px rgba(54, 42, 27, 0.07);
-      }
-    }
-
-    @media (max-width: 760px) {
-      .travel-mode {
-        padding:
-          12px
-          max(12px, env(safe-area-inset-right))
-          calc(28px + env(safe-area-inset-bottom))
-          max(12px, env(safe-area-inset-left));
-        background: var(--bg);
-      }
-
-      .travel-mode-hero {
-        min-height: 240px;
-        padding: 20px;
-        border-radius: 20px;
-      }
-
-      .travel-mode-hero.has-cover::after {
-        background:
-          linear-gradient(
-            180deg,
-            rgba(13, 27, 23, 0.28),
-            rgba(13, 27, 23, 0.76)
-          );
-      }
-
-      .travel-mode-title {
-        font-size: clamp(30px, 9vw, 40px);
-      }
-
-      .travel-mode-day-nav {
-        width: 100%;
-      }
-
-      .travel-mode-icon-btn {
-        width: 48px;
-        height: 48px;
-      }
-
-      .travel-mode-day-label {
-        min-width: 110px;
-        min-height: 48px;
-        flex: 1;
-      }
-
-      .travel-mode-today-btn {
-        min-height: 48px;
-      }
-
-      .travel-mode-progress {
-        width: 100%;
-      }
-
-      .travel-quick-tools-row {
-        margin-right: -12px;
-        padding-right: 12px;
-      }
-
-      .travel-quick-tool {
-        min-width: 145px;
-        min-height: 48px;
-      }
-
-      .travel-quick-panel,
-      .travel-mode-panel {
-        padding: 17px;
-        border-radius: 17px;
-      }
-
-      .travel-mode-grid {
-        grid-template-columns: 1fr;
-        gap: 12px;
-      }
-
-      .travel-mode-map-btn {
-        width: 100%;
-        min-height: 48px;
-      }
-
-      .travel-mode-item {
-        grid-template-columns: 54px minmax(0, 1fr);
-        padding: 13px;
-      }
-    }
-
-    @media (max-width: 380px) {
-      .travel-mode-hero {
-        padding: 17px;
-      }
-
-      .travel-mode-title {
-        font-size: 29px;
-      }
-
-      .travel-mode-day-nav {
-        display: grid;
-        grid-template-columns: 48px minmax(0, 1fr) 48px;
-      }
-
-      .travel-mode-today-btn {
-        grid-column: 1 / -1;
-        width: 100%;
-      }
-
-      .travel-mode-next-title {
-        font-size: 25px;
-      }
-
-      .travel-mode-item {
-        grid-template-columns: 46px minmax(0, 1fr);
-        gap: 10px;
-      }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      .travel-mode,
-      .travel-mode * {
-        scroll-behavior: auto !important;
-        animation-duration: 0.01ms !important;
-        transition-duration: 0.01ms !important;
-      }
-    }
-  `;
-
-  let cssLoaded = false;
-
-  function injectCss() {
-    if (cssLoaded) return;
-
-    cssLoaded = true;
-
-    const style = document.createElement('style');
-    style.textContent = TRAVEL_MODE_CSS + `
-      .travel-mode {
-        background: var(--bg);
-        container-type: inline-size;
-      }
-
-      .travel-mode .travel-mode-hero {
-        min-height: 190px;
-        padding: clamp(18px, 3vw, 28px);
-        border-color: var(--line);
-        border-radius: 16px;
-        box-shadow: none;
-      }
-
-      .travel-mode .travel-mode-hero.has-cover::after {
-        background: linear-gradient(
-          90deg,
-          rgba(13,27,23,.82),
-          rgba(13,27,23,.60)
-        );
-      }
-
-      .travel-mode .travel-mode-title {
-        font-size: clamp(28px, 4vw, 40px);
-        line-height: 1.15;
-        overflow-wrap: anywhere;
-      }
-
-      .travel-mode .travel-mode-date {
-        font-weight: 500;
-        line-height: 1.5;
-      }
-
-      .travel-mode .travel-mode-day-nav {
-        margin-top: 18px;
-      }
-
-      .travel-mode .travel-mode-icon-btn,
-      .travel-mode .travel-mode-day-label,
-      .travel-mode .travel-mode-today-btn {
-        border-radius: 10px;
-        box-shadow: none;
-      }
-
-      .travel-mode .travel-mode-icon-btn {
-        flex-shrink: 0;
-      }
-
-      .travel-mode .travel-mode-day-label {
-        min-width: 0;
-        font-weight: 600;
-      }
-
-      .travel-mode .travel-quick-tools-row {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-        gap: 8px;
-        margin: 0;
-        padding: 3px;
-        overflow: visible;
-      }
-
-      .travel-mode .travel-quick-tool {
-        width: 100%;
-        min-width: 0;
-        min-height: 46px;
-        padding: 10px;
-        border-radius: 10px;
-        font-size: 13px;
-        font-weight: 600;
-        white-space: normal;
-        box-shadow: none;
-        transform: none;
-      }
-
-      .travel-mode .travel-quick-panel,
-      .travel-mode .travel-mode-panel {
-        min-width: 0;
-        padding: 20px;
-        border: 1px solid var(--line);
-        border-radius: 14px;
-        background: var(--card);
-        box-shadow: none;
-      }
-
-      .travel-mode .travel-mode-grid > .travel-mode-panel:first-child {
-        border-left: 3px solid var(--accent);
-        background: var(--card);
-      }
-
-      .travel-mode .travel-mode-next-title {
-        font-size: clamp(24px, 3vw, 30px);
-        line-height: 1.2;
-        overflow-wrap: anywhere;
-      }
-
-      .travel-mode .travel-mode-place,
-      .travel-mode .travel-mode-item-title {
-        overflow-wrap: anywhere;
-      }
-
-      .travel-mode .travel-mode-map-btn {
-        padding: 10px 14px;
-        border-radius: 10px;
-        font-weight: 600;
-        box-shadow: none;
-        transform: none;
-      }
-
-      .travel-mode .travel-mode-item {
-        min-width: 0;
-        border-radius: 10px;
-        background: var(--card);
-        box-shadow: none;
-        transform: none;
-      }
-
-      .travel-mode .travel-mode-item > div {
-        min-width: 0;
-      }
-
-      .travel-mode .travel-mode-item-title {
-        font-weight: 600;
-      }
-
-      .travel-mode button:focus-visible {
-        outline: 2px solid var(--accent);
-        outline-offset: 2px;
-      }
-
-      @container (max-width: 700px) {
-        .travel-mode-grid {
-          grid-template-columns: minmax(0, 1fr);
-          gap: 12px;
-        }
-
-        .travel-mode .travel-quick-tools-row {
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-
-        .travel-mode .travel-mode-panel,
-        .travel-mode .travel-quick-panel {
-          padding: 16px;
-        }
-      }
-
-      @container (max-width: 380px) {
-        .travel-mode-day-nav {
-          display: grid;
-          grid-template-columns: 46px minmax(0, 1fr) 46px;
-        }
-
-        .travel-mode-today-btn {
-          grid-column: 1 / -1;
-          width: 100%;
-        }
-      }
-    `;
-    style.textContent += `
-      .travel-mode.travel-mode-v2 {
-        padding: clamp(14px, 3vw, 28px);
-        padding-bottom: calc(28px + env(safe-area-inset-bottom, 0px));
-      }
-
-      .travel-mode-v2 .travel-mode-shell {
-        width: 100%;
-        max-width: 1180px;
-        margin: 0 auto;
-        min-width: 0;
-      }
-
-      .travel-mode.travel-mode-v2 .travel-mode-hero {
-        min-height: 0;
-        padding: 20px;
-        border-radius: 12px;
-        box-shadow: none;
-      }
-
-      .travel-mode.travel-mode-v2 .travel-mode-title {
-        margin: 8px 0;
-        font-size: clamp(26px, 3.5vw, 36px);
-        line-height: 1.2;
-      }
-
-      .travel-mode.travel-mode-v2 .travel-mode-day-nav {
-        margin-top: 14px;
-        gap: 8px;
-        flex-wrap: wrap;
-      }
-
-      .travel-mode-v2 .travel-mode-progress {
-        margin-top: 16px;
-      }
-
-      .travel-mode.travel-mode-v2 .travel-quick-tools {
-        padding: 14px;
-        border: 1px solid var(--line);
-        border-radius: 12px;
-        background: var(--card);
-        box-shadow: none;
-      }
-
-      .travel-mode.travel-mode-v2 .travel-quick-tools-row {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr));
-        gap: 8px;
-      }
-
-      .travel-mode.travel-mode-v2 .travel-quick-tool {
-        min-width: 0;
-        min-height: 44px;
-        padding: 10px;
-        border-radius: 8px;
-        white-space: normal;
-        justify-content: center;
-        box-shadow: none;
-      }
-
-      .travel-mode.travel-mode-v2 .travel-mode-grid {
-        display: grid;
-        grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
-        gap: 16px;
-        align-items: start;
-      }
-
-      .travel-mode.travel-mode-v2 .travel-mode-panel,
-      .travel-mode.travel-mode-v2 .travel-quick-panel {
-        min-width: 0;
-        padding: 20px;
-        border: 1px solid var(--line);
-        border-radius: 12px;
-        background: var(--card);
-        box-shadow: none;
-      }
-
-      .travel-mode-v2 .travel-mode-grid > section {
-        border-top: 3px solid var(--accent);
-      }
-
-      .travel-mode.travel-mode-v2 .travel-mode-next-time {
-        margin-top: 12px;
-        font-size: 18px;
-        font-variant-numeric: tabular-nums;
-      }
-
-      .travel-mode.travel-mode-v2 .travel-mode-next-title {
-        font-size: clamp(23px, 3vw, 30px);
-        line-height: 1.25;
-        overflow-wrap: anywhere;
-      }
-
-      .travel-mode-v2 .travel-mode-clock-note,
-      .travel-mode-v2 .travel-mode-night-label {
-        margin: 8px 0 12px;
-        color: var(--muted);
-        font-size: 12px;
-        line-height: 1.5;
-      }
-
-      .travel-mode-v2 .travel-mode-program-header {
-        display: flex;
-        align-items: baseline;
-        justify-content: space-between;
-        flex-wrap: wrap;
-        gap: 8px;
-        margin-bottom: 16px;
-      }
-
-      .travel-mode-program-header h2 {
-        margin: 0;
-        font-family: var(--font-serif);
-        font-size: 26px;
-        font-weight: 400;
-        line-height: 1.2;
-      }
-
-      .travel-mode-program-header > span {
-        color: var(--muted);
-        font-size: 13px;
-      }
-
-      .travel-mode.travel-mode-v2 .travel-mode-list {
-        gap: 0;
-      }
-
-      .travel-mode.travel-mode-v2 .travel-mode-item {
-        display: grid;
-        grid-template-columns: 64px minmax(0, 1fr);
-        gap: 14px;
-        padding: 14px 8px;
-        border: 0;
-        border-bottom: 1px solid var(--line);
-        border-radius: 0;
-        background: transparent;
-        box-shadow: none;
-      }
-
-      .travel-mode-v2 .travel-mode-item:last-child {
-        border-bottom: 0;
-      }
-
-      .travel-mode.travel-mode-v2 .travel-mode-item[data-next="true"] {
-        border-left: 3px solid var(--accent);
-        background: var(--accent-soft);
-        border-radius: 8px;
-      }
-
-      .travel-mode-v2 .travel-mode-item-time {
-        padding-top: 10px;
-        font-variant-numeric: tabular-nums;
-      }
-
-      .travel-mode-v2 .travel-mode-step-link {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 10px;
-        width: 100%;
-        min-height: 44px;
-        padding: 6px 0;
-        border: 0;
-        background: transparent;
-        color: var(--text);
-        font-family: var(--font-serif);
-        font-size: 21px;
-        text-align: left;
-        overflow-wrap: anywhere;
-        cursor: pointer;
-      }
-
-      .travel-mode-step-link svg {
-        flex-shrink: 0;
-        color: var(--accent);
-      }
-
-      .travel-mode-v2 .travel-mode-place {
-        overflow-wrap: anywhere;
-      }
-
-      .travel-mode.travel-mode-v2 .travel-mode-map-btn {
-        min-height: 44px;
-        border-radius: 8px;
-        padding: 10px 14px;
-        white-space: normal;
-        line-height: 1.4;
-      }
-
-      .travel-mode-v2 button:focus-visible {
-        outline: 2px solid var(--accent);
-        outline-offset: 3px;
-      }
-
-      @container (max-width: 700px) {
-        .travel-mode.travel-mode-v2 .travel-mode-grid {
-          grid-template-columns: minmax(0, 1fr);
-        }
-
-        .travel-mode.travel-mode-v2 .travel-mode-panel {
-          padding: 16px;
-        }
-      }
-
-      @container (max-width: 380px) {
-        .travel-mode.travel-mode-v2 .travel-quick-tools-row {
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-
-        .travel-mode.travel-mode-v2 .travel-mode-item {
-          grid-template-columns: 52px minmax(0, 1fr);
-          gap: 10px;
-        }
-      }
-    `;
-    document.head.appendChild(style);
-  }
-
   function localDateISO() {
     const date = new Date();
     const offset = date.getTimezoneOffset() * 60000;
@@ -947,19 +9,19 @@
   }
 
   function formatDate(iso) {
-    if (!iso) return 'Date à préciser';
+    if (!iso || Number.isNaN(new Date(String(iso).slice(0, 10) + 'T12:00:00').getTime())) return 'Date à préciser';
 
     return new Intl.DateTimeFormat('fr-FR', {
       weekday: 'long',
       day: 'numeric',
       month: 'long'
-    }).format(new Date(String(iso) + 'T12:00:00'));
+    }).format(new Date(String(iso).slice(0, 10) + 'T12:00:00'));
   }
 
   function timeToMinutes(value) {
     const match = String(value || '').match(/^(\d{1,2}):(\d{2})/);
 
-    return match
+    return match && Number(match[1]) < 24 && Number(match[2]) < 60
       ? Number(match[1]) * 60 + Number(match[2])
       : Number.POSITIVE_INFINITY;
   }
@@ -996,8 +58,6 @@
   ];
 
   function TravelModeView() {
-    injectCss();
-
     const {
       trip,
       selectedDayIndex = 0
@@ -1039,7 +99,7 @@
     const steps = (day.steps || [])
       .filter(
         step =>
-          String(step.type || '').toLowerCase() !== 'logement'
+          !['logement', 'lodging'].includes(String(step.type || '').toLowerCase())
       )
       .slice()
       .sort(
@@ -1055,13 +115,18 @@
 
     if (isToday) {
       const nextIndex = steps.findIndex(
-        step => timeToMinutes(step.time) >= nowMinutes
+        step => {
+          const start = timeToMinutes(step.time);
+          const end = timeToMinutes(step.timeEnd);
+          return Number.isFinite(start) && (start >= nowMinutes ||
+            (Number.isFinite(end) && end + (step.nextDay ? 1440 : 0) > nowMinutes));
+        }
       );
 
       startIndex =
         nextIndex >= 0
           ? nextIndex
-          : steps.length;
+          : steps.findIndex(step => !Number.isFinite(timeToMinutes(step.time)));
     }
 
     const nextStep = steps[startIndex] || null;
@@ -1100,10 +165,7 @@
     }
 
     function returnToPlanning(view = 'itinerary') {
-      localStorage.setItem(
-        'atelier_app_mode',
-        'plan'
-      );
+      try { localStorage.setItem('atelier_app_mode', 'plan'); } catch (_) {}
 
       Store.set({
         appMode: 'plan',
@@ -1173,7 +235,7 @@
     }
 
     return (
-      <main className="travel-mode travel-mode-v2">
+      <section className="travel-mode travel-mode-v2" aria-label="Carnet de voyage">
         <div className="travel-mode-shell">
           <section
             className={
@@ -1213,9 +275,12 @@
                   <Icon name="chevleft" size={18} />
                 </button>
 
-                <div className="travel-mode-day-label">
-                  Jour {dayIndex + 1} sur {days.length}
-                </div>
+                <label className="travel-mode-day-label">
+                  <span className="screen-reader-only">Choisir une journée</span>
+                  <select value={dayIndex} onChange={event => Store.set({ selectedDayIndex: Number(event.target.value) })}>
+                    {days.map((item, index) => <option key={item.id || index} value={index}>Jour {index + 1} · {formatDate(item.dateISO)}</option>)}
+                  </select>
+                </label>
 
                 <button
                   type="button"
@@ -1242,7 +307,7 @@
               <div
                 className="travel-mode-progress"
                 role="progressbar"
-                aria-label="Progression dans le voyage"
+                aria-label="Position de la journée sélectionnée dans le voyage"
                 aria-valuemin="1"
                 aria-valuemax={days.length}
                 aria-valuenow={dayIndex + 1}
@@ -1258,79 +323,22 @@
             </div>
           </section>
 
-          <section
-            className="travel-quick-tools"
-            aria-label="Outils rapides"
-          >
-            <div className="travel-quick-tools-head">
-              Outils rapides
-            </div>
-
-            <div className="travel-quick-tools-row">
-              {QUICK_TOOLS.map(tool => {
-                const active = quickTool === tool.id;
-
-                return (
-                  <button
-                    key={tool.id}
-                    type="button"
-                    className={
-                      'travel-quick-tool' +
-                      (active ? ' active' : '')
-                    }
-                    aria-pressed={active}
-                    aria-controls="travel-quick-panel"
-                    onClick={() =>
-                      setQuickTool(
-                        active ? null : tool.id
-                      )
-                    }
-                  >
-                    <Icon name={tool.icon} size={16} />
-                    {tool.label}
-                  </button>
-                );
-              })}
-            </div>
-          </section>
-
-          {quickTool && (
-            <section
-              id="travel-quick-panel"
-              className="travel-quick-panel"
-              aria-live="polite"
-            >
-              <div className="travel-quick-panel-head">
-                <strong>
-                  {currentQuickTool?.label}
-                </strong>
-
-                <button
-                  type="button"
-                  className="travel-mode-icon-btn"
-                  onClick={() => setQuickTool(null)}
-                  title="Fermer cet outil"
-                  aria-label="Fermer cet outil"
-                >
-                  <Icon name="x" size={16} />
-                </button>
-              </div>
-
-              {renderQuickTool()}
-            </section>
-          )}
-
+          <nav className="travel-essentials" aria-label="Essentiels du voyage">
+            <button type="button" onClick={() => returnToPlanning('map')}><Icon name="map" size={20} /><span>Carte<small>Lieux et trajets</small></span></button>
+            <button type="button" onClick={() => returnToPlanning('docs')}><Icon name="file" size={20} /><span>Documents<small>Billets et réservations</small></span></button>
+            <button type="button" onClick={() => returnToPlanning('budget')}><Icon name="wallet" size={20} /><span>Budget<small>Suivre les dépenses</small></span></button>
+          </nav>
           <div className="travel-mode-grid">
             <section
               className="travel-mode-panel"
               aria-live="polite"
             >
               <div className="travel-mode-panel-kicker">
-                {isToday ? 'À partir de maintenant' : 'Première étape du jour'}
+                {isToday ? (nextStep && !Number.isFinite(timeToMinutes(nextStep.time)) ? 'À horaire libre' : 'Votre prochain repère') : 'Première étape du jour'}
               </div>
               {isToday && (
                 <p className="travel-mode-clock-note">
-                  Repère calculé selon l’heure de cet appareil.
+                  Repère selon l’heure de cet appareil, sans validation des activités réalisées.
                 </p>
               )}
 
@@ -1362,8 +370,7 @@
                 </>
               ) : (
                 <div className="travel-mode-empty">
-                  Aucune autre étape programmée pour cette
-                  journée.
+                  Aucune autre étape avec un horaire à venir. Le programme reste consultable ci-dessous.
                 </div>
               )}
             </section>
@@ -1469,8 +476,70 @@
               </div>
             )}
           </section>
+          <section
+            className="travel-quick-tools"
+            aria-label="Outils rapides"
+          >
+            <div className="travel-quick-tools-head">
+              Outils rapides
+            </div>
+
+            <div className="travel-quick-tools-row">
+              {QUICK_TOOLS.map(tool => {
+                const active = quickTool === tool.id;
+
+                return (
+                  <button
+                    key={tool.id}
+                    type="button"
+                    className={
+                      'travel-quick-tool' +
+                      (active ? ' active' : '')
+                    }
+                    aria-pressed={active}
+                    aria-controls="travel-quick-panel"
+                    onClick={() =>
+                      setQuickTool(
+                        active ? null : tool.id
+                      )
+                    }
+                  >
+                    <Icon name={tool.icon} size={16} />
+                    {tool.label}
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+
+          {quickTool && (
+            <section
+              id="travel-quick-panel"
+              className="travel-quick-panel"
+              aria-live="polite"
+            >
+              <div className="travel-quick-panel-head">
+                <strong>
+                  {currentQuickTool?.label}
+                </strong>
+
+                <button
+                  type="button"
+                  className="travel-mode-icon-btn"
+                  onClick={() => setQuickTool(null)}
+                  title="Fermer cet outil"
+                  aria-label="Fermer cet outil"
+                >
+                  <Icon name="x" size={16} />
+                </button>
+              </div>
+
+              {renderQuickTool()}
+            </section>
+          )}
+
         </div>
-      </main>
+      </section>
     );
   }
 

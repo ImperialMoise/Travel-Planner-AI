@@ -26,8 +26,8 @@ Les références Airbnb, Apple et Nike inspirent la hiérarchie, pas une copie d
 - Sur téléphone, réorganiser les rangées et faire défiler les onglets, sans supprimer de fonction.
 
 ## Itinéraire
-- Ensemble fluide, plafond de confort 1 560 px ; ne pas étirer une étape sur toute la largeur d’un grand écran.
-- Journées 190–216 px ; informations 260–288 px ; programme dans l’espace restant.
+- Ensemble fluide, plafond de confort 2 040 px ; ne pas étirer une étape sur toute la largeur d’un grand écran.
+- Journées 190–280 px ; informations 260–360 px ; programme dans l’espace restant.
 - Liste des jours compacte, numéro identifiable et titre non tronqué.
 - Panneau central de hauteur liée au contenu, dans une zone défilable ; ne pas remplir un écran vide par du faux contenu.
 - Titres de journée sans empattements, texte de 15–16 px, métadonnées 12–14 px.
@@ -94,6 +94,16 @@ Ne pas annoncer toutes les pages refaites après le seul cadre connecté.
 - Bilan : quatre indicateurs majeurs, autres chiffres conservés en détail ; progression de dates explicitement distincte des activités réalisées.
 - Ne pas modifier les calculs, opérations de stockage ni autorisations pendant ce lot.
 
+## Voyager — web et APK
+- Le web privilégie la préparation ; le carnet Voyager reste accessible.
+- L’APK a un carnet dédié (mobile/journey.css), pas une réduction de l’éditeur.
+- Au premier usage natif, ouvrir les voyages en Voyager ; conserver un choix Préparer déjà enregistré.
+- Priorités : repère horaire, carte, billets, programme complet et nuit en cours.
+- Aucun horaire ne vaut confirmation qu’une activité est réalisée. Mentionner l’heure de l’appareil.
+- Étapes sans heure toujours visibles, nuits intermédiaires accessibles ; aucune mutation des données pour l’affichage.
+- Préparer reste accessible sur téléphone ; mêmes gestionnaires de carte, documents et détails.
+- Tester téléphone 320–430 px, tablette, paysage, clavier et zones système sur APK réelle.
+
 ## Suite
 1. Valider navigation, outils multi-fenêtres et carte avec les données réelles.
 2. Valider Budget, Documents et Bilan refondus.
@@ -108,4 +118,3 @@ Contrôler bibliothèque vide, filtrée, archivage, couverture absente ou en err
 Comparer 360, 390, 430, 900 et 1440 px en clair/sombre ; vérifier aussi zoom 200 % et fenêtre peu haute.
 Tester clavier, focus, fenêtres, commandes et sauvegardes, partage, duplication et impression.
 Une analyse syntaxique et un rendu React hors navigateur ne remplacent pas les tests visuels et interactifs.
-

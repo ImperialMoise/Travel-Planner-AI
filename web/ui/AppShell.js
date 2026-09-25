@@ -5296,6 +5296,7 @@ React.useEffect(() => {
       <div
   className={'app-shell' + (user ? ' fv-app' : '')}
   data-workspace-accent={trip?.accentTheme || 'forest'}
+  data-app-mode={appMode === 'travel' ? 'travel' : 'plan'}
   data-focus={desktopFocusMode ? 'true' : 'false'}
   style={{
     '--trip-accent': accent.accent,

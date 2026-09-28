@@ -212,11 +212,12 @@
   function inputBaseStyle() {
     return {
       width: '100%',
-      minHeight: 44,
-      padding: '10px 12px',
+      minHeight: 48,
+      minWidth: 0,
+      padding: '11px 12px',
       border: '1px solid var(--outline-variant)',
       borderRadius: 11,
-      background: 'var(--inset)',
+      background: 'var(--card)',
       color: 'var(--text)',
       fontFamily: 'inherit',
       fontSize: 16,
@@ -227,10 +228,9 @@
   function labelStyle() {
     return {
       display: 'block',
-      fontSize: 11,
-      fontWeight: 800,
-      letterSpacing: '.08em',
-      textTransform: 'uppercase',
+      fontSize: 14,
+      fontWeight: 600,
+      lineHeight: '20px',
       color: 'var(--muted)',
       marginBottom: 6
     };
@@ -238,13 +238,13 @@
 
   function ghostButtonStyle() {
     return {
-      minHeight: 44,
+      minHeight: 48,
       border: '1px solid var(--outline-variant)',
       background: 'var(--inset)',
       color: 'var(--text)',
       borderRadius: 11,
       padding: '9px 16px',
-      fontSize: 13.5,
+      fontSize: 14,
       fontWeight: 700,
       cursor: 'pointer',
       fontFamily: 'inherit'
@@ -253,13 +253,13 @@
 
   function primaryButtonStyle() {
     return {
-      minHeight: 44,
+      minHeight: 48,
       border: 'none',
       background: 'var(--accent)',
       color: 'var(--accent-ink)',
       borderRadius: 11,
       padding: '9px 18px',
-      fontSize: 13.5,
+      fontSize: 14,
       fontWeight: 800,
       cursor: 'pointer',
       fontFamily: 'inherit'
@@ -269,14 +269,14 @@
   function dangerButtonStyle() {
     return {
       ...primaryButtonStyle(),
-      background: '#c0563f',
+      background: '#a22f35',
       color: '#fff'
     };
   }
 
   function Field({ label, children }) {
     return (
-      <div style={{ marginBottom: 12 }}>
+      <div className="fv-form-field" style={{ marginBottom: 18 }}>
         <label style={labelStyle()}>{label}</label>
         {children}
       </div>
@@ -287,8 +287,8 @@
     return (
       <div className="web-step-editor-grid" style={{
         display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        gap: 12
+        gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+        gap: 16
       }}>
         {children}
       </div>
@@ -366,7 +366,7 @@
 
     dialogStateRef.current = { busy, onClose, deleteAsk };
 
-    React.useEffect(function lockEditorScroll() {
+    React.useLayoutEffect(function lockEditorScroll() {
       if (!open) return;
 
       const previousOverflow = document.body.style.overflow;
@@ -385,8 +385,6 @@
 
     React.useLayoutEffect(function manageEditorKeyboard() {
       if (!open) return;
-
-      const previousFocus = document.activeElement;
 
       function getScope() {
         return (
@@ -472,9 +470,6 @@
         window.cancelAnimationFrame(frame);
         document.removeEventListener('keydown', handleKeyDown);
 
-        if (previousFocus?.isConnected) {
-          previousFocus.focus({ preventScroll: true });
-        }
       };
     }, [open, deleteAsk]);
 
@@ -874,11 +869,7 @@
       }
 
       return (
-        <div className="web-step-editor-types" style={{
-          display: 'flex',
-          gap: 6,
-          marginBottom: 18
-        }}>
+        <div className="web-step-editor-types">
           {STEP_TYPES.map(function renderType(type) {
             const selected = form.type === type.id;
 
@@ -887,26 +878,8 @@
                 key={type.id}
                 type="button"
                 onClick={() => setField('type', type.id)}
-                style={{
-                  flex: 1,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: 5,
-                  padding: '10px 4px',
-                  borderRadius: 12,
-                  cursor: 'pointer',
-                  border: '1px solid ' + (
-                    selected
-                      ? 'var(--accent)'
-                      : 'var(--outline-variant)'
-                  ),
-                  background: selected ? 'var(--accent)' : 'var(--inset)',
-                  color: selected ? 'var(--accent-ink)' : 'var(--muted)',
-                  fontSize: 11,
-                  fontWeight: 800,
-                  fontFamily: 'inherit'
-                }}
+                className={'fv-step-type' + (selected ? ' is-selected' : '')}
+                aria-pressed={selected}
               >
                 <Icon name={type.icon} size={18} />
                 {type.label}
@@ -1084,7 +1057,7 @@
                       style={{
                         border: 'none',
                         background: 'transparent',
-                        color: '#c0563f',
+                        color: 'var(--danger)',
                         cursor: 'pointer',
                         fontFamily: 'inherit',
                         fontSize: 12,
@@ -1353,24 +1326,9 @@
     }
 
     return ReactDOM.createPortal(
-      <div
-        className="web-step-editor-overlay"
-        onClick={busy ? undefined : onClose}
-        style={{
-          position: 'fixed',
-          inset: 0,
-          zIndex: 6000,
-          background: 'rgba(21,48,42,.36)',
-          backdropFilter: 'blur(7px)',
-          WebkitBackdropFilter: 'blur(7px)',
-          display: 'flex',
-          alignItems: 'flex-start',
-          justifyContent: 'center',
-          padding: '76px 24px 24px'
-        }}
-      >
+      <div className="web-step-editor-overlay fv-dialog-layer" onClick={busy ? undefined : onClose}>
         <div
-          className="web-step-editor-panel"
+          className="web-step-editor-panel fv-dialog fv-dialog-wide"
           ref={editorRef}
           role="dialog"
           aria-modal="true"
@@ -1378,78 +1336,19 @@
           aria-busy={busy}
           tabIndex={-1}
           onClick={event => event.stopPropagation()}
-          style={{
-            width: '100%',
-            maxWidth: 540,
-            maxHeight: 'calc(100vh - 100px)',
-            display: 'flex',
-            flexDirection: 'column',
-            background: 'var(--card)',
-            color: 'var(--text)',
-            border: '1px solid var(--outline-variant)',
-            borderRadius: 20,
-            overflow: 'hidden',
-            boxShadow: '0 40px 90px rgba(0,0,0,.36)',
-            position: 'relative'
-          }}
         >
-          <div className="web-step-editor-header" style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 16,
-            padding: '18px 20px',
-            borderBottom: '1px solid var(--outline-variant)',
-            background: 'var(--soft)'
-          }}>
-            <div style={{ minWidth: 0 }}>
-              <div style={{
-                fontSize: 11,
-                fontWeight: 800,
-                letterSpacing: '.16em',
-                textTransform: 'uppercase',
-                color: 'var(--accent)'
-              }}>
-                {modalKicker}
-              </div>
-
-              <div style={{
-                fontFamily: 'var(--font-serif)',
-                fontStyle: 'italic',
-                fontSize: 23,
-                lineHeight: '29px',
-                color: 'var(--text)',
-                marginTop: 2
-              }}>
-                {modalTitle}
-              </div>
+          <header className="web-step-editor-header fv-dialog-head">
+            <div className="fv-dialog-heading">
+              <span className="fv-dialog-kicker">{modalKicker}</span>
+              <h2 className="fv-dialog-title">{modalTitle}</h2>
             </div>
-
-            <button
-              className="web-step-editor-close"
-              aria-label="Fermer l’éditeur d’étape"
-              title="Fermer"
-              type="button"
-              onClick={busy ? undefined : onClose}
-              disabled={busy}
-              style={{
-                border: 'none',
-                background: 'transparent',
-                color: 'var(--muted)',
-                cursor: busy ? 'default' : 'pointer',
-                padding: 6,
-                borderRadius: 8
-              }}
-            >
+            <button className="web-step-editor-close fv-dialog-close"
+              aria-label="Fermer l’éditeur d’étape" title="Fermer" type="button"
+              onClick={busy ? undefined : onClose} disabled={busy}>
               <Icon name="x" size={20} />
             </button>
-          </div>
-
-          <div className="web-step-editor-body" style={{
-            padding: 20,
-            overflowY: 'auto',
-            minHeight: 0
-          }}>
+          </header>
+          <div className="web-step-editor-body fv-dialog-body">
             {safeDays.length > 1 && (
               <Field label="Journée">
                 <select
@@ -1562,14 +1461,7 @@
             </Field>
           </div>
 
-          <div className="web-step-editor-footer" style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-            padding: '14px 20px',
-            borderTop: '1px solid var(--outline-variant)',
-            background: 'var(--card)'
-          }}>
+          <footer className="web-step-editor-footer fv-dialog-footer">
             {isEditing && (
               <button
                 type="button"
@@ -1577,7 +1469,7 @@
                 disabled={busy}
                 style={{
                   ...ghostButtonStyle(),
-                  color: '#c0563f',
+                  color: 'var(--danger)',
                   borderColor: 'rgba(192,86,63,.35)'
                 }}
               >
@@ -1610,10 +1502,11 @@
                   ? 'Enregistrer'
                   : 'Ajouter'}
             </button>
-          </div>
+          </footer>
 
           {deleteAsk && (
             <div
+              className="fv-dialog-confirm"
               role="alertdialog"
               aria-modal="true"
               aria-label="Supprimer cette étape ?"
@@ -1643,16 +1536,16 @@
                   fontWeight: 800,
                   letterSpacing: '.16em',
                   textTransform: 'uppercase',
-                  color: '#c0563f',
+                  color: 'var(--danger)',
                   marginBottom: 8
                 }}>
                   Suppression
                 </div>
 
                 <div style={{
-                  fontFamily: 'var(--font-serif)',
-                  fontStyle: 'italic',
-                  fontSize: 25,
+                  fontFamily: 'var(--font-sans)',
+                  fontWeight: 700,
+                  fontSize: 22,
                   lineHeight: '30px',
                   color: 'var(--text)',
                   marginBottom: 10
@@ -1663,7 +1556,7 @@
                 <p style={{
                   margin: '0 0 18px',
                   color: 'var(--muted)',
-                  fontSize: 13.5,
+                  fontSize: 14,
                   lineHeight: '20px'
                 }}>
                   “{stepName(form)}” sera retirée définitivement de votre programme.
@@ -1704,3 +1597,4 @@
   window.normalizeStepLink = normalizeStepLink;
   window.StepEditor = StepEditor;
 })();
+

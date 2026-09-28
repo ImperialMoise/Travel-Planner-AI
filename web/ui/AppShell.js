@@ -2769,54 +2769,10 @@
   }
 }
 
-  .modal-backdrop{
-    position:fixed;
-    inset:0;
-    z-index:5000;
-    background:rgba(0,0,0,.56);
-    backdrop-filter:blur(6px);
-    -webkit-backdrop-filter:blur(6px);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    padding:16px;
-  }
 
-  .modal-card{
-    width:100%;
-    max-width:430px;
-    max-height:90vh;
-    display:flex;
-    flex-direction:column;
-    background:var(--card);
-    border:1px solid var(--outline-variant);
-    border-radius:18px;
-    box-shadow:var(--shadow-lg);
-    overflow:hidden;
-    color:var(--text);
-  }
 
-  .modal-head{
-    padding:16px 20px;
-    flex-shrink:0;
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    border-bottom:1px solid var(--outline-variant);
-    background:var(--soft);
-  }
 
-  .modal-title{
-    font-family:var(--font-serif);
-    font-style:italic;
-    font-size:24px;
-    line-height:30px;
-  }
 
-  .modal-body{
-    padding:20px;
-    overflow-y:auto;
-  }
 
   .field{
     margin-bottom:12px;
@@ -3658,36 +3614,10 @@
 
 /* Fenêtres de connexion, inscription et création */
 
-.modal-backdrop {
-  background: rgba(27, 21, 15, 0.62);
-  backdrop-filter: blur(9px);
-  -webkit-backdrop-filter: blur(9px);
-}
 
-.modal-card {
-  border-radius: 22px;
-  border-color: rgba(150, 100, 13, 0.18);
-  box-shadow: 0 30px 90px rgba(27, 21, 15, 0.3);
-}
 
-.modal-head {
-  padding: 18px 20px;
-  background:
-    linear-gradient(
-      135deg,
-      var(--card),
-      var(--accent-soft)
-    );
-}
 
-.modal-title {
-  font-size: 26px;
-  letter-spacing: -0.025em;
-}
 
-.modal-body {
-  padding: 22px;
-}
 
 .field {
   margin-bottom: 15px;
@@ -3745,20 +3675,8 @@
   box-shadow: 0 6px 16px var(--accent-shadow);
 }
 
-.modal-body .simple-btn {
-  min-height: 48px;
-  border-radius: 12px;
-}
 
-.modal-body .simple-btn.primary {
-  box-shadow: 0 8px 20px var(--accent-shadow);
-}
 
-.modal-card button:focus-visible,
-.modal-card input:focus-visible {
-  outline: 3px solid rgba(150, 100, 13, 0.22);
-  outline-offset: 2px;
-}
 
 /* Survols réservés aux appareils avec souris */
 
@@ -3769,9 +3687,6 @@
     transform: translateY(-2px);
   }
 
-  .modal-body .simple-btn:hover {
-    transform: translateY(-1px);
-  }
 }
 
 /* Accueil et modales sur téléphone */
@@ -3834,39 +3749,10 @@
     display: none;
   }
 
-  .modal-backdrop {
-    align-items: flex-end;
-    padding: 0;
-  }
 
-  .modal-card {
-    max-width: none;
-    max-height: min(92dvh, 760px);
-    border-right: none;
-    border-bottom: none;
-    border-left: none;
-    border-radius: 22px 22px 0 0;
-  }
 
-  .modal-head {
-    padding:
-      16px
-      max(18px, env(safe-area-inset-right))
-      16px
-      max(18px, env(safe-area-inset-left));
-  }
 
-  .modal-title {
-    font-size: 24px;
-  }
 
-  .modal-body {
-    padding:
-      18px
-      max(16px, env(safe-area-inset-right))
-      calc(20px + env(safe-area-inset-bottom))
-      max(16px, env(safe-area-inset-left));
-  }
 
   .field input {
     min-height: 50px;
@@ -3948,15 +3834,8 @@
     padding: 8px;
   }
 
-  .modal-body {
-    padding-right: 13px;
-    padding-left: 13px;
-  }
 }
 
-.modal-form {
-  margin: 0;
-}
 
 .auth-form-error,
 .new-trip-form-error {
@@ -4168,145 +4047,33 @@
       }
     `;
     style.textContent += `
-      .modal-backdrop .modal-card {
-        border-color: var(--line);
-        border-radius: 16px;
-        max-height: calc(100dvh - 32px);
-        box-shadow: 0 16px 48px rgba(0,0,0,.18);
-      }
 
-      .modal-card .modal-head {
-        gap: 16px;
-        background: var(--card);
-        padding: 18px 20px;
-      }
 
-      .modal-card .modal-title {
-        min-width: 0;
-        font-size: 26px;
-        font-style: normal;
-        line-height: 1.2;
-        overflow-wrap: anywhere;
-      }
 
-      .modal-card .modal-head > button {
-        flex-shrink: 0;
-        min-width: 44px;
-        min-height: 44px;
-      }
 
-      .modal-card .modal-body {
-        min-height: 0;
-        padding: 20px;
-        overscroll-behavior: contain;
-      }
 
-      .modal-card .field-label {
-        font-size: 12px;
-        font-weight: 600;
-        text-transform: none;
-        letter-spacing: normal;
-      }
 
-      .modal-card :is(input, select, textarea) {
-        box-sizing: border-box;
-        max-width: 100%;
-        font-size: 16px;
-      }
 
-      .modal-card .simple-btn {
-        min-height: 44px;
-        border-radius: 10px;
-        box-shadow: none;
-        transform: none;
-      }
 
-      .web-step-editor-overlay .web-step-editor-panel {
-        border-color: var(--line) !important;
-        border-radius: 16px !important;
-        box-shadow: 0 16px 48px rgba(0,0,0,.18) !important;
-        max-height: calc(100dvh - 100px) !important;
-      }
 
-      .web-step-editor-panel .web-step-editor-header {
-        flex-shrink: 0;
-        background: var(--card) !important;
-      }
 
-      .web-step-editor-header > div > div:last-child {
-        font-style: normal !important;
-        overflow-wrap: anywhere;
-      }
 
-      .web-step-editor-panel .web-step-editor-close {
-        min-width: 44px;
-        min-height: 44px;
-        flex-shrink: 0;
-      }
 
-      .web-step-editor-panel .web-step-editor-body {
-        overscroll-behavior: contain;
-      }
 
-      .web-step-editor-panel .web-step-editor-footer {
-        flex-shrink: 0;
-        flex-wrap: wrap;
-      }
 
-      .web-step-editor-panel .web-step-editor-footer button {
-        min-height: 44px;
-      }
 
-      .modal-card :is(button, input, select, textarea):focus-visible,
-      .web-step-editor-panel :is(button, input, select, textarea):focus-visible {
-        outline: 2px solid var(--accent);
-        outline-offset: 2px;
-      }
 
       @media (max-width: 560px) {
-        .modal-backdrop .modal-card {
-          border-radius: 16px 16px 0 0;
-          max-height: calc(100dvh - max(16px, env(safe-area-inset-top)));
-        }
 
-        .modal-card .modal-head {
-          padding: 14px max(16px, env(safe-area-inset-right))
-            14px max(16px, env(safe-area-inset-left));
-        }
 
-        .modal-card .modal-body {
-          padding: 16px max(16px, env(safe-area-inset-right))
-            max(20px, env(safe-area-inset-bottom))
-            max(16px, env(safe-area-inset-left));
-        }
 
-        .web-step-editor-overlay {
-          align-items: flex-end !important;
-          padding: max(16px, env(safe-area-inset-top)) 0 0 !important;
-        }
 
-        .web-step-editor-overlay .web-step-editor-panel {
-          max-height: calc(100dvh - max(16px, env(safe-area-inset-top))) !important;
-          border-radius: 16px 16px 0 0 !important;
-        }
 
-        .web-step-editor-panel :is(input, select, textarea) {
-          font-size: 16px !important;
-        }
 
-        .web-step-editor-panel .web-step-editor-footer {
-          padding-bottom: max(14px, env(safe-area-inset-bottom)) !important;
-        }
       }
 
       @media (max-width: 380px) {
-        .web-step-editor-panel .web-step-editor-footer > div {
-          display: none;
-        }
 
-        .web-step-editor-panel .web-step-editor-footer > button {
-          flex: 1 1 100px;
-        }
       }
     `;
 
@@ -9023,6 +8790,7 @@ async function submit() {
         }
         onClose={onClose}
         onSubmit={submit}
+        busy={busy}
       >
         {!confirmationSent && mode !== 'recovery' && (
           <div className="mode-tabs">
@@ -9773,6 +9541,8 @@ async function submit() {
         title="Nouveau voyage"
         onClose={onClose}
         onSubmit={submit}
+        busy={busy}
+        wide
       >
         <Field label="Nom du voyage">
           <input
@@ -10337,210 +10107,110 @@ async function submit() {
     title,
     onClose,
     onSubmit,
-    children
+    children,
+    wide = false,
+    busy = false
   }) {
     const cardRef = React.useRef(null);
+    const stateRef = React.useRef({ onClose, busy });
+    const titleId = 'app-modal-title';
+    stateRef.current = { onClose, busy };
+
+    function dismiss() {
+      if (!stateRef.current.busy) stateRef.current.onClose();
+    }
 
     React.useEffect(function manageDialogFocus() {
-      const previousOverflow =
-        document.body.style.overflow;
-
-      const previousActiveElement =
-        document.activeElement;
+      const previousOverflow = document.body.style.overflow;
+      const previousActiveElement = document.activeElement;
+      const card = cardRef.current;
 
       function getFocusableElements() {
-        const card = cardRef.current;
-
         if (!card) return [];
-
-        return Array.from(
-          card.querySelectorAll(
-            [
-              'a[href]',
-              'button:not([disabled])',
-              'input:not([disabled])',
-              'select:not([disabled])',
-              'textarea:not([disabled])',
-              '[tabindex]:not([tabindex="-1"])'
-            ].join(',')
-          )
-        ).filter(function keepVisible(element) {
+        return Array.from(card.querySelectorAll(
+          'a[href], button, input, select, textarea, [tabindex]'
+        )).filter(element => {
           const style = window.getComputedStyle(element);
-
-          return (
-            element.tabIndex >= 0 &&
-            !element.closest('[aria-hidden="true"], [inert]') &&
+          return element.tabIndex >= 0 &&
+            !element.matches(':disabled') &&
+            !element.closest('[hidden], [aria-hidden="true"], [inert]') &&
             element.getClientRects().length > 0 &&
             style.visibility !== 'hidden' &&
-            style.visibility !== 'collapse'
-          );
+            style.visibility !== 'collapse';
         });
       }
 
       function handleKeyDown(event) {
+        if (event.defaultPrevented || !card) return;
+        const nested = event.target.closest?.('[role="dialog"], [role="alertdialog"]');
+        if (nested && nested !== card) return;
         if (event.key === 'Escape') {
           event.preventDefault();
-          onClose();
+          event.stopPropagation();
+          if (!stateRef.current.busy) stateRef.current.onClose();
           return;
         }
-
-        if (event.key !== 'Tab') {
-          return;
-        }
-
-        const card = cardRef.current;
-
-        if (!card) return;
-
-        const focusableElements =
-          getFocusableElements();
-
-        if (!focusableElements.length) {
+        if (event.key !== 'Tab') return;
+        const elements = getFocusableElements();
+        const first = elements[0], last = elements[elements.length - 1];
+        const active = document.activeElement;
+        if (!first) {
           event.preventDefault();
-          card.focus();
-          return;
-        }
-
-        const firstElement =
-          focusableElements[0];
-
-        const lastElement =
-          focusableElements[
-            focusableElements.length - 1
-          ];
-
-        const activeElement =
-          document.activeElement;
-
-        if (
-          event.shiftKey &&
-          (
-            activeElement === firstElement ||
-            !card.contains(activeElement)
-          )
-        ) {
+          card.focus({ preventScroll: true });
+        } else if (event.shiftKey && (active === first || !elements.includes(active))) {
           event.preventDefault();
-          lastElement.focus();
-          return;
-        }
-
-        if (
-          !event.shiftKey &&
-          activeElement === lastElement
-        ) {
+          last.focus();
+        } else if (!event.shiftKey && (active === last || !elements.includes(active))) {
           event.preventDefault();
-          firstElement.focus();
+          first.focus();
         }
       }
 
-      document.body.style.overflow =
-        'hidden';
-
-      document.addEventListener(
-        'keydown',
-        handleKeyDown
-      );
-
-      const focusFrame =
-        window.requestAnimationFrame(
-          function focusDialog() {
-            const card = cardRef.current;
-
-            if (!card) return;
-
-            const preferredElement =
-              card.querySelector(
-                [
-                  'input:not([disabled]):not([readonly])',
-                  'select:not([disabled])',
-                  'textarea:not([disabled])'
-                ].join(',')
-              );
-
-            const firstFocusable =
-              getFocusableElements()[0];
-
-            (
-              preferredElement ||
-              firstFocusable ||
-              card
-            ).focus();
-          }
-        );
-
-      return function cleanupDialog() {
-        window.cancelAnimationFrame(
-          focusFrame
-        );
-
-        document.body.style.overflow =
-          previousOverflow;
-
-        document.removeEventListener(
-          'keydown',
-          handleKeyDown
-        );
-
-        if (
-          previousActiveElement &&
-          previousActiveElement.isConnected &&
-          typeof previousActiveElement.focus ===
-            'function'
-        ) {
-          previousActiveElement.focus();
+      document.body.style.overflow = 'hidden';
+      document.addEventListener('keydown', handleKeyDown);
+      const frame = window.requestAnimationFrame(() => {
+        if (card && !card.contains(document.activeElement)) {
+          card.focus({ preventScroll: true });
+        }
+      });
+      return () => {
+        window.cancelAnimationFrame(frame);
+        document.body.style.overflow = previousOverflow;
+        document.removeEventListener('keydown', handleKeyDown);
+        if (previousActiveElement?.isConnected) {
+          previousActiveElement.focus({ preventScroll: true });
         }
       };
-    }, [onClose]);
+    }, []);
 
     return ReactDOM.createPortal(
-      <div
-        className="modal-backdrop"
-        onClick={onClose}
-      >
+      <div className="modal-backdrop fv-dialog-layer" onClick={dismiss}>
         <div
           ref={cardRef}
-          className="modal-card"
+          className={'modal-card fv-dialog' + (wide ? ' fv-dialog-wide' : '')}
           role="dialog"
           aria-modal="true"
-          aria-labelledby="app-modal-title"
-          tabIndex="-1"
-          onClick={event =>
-            event.stopPropagation()
-          }
+          aria-labelledby={titleId}
+          aria-busy={busy || undefined}
+          tabIndex={-1}
+          onClick={event => event.stopPropagation()}
         >
-          <div className="modal-head">
-            <div
-              className="modal-title"
-              id="app-modal-title"
-            >
-              {title}
-            </div>
-
-            <button
-              type="button"
-              className="topbar-icon-btn"
-              aria-label="Fermer la fenêtre"
-              onClick={onClose}
-            >
-              <Icon name="x" size={18} />
+          <header className="modal-head fv-dialog-head">
+            <h2 className="modal-title fv-dialog-title" id={titleId}>{title}</h2>
+            <button type="button" className="fv-dialog-close"
+              aria-label="Fermer la fenêtre" onClick={dismiss} disabled={busy}>
+              <Icon name="x" size={20} />
             </button>
-          </div>
-
-          <div className="modal-body">
+          </header>
+          <div className="modal-body fv-dialog-body">
             {onSubmit ? (
-              <form
-                className="modal-form"
-                noValidate
-                onSubmit={event => {
-                  event.preventDefault();
-                  onSubmit();
-                }}
-              >
+              <form className="modal-form" noValidate onSubmit={event => {
+                event.preventDefault();
+                if (!stateRef.current.busy) onSubmit();
+              }}>
                 {children}
               </form>
-            ) : (
-              children
-            )}
+            ) : children}
           </div>
         </div>
       </div>,
@@ -10595,3 +10265,4 @@ async function submit() {
   window.WorkspaceModal = ModalShell;
   window.selectTrip = selectTrip;
 })();
+

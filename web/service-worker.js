@@ -1,5 +1,5 @@
 const CACHE_NAME =
-  'la-fabrique-static-v18';
+  'la-fabrique-static-v19';
 
 const OFFLINE_URL =
   '/offline.html';

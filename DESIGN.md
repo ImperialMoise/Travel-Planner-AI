@@ -104,10 +104,19 @@ Ne pas annoncer toutes les pages refaites après le seul cadre connecté.
 - Préparer reste accessible sur téléphone ; mêmes gestionnaires de carte, documents et détails.
 - Tester téléphone 320–430 px, tablette, paysage, clavier et zones système sur APK réelle.
 
+## Fenêtres et formulaires
+- Cadre commun dans workspace-a.css pour les portails : palette claire/sombre, titres DM Sans, labels lisibles, champs de 48 px.
+- Connexion : largeur 520 px ; création de voyage et éditeur d’étape : jusqu’à 760 px.
+- Titre/fermeture et actions de l’éditeur restent visibles ; seul le corps défile.
+- Téléphone : feuille adaptée à la hauteur disponible, marges système et champs sur une colonne dans l’éditeur.
+- Focus clavier conservé pendant la saisie ; Échap ne ferme que la fenêtre concernée ; pas de fermeture pendant une soumission.
+- Sauvegarde, suppression, déplacement d’étape et validation restent inchangés.
+- Les paramètres et le profil gardent leur lot spécifique ; ne pas annoncer leur refonte sur cette base.
+
 ## Suite
 1. Valider navigation, outils multi-fenêtres et carte avec les données réelles.
 2. Valider Budget, Documents et Bilan refondus.
-3. Harmoniser Voyager, formulaires, fenêtres secondaires et paramètres.
+3. Valider le carnet Voyager et les formulaires refondus ; harmoniser profil, paramètres et autres fenêtres.
 4. Vérifier les parcours, le responsive, les deux thèmes et l’accessibilité.
 La vitrine publique et l’APK restent des lots distincts.
 La publication Play Store reste reportée.

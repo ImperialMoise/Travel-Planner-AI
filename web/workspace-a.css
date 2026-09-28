@@ -1,4 +1,5 @@
-.fv-app {
+.fv-app,
+.fv-dialog-layer {
   --fv-bg:#f5f6f4;--fv-surface:#ffffff;--fv-soft:#edf0ec;
   --fv-workspace:2040px;--fv-primary:#245d49;--fv-onprimary:#ffffff;
   --fv-warning:#795111;--fv-warning-bg:#fff4db;
@@ -13,7 +14,8 @@
   --petrol:var(--fv-ink);--accent-text:var(--fv-primary);
   color-scheme:light;font:16px/1.5 var(--font-sans);color:var(--fv-ink);background:var(--fv-bg);
 }
-html.dark .fv-app {
+html.dark .fv-app,
+html.dark .fv-dialog-layer {
   --fv-bg:#171d1a;--fv-surface:#232b26;--fv-soft:#303a33;
   --fv-primary:#b3d8c0;--fv-onprimary:#193526;--fv-focus:#b3d8c0;
   --fv-warning:#f0c982;--fv-warning-bg:#342d20;
@@ -665,3 +667,88 @@ html.dark .fv-workpage { --fv-danger:#ffa6a6; }
 @media(prefers-reduced-motion:reduce) {
   .fv-app *,.fv-app *::before,.fv-app *::after { scroll-behavior:auto!important;animation:none!important;transition:none!important; }
 }
+
+/* Fenêtres et formulaires : cadre commun, y compris les portails dans body. */
+.fv-dialog-layer {
+  --accent:var(--fv-primary);--accent-ink:var(--fv-onprimary);--accent-soft:var(--fv-soft);
+  --accent-shadow:transparent;--danger:#a22f35;
+  position:fixed;inset:0;z-index:8000;display:flex;align-items:center;justify-content:center;
+  padding:max(24px,env(safe-area-inset-top)) max(24px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(24px,env(safe-area-inset-left));
+  background:rgba(17,27,22,.5);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);
+}
+html.dark .fv-dialog-layer { --danger:#ffaaa7; }
+.fv-dialog-layer *,.fv-dialog-layer *::before,.fv-dialog-layer *::after { box-sizing:border-box; }
+.fv-dialog {
+  position:relative;display:flex;flex-direction:column;min-width:0;width:100%;max-width:520px;
+  max-height:100%;max-height:min(880px,calc(100dvh - 48px));
+  background:var(--fv-surface);color:var(--fv-ink);border:1px solid var(--fv-line);
+  border-radius:20px;box-shadow:0 24px 80px #0003;overflow:hidden;outline:none;
+}
+.fv-dialog-wide { max-width:760px; }
+.fv-dialog-head {
+  flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:20px;
+  padding:24px 28px;border-bottom:1px solid var(--fv-line);background:var(--fv-surface);
+}
+.fv-dialog-heading { min-width:0; }
+.fv-dialog .fv-dialog-title { margin:0;font:700 clamp(22px,2.4vw,28px)/1.2 var(--font-sans);letter-spacing:-.6px;overflow-wrap:anywhere; }
+.fv-dialog-kicker { display:block;margin-bottom:6px;color:var(--fv-muted);font-size:12px;font-weight:600;letter-spacing:.04em; }
+.fv-dialog .fv-dialog-close {
+  display:grid;place-items:center;flex-shrink:0;width:44px;height:44px;min-height:44px;
+  padding:0;border:1px solid var(--fv-line);border-radius:12px;background:var(--fv-surface);
+  color:var(--fv-ink);cursor:pointer;box-shadow:none;
+}
+.fv-dialog-body { min-height:0;min-width:0;padding:24px 28px;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable; }
+.fv-dialog-body .modal-form { margin:0; }
+.fv-dialog .field { display:block;min-width:0;margin-bottom:18px; }
+.fv-dialog .field-label { display:block;margin-bottom:7px;font-size:14px;font-weight:600;line-height:1.4;letter-spacing:normal;text-transform:none;color:var(--fv-ink); }
+.fv-dialog :is(input,select,textarea) {
+  max-width:100%;min-width:0;font:400 16px/1.5 var(--font-sans);
+  color:var(--fv-ink);accent-color:var(--fv-primary);
+}
+.fv-dialog .field :is(input,select,textarea) {
+  width:100%;min-height:48px;padding:11px 12px;background:var(--fv-surface);
+  border:1px solid var(--fv-line);border-radius:10px;box-shadow:none;
+}
+.fv-dialog :is(input,select,textarea):focus-visible { border-color:var(--fv-primary); }
+.fv-dialog .field input[readonly] { background:var(--fv-soft);color:var(--fv-muted); }
+.fv-dialog textarea { resize:vertical; }
+.fv-dialog :is(button,a,summary,input,select,textarea,[tabindex]):focus-visible { outline:3px solid var(--fv-focus);outline-offset:3px; }
+.fv-dialog :is(button,input,select,textarea):disabled { cursor:not-allowed;opacity:.55; }
+.fv-dialog button { font-family:var(--font-sans); }
+.fv-dialog .simple-btn { min-height:48px;border-radius:10px;font-size:14px;font-weight:600;box-shadow:none;transform:none; }
+.fv-dialog .simple-btn.primary { background:var(--fv-primary);color:var(--fv-onprimary);border-color:var(--fv-primary); }
+.fv-dialog .mode-tabs { display:flex;gap:4px;padding:4px;margin:0 0 24px;border:1px solid var(--fv-line);border-radius:12px;background:var(--fv-soft); }
+.fv-dialog .mode-tab { flex:1;min-height:44px;padding:8px;border:0;border-radius:9px;font-size:14px;font-weight:600;background:transparent;color:var(--fv-muted);box-shadow:none; }
+.fv-dialog .mode-tab.active { background:var(--fv-surface);color:var(--fv-ink);box-shadow:0 1px 4px #0001; }
+.fv-dialog :is(.auth-form-error,.new-trip-form-error) { margin-top:12px;border-color:var(--danger);background:var(--fv-soft);color:var(--danger);animation:none; }
+.fv-dialog-footer { flex-shrink:0;display:flex;align-items:center;flex-wrap:wrap;gap:10px;padding:18px 28px;border-top:1px solid var(--fv-line);background:var(--fv-surface); }
+.fv-dialog-footer button { min-height:48px;font-size:14px; }
+.fv-form-field { min-width:0; }
+.fv-dialog .web-step-editor-types { display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:8px;margin-bottom:20px; }
+.fv-dialog .fv-step-type { display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:64px;padding:10px 6px;border:1px solid var(--fv-line);border-radius:12px;background:var(--fv-surface);color:var(--fv-muted);font-size:13px;font-weight:600;cursor:pointer; }
+.fv-dialog .fv-step-type.is-selected { background:var(--fv-soft);border-color:var(--fv-primary);color:var(--fv-primary);box-shadow:inset 0 0 0 1px var(--fv-primary); }
+.fv-dialog-confirm { overflow-y:auto;overscroll-behavior:contain; }
+.fv-dialog-confirm > div { max-height:100%;overflow:auto; }
+@media (hover:hover) {
+  .fv-dialog .fv-dialog-close:hover { background:var(--fv-soft); }
+  .fv-dialog .field input:hover { border-color:var(--fv-muted); }
+}
+@media (max-width:600px) {
+  .fv-dialog-layer { align-items:flex-end;padding:max(12px,env(safe-area-inset-top)) 0 0; }
+  .fv-dialog { max-width:100%;max-height:100%;max-height:calc(100dvh - max(12px,env(safe-area-inset-top)));border-radius:20px 20px 0 0;border-bottom:0; }
+  .fv-dialog-head { gap:12px;padding:18px max(16px,env(safe-area-inset-right)) 18px max(16px,env(safe-area-inset-left)); }
+  .fv-dialog-body { padding:20px max(16px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left)); }
+  .fv-dialog-footer { padding:14px max(16px,env(safe-area-inset-right)) max(14px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left)); }
+  .fv-dialog .web-step-editor-grid { grid-template-columns:minmax(0,1fr)!important; }
+}
+@media (max-width:380px) {
+  .fv-dialog-footer > div { display:none; }
+  .fv-dialog-footer > button { flex:1 1 90px;padding-left:10px;padding-right:10px; }
+}
+@media (max-height:480px) and (min-width:601px) {
+  .fv-dialog-layer { padding:8px; }
+  .fv-dialog { max-height:calc(100dvh - 16px); }
+  .fv-dialog-head,.fv-dialog-footer { padding:12px 20px; }
+  .fv-dialog-body { padding:16px 20px; }
+}
+

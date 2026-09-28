@@ -20,7 +20,8 @@ function BudgetView() {
   const names = participants.map(p => p.name);
   const budget = trip.budget || [];
 
-  const [tab, setTab] = React.useState('overview');
+  const [tab, setTab] = React.useState('expenses');
+  const [expenseQuery, setExpenseQuery] = React.useState('');
   const [newName, setNewName] = React.useState('');
   const [form, setForm] = React.useState(null);   // null = fermé
   const [busy, setBusy] = React.useState(false);
@@ -132,9 +133,12 @@ function BudgetView() {
     </>;
   };
 
+  const visibleExpenses = budget.filter(item =>
+    [item.desc, item.cat, item.paidBy].join(' ').toLocaleLowerCase('fr')
+      .includes(expenseQuery.trim().toLocaleLowerCase('fr')));
   const expenses = () => budget.length ? (
     <div className="fv-expenses">
-      {budget.map(b => {
+      {visibleExpenses.map(b => {
         const m = catMeta(b.cat);
         const tl = (b.forParticipants || ['__all__']).includes('__all__') ? 'tout le monde' : targetsOf(b).join(', ');
         return <article className="fv-expense" key={b.id}>
@@ -148,6 +152,10 @@ function BudgetView() {
           <button type="button" className="fv-control" aria-label={'Supprimer la dépense ' + (b.desc || m.id)} onClick={() => delExpense(b)}><Icon name="x" size={16} /></button>
         </article>;
       })}
+      {!visibleExpenses.length && <div className="fv-empty-note" role="status">
+        <p>Aucune dépense correspondante.</p>
+        <button type="button" className="fv-control" onClick={() => setExpenseQuery('')}>Effacer la recherche</button>
+      </div>}
     </div>
   ) : <div className="fv-empty-note"><h2>Aucune dépense pour l'instant.</h2><p>Ajoute la première dépense pour suivre les comptes du voyage.</p></div>;
 
@@ -164,20 +172,26 @@ function BudgetView() {
       if (Math.abs(d[i].v) < 0.005) i++;
       if (Math.abs(r[j].v) < 0.005) j++;
     }
+    const incomplete = budget.some(item =>
+      !names.includes(item.paidBy) || targetsOf(item).length === 0);
     return <>
-      <h2>Soldes des voyageurs</h2>
+      <h2>Qui rembourse qui ?</h2>
+      <p className="fv-muted">Propositions calculées avec la répartition de chaque dépense. Aucun virement n’est effectué ici.</p>
+      {incomplete ? <p className="fv-budget-warning" role="status">Certaines dépenses n’ont pas de payeur ou de bénéficiaire reconnu. Corrige-les dans Dépenses avant de régler les comptes.</p>
+        : transfers.length ? <ul className="fv-transfers">
+          {transfers.map((t, k) => <li key={k}>
+            <span><strong>{t.from}</strong><small>rembourse {t.to}</small></span>
+            <strong className="fv-money">{eur(t.amount)}</strong>
+          </li>)}
+        </ul> : <p className="fv-empty-note">Aucun remboursement à prévoir.</p>}
+      <h2 className="fv-section-space">Solde de chacun</h2>
       <div className="fv-balance-list">
         {names.map(n => {
           const diff = soldes[n] || 0;
-          return <div key={n}><span>{n}<small>{eur(paidByP[n])} payés</small></span>
-            <strong>{Math.abs(diff) < 0.005 ? 'Équilibré' : (diff > 0 ? 'Récupère ' : 'Doit ') + eur(Math.abs(diff))}</strong></div>;
+          return <div key={n}><span><span className="fv-person-dot" style={{ background: colorOf(n) }} />{n}<small>A avancé {eur(paidByP[n])}</small></span>
+            <strong className={diff > 0.005 ? 'fv-to-receive' : ''}>{Math.abs(diff) < 0.005 ? 'À jour' : (diff > 0 ? 'À recevoir ' : 'À verser ') + eur(Math.abs(diff))}</strong></div>;
         })}
       </div>
-      <h2 className="fv-section-space">Remboursements à faire</h2>
-      <p className="fv-muted">Calculés à partir des dépenses et de leur répartition.</p>
-      {transfers.length ? <ul className="fv-transfers">
-        {transfers.map((t, k) => <li key={k}><span><strong>{t.from}</strong> → {t.to}</span><strong>{eur(t.amount)}</strong></li>)}
-      </ul> : <p className="fv-empty-note">Tout est équilibré !</p>}
     </>;
   };
 
@@ -214,27 +228,32 @@ function BudgetView() {
           {!!names.length && <button type="button" className="fv-control fv-control-primary" onClick={() => { setTab('expenses'); openAdd(); }}><Icon name="plus" size={18} />Ajouter une dépense</button>}
         </header>
         {!names.length ? <div className="fv-budget-start"><div><span className="fv-symbol"><Icon name="users" size={24} /></span><h2>Qui voyage ?</h2><p>Ajoute les voyageurs pour pouvoir partager les dépenses et calculer qui doit quoi à qui.</p></div>{travelers}</div> : <>
-          <dl className="fv-metrics">
-            <div><dt>Total enregistré</dt><dd>{eur(total)}</dd><small>{budget.length} dépense{budget.length > 1 ? 's' : ''}</small></div>
-            <div><dt>Moyenne par personne</dt><dd>{eur(perHead)}</dd><small>Les soldes réels sont dans Équilibre</small></div>
-            <div><dt>Voyageurs</dt><dd>{names.length}</dd><small>Dans ce budget partagé</small></div>
-          </dl>
-          <div className="fv-budget-layout">
-            <section className="fv-panel fv-budget-main">
-              <div className="fv-subnav" role="group" aria-label="Vues du budget">
-                {[['overview','Aperçu'],['expenses','Dépenses'],['balance','Équilibre']].map(([id,label]) =>
-                  <button type="button" key={id} aria-pressed={tab === id} onClick={() => setTab(id)}>{label}</button>)}
-              </div>
-              {expenseForm}
-              {tab === 'overview' && overview()}
-              {tab === 'expenses' && expenses()}
-              {tab === 'balance' && balance()}
-            </section>
-            {travelers}
+          <div className="fv-budget-total">
+            <div><span>Total des dépenses</span><strong>{eur(total)}</strong></div>
+            <p>{budget.length} dépense{budget.length > 1 ? 's' : ''} · {names.length} voyageur{names.length > 1 ? 's' : ''}</p>
+            <button type="button" className="fv-control" onClick={() => setTab('balance')}>Voir qui rembourse qui <span aria-hidden="true">→</span></button>
           </div>
+          <section className="fv-panel fv-budget-main">
+            <div className="fv-subnav" role="group" aria-label="Vues du budget">
+              {[['expenses','Dépenses'],['balance','Soldes'],['overview','Analyse'],['people','Voyageurs']].map(([id,label]) =>
+                <button type="button" key={id} aria-pressed={tab === id} onClick={() => setTab(id)}>{label}</button>)}
+            </div>
+            {expenseForm}
+            {tab === 'expenses' && <>
+              {!!budget.length && <label className="fv-expense-search">Rechercher une dépense
+                <input type="search" value={expenseQuery} onChange={event => setExpenseQuery(event.target.value)}
+                  placeholder="Description, payeur, catégorie…" />
+              </label>}
+              {expenses()}
+            </>}
+            {tab === 'balance' && balance()}
+            {tab === 'overview' && <><p className="fv-muted">Moyenne indicative : {eur(perHead)} par personne. Les parts réelles dépendent des bénéficiaires de chaque dépense.</p>{overview()}</>}
+            {tab === 'people' && travelers}
+          </section>
         </>}
       </div>
     </div>
   );
 }
 window.BudgetView = BudgetView;
+

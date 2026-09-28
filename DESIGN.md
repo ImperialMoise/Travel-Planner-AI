@@ -35,9 +35,11 @@ Les références Airbnb, Apple et Nike inspirent la hiérarchie, pas une copie d
 - Actions Modifier, Carte, Document et Étape clé dans le détail existant.
 - Numéro du jour, date et ville puis titre ; section Programme séparée des commandes de la journée.
 - Journée vide : état dessiné avec une explication et les actions de création existantes.
-- Pas de grande bannière photo : photo et recadrage restent dans les options de la journée.
+- Photo discrète à côté du titre : photo existante de la journée en priorité, sinon photo du voyage explicitement légendée. Jamais de grande bannière ni de texte sur l’image.
+- Crédit du photographe conservé ; image absente/en erreur masquée ; réglage et recadrage dans la fenêtre existante.
 - Favoris dans le bandeau du voyage ; à droite, séjour mis en évidence, repas et météo secondaires.
 - Nuit datée, compteur si plusieurs nuits ; aucun faux conseil météo présenté comme prévision.
+- Météo : recherche de ville avec choix du pays/région, état de recherche explicite. Choix mémorisé dans l’onglet pour ce voyage et cette journée, sans modifier l’itinéraire. Limites des prévisions et échecs réseau visibles.
 - En petit écran : sélecteur de jour, programme, outils et informations dans un défilement naturel.
 - Conserver Focus et les modes de réorganisation existants.
 
@@ -89,8 +91,10 @@ Ne pas annoncer toutes les pages refaites après le seul cadre connecté.
 
 ## Budget, Documents et Bilan
 - Même palette, typographie et commandes que l’itinéraire ; styles dans workspace-a.css.
-- Budget : totaux prioritaires, dépenses modifiables et soldes conservés ; voyageurs dans une section dédiée.
-- Documents : recherche/catégorie, liste et aperçu distincts ; les actions ne recouvrent pas le fichier. Résumé par groupes, pas de fausse chronologie.
+- Budget : Dépenses par défaut, Soldes (qui rembourse qui), Analyse puis Voyageurs. Total compact ; largeur de lecture maîtrisée ; liste recherchable, payeur et montant visibles.
+- Calculs et données conservés. Les remboursements affichés sont des propositions, pas des virements effectués.
+- Documents : Résumé par défaut, Détail ensuite ; catégories personnalisées saisies sous Autres, conservées avec les nouveaux fichiers dans le champ category existant.
+- Tous les groupes, y compris personnalisés, restent visibles dans le résumé et les filtres. Aucun reclassement automatique des anciens documents.
 - Bilan : quatre indicateurs majeurs, autres chiffres conservés en détail ; progression de dates explicitement distincte des activités réalisées.
 - Ne pas modifier les calculs, opérations de stockage ni autorisations pendant ce lot.
 
@@ -113,7 +117,10 @@ Ne pas annoncer toutes les pages refaites après le seul cadre connecté.
 - Sauvegarde, suppression, déplacement d’étape et validation restent inchangés.
 - Les paramètres et le profil gardent leur lot spécifique ; ne pas annoncer leur refonte sur cette base.
 
-## Suite
+## Prochain chantier prioritaire — APK
+Même direction artistique, composition tactile dédiée : accueil lisible, carnet Voyager prioritaire, prochaine étape, carte/billets et nuit accessibles. Pas de miniaturisation des trois colonnes PC.
+Vérifier la vraie APK, zones système, clavier, orientation, mode hors ligne et reprise du voyage.
+Logo « V / chemin » : proposition visuelle à valider puis décliner en SVG, favicon et ressources Android adaptatives ; pas encore intégré.
 1. Valider navigation, outils multi-fenêtres et carte avec les données réelles.
 2. Valider Budget, Documents et Bilan refondus.
 3. Valider le carnet Voyager et les formulaires refondus ; harmoniser profil, paramètres et autres fenêtres.

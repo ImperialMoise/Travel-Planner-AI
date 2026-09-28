@@ -241,7 +241,7 @@
       text = 'Aucune donnée météo historique n’est chargée pour cette journée.';
     } else if (!city) {
       reason = 'location';
-      text = 'Renseigne une ville dans la journée pour consulter la météo.';
+      text = 'Choisis une ville avec la recherche ci-dessous.';
     } else if (offset > 15) {
       reason = 'future';
       text = 'Cette date est trop éloignée pour une prévision. Consulte cette rubrique à l’approche du départ.';
@@ -259,21 +259,24 @@
     };
   }
 
-  async function fetchWeatherSummary(day, signal) {
+  async function fetchWeatherSummary(day, signal, chosenPlace = null) {
     const fallback = weatherAvailability(day);
     if (!fallback.eligible) return fallback;
     const city = getWeatherLocation(day);
     const dateISO = safeString(day && day.dateISO);
 
     try {
-      const geoUrl =
-        'https://geocoding-api.open-meteo.com/v1/search?name=' +
-        encodeURIComponent(city) + '&count=1&language=fr&format=json';
-      const geoRes = await fetch(geoUrl, { signal });
-      if (!geoRes.ok) return fallback;
-      const geoJson = await geoRes.json();
-      const place = geoJson && geoJson.results && geoJson.results[0];
-      if (!place) return fallback;
+      let place = chosenPlace;
+      if (!place) {
+        const geoUrl =
+          'https://geocoding-api.open-meteo.com/v1/search?name=' +
+          encodeURIComponent(city) + '&count=1&language=fr&format=json';
+        const geoRes = await fetch(geoUrl, { signal });
+        if (!geoRes.ok) return fallback;
+        const geoJson = await geoRes.json();
+        place = geoJson?.results?.[0];
+      }
+      if (!place || !Number.isFinite(place.latitude) || !Number.isFinite(place.longitude)) return fallback;
 
       const weatherUrl =
         'https://api.open-meteo.com/v1/forecast' +
@@ -304,7 +307,7 @@
 
       return {
         kind: 'forecast',
-        title: place.name || city,
+        title: [place.name || city, place.country].filter(Boolean).join(', '),
         text: min !== null && max !== null
           ? Math.round(min) + ' à ' + Math.round(max) + ' °C'
           : 'Prévision locale disponible',
@@ -889,16 +892,42 @@ function EmptyLodgingCard({ onAdd }) {
     );
   }
 
- function WeatherBlock({ day }) {
-    const key = [day?.id, day?.dateISO, getWeatherLocation(day)].join('|');
+  function weatherPlaceLabel(place) {
+    return [...new Set([place.name, place.admin1, place.country].filter(Boolean))].join(', ');
+  }
+
+  function WeatherBlock({ day, preferenceKey }) {
+    const storageKey = 'fabrique_weather_city_v1:' + preferenceKey;
+    const [place, setPlace] = React.useState(() => {
+      try {
+        const saved = JSON.parse(sessionStorage.getItem(storageKey));
+        return saved && typeof saved.name === 'string' &&
+          Number.isFinite(saved.latitude) && Number.isFinite(saved.longitude) ? saved : null;
+      } catch { return null; }
+    });
+    const [query, setQuery] = React.useState('');
+    const [matches, setMatches] = React.useState([]);
+    const [searchState, setSearchState] = React.useState('');
+    const [searchMessage, setSearchMessage] = React.useState('');
+    const searchRef = React.useRef(null);
+    const searchInput = React.useRef(null);
+    const [retry, setRetry] = React.useState(0);
+    const weatherDay = place ? { ...day, city: place.name } : day;
+    const key = [day?.id, day?.dateISO, getWeatherLocation(weatherDay),
+      place?.latitude, place?.longitude, retry].join('|');
     const [result, setResult] = React.useState(null);
-    const fallback = weatherAvailability(day);
+    const fallback = weatherAvailability(weatherDay);
     const weather = result?.key === key ? result.weather : fallback;
+
+    React.useEffect(() => () => {
+      searchRef.current?.abort();
+      searchRef.current = null;
+    }, []);
 
     React.useEffect(function loadWeather() {
       let cancelled = false;
       const controller = new AbortController();
-      const initial = weatherAvailability(day);
+      const initial = weatherAvailability(weatherDay);
       setResult({
         key,
         weather: initial.eligible
@@ -906,37 +935,107 @@ function EmptyLodgingCard({ onAdd }) {
           : initial
       });
       if (!initial.eligible) return () => controller.abort();
-
       const timeout = window.setTimeout(() => controller.abort(), 10000);
-      fetchWeatherSummary(day, controller.signal).then(nextWeather => {
+      fetchWeatherSummary(weatherDay, controller.signal, place).then(nextWeather => {
         window.clearTimeout(timeout);
         if (!cancelled) setResult({ key, weather: nextWeather });
       });
-
-      return function cleanup() {
+      return () => {
         cancelled = true;
         window.clearTimeout(timeout);
         controller.abort();
       };
     }, [key]);
 
+    async function searchCity(event) {
+      event.preventDefault();
+      const value = query.trim();
+      if (value.length < 2) {
+        setSearchMessage('Saisis au moins deux caractères.');
+        searchInput.current?.focus();
+        return;
+      }
+      searchRef.current?.abort();
+      const controller = new AbortController();
+      searchRef.current = controller;
+      setSearchState('loading');
+      setSearchMessage('Recherche de villes…');
+      setMatches([]);
+      const timeout = window.setTimeout(() => controller.abort(), 10000);
+      try {
+        const response = await fetch('https://geocoding-api.open-meteo.com/v1/search?name=' +
+          encodeURIComponent(value) + '&count=6&language=fr&format=json', { signal: controller.signal });
+        if (!response.ok) throw new Error('Recherche indisponible');
+        const data = await response.json();
+        if (searchRef.current !== controller) return;
+        const cities = (Array.isArray(data.results) ? data.results : []).filter(item =>
+          typeof item.name === 'string' && Number.isFinite(item.latitude) && Number.isFinite(item.longitude));
+        setMatches(cities);
+        setSearchMessage(cities.length ? 'Choisis la ville et le pays dans les résultats.' : 'Aucune ville trouvée. Essaie un autre nom.');
+        setSearchState('done');
+      } catch {
+        if (searchRef.current === controller) {
+          setSearchState('error');
+          setSearchMessage('Recherche indisponible. Vérifie ta connexion et réessaie.');
+        }
+      } finally { window.clearTimeout(timeout); }
+    }
+
+    function chooseCity(value) {
+      searchRef.current?.abort();
+      searchRef.current = null;
+      setPlace(value);
+      setMatches([]);
+      setQuery('');
+      setSearchState('');
+      setSearchMessage(value ? 'Ville météo sélectionnée.' : 'Retour à la ville de la journée.');
+      try {
+        if (value) sessionStorage.setItem(storageKey, JSON.stringify(value));
+        else sessionStorage.removeItem(storageKey);
+      } catch {}
+      searchInput.current?.focus();
+    }
+
     return (
-      <div className="fv-weather" aria-busy={weather.kind === 'loading'}>
-        <div className="fv-weather-summary">
-          <Icon name="cal" size={18} />
+      <div className="fv-weather">
+        <div className="fv-weather-summary" aria-live="polite" aria-busy={weather.kind === 'loading'}>
           <div>
-            <strong>{weather.title}</strong>
+            <strong>{place ? weatherPlaceLabel(place) : weather.title}</strong>
             {weather.dateLabel && <span className="fv-weather-date">{weather.dateLabel}</span>}
             <p>{weather.text}</p>
           </div>
         </div>
-        {!!weather.details.length && (
-          <details className="fv-rail-details" key={'weather-' + key}>
-            <summary>Détails météo</summary>
-            <ul>{weather.details.map((item, index) => <li key={index}>{item}</li>)}</ul>
-          </details>
-        )}
+        {!!weather.details.length && <details className="fv-rail-details" key={'weather-' + key}>
+          <summary>Détails météo</summary>
+          <ul>{weather.details.map((item, index) => <li key={index}>{item}</li>)}</ul>
+        </details>}
         {weather.source && <small>{weather.source}</small>}
+        {fallback.eligible && weather.kind === 'unavailable' && <button type="button"
+          className="fv-textbutton" onClick={() => setRetry(value => value + 1)}>Réessayer la météo</button>}
+        <form className="fv-weather-search" onSubmit={searchCity}>
+          <label>Ville pour la météo
+            <input ref={searchInput} type="search" value={query} maxLength={100}
+              placeholder="Ex. Séoul, Paris…" onChange={event => {
+                setQuery(event.target.value);
+                searchRef.current?.abort();
+                searchRef.current = null;
+                setMatches([]);
+                setSearchState('');
+                setSearchMessage('');
+              }} />
+          </label>
+          <button type="submit" className="fv-button" disabled={searchState === 'loading'}>
+            {searchState === 'loading' ? 'Recherche…' : 'Rechercher'}
+          </button>
+        </form>
+        {searchMessage && <p className="fv-muted" role="status">{searchMessage}</p>}
+        {!!matches.length && <ul className="fv-weather-results" aria-label="Villes trouvées">
+          {matches.map(item => <li key={item.id || item.latitude + ':' + item.longitude}>
+            <button type="button" onClick={() => chooseCity(item)}>{weatherPlaceLabel(item)}</button>
+          </li>)}
+        </ul>}
+        {place && <button type="button" className="fv-textbutton" onClick={() => chooseCity(null)}>Utiliser la ville de la journée</button>}
+        <small>Choix propre à cette journée, mémorisé dans cet onglet. L’itinéraire n’est pas modifié.</small>
       </div>
     );
   }
@@ -1043,7 +1142,7 @@ function EmptyLodgingCard({ onAdd }) {
         </section>
         <section className="fv-rail-section fv-weather-section">
           <h3><Icon name="cal" size={18} />Météo</h3>
-          <WeatherBlock day={day} />
+          <WeatherBlock key={trip?.id + ':' + day?.id} day={day} preferenceKey={trip?.id + ':' + day?.id} />
         </section>
       </aside>
     );
@@ -1052,3 +1151,4 @@ function EmptyLodgingCard({ onAdd }) {
   window.MealRail = MealRail;
   window.ItineraryMealRail = MealRail;
 })();
+

@@ -862,6 +862,28 @@
     );
   }
 
+  function DayCoverPreview({ day, trip, onOpen, positionY }) {
+    const source = day.coverImageUrl ? day : trip;
+    const [failedUrl, setFailedUrl] = React.useState('');
+    const url = String(source.coverImageUrl || '').trim();
+    if (!url || failedUrl === url || !/^https?:\/\//i.test(url)) return null;
+    const creditUrl = /^https?:\/\//i.test(String(source.coverSourceUrl || '')) ? source.coverSourceUrl : '';
+    return <figure className="fv-day-photo">
+      <button type="button" onClick={onOpen} aria-label="Photo de la journée et recadrage">
+        <img src={url} alt={source.coverImageAlt || (source === day ? 'Photo de la journée' : 'Photo du voyage')}
+          width="176" height="112" loading="lazy" decoding="async"
+          style={{ objectPosition: 'center ' + (source === day ? positionY : 50) + '%' }}
+          onError={() => setFailedUrl(url)} />
+      </button>
+      <figcaption>
+        <span>{source === day ? 'La journée en image' : 'Photo du voyage'}</span>
+        {creditUrl && <a href={creditUrl} target="_blank" rel="noopener noreferrer">
+          {source.coverPhotographerName || 'Pexels'} · Pexels
+        </a>}
+      </figcaption>
+    </figure>;
+  }
+
   function AtelierV2() {
     injectAtelierCss();
 
@@ -1662,6 +1684,8 @@ function openAddStep(type, preset) {
               ))}
             </select>
           </label>
+          <div className="fv-day-lead">
+            <div className="fv-day-lead-copy">
           <div className="fv-daymeta">
             <span className="fv-day-index">Jour {safeDayIndex + 1}</span>
             <span>{dayDate}{day.city ? ' · ' + day.city : ''}</span>
@@ -1706,6 +1730,10 @@ function openAddStep(type, preset) {
             </div>
           </div>
           {day.note && <p className="fv-intro">{day.note}</p>}
+            </div>
+            <DayCoverPreview day={day} trip={trip} positionY={coverPositionY}
+              onOpen={() => setCoverDetailsOpen(true)} />
+          </div>
           <div className="fv-program-head">
             <div className="fv-program-label">
               <h3>Programme</h3>
@@ -2074,7 +2102,7 @@ function openAddStep(type, preset) {
           <window.WorkspaceModal title="Photo de la journée" onClose={closeCoverDetails}>
             <div className="fv-app fv-photo-panel" data-workspace-accent="forest">
               <p className="fv-muted">
-                La photo est conservée sans prendre de place dans le programme.
+                La photo apparaît discrètement près du titre. Sans photo de journée, celle du voyage est utilisée.
               </p>
             {hasDayCover && (
               <>
@@ -2144,3 +2172,4 @@ function openAddStep(type, preset) {
 
   window.AtelierV2 = AtelierV2;
 })();
+

@@ -943,10 +943,18 @@ function formatDocumentDate(value) {
 
 function getDocCategories() {
   const documents = getTripDocuments();
+  const customIds = [...new Set(documents.map(item => item.category).filter(Boolean))]
+    .filter(id => !docCategoryMeta.some(category => category.id === id));
+  const custom = customIds.map(id => ({
+    id,
+    label: String(id).replace(/^custom:/, '').trim() || 'Autres documents',
+    icon: 'folder',
+    tone: 'doc-other'
+  })).sort((a, b) => a.label.localeCompare(b.label, 'fr'));
 
-  return docCategoryMeta.map(category => ({
+  return [...docCategoryMeta, ...custom].map(category => ({
     ...category,
-    files: documents.filter(document => document.category === category.id)
+    files: documents.filter(item => (item.category || 'other') === category.id)
   }));
 }
 

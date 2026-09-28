@@ -29,7 +29,10 @@ function formatDocSize(bytes) {
 }
 
 function catMeta(catId) {
-  return DOC_CATEGORIES.find(c => c.id === catId) || DOC_CATEGORIES[4];
+  const builtIn = DOC_CATEGORIES.find(c => c.id === catId);
+  if (builtIn) return builtIn;
+  const label = String(catId || '').replace(/^custom:/, '').trim();
+  return { id: catId || 'other', label: label || 'Autres', icon: 'folder', tone: '#597b72' };
 }
 
 
@@ -42,8 +45,9 @@ function DocsView() {
 
   // ── State ──
   const [documents, setDocuments] = React.useState([]);
-  const [tab, setTab] = React.useState('detail');
+  const [tab, setTab] = React.useState('resume');
   const [uploadCat, setUploadCat] = React.useState('other');
+  const [customCategory, setCustomCategory] = React.useState('');
   const [busy, setBusy]     = React.useState(false);
 
   // State spécifique à l'onglet Détail
@@ -61,7 +65,17 @@ function DocsView() {
     } catch (e) { console.error('Docs load error:', e); }
   }
 
-  React.useEffect(() => { loadDocuments(); }, [trip?.id]);
+  React.useEffect(() => {
+    setTab('resume');
+    setUploadCat('other');
+    setCustomCategory('');
+    setFilter('__all__');
+    setSearchQ('');
+    setSelectedId(null);
+    setSelectedUrl('');
+    setDocuments([]);
+    loadDocuments();
+  }, [trip?.id]);
 
   // ── Charger l'URL du document sélectionné (onglet Détail) ──
   const selected = documents.find(d => d.id === selectedId) || null;
@@ -81,7 +95,10 @@ function DocsView() {
     if (!list.length || !trip?.id) return;
     setBusy(true);
     try {
-      for (const f of list) await window.SB.uploadDocument(trip.id, f, uploadCat);
+      const name = customCategory.trim().replace(/\s+/g, ' ').slice(0, 48);
+      const existing = categories.find(cat => cat.label.toLocaleLowerCase('fr') === name.toLocaleLowerCase('fr'));
+      const category = uploadCat === 'other' && name ? (existing?.id || 'custom:' + name) : uploadCat;
+      for (const f of list) await window.SB.uploadDocument(trip.id, f, category);
       if (inputRef.current) inputRef.current.value = '';
       await loadDocuments();
     } catch (e) { alert('Erreur upload : ' + (e.message || e)); }
@@ -101,6 +118,10 @@ function DocsView() {
   }
 
   // ── Données calculées ──
+  const customIds = [...new Set(documents.map(doc => doc.category).filter(Boolean))]
+    .filter(id => !DOC_CATEGORIES.some(cat => cat.id === id));
+  const categories = [...DOC_CATEGORIES, ...customIds.map(catMeta)
+    .sort((a, b) => a.label.localeCompare(b.label, 'fr'))];
   const total = documents.length;
   const selectedType = selected?.mime?.includes('pdf') ? 'pdf'
                      : selected?.mime?.includes('image') ? 'image' : 'file';
@@ -123,9 +144,15 @@ function DocsView() {
   }
 
   const renderResume = () => {
-    const sections = TIMELINE_SECTIONS.map(sec => ({
-      ...sec, docs: documents.filter(d => sec.categories.includes(d.category))
-    })).filter(sec => sec.docs.length > 0);
+    const sections = [
+      ...TIMELINE_SECTIONS.map(sec => ({
+        ...sec, docs: documents.filter(d => sec.categories.includes(d.category || 'other'))
+      })),
+      ...customIds.map(id => ({
+        id, label: catMeta(id).label, subtitle: 'Catégorie personnalisée',
+        docs: documents.filter(d => d.category === id)
+      }))
+    ].filter(sec => sec.docs.length > 0);
     return sections.length ? <div className="fv-document-groups">
       {sections.map(sec => <section className="fv-panel" key={sec.id}>
         <header className="fv-panel-head"><div><h2>{sec.label}</h2><p>{sec.subtitle}</p></div><span>{sec.docs.length}</span></header>
@@ -142,7 +169,7 @@ function DocsView() {
             onChange={e => setSearchQ(e.target.value)} placeholder="Nom du billet, de la réservation…" /></label>
           <label>Catégorie<select value={filter} onChange={e => setFilter(e.target.value)}>
             <option value="__all__">Toutes les catégories</option>
-            {DOC_CATEGORIES.map(cat => <option key={cat.id} value={cat.id}>{cat.label}</option>)}
+            {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.label}</option>)}
           </select></label>
           <span className="fv-muted" role="status">{filteredDocs.length} document{filteredDocs.length > 1 ? 's' : ''}</span>
         </div>
@@ -187,8 +214,14 @@ function DocsView() {
           <div><span className="fv-eyebrow">Le dossier du voyage</span><h1>Documents</h1><p>{total} document{total > 1 ? 's' : ''} · Billets, réservations et fichiers utiles.</p></div>
           <div className="fv-upload">
             <label>Classer dans<select value={uploadCat} disabled={busy} onChange={e => setUploadCat(e.target.value)}>
-              {DOC_CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+              {categories.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
             </select></label>
+            {uploadCat === 'other' && <label>Nom de catégorie (facultatif)
+              <input value={customCategory} disabled={busy} maxLength={48}
+                onChange={event => setCustomCategory(event.target.value)}
+                placeholder="Ex. Trains, Visas, Santé…" />
+              <small>Vide : Autres. Le nom sera conservé avec les fichiers ajoutés.</small>
+            </label>}
             <button type="button" className="fv-control fv-control-primary" onClick={() => inputRef.current?.click()} disabled={busy}>
               <Icon name="plus" size={18} />{busy ? 'Envoi…' : 'Ajouter'}
             </button>
@@ -196,8 +229,8 @@ function DocsView() {
           </div>
         </header>
         <div className="fv-subnav" role="group" aria-label="Vues des documents">
-          <button type="button" aria-pressed={tab === 'detail'} onClick={() => setTab('detail')}>Détail</button>
           <button type="button" aria-pressed={tab === 'resume'} onClick={() => setTab('resume')}>Résumé</button>
+          <button type="button" aria-pressed={tab === 'detail'} onClick={() => setTab('detail')}>Détail</button>
         </div>
         {tab === 'resume' && renderResume()}
         {tab === 'detail' && renderDetail()}
@@ -206,3 +239,4 @@ function DocsView() {
   );
 }
 window.DocsView = DocsView;
+

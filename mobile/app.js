@@ -10499,12 +10499,12 @@ function mountJourneyCarousel(root, positionKey, initialIndex) {
   const track = root.querySelector('.journey-carousel');
   if (!track) return;
   const cards = [...track.children], count = root.querySelector('[data-journey-count]');
-  const previous = root.querySelector('[data-journey-prev]'), next = root.querySelector('[data-journey-next]');
+  const controls = root.querySelectorAll('[data-journey-slide-target]');
   let selected = Math.min(cards.length - 1, Math.max(0, journeyPositions.get(positionKey) ?? initialIndex));
   const announce = () => {
     journeyPositions.set(positionKey, selected);
     count.textContent = (selected + 1) + ' / ' + cards.length;
-    previous.disabled = selected === 0; next.disabled = selected === cards.length - 1;
+
   };
   const go = (index, smooth = true) => {
     selected = Math.max(0, Math.min(cards.length - 1, index));
@@ -10512,8 +10512,16 @@ function mountJourneyCarousel(root, positionKey, initialIndex) {
       behavior: smooth && !matchMedia('(prefers-reduced-motion: reduce)').matches ? 'smooth' : 'instant' });
     announce();
   };
-  previous.onclick = () => go(selected - 1);
-  next.onclick = () => go(selected + 1);
+  controls.forEach(button => {
+    button.onclick = () => {
+      const target = Number(button.dataset.journeySlideTarget);
+      go(target);
+      const direction = button.dataset.direction;
+      const destination = cards[target]?.querySelector('[data-direction="' + direction + '"]:not([disabled])') ||
+        cards[target]?.querySelector('[data-journey-slide-target]:not([disabled])');
+      destination?.focus({ preventScroll: true });
+    };
+  });
   track.onkeydown = event => {
     if (event.target !== track || !['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
     event.preventDefault(); go(selected + (event.key === 'ArrowRight' ? 1 : -1));
@@ -10527,6 +10535,53 @@ function mountJourneyCarousel(root, positionKey, initialIndex) {
     });
   };
   requestAnimationFrame(() => { if (track.isConnected) go(selected, false); });
+}
+
+function changeJourneyDay(index, focus = false) {
+  const days = activeTrip?.days || [];
+  if (!Number.isInteger(index) || index < 0 || index >= days.length || index === mobileItineraryDayIndex) return false;
+  if (journeySaving) return false;
+  const fields = app.querySelectorAll('.journey-inline-form input, .journey-inline-form textarea');
+  const dirty = [...fields].some(field => field.value !== field.defaultValue);
+  if (dirty && !window.confirm('Quitter cette journée et abandonner les modifications non enregistrées ?')) return false;
+  mobileItineraryDayIndex = index;
+  renderTravelMode();
+  const notice = app.querySelector('[data-journey-notice]');
+  if (notice) notice.textContent = 'Jour ' + (index + 1) + ' sur ' + days.length + ' : ' + (days[index].title || days[index].dateISO || 'Journée');
+  if (focus) app.querySelector('[data-journey-day]')?.focus({ preventScroll: true });
+  return true;
+}
+
+function mountJourneyDaySwipe(root) {
+  const surface = root.querySelector('[data-journey-day]');
+  if (!surface) return;
+  let start = null;
+  surface.addEventListener('pointerdown', event => {
+    start = null;
+    if (!event.isPrimary || !['touch', 'pen'].includes(event.pointerType) || journeySaving) return;
+    if (event.clientX < 24 || event.clientX > window.innerWidth - 24) return;
+    if (event.target.closest('button,a,input,select,textarea')) return;
+    start = { id: event.pointerId, x: event.clientX, y: event.clientY, time: event.timeStamp };
+  });
+  surface.addEventListener('pointermove', event => {
+    if (!start || event.pointerId !== start.id) return;
+    const dx = Math.abs(event.clientX - start.x), dy = Math.abs(event.clientY - start.y);
+    if (dy > 16 && dy > dx) start = null;
+  });
+  surface.addEventListener('pointercancel', () => { start = null; });
+  surface.addEventListener('pointerup', event => {
+    const origin = start; start = null;
+    if (!origin || event.pointerId !== origin.id || event.timeStamp - origin.time > 1200) return;
+    const dx = event.clientX - origin.x, dy = event.clientY - origin.y;
+    const threshold = Math.min(90, Math.max(44, surface.clientWidth * .18));
+    if (Math.abs(dx) < threshold || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    changeJourneyDay(mobileItineraryDayIndex + (dx < 0 ? 1 : -1));
+  });
+  surface.addEventListener('keydown', event => {
+    if (event.target !== surface || !['ArrowLeft','ArrowRight'].includes(event.key)) return;
+    event.preventDefault();
+    changeJourneyDay(mobileItineraryDayIndex + (event.key === 'ArrowRight' ? 1 : -1), true);
+  });
 }
 
 function mobileJourneyToday(now = new Date()) {
@@ -10581,23 +10636,25 @@ function renderMobileJourney() {
             <button type="button" data-action="travel-next-day" aria-label="Journée suivante" ${index >= days.length - 1 ? 'disabled' : ''}>${icon('chevron_right')}</button>
           </nav>
           ${todayIndex >= 0 && todayIndex !== index ? `<button class="journey-today" type="button" data-action="itinerary-day" data-day-index="${todayIndex}">Revenir à aujourd’hui</button>` : ''}
-          <section class="journey-hero ${cover ? 'has-cover' : ''}">
+          <section class="journey-hero ${cover ? 'has-cover' : ''}" data-journey-day tabindex="0" aria-label="Journée sélectionnée">
             ${cover ? `<img src="${escapeHtml(cover)}" alt="" decoding="async">` : ''}
             <div><span>${data.isToday ? 'Aujourd’hui · ' : ''}${escapeHtml(day?.dateISO ? formatDateLabel(day.dateISO, '') : 'Date à préciser')}</span>
               <h2>${escapeHtml(day?.title || 'Ma journée')}</h2><p>${entries.length} activité${entries.length > 1 ? 's' : ''} · ${meals.length} repas</p></div>
           </section>
           <section class="journey-activities" aria-label="Activités de la journée">
-            <header class="journey-carousel-heading"><div><h2>Au fil de la journée</h2><p>Glisse pour voir la suite. Touche un texte pour le modifier.</p></div></header>
-            ${entries.length ? `<div class="journey-carousel-controls"><button type="button" data-journey-prev aria-label="Activité précédente">${icon('chevron_left')}</button>
-              <span data-journey-count role="status" aria-live="polite"></span><button type="button" data-journey-next aria-label="Activité suivante">${icon('chevron_right')}</button></div>
-              <div class="journey-carousel" tabindex="0" role="region" aria-roledescription="carrousel" aria-label="Programme du jour">
+            <header class="journey-carousel-heading"><h2>Au fil de la journée</h2></header>
+            ${entries.length ? `<div class="journey-carousel" tabindex="0" role="region" aria-roledescription="carrousel" aria-label="Programme du jour">
                 ${entries.map((entry, i) => `<article class="journey-slide journey-card" role="group" aria-roledescription="diapositive" aria-label="Activité ${i + 1} sur ${entries.length}">
-                  <span class="journey-eyebrow">${i === 0 ? 'Première étape du jour' : 'Étape ' + (i + 1)}${data.isToday && entry === upcoming ? ' · À venir ou en cours' : ''}</span>
+                  <div class="journey-slide-navigation" aria-label="Navigation entre activités">
+                    <button type="button" data-journey-slide-target="${i - 1}" data-direction="previous" aria-label="Activité précédente" ${i === 0 ? 'disabled' : ''}>${icon('chevron_left')}</button>
+                    <button type="button" data-journey-slide-target="${i + 1}" data-direction="next" aria-label="Activité suivante" ${i === entries.length - 1 ? 'disabled' : ''}>${icon('chevron_right')}</button>
+                  </div>
+                  <span class="journey-eyebrow journey-slide-caption">${i === 0 ? 'Première étape du jour' : 'Étape ' + (i + 1)}${data.isToday && entry === upcoming ? ' · À venir ou en cours' : ''}</span>
                   <p class="journey-category">${icon(entry.step.icon || 'place')}${escapeHtml(entry.step.type)}</p>
                   ${journeyStepContent(entry.step.rawStep, day.id)}
                   <button class="journey-map-link" type="button" data-action="show-step-on-map" data-step-index="${entry.index}">${icon('near_me')}Voir ce lieu sur la carte</button>
                 </article>`).join('')}
-              </div>` : `<div class="journey-card"><h3>Une journée à votre rythme</h3><p>Aucune activité prévue. Les repas et l’hébergement restent ci-dessous.</p><button type="button" data-action="itinerary">Préparer cette journée</button></div>`}
+              </div><p class="journey-pagination" data-journey-count role="status" aria-live="polite"></p>` : `<div class="journey-card"><h3>Une journée à votre rythme</h3><p>Aucune activité prévue. Les repas et l’hébergement restent ci-dessous.</p><button type="button" data-action="itinerary">Préparer cette journée</button></div>`}
             ${data.isToday ? `<p class="journey-clock">Repère à ${now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}, heure de cet appareil. Aucune activité n’est validée automatiquement.</p>` : ''}
           </section>
           <div class="journey-stays-meals">
@@ -10620,8 +10677,10 @@ function renderMobileJourney() {
   document.getElementById('journey-day-select')?.addEventListener('change', event => {
     const selected = Number(event.target.value);
     if (!Number.isInteger(selected) || selected < 0 || selected >= days.length) return;
-    mobileItineraryDayIndex = selected; renderTravelMode();
+    if (!changeJourneyDay(selected)) event.target.value = String(mobileItineraryDayIndex);
   });
+  app.querySelector('.journey-main')?.insertAdjacentHTML('beforeend', '<p class="journey-visually-hidden" role="status" data-journey-notice></p>');
+  mountJourneyDaySwipe(app);
   mountJourneyEditors(app.querySelector('.journey-main'));
   if (entries.length) mountJourneyCarousel(app, positionKey, initialIndex);
 }
@@ -15741,22 +15800,12 @@ if (action === 'move-step-down') {
 }
 
 if (action === 'travel-previous-day') {
-  if (mobileItineraryDayIndex > 0) {
-    mobileItineraryDayIndex -= 1;
-    renderTravelMode();
-  }
-
+  changeJourneyDay(mobileItineraryDayIndex - 1, true);
   return;
 }
 
 if (action === 'travel-next-day') {
-  const totalDays = activeTrip?.days?.length || 0;
-
-  if (mobileItineraryDayIndex < totalDays - 1) {
-    mobileItineraryDayIndex += 1;
-    renderTravelMode();
-  }
-
+  changeJourneyDay(mobileItineraryDayIndex + 1, true);
   return;
 }
 
@@ -15768,6 +15817,10 @@ if (action === 'travel-next-day') {
     const totalDays = activeTrip?.days?.length || 0;
 
     if (Number.isInteger(dayIndex) && dayIndex >= 0 && dayIndex < totalDays) {
+      if (window.location.hash === '#travel') {
+        changeJourneyDay(dayIndex, true);
+        return;
+      }
       mobileItineraryDayIndex = dayIndex;
       editingStepDraft = null;
       mapStepDraft = null;
@@ -16797,3 +16850,4 @@ initMobileData().then(async () => {
 
   await openPendingMobileNotification();
 });
+

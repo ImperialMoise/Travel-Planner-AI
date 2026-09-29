@@ -129,13 +129,60 @@ Ne pas annoncer toutes les pages refaites après le seul cadre connecté.
 - Menu de voyages défilable, en-tête accessible, palette verte ; ne pas présenter cette correction comme une refonte de toutes les pages personnelles.
 - Météo PC : villes communes au voyage, ajout/retrait et flèches ; date liée au jour sélectionné. Préférences limitées à l’onglet, pas de synchronisation entre appareils.
 
-## Suite de la roadmap
-1. Valider le lot sur APK réelle : petits/grands téléphones, rotation, clavier, droits lecture seule, perte réseau, nuits intermédiaires et sauvegarde.
-2. Refaire accueil, bibliothèque/gestion des voyages, partage, compte et paramètres avec la même DA verte ; compositions propres au mobile.
-3. Harmoniser carte, budget et documents sur APK, conserver les fonctions et les catégories personnalisées.
-4. Vérifier les parcours complets PC/APK, mode hors ligne, responsive, clair/sombre, accessibilité et reprise du voyage.
-5. Logo « V / chemin » : proposition à valider puis décliner en SVG, favicon et ressources Android adaptatives.
-La publication Play Store reste un chantier distinct, reporté. Les tests simulés ne valident pas une APK réelle.
+## Roadmap consolidée — décisions du 29 septembre 2026
+Les nouveautés ci-dessous ne sont pas toutes implémentées. Le PC reste le planificateur ; l’APK devient un compagnon de voyage, pas un éditeur PC miniaturisé.
+
+### 1. Gestes et carrousels — lot préparé, à installer et valider
+- Swipe sur le bandeau de journée : vers la gauche = jour suivant, vers la droite = précédent ; pas de boucle entre premier et dernier jour.
+- Sélecteur de journée et chevrons cliquables conservés comme alternatives accessibles.
+- Swipe dans le carrousel d’activités indépendant : il ne change jamais le jour et ne bloque pas le défilement vertical.
+- Retirer la rangée de flèches au-dessus des activités et les phrases « Glisse pour voir la suite » / « Touche un texte pour le modifier ».
+- Chevrons cliquables superposés aux cartes, aperçu de la suivante et compteur discret ; aucun défilement automatique.
+- Ne pas capter les gestes Android de bord d’écran ; privilégier le défilement vertical lorsqu’un geste est vertical.
+- Protéger les saisies en cours avant de changer de jour. Tester tactile réel, clavier, lecteur d’écran, paysage et réduction des animations.
+
+### 2. Édition verrouillable et adresses — prochain lot
+Cette décision remplace l’édition champ par champ décrite dans le lot précédent.
+- Une carte est verrouillée par défaut. Un crayon active le mode édition.
+- Toucher nom, heure, durée, lieu ou note permet l’édition au même endroit ; toucher ailleurs ferme le champ sans enregistrer le brouillon sur le serveur.
+- Un seul ✓ en haut de la carte enregistre l’ensemble ; × annule tout le brouillon. Aucun Enregistrer/Annuler sous chaque champ.
+- Relocker après succès ou annulation ; conserver la saisie et une erreur explicite en cas d’échec.
+- Prévenir les pertes de brouillon en changeant de carte, de jour, de page ou en revenant en arrière.
+- Même fonctionnement pour activités, hébergements et repas ; préserver les identifiants, champs non modifiés et jour source des séjours intermédiaires.
+- Autocomplétion à l’ajout et à l’édition des adresses d’hébergement, restaurant et activité. Suggestions ville/pays ; sélection = adresse + coordonnées.
+- Saisie manuelle toujours possible ; pas d’anciennes coordonnées après changement d’adresse non géocodé.
+
+### 3. Préparation Android simplifiée — à réaliser
+- Remplacer l’accès à la préparation complexe par un espace « Organiser » propre au mobile.
+- Ajouter et modifier les étapes, réordonner le programme, gérer journées, nuits et repas dans des parcours courts.
+- Planification avancée privilégiée sur ordinateur, accès à la version PC conservé.
+- Ne pas supprimer les fonctions de préparation avant qu’un remplacement utilisable soit prêt ; conserver les préférences de mode existantes.
+
+### 4. Pages personnelles et DA verte — à réaliser
+- Refaire accueil, liste Mes voyages, gestion des voyages, partage, compte et paramètres.
+- Garder En cours / À venir / Dates à définir / Terminés / Archivés, recherche, couvertures, duplication et archivage.
+- Préserver invitations, rôles et gestion des membres ; conserver les paramètres, rappels et journaux.
+- Même DA forêt, clair/sombre, champs lisibles et commandes tactiles ; la correction du menu n’est pas une refonte de toutes ces pages.
+
+### 5. Pages du voyage sur APK — à réaliser
+- Harmoniser carte, budget, documents et bilan avec cette DA et des compositions mobiles dédiées.
+- Conserver navigation basse, recherche et réglages de carte ; budget partagé, payeurs, soldes/remboursements ; résumé des documents et catégories libres.
+- Garder les outils utiles accessibles sans encombrer le carnet ni multiplier les pages.
+
+### 6. Identité visuelle — à réaliser
+- Valider le logo « V / chemin », puis décliner SVG, favicon, icônes et ressources Android adaptatives. Proposition existante, pas encore intégrée.
+
+### 7. Recette complète — obligatoire
+- PC : vérifier navigation, outils épinglés/déplaçables, fenêtres simultanées/redimensionnables, carte, photos, météo multi-villes, budget, documents, bilan, export/impression.
+- APK : contrôler carnet, première/dernière journée, activités sans heure, nuits intermédiaires, repas, clavier, marges Android, petits/grands écrans, paysage, clair/sombre.
+- Vérifier sauvegarde, droits lecture seule, synchronisation PC/APK, duplication, partage, reprise de voyage, réseau interrompu et hors ligne.
+- Tester interface vide/remplie, longs textes, focus, lecteur d’écran et zoom.
+- Vérifier les builds web ET Android. Le cache web respecte le format la-fabrique-static-v suivi uniquement de chiffres.
+- Tests simulés ≠ validation d’une APK réelle. Une APK installée ne se met pas à jour avec Vercel : installer la nouvelle version signée sans effacer les données.
+
+### 8. Publication
+- Vitrine publique : chantier distinct, à vérifier avant publication.
+- Play Store : chantier distinct, reporté jusqu’à validation des parcours essentiels.
 
 ## Validation
 Contrôler journées remplie, légère et vide ; séjours intermédiaires/départs ; longs titres et notes.
@@ -143,3 +190,4 @@ Contrôler bibliothèque vide, filtrée, archivage, couverture absente ou en err
 Comparer 360, 390, 430, 900 et 1440 px en clair/sombre ; vérifier aussi zoom 200 % et fenêtre peu haute.
 Tester clavier, focus, fenêtres, commandes et sauvegardes, partage, duplication et impression.
 Une analyse syntaxique et un rendu React hors navigateur ne remplacent pas les tests visuels et interactifs.
+

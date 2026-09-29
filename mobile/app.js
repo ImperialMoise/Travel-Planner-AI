@@ -10372,7 +10372,6 @@ function journeyStepContent(step, dayId, lodging = false) {
   const editing = journeyDraft?.tripId === activeTrip?.id && journeyDraft?.stepId === String(step.id) && journeyDraft?.dayId === String(dayId);
   return `<div class="journey-step-fields ${editing ? 'is-editing' : ''}" data-journey-card data-day-id="${escapeHtml(dayId || '')}" data-step-id="${escapeHtml(step.id || '')}" data-lodging="${lodging}">
     <div class="journey-edit-toolbar">
-      <span>${editing ? 'Modifications non enregistrées' : 'Lecture'}</span>
       ${editing ? '<button type="button" data-journey-edit="save" aria-label="Enregistrer la carte"><span class="material-symbols-outlined" aria-hidden="true">check</span></button><button type="button" data-journey-edit="cancel" aria-label="Annuler les modifications"><span class="material-symbols-outlined" aria-hidden="true">close</span></button>' : `<button type="button" data-journey-edit="start" aria-label="Modifier la carte" ${!step.id ? 'disabled' : ''}><span class="material-symbols-outlined" aria-hidden="true">edit</span></button>`}
     </div>
     <p class="journey-save-status" role="status" data-journey-edit-status></p>
@@ -10415,9 +10414,97 @@ function journeyPatch(step, field, value) {
   return next;
 }
 
+let journeyAddressId = 0;
+
+function journeyAddressValue(input) {
+  if (!input.dataset.placeLabel || input.dataset.placeLabel !== input.value.trim()) return null;
+  const lat = Number(input.dataset.lat), lng = Number(input.dataset.lng);
+  return Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180
+    ? { label: input.value.trim(), lat, lng } : null;
+}
+
+function mountJourneyAddress(input, onPick = () => {}, onManual = () => {}) {
+  const id = 'journey-address-' + (++journeyAddressId);
+  const results = document.createElement('div');
+  results.className = 'journey-address-results';
+  results.innerHTML = '<div id="' + id + '" role="listbox" aria-label="Adresses proposées"></div><p role="status"></p>';
+  input.closest('label').after(results);
+  const list = results.firstElementChild, status = results.lastElementChild;
+  input.setAttribute('role', 'combobox');
+  input.setAttribute('aria-autocomplete', 'list');
+  input.setAttribute('aria-controls', id);
+  input.setAttribute('aria-expanded', 'false');
+  input.setAttribute('autocomplete', 'off');
+  let timer, sequence = 0, options = [], active = -1;
+  const clear = () => {
+    clearTimeout(timer); timer = null; sequence++; options = []; active = -1;
+    list.replaceChildren(); status.textContent = '';
+    input.setAttribute('aria-expanded', 'false');
+    input.removeAttribute('aria-activedescendant');
+  };
+  const choose = index => {
+    const place = options[index];
+    if (!place || input.disabled || !input.isConnected) return;
+    input.value = place.place_name;
+    input.dataset.placeLabel = input.value.trim();
+    input.dataset.lng = String(place.center[0]);
+    input.dataset.lat = String(place.center[1]);
+    clear(); onPick(journeyAddressValue(input)); input.focus();
+  };
+  list.addEventListener('pointerdown', event => {
+    if (event.target.closest('[role="option"]')) event.preventDefault();
+  });
+  list.addEventListener('click', event => {
+    const option = event.target.closest('[data-address-index]');
+    if (option) choose(Number(option.dataset.addressIndex));
+  });
+  input.addEventListener('input', () => {
+    clear();
+    delete input.dataset.placeLabel; delete input.dataset.lat; delete input.dataset.lng;
+    onManual();
+    const query = input.value.trim(), request = sequence;
+    if (query.length < 2) return;
+    timer = setTimeout(async () => {
+      timer = null;
+      if (!input.isConnected || input.disabled || document.activeElement !== input) return;
+      status.textContent = 'Recherche…';
+      try {
+        const found = await searchMobilePlaces(query, 5);
+        if (request !== sequence || !input.isConnected || input.disabled || document.activeElement !== input) return;
+        options = found.filter(place => place.place_name && Array.isArray(place.center) &&
+          place.center.length >= 2 && place.center.every(Number.isFinite) &&
+          Math.abs(place.center[0]) <= 180 && Math.abs(place.center[1]) <= 90);
+        list.innerHTML = options.map((place, index) => '<button type="button" role="option" tabindex="-1" aria-selected="false" id="' + id + '-' + index + '" data-address-index="' + index + '">' + escapeHtml(place.place_name) + '</button>').join('');
+        input.setAttribute('aria-expanded', String(options.length > 0));
+        status.textContent = options.length ? '' : 'Aucune adresse trouvée. Saisie manuelle possible.';
+      } catch {
+        if (request === sequence && input.isConnected && !input.disabled) status.textContent = 'Recherche indisponible. Saisie manuelle possible.';
+      }
+    }, 350);
+  });
+  input.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && (options.length || timer)) {
+      event.preventDefault(); event.stopImmediatePropagation(); clear(); timer = null; return;
+    }
+    if (!options.length) return;
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault(); event.stopImmediatePropagation();
+      active = (active + (event.key === 'ArrowDown' ? 1 : -1) + options.length) % options.length;
+      [...list.children].forEach((option, i) => option.setAttribute('aria-selected', String(i === active)));
+      input.setAttribute('aria-activedescendant', id + '-' + active);
+      list.children[active].scrollIntoView({ block: 'nearest' });
+    } else if (event.key === 'Enter' && active >= 0) {
+      event.preventDefault(); event.stopImmediatePropagation(); choose(active);
+    }
+  });
+  input.addEventListener('blur', clear);
+}
+
 function journeyDirty() {
-  return Boolean(journeyDraft && Object.entries(journeyDraft.values).some(([field, value]) =>
-    value !== String(journeyDraft.original[field] ?? '')));
+  return Boolean(journeyDraft && (
+    Object.entries(journeyDraft.values).some(([field, value]) => value !== String(journeyDraft.original[field] ?? '')) ||
+    (journeyDraft.place && (journeyDraft.place.lat !== journeyDraft.original.lat || journeyDraft.place.lng !== journeyDraft.original.lng))
+  ));
 }
 
 function journeyRefreshCard(draft, message = '', focus = false) {
@@ -10474,6 +10561,9 @@ function journeyCommitValues(step, draft) {
     if (!Number.isInteger(nights) || nights < 1 || nights > 365) throw new Error('Le séjour doit durer de 1 à 365 nuits, avec un départ après l’arrivée.');
     next.nuits = nights; next.nights = nights;
   }
+  if (draft.place && draft.place.label === String(next.lieu || '').trim()) {
+    next.lat = draft.place.lat; next.lng = draft.place.lng;
+  }
   return next;
 }
 
@@ -10498,14 +10588,14 @@ function mountJourneyEditors(root) {
       if (!draft || draft.tripId !== activeTrip?.id || draft.stepId !== String(step.id) || draft.dayId !== String(day.id)) return;
       if (action === 'cancel') {
         journeyDraft = null;
-        journeyRefreshCard(draft, 'Modifications annulées.', true);
+        journeyRefreshCard(draft, '', true);
         return;
       }
       const status = card.querySelector('[data-journey-edit-status]');
       if (!window.SB?.saveStep) { status.textContent = 'Sauvegarde indisponible. Réessaie après connexion.'; return; }
       if (!journeyDirty()) {
         journeyDraft = null;
-        journeyRefreshCard(draft, 'Aucune modification.', true);
+        journeyRefreshCard(draft, '', true);
         return;
       }
       let next;
@@ -10513,14 +10603,15 @@ function mountJourneyEditors(root) {
       catch (error) { status.textContent = error.message; return; }
       journeySaving = true;
       card.querySelectorAll('button,input,textarea').forEach(el => { el.disabled = true; });
-      status.textContent = 'Enregistrement…';
+      status.textContent = '';
+      card.setAttribute('aria-busy', 'true');
       try {
         await window.SB.saveStep(draft.tripId, day.id, next);
         Object.assign(step, next);
         if (activeActivityDetail?.id === next.id) activeActivityDetail.rawStep = step;
         if (journeyDraft === draft) journeyDraft = null;
         journeySaving = false;
-        journeyRefreshCard(draft, 'Enregistré.', true);
+        journeyRefreshCard(draft, '', true);
       } catch (error) {
         journeySaving = false;
         journeyRefreshCard(draft, 'Non enregistré : ' + (error.message || 'vérifie la connexion et tes droits.'), true);
@@ -10551,10 +10642,18 @@ function mountJourneyEditors(root) {
       box.replaceWith(replacement.firstElementChild);
     };
     input.addEventListener('input', remember);
+    const previousPlace = draft.place ? { ...draft.place } : null;
+    if (field === 'lieu') mountJourneyAddress(input, place => {
+      remember(); draft.place = place;
+    }, () => { draft.place = null; });
     input.addEventListener('blur', finish, { once: true });
     input.addEventListener('keydown', e => {
       if (e.key === 'Enter' && type !== 'textarea') { e.preventDefault(); input.blur(); }
-      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); input.value = value; input.blur(); }
+      if (e.key === 'Escape') {
+        e.preventDefault(); e.stopPropagation(); input.value = value;
+        if (field === 'lieu') draft.place = previousPlace;
+        input.blur();
+      }
     });
     input.focus();
   });
@@ -10571,18 +10670,21 @@ function mountJourneyEditors(root) {
         <label>${type === 'lodging' ? 'Nombre de nuits' : 'Heure (facultatif)'}<input name="when" type="${type === 'lodging' ? 'number' : 'time'}" ${type === 'lodging' ? 'min="1" max="365" step="1" value="1" required' : ''}></label>
         <div class="journey-form-actions"><button type="submit" class="journey-primary">Ajouter</button><button type="button" data-cancel>Annuler</button></div><p role="status"></p>`;
       button.after(form); button.hidden = true;
+      mountJourneyAddress(form.elements.lieu);
       form.querySelector('[data-cancel]').onclick = () => { if (!journeySaving) { form.remove(); button.hidden = false; button.focus(); } };
       form.elements.label.focus();
       form.onsubmit = async event => {
         event.preventDefault();
         if (journeySaving) return;
-        const status = form.querySelector('[role="status"]');
+        const status = form.querySelector(':scope > p[role="status"]');
         if (!tripId || !day?.id || activeTrip?.id !== tripId || !window.SB?.saveStep) { status.textContent = 'Sauvegarde indisponible.'; return; }
         const label = form.elements.label.value.trim();
         if (!label) { status.textContent = 'Indique un nom.'; return; }
         const step = { type, label, lieu: form.elements.lieu.value.trim(), stepIndex: Math.max(-1, ...(day.steps || []).map(s => Number(s.stepIndex) || 0)) + 1,
           time: type === 'restaurant' ? form.elements.when.value : '', dateStart: type === 'lodging' ? day.dateISO : null,
           nuits: type === 'lodging' ? Number(form.elements.when.value) : 0 };
+        const place = journeyAddressValue(form.elements.lieu);
+        if (place) { step.lat = place.lat; step.lng = place.lng; }
         journeySaving = true;
         form.querySelectorAll('input,button').forEach(el => { el.disabled = true; });
         status.textContent = 'Enregistrement…';
@@ -10815,7 +10917,7 @@ function renderActivityDetail() {
   app.innerHTML = `<div class="mobile-shell journey-shell journey-detail-shell">
     <header class="journey-detail-topbar"><button type="button" data-action="${mobileWorkspaceMode === 'travel' ? 'travel' : 'itinerary'}" aria-label="Retour au programme"><span class="material-symbols-outlined" aria-hidden="true">arrow_back</span></button><span>Détails de l’étape</span></header>
     <main class="journey-main"><section class="journey-hero"><span>${escapeHtml(detail.type || 'Activité')}</span><h1>${escapeHtml(getStepDisplayTitle(step))}</h1></section>
-      <section class="journey-card"><p class="journey-description">Le crayon déverrouille la carte. Valide toutes tes modifications avec ✓.</p>
+      <section class="journey-card">
 ${journeyStepContent(step, dayId, lodging)}
       <button class="journey-map-link" type="button" data-action="activity-show-on-map">Voir sur la carte</button></section>
     </main>${bottomNav('plan')}</div>`;

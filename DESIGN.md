@@ -145,8 +145,9 @@ Les nouveautés ci-dessous ne sont pas toutes implémentées. Le PC reste le pla
 - Protéger les saisies en cours avant de changer de jour. Tester tactile réel, clavier, lecteur d’écran, paysage et réduction des animations.
 
 ### 2. Édition verrouillable et adresses — en cours
-- Lot édition proposé : crayon, brouillon de carte, ✓/× ; sauvegarde unique et protection de navigation. À installer et valider sur APK.
-- Autocomplétion : reste à intégrer à l’ajout et à l’édition, avec suggestions tactiles/clavier, réponses réseau obsolètes ignorées et coordonnées cohérentes.
+- Édition crayon puis ✓/× livrée ; conserver le dessin des cartes et les séparateurs de champs, sans texte Lecture/Annulé/Enregistré ni bordure latérale en édition. Erreurs utiles et labels accessibles conservés.
+- Lot adresses proposé : suggestions dans le carnet à l’ajout d’un hébergement/repas et à l’édition du lieu de chaque carte. Adresse + coordonnées seulement après sélection ; saisie manuelle conservée, résultats obsolètes ignorés. À valider sur APK.
+- Prochaine étape après validation : espace Organiser adapté au mobile, puis pages personnelles et harmonisation des autres vues.
 - Audit du lot précédent : transition actuelle = glissement d’entrée, pas suivi du doigt ; anti-cache = précaution, pas preuve de la cause d’une ancienne APK.
 Cette décision remplace l’édition champ par champ décrite dans le lot précédent.
 - Une carte est verrouillée par défaut. Un crayon active le mode édition.

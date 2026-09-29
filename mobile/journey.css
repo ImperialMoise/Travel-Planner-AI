@@ -86,13 +86,20 @@
 .journey-field-pair { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
 .journey-field-button:hover { background:var(--j-soft); }
 .journey-main .journey-field-button:disabled { opacity:1; cursor:default; background:transparent; }
-.journey-edit-toolbar { display:flex; align-items:center; gap:8px; margin:10px 0; }
-.journey-edit-toolbar > span { flex:1; color:var(--j-muted); font-size:12px; }
+.journey-step-fields { position:relative; }
+.journey-edit-toolbar { position:absolute; top:6px; right:0; z-index:1; display:flex; gap:8px; }
 .journey-main .journey-edit-toolbar button { width:44px; min-height:44px; padding:0; }
 .journey-main [data-journey-edit="save"] { background:var(--j-primary); color:var(--j-onprimary); }
-.journey-step-fields.is-editing { border-left:3px solid var(--j-primary); padding-left:10px; }
-.journey-step-fields:not(.is-editing) .journey-field { border-color:transparent; }
+.journey-step-fields > [data-journey-field="label"] { min-height:58px; padding-right:54px; }
+.journey-step-fields.is-editing > [data-journey-field="label"] { padding-right:106px; }
 .journey-step-fields [data-journey-edit-status]:empty { display:none; }
+.journey-step-fields [data-journey-edit-status]:not(:empty) { padding-top:54px; }
+.journey-address-results:empty { display:none; }
+.journey-address-results [role="listbox"] { display:grid; gap:6px; margin-top:6px; }
+.journey-main .journey-address-results [role="option"] { width:100%; min-height:44px; justify-content:flex-start; text-align:left; font-size:14px; font-weight:400; overflow-wrap:anywhere; }
+.journey-address-results [role="option"][aria-selected="true"] { background:var(--j-soft); outline:2px solid var(--j-primary); }
+.journey-address-results [role="status"] { font-size:12px; color:var(--j-muted); }
+.journey-address-results [role="status"]:empty { display:none; }
 .journey-more { margin:4px 0 12px; }
 .journey-more summary { cursor:pointer; min-height:44px; padding:12px 0; color:var(--j-muted); font-size:13px; }
 .journey-more p { color:var(--j-muted); font-size:14px; overflow-wrap:anywhere; }

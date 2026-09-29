@@ -10344,6 +10344,191 @@ function renderTripDayMode(editable = false) {
   `;
 }
 
+const journeyPositions = new Map();
+let journeySaving = false;
+const journeyFields = {
+  label: ['Nom', 'text'], time: ['Heure', 'time'], timeEnd: ['Fin', 'time'],
+  duree: ['Durée', 'text'], dureeEstimee: ['Durée', 'text'], lieu: ['Lieu', 'text'],
+  note: ['Note', 'textarea'], ref: ['Réservation', 'text'],
+  dateStart: ['Arrivée', 'date'], dateEnd: ['Départ', 'date'], nuits: ['Nuits', 'number'],
+  timeCheckIn: ['Heure d’arrivée', 'time'], timeCheckOut: ['Heure de départ', 'time']
+};
+
+function journeyField(step, dayId, field) {
+  const [label] = journeyFields[field];
+  const value = String(step[field] ?? '');
+  return `<div class="journey-field" data-journey-field="${field}" data-day-id="${escapeHtml(dayId || '')}" data-step-id="${escapeHtml(step.id || '')}">
+    <button type="button" class="journey-field-button" aria-label="Modifier ${label.toLowerCase()}" ${!step.id ? 'disabled' : ''}>
+      <span>${label}</span><strong>${escapeHtml(value || 'À préciser')}</strong>
+    </button></div>`;
+}
+
+function journeyStepContent(step, dayId, lodging = false) {
+  const duration = step.dureeEstimee ? 'dureeEstimee' : 'duree';
+  return `<div class="journey-step-fields">
+    ${journeyField(step, dayId, 'label')}
+    <div class="journey-field-pair">${journeyField(step, dayId, lodging ? 'timeCheckIn' : 'time')}${journeyField(step, dayId, lodging ? 'timeCheckOut' : duration)}</div>
+    ${journeyField(step, dayId, 'lieu')}${journeyField(step, dayId, 'note')}
+    <details class="journey-more"><summary>Autres informations</summary>
+      ${lodging ? `<div class="journey-field-pair">${journeyField(step, dayId, 'dateStart')}${journeyField(step, dayId, 'dateEnd')}</div>${journeyField(step, dayId, 'nuits')}` : journeyField(step, dayId, 'timeEnd')}
+      ${journeyField(step, dayId, 'ref')}
+      ${step.depart || step.arrivee ? `<p>${escapeHtml(step.depart || '')} → ${escapeHtml(step.arrivee || '')}</p>` : ''}
+      ${step.nextDay ? '<p>Arrivée le lendemain</p>' : ''}
+    </details></div>`;
+}
+
+function journeyFindStep(dayId, stepId) {
+  const day = activeTrip?.days?.find(item => String(item.id) === dayId);
+  return { day, step: day?.steps?.find(item => String(item.id) === stepId) };
+}
+
+function journeyPatch(step, field, value) {
+  if (!Object.hasOwn(journeyFields, field)) throw new Error('Champ inconnu.');
+  const next = { ...step, [field]: value };
+  if (field === 'label' && !value.trim()) throw new Error('Indique un nom.');
+  if (field === 'nuits') {
+    if (!Number.isInteger(Number(value)) || Number(value) < 1 || Number(value) > 365) throw new Error('Indique de 1 à 365 nuits.');
+    next.nuits = Number(value);
+    next.nights = Number(value);
+    if (next.dateStart) {
+      const end = new Date(next.dateStart + 'T12:00:00Z');
+      end.setUTCDate(end.getUTCDate() + next.nuits);
+      next.dateEnd = end.toISOString().slice(0, 10);
+    }
+  }
+  if (next.dateStart && next.dateEnd && ['dateStart', 'dateEnd'].includes(field)) {
+    const nights = Math.round((Date.parse(next.dateEnd) - Date.parse(next.dateStart)) / 86400000);
+    if (!Number.isFinite(nights) || nights < 1) throw new Error('Le départ doit être après l’arrivée.');
+    next.nuits = nights; next.nights = nights;
+  }
+  if (field === 'lieu' && value !== step.lieu) { next.lat = null; next.lng = null; }
+  return next;
+}
+
+function mountJourneyEditors(root) {
+  root.addEventListener('click', event => {
+    const button = event.target.closest('.journey-field-button');
+    if (!button || journeySaving) return;
+    const box = button.closest('[data-journey-field]');
+    const { day, step } = journeyFindStep(box.dataset.dayId, box.dataset.stepId);
+    if (!day || !step) return;
+    const field = box.dataset.journeyField, [label, type] = journeyFields[field];
+    const before = box.innerHTML, tripId = activeTrip.id;
+    const value = String(step[field] ?? '');
+    box.innerHTML = `<form class="journey-inline-form"><label>${label}
+      ${type === 'textarea' ? `<textarea name="value" rows="3" maxlength="6000">${escapeHtml(value)}</textarea>` : `<input name="value" type="${type}" value="${escapeHtml(value)}" ${field === 'label' ? 'required' : ''} ${type === 'number' ? 'min="1" max="365" step="1"' : 'maxlength="500"'}>`}
+      </label><div class="journey-form-actions"><button type="submit" class="journey-primary">Enregistrer</button><button type="button" data-journey-cancel>Annuler</button></div>
+      <p role="status" class="journey-save-status"></p></form>`;
+    const form = box.querySelector('form'), status = form.querySelector('[role="status"]');
+    const cancel = () => { if (journeySaving) return; box.innerHTML = before; box.querySelector('button')?.focus(); };
+    form.querySelector('[data-journey-cancel]').onclick = cancel;
+    form.onkeydown = e => { if (e.key === 'Escape') { e.stopPropagation(); cancel(); } };
+    form.elements.value.focus();
+    form.onsubmit = async e => {
+      e.preventDefault();
+      if (journeySaving) return;
+      if (activeTrip?.id !== tripId || !window.SB?.saveStep) { status.textContent = 'Sauvegarde indisponible. Réessaie après connexion.'; return; }
+      const current = journeyFindStep(box.dataset.dayId, box.dataset.stepId);
+      if (!current.step) { status.textContent = 'Cette étape n’est plus disponible.'; return; }
+      let next;
+      try { next = journeyPatch(current.step, field, form.elements.value.value.trim()); }
+      catch (error) { status.textContent = error.message; return; }
+      journeySaving = true;
+      form.querySelectorAll('button,input,textarea').forEach(el => { el.disabled = true; });
+      status.textContent = 'Enregistrement…';
+      try {
+        await window.SB.saveStep(tripId, current.day.id, next);
+        Object.assign(current.step, next);
+        if (activeActivityDetail?.id === next.id) activeActivityDetail.rawStep = current.step;
+        box.innerHTML = journeyField(next, current.day.id, field).replace(/^.*?<div[^>]*>/s, '').replace(/<\/div>$/, '');
+        box.insertAdjacentHTML('beforeend', `<p class="journey-save-status" role="status">${field === 'lieu' ? 'Enregistré. Le nouveau lieu devra être localisé sur la carte.' : 'Enregistré.'}</p>`);
+        box.querySelector('button')?.focus();
+        for (const related of root.querySelectorAll('[data-journey-field]')) {
+          if (related === box || related.querySelector('form') || related.dataset.stepId !== String(next.id)) continue;
+          const strong = related.querySelector('strong');
+          if (strong) strong.textContent = String(next[related.dataset.journeyField] || 'À préciser');
+        }
+      } catch (error) {
+        status.textContent = 'Non enregistré : ' + (error.message || 'vérifie la connexion et tes droits.');
+        form.querySelectorAll('button,input,textarea').forEach(el => { el.disabled = false; });
+      } finally { journeySaving = false; }
+    };
+  });
+  root.querySelectorAll('[data-journey-add]').forEach(button => {
+    button.onclick = () => {
+      const type = button.dataset.journeyAdd, section = button.parentElement;
+      if (section.querySelector('.journey-add-form')) return;
+      const day = getActiveItineraryDay(), tripId = activeTrip?.id;
+      const form = document.createElement('form');
+      form.className = 'journey-add-form journey-inline-form';
+      form.innerHTML = `<label>${type === 'lodging' ? 'Nom de l’hébergement' : 'Restaurant ou repas'}<input name="label" required maxlength="200"></label>
+        <label>Adresse<input name="lieu" maxlength="300"></label>
+        <label>${type === 'lodging' ? 'Nombre de nuits' : 'Heure (facultatif)'}<input name="when" type="${type === 'lodging' ? 'number' : 'time'}" ${type === 'lodging' ? 'min="1" max="365" step="1" value="1" required' : ''}></label>
+        <div class="journey-form-actions"><button type="submit" class="journey-primary">Ajouter</button><button type="button" data-cancel>Annuler</button></div><p role="status"></p>`;
+      button.after(form); button.hidden = true;
+      form.querySelector('[data-cancel]').onclick = () => { if (!journeySaving) { form.remove(); button.hidden = false; button.focus(); } };
+      form.elements.label.focus();
+      form.onsubmit = async event => {
+        event.preventDefault();
+        if (journeySaving) return;
+        const status = form.querySelector('[role="status"]');
+        if (!tripId || !day?.id || activeTrip?.id !== tripId || !window.SB?.saveStep) { status.textContent = 'Sauvegarde indisponible.'; return; }
+        const label = form.elements.label.value.trim();
+        if (!label) { status.textContent = 'Indique un nom.'; return; }
+        const step = { type, label, lieu: form.elements.lieu.value.trim(), stepIndex: Math.max(-1, ...(day.steps || []).map(s => Number(s.stepIndex) || 0)) + 1,
+          time: type === 'restaurant' ? form.elements.when.value : '', dateStart: type === 'lodging' ? day.dateISO : null,
+          nuits: type === 'lodging' ? Number(form.elements.when.value) : 0 };
+        journeySaving = true;
+        form.querySelectorAll('input,button').forEach(el => { el.disabled = true; });
+        status.textContent = 'Enregistrement…';
+        try {
+          const saved = await window.SB.saveStep(tripId, day.id, step);
+          if (!saved?.id) throw new Error('Confirmation de sauvegarde manquante.');
+          (day.steps ||= []).push({ ...step, id: saved.id });
+          if (activeTrip?.id === tripId && form.isConnected) renderMobileJourney();
+        } catch (error) {
+          status.textContent = 'Non enregistré : ' + (error.message || 'réessaie.');
+          form.querySelectorAll('input,button').forEach(el => { el.disabled = false; });
+        } finally { journeySaving = false; }
+      };
+    };
+  });
+}
+
+function mountJourneyCarousel(root, positionKey, initialIndex) {
+  const track = root.querySelector('.journey-carousel');
+  if (!track) return;
+  const cards = [...track.children], count = root.querySelector('[data-journey-count]');
+  const previous = root.querySelector('[data-journey-prev]'), next = root.querySelector('[data-journey-next]');
+  let selected = Math.min(cards.length - 1, Math.max(0, journeyPositions.get(positionKey) ?? initialIndex));
+  const announce = () => {
+    journeyPositions.set(positionKey, selected);
+    count.textContent = (selected + 1) + ' / ' + cards.length;
+    previous.disabled = selected === 0; next.disabled = selected === cards.length - 1;
+  };
+  const go = (index, smooth = true) => {
+    selected = Math.max(0, Math.min(cards.length - 1, index));
+    track.scrollTo({ left: cards[selected].offsetLeft - cards[0].offsetLeft,
+      behavior: smooth && !matchMedia('(prefers-reduced-motion: reduce)').matches ? 'smooth' : 'instant' });
+    announce();
+  };
+  previous.onclick = () => go(selected - 1);
+  next.onclick = () => go(selected + 1);
+  track.onkeydown = event => {
+    if (event.target !== track || !['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
+    event.preventDefault(); go(selected + (event.key === 'ArrowRight' ? 1 : -1));
+  };
+  let frame;
+  track.onscroll = () => {
+    cancelAnimationFrame(frame);
+    frame = requestAnimationFrame(() => {
+      selected = cards.reduce((best, card, i) => Math.abs(card.offsetLeft - cards[0].offsetLeft - track.scrollLeft) < Math.abs(cards[best].offsetLeft - cards[0].offsetLeft - track.scrollLeft) ? i : best, 0);
+      announce();
+    });
+  };
+  requestAnimationFrame(() => { if (track.isConnected) go(selected, false); });
+}
+
 function mobileJourneyToday(now = new Date()) {
   return [now.getFullYear(), String(now.getMonth() + 1).padStart(2, '0'), String(now.getDate()).padStart(2, '0')].join('-');
 }
@@ -10361,25 +10546,33 @@ function mobileJourneySnapshot(days, dayIndex, timeline, now = new Date()) {
     if (!['lodging', 'logement'].includes(String(step.type).toLowerCase())) return step;
     const start = step.dateStart || day.dateISO;
     const duration = start && step.dateEnd ? window.ItineraryUtils.diffDays(start, step.dateEnd) : 0;
-    return { ...step, type: 'logement', nights: duration > 0 ? duration : step.nights || step.nuits || 1 };
+    return { ...step, type: 'logement', nights: duration > 0 ? duration : step.nights || step.nuits || (/^[1-9][0-9]*$/.test(String(step.duree)) ? Number(step.duree) : 1) };
   }) }));
   const stays = window.ItineraryUtils.findLodgingStaysForDay(normalizedDays, dayIndex);
   return { entries, next, isToday, today, stays: stays.filter(stay => stay.status !== 'checkout') };
 }
 function renderMobileJourney() {
-  applyMobileTripAccent(activeTrip?.accentTheme || activeTrip?.accent_theme || 'forest');
+  applyMobileTripAccent('forest');
   const day = getActiveItineraryDay(), days = activeTrip?.days || [], index = mobileItineraryDayIndex;
-  const now = new Date(), data = mobileJourneySnapshot(days, index, getCurrentTimelineSteps(), now);
-  const todayIndex = days.findIndex(item => item.dateISO === data.today), next = data.next;
+  const now = new Date(), timeline = getCurrentTimelineSteps();
+  const data = mobileJourneySnapshot(days, index, timeline, now);
+  const meals = data.entries.filter(({ step }) => ['restaurant', 'repas', 'meal'].includes(String(step.rawStep?.type).toLowerCase()));
+  const entries = data.entries.filter(entry => !meals.includes(entry));
+  const todayIndex = days.findIndex(item => item.dateISO === data.today);
+  const positionKey = activeTrip?.id + ':' + day?.id;
+  const minutes = now.getHours() * 60 + now.getMinutes();
+  const upcoming = !data.isToday ? entries[0] : entries.find(({ step }) => {
+    const start = mobileTimeToMinutes(step.time), end = mobileTimeToMinutes(step.rawStep?.timeEnd);
+    return start !== null && (start >= minutes || (end !== null && end + (step.rawStep?.nextDay ? 1440 : 0) > minutes));
+  }) || entries.find(({ step }) => mobileTimeToMinutes(step.time) === null);
+  const initialIndex = Math.max(0, entries.indexOf(upcoming));
   const icon = name => '<span class="material-symbols-outlined" aria-hidden="true">' + name + '</span>';
-  const period = day?.dateISO ? formatDateLabel(day.dateISO, '') : 'Date à préciser';
   const cover = day?.coverImageUrl || day?.cover_image_url || activeTrip?.coverImageUrl || activeTrip?.cover_image_url || '';
-  const nextLabel = !data.isToday ? 'Première étape du jour' : next && mobileTimeToMinutes(next.step.time) === null ? 'À horaire libre' : 'Votre prochain repère';
   app.innerHTML = `
     <div class="mobile-shell journey-shell">${topbar()}
       <main class="journey-main">
         <header class="journey-heading"><div><span class="journey-eyebrow">Carnet de voyage</span><h1>${escapeHtml(activeTrip?.name || 'Mon voyage')}</h1></div>
-          <button class="journey-prepare" type="button" data-action="itinerary">${icon('edit_calendar')}Préparer</button></header>
+          <button class="journey-prepare" type="button" data-action="itinerary">Préparer</button></header>
         ${days.length ? `
           <nav class="journey-days" aria-label="Journées du voyage">
             <button type="button" data-action="travel-previous-day" aria-label="Journée précédente" ${index === 0 ? 'disabled' : ''}>${icon('chevron_left')}</button>
@@ -10390,37 +10583,38 @@ function renderMobileJourney() {
           ${todayIndex >= 0 && todayIndex !== index ? `<button class="journey-today" type="button" data-action="itinerary-day" data-day-index="${todayIndex}">Revenir à aujourd’hui</button>` : ''}
           <section class="journey-hero ${cover ? 'has-cover' : ''}">
             ${cover ? `<img src="${escapeHtml(cover)}" alt="" decoding="async">` : ''}
-            <div><span>${data.isToday ? 'Aujourd’hui · ' : ''}${escapeHtml(period)}</span><h2>${escapeHtml(day?.title || 'Ma journée')}</h2>
-              <p>${data.entries.length} étape${data.entries.length > 1 ? 's' : ''} · à votre rythme</p></div></section>
-          <nav class="journey-essentials" aria-label="Essentiels">
-            <button type="button" data-action="map">${icon('map')}<strong>Carte</strong></button>
-            <button type="button" data-action="docs">${icon('confirmation_number')}<strong>Billets</strong></button>
-            <button type="button" data-action="budget">${icon('payments')}<strong>Dépenses</strong></button></nav>
-          <div class="journey-layout">
-            <section class="journey-next journey-card"><span class="journey-eyebrow">${nextLabel}</span>
-              ${next ? `<p class="journey-time">${escapeHtml(next.step.time || 'Sans horaire')}</p><h2>${escapeHtml(next.step.title)}</h2>
-                <p class="journey-description">${escapeHtml(next.step.description || '')}</p>
-                <div class="journey-actions"><button class="journey-primary" type="button" data-action="show-step-on-map" data-step-index="${next.index}">${icon('map')}Carte</button>
-                  <button type="button" data-action="activity-detail" data-step-index="${next.index}">${icon('description')}Détails</button></div>
-                ` : `<h2>${data.entries.length ? 'Plus d’horaire à venir' : 'Journée libre'}</h2><p class="journey-description">${data.entries.length ? 'Toutes vos étapes restent consultables dans le programme.' : 'Aucune étape ajoutée pour cette journée.'}</p>
-                  <button class="journey-prepare" type="button" data-action="itinerary">Ouvrir le planificateur</button>`}
-              ${data.isToday ? `<div class="journey-clock"><small>Repère à ${now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}, heure de cet appareil. Ne valide aucune activité.</small>
-                <button type="button" data-action="travel" aria-label="Actualiser le repère horaire">${icon('refresh')}</button></div>` : ''}</section>
+            <div><span>${data.isToday ? 'Aujourd’hui · ' : ''}${escapeHtml(day?.dateISO ? formatDateLabel(day.dateISO, '') : 'Date à préciser')}</span>
+              <h2>${escapeHtml(day?.title || 'Ma journée')}</h2><p>${entries.length} activité${entries.length > 1 ? 's' : ''} · ${meals.length} repas</p></div>
+          </section>
+          <section class="journey-activities" aria-label="Activités de la journée">
+            <header class="journey-carousel-heading"><div><h2>Au fil de la journée</h2><p>Glisse pour voir la suite. Touche un texte pour le modifier.</p></div></header>
+            ${entries.length ? `<div class="journey-carousel-controls"><button type="button" data-journey-prev aria-label="Activité précédente">${icon('chevron_left')}</button>
+              <span data-journey-count role="status" aria-live="polite"></span><button type="button" data-journey-next aria-label="Activité suivante">${icon('chevron_right')}</button></div>
+              <div class="journey-carousel" tabindex="0" role="region" aria-roledescription="carrousel" aria-label="Programme du jour">
+                ${entries.map((entry, i) => `<article class="journey-slide journey-card" role="group" aria-roledescription="diapositive" aria-label="Activité ${i + 1} sur ${entries.length}">
+                  <span class="journey-eyebrow">${i === 0 ? 'Première étape du jour' : 'Étape ' + (i + 1)}${data.isToday && entry === upcoming ? ' · À venir ou en cours' : ''}</span>
+                  <p class="journey-category">${icon(entry.step.icon || 'place')}${escapeHtml(entry.step.type)}</p>
+                  ${journeyStepContent(entry.step.rawStep, day.id)}
+                  <button class="journey-map-link" type="button" data-action="show-step-on-map" data-step-index="${entry.index}">${icon('near_me')}Voir ce lieu sur la carte</button>
+                </article>`).join('')}
+              </div>` : `<div class="journey-card"><h3>Une journée à votre rythme</h3><p>Aucune activité prévue. Les repas et l’hébergement restent ci-dessous.</p><button type="button" data-action="itinerary">Préparer cette journée</button></div>`}
+            ${data.isToday ? `<p class="journey-clock">Repère à ${now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}, heure de cet appareil. Aucune activité n’est validée automatiquement.</p>` : ''}
+          </section>
+          <div class="journey-stays-meals">
             <section class="journey-night journey-card"><h2>${icon('bed')}Cette nuit</h2>
-              ${data.stays.length ? data.stays.map(stay => `<article><h3>${escapeHtml(getStepDisplayTitle(stay.step))}</h3>
-                <p>${escapeHtml(stay.step.lieu || 'Adresse à compléter')}</p><p>Nuit ${stay.nightNumber} sur ${stay.nights}</p>
-                <details><summary>Détails du séjour</summary><p>${escapeHtml(stay.startISO || '')} → ${escapeHtml(stay.endISO || '')}</p>
-                  <p>Arrivée : ${escapeHtml(stay.step.timeCheckIn || 'à préciser')} · Départ : ${escapeHtml(stay.step.timeCheckOut || 'à préciser')}</p>
-                  ${stay.step.ref ? `<p>Référence : ${escapeHtml(stay.step.ref)}</p>` : ''}${stay.step.note ? `<p>${escapeHtml(stay.step.note)}</p>` : ''}</details></article>`).join('') : '<p>Aucun hébergement indiqué pour cette nuit.</p>'}
-              <button type="button" data-action="docs">${icon('folder')}Mes réservations</button></section>
-            <section class="journey-program journey-card"><header><h2>Tout le programme</h2><span>${data.entries.length} étape${data.entries.length > 1 ? 's' : ''}</span></header>
-              ${data.entries.length ? `<ol>${data.entries.map(entry => `<li ${entry === next ? 'data-next="true"' : ''}>
-                <span class="journey-row-time">${escapeHtml(entry.step.time || 'Libre')}</span><div>
-                  <button class="journey-step" type="button" data-action="activity-detail" data-step-index="${entry.index}"><strong>${escapeHtml(entry.step.title)}</strong>${icon('chevron_right')}</button>
-                  <p>${escapeHtml(entry.step.description || '')}</p><button class="journey-map-link" type="button" data-action="show-step-on-map" data-step-index="${entry.index}">${icon('map')}Carte</button>
-                </div></li>`).join('')}</ol>` : '<p class="journey-description">Le programme apparaîtra ici une fois préparé.</p>'}</section>
+              ${data.stays.length ? data.stays.map(stay => {
+                const original = days[stay.sourceDayIndex]?.steps?.find(item => item.id === stay.step.id) || stay.step;
+                return `<article><p class="journey-eyebrow">Nuit ${stay.nightNumber} sur ${stay.nights}</p>${journeyStepContent(original, stay.sourceDay.id, true)}</article>`;
+              }).join('') : '<p class="journey-description">Où dormirez-vous ce soir ?</p>'}
+              <button type="button" data-journey-add="lodging">${icon('add')}Ajouter un hébergement</button>
+            </section>
+            <section class="journey-meals journey-card"><h2>${icon('restaurant')}À table</h2>
+              ${meals.length ? meals.map(entry => `<article>${journeyStepContent(entry.step.rawStep, day.id)}
+                <button type="button" class="journey-map-link" data-action="show-step-on-map" data-step-index="${entry.index}">${icon('near_me')}Voir ce lieu</button></article>`).join('') : '<p class="journey-description">Un restaurant réservé, une adresse à essayer…</p>'}
+              <button type="button" data-journey-add="restaurant">${icon('add')}Ajouter un repas</button>
+            </section>
           </div>
-        ` : `<section class="journey-card"><h2>Aucune journée pour le moment</h2><p>Préparez votre premier programme pour retrouver ici vos étapes et réservations.</p><button class="journey-prepare" type="button" data-action="itinerary">Préparer le voyage</button></section>`}
+        ` : `<section class="journey-card"><h2>Le voyage commence ici</h2><p>Prépare une première journée pour retrouver ton programme.</p><button type="button" data-action="itinerary">Préparer le voyage</button></section>`}
       </main>${bottomNav('plan')}
     </div>`;
   document.getElementById('journey-day-select')?.addEventListener('change', event => {
@@ -10428,7 +10622,10 @@ function renderMobileJourney() {
     if (!Number.isInteger(selected) || selected < 0 || selected >= days.length) return;
     mobileItineraryDayIndex = selected; renderTravelMode();
   });
+  mountJourneyEditors(app.querySelector('.journey-main'));
+  if (entries.length) mountJourneyCarousel(app, positionKey, initialIndex);
 }
+
 function renderTravelMode() {
   setMobileWorkspaceMode('travel');
   renderMobileJourney();
@@ -10437,101 +10634,16 @@ function renderTravelMode() {
 
 function renderActivityDetail() {
   const detail = activeActivityDetail;
-
-  if (!detail) {
-    navigate('itinerary');
-    return;
-  }
-
-  const step = detail.rawStep || {};
-  const title = detail.title || getStepDisplayTitle(step);
-  const type = detail.type || 'Activité';
-  const time = detail.time || step.time || 'À préciser';
-  const duration = step.dureeEstimee || step.duree || 'À préciser';
-  const location = step.lieu || 'Lieu à préciser';
-  const note = step.note || 'Aucune note ajoutée pour cette activité.';
-  const canShowOnMap = Number.isFinite(Number(step.lat)) && Number.isFinite(Number(step.lng));
-
-  app.innerHTML = `
-    <div class="mobile-shell activity-detail-shell">
-      <header class="activity-detail-topbar glass-panel">
-        <button type="button" data-action="${mobileWorkspaceMode === 'travel' ? 'travel' : 'itinerary'}" aria-label="Retour au programme">
-          <span class="material-symbols-outlined" aria-hidden="true">arrow_back</span>
-        </button>
-
-        <div>
-          <button type="button" data-action="activity-edit" aria-label="Modifier l'activité">
-            <span class="material-symbols-outlined" aria-hidden="true">edit</span>
-          </button>
-        </div>
-      </header>
-
-      <section class="activity-hero" aria-label="${escapeHtml(title)}">
-        <div class="activity-hero-image" aria-hidden="true"></div>
-        <div class="activity-hero-overlay" aria-hidden="true"></div>
-
-        <div class="activity-hero-content">
-          <span class="kicker">${escapeHtml(type)}</span>
-          <h1>${escapeHtml(title)}</h1>
-        </div>
-      </section>
-
-      <main class="activity-detail-main">
-        <section class="activity-info-grid" aria-label="Informations clés">
-          <article class="activity-info-card">
-            <span class="activity-info-icon material-symbols-outlined" aria-hidden="true">schedule</span>
-
-            <div>
-              <span class="kicker">Heure</span>
-              <strong>${escapeHtml(time)}</strong>
-            </div>
-          </article>
-
-          <article class="activity-info-card">
-            <span class="activity-info-icon material-symbols-outlined" aria-hidden="true">hourglass_top</span>
-
-            <div>
-              <span class="kicker">Durée</span>
-              <strong>${escapeHtml(duration)}</strong>
-            </div>
-          </article>
-        </section>
-
-        <section class="activity-section" aria-labelledby="activity-location-title">
-          <h2 id="activity-location-title">
-            <span class="material-symbols-outlined" aria-hidden="true">location_on</span>
-            <span>Lieu</span>
-          </h2>
-
-          <div class="activity-location-card">
-            <div>
-              <strong>${escapeHtml(location)}</strong>
-              <p>${canShowOnMap ? 'Localisé sur la carte du voyage.' : 'Ajoute une localisation pour l’afficher sur la carte.'}</p>
-            </div>
-
-            <button type="button" data-action="activity-show-on-map">
-              <span>Voir sur la carte</span>
-              <span class="material-symbols-outlined" aria-hidden="true">map</span>
-            </button>
-          </div>
-        </section>
-
-        <section class="activity-section" aria-labelledby="activity-notes-title">
-          <h2 id="activity-notes-title">
-            <span class="material-symbols-outlined" aria-hidden="true">edit_note</span>
-            <span>Notes</span>
-          </h2>
-
-          <article class="activity-notes-card">
-            <span class="quote-icon material-symbols-outlined" aria-hidden="true">format_quote</span>
-            <p>${escapeHtml(note)}</p>
-          </article>
-        </section>
-      </main>
-
-      ${bottomNav('plan')}
-    </div>
-  `;
+  if (!detail) { navigate(mobileWorkspaceMode === 'travel' ? 'travel' : 'itinerary'); return; }
+  const step = detail.rawStep || {}, lodging = ['lodging', 'logement'].includes(step.type);
+  const dayId = detail.dayId || activeTrip?.days?.[detail.dayIndex]?.id;
+  app.innerHTML = `<div class="mobile-shell journey-shell journey-detail-shell">
+    <header class="journey-detail-topbar"><button type="button" data-action="${mobileWorkspaceMode === 'travel' ? 'travel' : 'itinerary'}" aria-label="Retour au programme"><span class="material-symbols-outlined" aria-hidden="true">arrow_back</span></button><span>Détails de l’étape</span></header>
+    <main class="journey-main"><section class="journey-hero"><span>${escapeHtml(detail.type || 'Activité')}</span><h1>${escapeHtml(getStepDisplayTitle(step))}</h1></section>
+      <section class="journey-card"><p class="journey-description">Touche une information pour la modifier ici.</p>${journeyStepContent(step, dayId, lodging)}
+      <button class="journey-map-link" type="button" data-action="activity-show-on-map">Voir sur la carte</button></section>
+    </main>${bottomNav('plan')}</div>`;
+  mountJourneyEditors(app.querySelector('.journey-main'));
 }
 
 function renderNewStep() {

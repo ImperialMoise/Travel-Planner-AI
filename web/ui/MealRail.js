@@ -896,15 +896,36 @@ function EmptyLodgingCard({ onAdd }) {
     return [...new Set([place.name, place.admin1, place.country].filter(Boolean))].join(', ');
   }
 
+  function readWeatherCities(preferenceKey) {
+    const valid = item => item && typeof item.name === 'string' &&
+      Number.isFinite(item.latitude) && Number.isFinite(item.longitude);
+    try {
+      const saved = JSON.parse(sessionStorage.getItem('fabrique_weather_cities_v2:' + preferenceKey));
+      if (saved && Array.isArray(saved.cities)) {
+        const cities = saved.cities.filter(valid);
+        return { cities, index: Math.max(0, Math.min(cities.length - 1, Number(saved.index) || 0)) };
+      }
+      const cities = [];
+      const prefix = 'fabrique_weather_city_v1:' + preferenceKey + ':';
+      for (let i = 0; i < sessionStorage.length; i++) {
+        const key = sessionStorage.key(i);
+        if (!key?.startsWith(prefix)) continue;
+        let city;
+        try { city = JSON.parse(sessionStorage.getItem(key)); } catch { continue; }
+        if (valid(city) && !cities.some(item => item.latitude === city.latitude && item.longitude === city.longitude)) cities.push(city);
+      }
+      return { cities, index: 0 };
+    } catch { return { cities: [], index: 0 }; }
+  }
+
   function WeatherBlock({ day, preferenceKey }) {
-    const storageKey = 'fabrique_weather_city_v1:' + preferenceKey;
-    const [place, setPlace] = React.useState(() => {
-      try {
-        const saved = JSON.parse(sessionStorage.getItem(storageKey));
-        return saved && typeof saved.name === 'string' &&
-          Number.isFinite(saved.latitude) && Number.isFinite(saved.longitude) ? saved : null;
-      } catch { return null; }
-    });
+    const storageKey = 'fabrique_weather_cities_v2:' + preferenceKey;
+    const [selection, setSelection] = React.useState(() => readWeatherCities(preferenceKey));
+    const { cities, index } = selection;
+    const place = cities[index] || null;
+    React.useEffect(() => {
+      try { sessionStorage.setItem(storageKey, JSON.stringify(selection)); } catch {}
+    }, [storageKey, selection]);
     const [query, setQuery] = React.useState('');
     const [matches, setMatches] = React.useState([]);
     const [searchState, setSearchState] = React.useState('');
@@ -984,20 +1005,35 @@ function EmptyLodgingCard({ onAdd }) {
     function chooseCity(value) {
       searchRef.current?.abort();
       searchRef.current = null;
-      setPlace(value);
+      setSelection(previous => {
+        if (!value) {
+          const cities = previous.cities.filter((_, i) => i !== previous.index);
+          return { cities, index: Math.min(previous.index, Math.max(0, cities.length - 1)) };
+        }
+        const existing = previous.cities.findIndex(item => item.latitude === value.latitude && item.longitude === value.longitude);
+        return existing >= 0 ? { ...previous, index: existing } :
+          { cities: [...previous.cities, value], index: previous.cities.length };
+      });
       setMatches([]);
       setQuery('');
       setSearchState('');
-      setSearchMessage(value ? 'Ville météo sélectionnée.' : 'Retour à la ville de la journée.');
-      try {
-        if (value) sessionStorage.setItem(storageKey, JSON.stringify(value));
-        else sessionStorage.removeItem(storageKey);
-      } catch {}
+      setSearchMessage(value ? 'Ville ajoutée aux villes météo de ce voyage.' : 'Ville retirée des favoris météo.');
       searchInput.current?.focus();
+    }
+
+    function moveCity(direction) {
+      setSelection(previous => ({
+        ...previous, index: (previous.index + direction + previous.cities.length) % previous.cities.length
+      }));
     }
 
     return (
       <div className="fv-weather">
+        {!!cities.length && <nav className="fv-weather-carousel" aria-label="Villes météo du voyage">
+          <button type="button" className="fv-button" aria-label="Ville précédente" disabled={cities.length < 2} onClick={() => moveCity(-1)}>‹</button>
+          <span aria-live="polite">{index + 1} / {cities.length} ville{cities.length > 1 ? 's' : ''}</span>
+          <button type="button" className="fv-button" aria-label="Ville suivante" disabled={cities.length < 2} onClick={() => moveCity(1)}>›</button>
+        </nav>}
         <div className="fv-weather-summary" aria-live="polite" aria-busy={weather.kind === 'loading'}>
           <div>
             <strong>{place ? weatherPlaceLabel(place) : weather.title}</strong>
@@ -1013,7 +1049,7 @@ function EmptyLodgingCard({ onAdd }) {
         {fallback.eligible && weather.kind === 'unavailable' && <button type="button"
           className="fv-textbutton" onClick={() => setRetry(value => value + 1)}>Réessayer la météo</button>}
         <form className="fv-weather-search" onSubmit={searchCity}>
-          <label>Ville pour la météo
+          <label>Ajouter une ville météo
             <input ref={searchInput} type="search" value={query} maxLength={100}
               placeholder="Ex. Séoul, Paris…" onChange={event => {
                 setQuery(event.target.value);
@@ -1034,8 +1070,8 @@ function EmptyLodgingCard({ onAdd }) {
             <button type="button" onClick={() => chooseCity(item)}>{weatherPlaceLabel(item)}</button>
           </li>)}
         </ul>}
-        {place && <button type="button" className="fv-textbutton" onClick={() => chooseCity(null)}>Utiliser la ville de la journée</button>}
-        <small>Choix propre à cette journée, mémorisé dans cet onglet. L’itinéraire n’est pas modifié.</small>
+        {place && <button type="button" className="fv-textbutton" onClick={() => chooseCity(null)}>Retirer cette ville météo</button>}
+        <small>Villes communes à tous les jours de ce voyage, mémorisées dans cet onglet. La prévision suit la date sélectionnée ; l’itinéraire n’est pas modifié.</small>
       </div>
     );
   }
@@ -1142,7 +1178,7 @@ function EmptyLodgingCard({ onAdd }) {
         </section>
         <section className="fv-rail-section fv-weather-section">
           <h3><Icon name="cal" size={18} />Météo</h3>
-          <WeatherBlock key={trip?.id + ':' + day?.id} day={day} preferenceKey={trip?.id + ':' + day?.id} />
+          <WeatherBlock key={trip?.id} day={day} preferenceKey={trip?.id} />
         </section>
       </aside>
     );
@@ -1151,4 +1187,3 @@ function EmptyLodgingCard({ onAdd }) {
   window.MealRail = MealRail;
   window.ItineraryMealRail = MealRail;
 })();
-

@@ -39,7 +39,7 @@ Les références Airbnb, Apple et Nike inspirent la hiérarchie, pas une copie d
 - Crédit du photographe conservé ; image absente/en erreur masquée ; réglage et recadrage dans la fenêtre existante.
 - Favoris dans le bandeau du voyage ; à droite, séjour mis en évidence, repas et météo secondaires.
 - Nuit datée, compteur si plusieurs nuits ; aucun faux conseil météo présenté comme prévision.
-- Météo : recherche de ville avec choix du pays/région, état de recherche explicite. Choix mémorisé dans l’onglet pour ce voyage et cette journée, sans modifier l’itinéraire. Limites des prévisions et échecs réseau visibles.
+- Météo : recherche de ville avec choix du pays/région, état de recherche explicite. Villes communes à tous les jours du voyage, avec flèches et date du jour sélectionné ; liste mémorisée dans l’onglet sans modifier l’itinéraire. Limites des prévisions et échecs réseau visibles.
 - En petit écran : sélecteur de jour, programme, outils et informations dans un défilement naturel.
 - Conserver Focus et les modes de réorganisation existants.
 
@@ -117,16 +117,25 @@ Ne pas annoncer toutes les pages refaites après le seul cadre connecté.
 - Sauvegarde, suppression, déplacement d’étape et validation restent inchangés.
 - Les paramètres et le profil gardent leur lot spécifique ; ne pas annoncer leur refonte sur cette base.
 
-## Prochain chantier prioritaire — APK
-Même direction artistique, composition tactile dédiée : accueil lisible, carnet Voyager prioritaire, prochaine étape, carte/billets et nuit accessibles. Pas de miniaturisation des trois colonnes PC.
-Vérifier la vraie APK, zones système, clavier, orientation, mode hors ligne et reprise du voyage.
-Logo « V / chemin » : proposition visuelle à valider puis décliner en SVG, favicon et ressources Android adaptatives ; pas encore intégré.
-1. Valider navigation, outils multi-fenêtres et carte avec les données réelles.
-2. Valider Budget, Documents et Bilan refondus.
-3. Valider le carnet Voyager et les formulaires refondus ; harmoniser profil, paramètres et autres fenêtres.
-4. Vérifier les parcours, le responsive, les deux thèmes et l’accessibilité.
-La vitrine publique et l’APK restent des lots distincts.
-La publication Play Store reste reportée.
+## Lot carnet mobile — septembre 2026
+- Activités en carrousel tactile, commandes précédent/suivant et compteur ; repas séparés en dessous, nuits calculées sur tous les jours du séjour.
+- Appui sur nom, heure, durée, lieu, note et informations du séjour : édition sur place avec Enregistrer/Annuler ; aucune navigation vers un autre écran pour ces champs.
+- Ne pas remplacer une étape par un objet partiel : conserver son id, son jour source, ses références, dates, coordonnées et montants non modifiés.
+- Une adresse modifiée manuellement n’est pas automatiquement géocodée : retirer les anciennes coordonnées pour éviter un faux point.
+- Ajouter un hébergement/repas directement dans son bloc. Ne pas recopier un séjour sur ses nuits intermédiaires.
+- Carte, billets et budget restent accessibles par la navigation basse ; retirer les gros raccourcis redondants du carnet.
+- Titres blancs sur couverture verte en clair comme en sombre.
+- Android : appliquer les marges réelles des barres système, découpes et clavier au conteneur natif ; ne pas cumuler ces marges avec celles de la WebView.
+- Menu de voyages défilable, en-tête accessible, palette verte ; ne pas présenter cette correction comme une refonte de toutes les pages personnelles.
+- Météo PC : villes communes au voyage, ajout/retrait et flèches ; date liée au jour sélectionné. Préférences limitées à l’onglet, pas de synchronisation entre appareils.
+
+## Suite de la roadmap
+1. Valider le lot sur APK réelle : petits/grands téléphones, rotation, clavier, droits lecture seule, perte réseau, nuits intermédiaires et sauvegarde.
+2. Refaire accueil, bibliothèque/gestion des voyages, partage, compte et paramètres avec la même DA verte ; compositions propres au mobile.
+3. Harmoniser carte, budget et documents sur APK, conserver les fonctions et les catégories personnalisées.
+4. Vérifier les parcours complets PC/APK, mode hors ligne, responsive, clair/sombre, accessibilité et reprise du voyage.
+5. Logo « V / chemin » : proposition à valider puis décliner en SVG, favicon et ressources Android adaptatives.
+La publication Play Store reste un chantier distinct, reporté. Les tests simulés ne valident pas une APK réelle.
 
 ## Validation
 Contrôler journées remplie, légère et vide ; séjours intermédiaires/départs ; longs titres et notes.

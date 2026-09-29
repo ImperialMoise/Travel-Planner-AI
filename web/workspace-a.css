@@ -789,3 +789,6 @@ html.dark .fv-dialog-layer { --danger:#ffaaa7; }
 }
 
 
+.fv-weather-carousel { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:12px; }
+.fv-weather-carousel .fv-button { min-width:44px; min-height:44px; padding:4px 12px; font-size:24px; }
+.fv-weather-carousel span { font-size:13px; text-align:center; }

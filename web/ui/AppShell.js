@@ -385,7 +385,7 @@
 
   const U = window.ItineraryUtils || {};
   const ANDROID_APK_URL =
-    'https://github.com/ImperialMoise/Travel-Planner-AI/releases/download/android-latest/la-fabrique-a-voyages.apk';
+    'https://github.com/ImperialMoise/Travel-Planner-AI/releases/download/android-latest/la-fabrique-a-voyages.apk?download=' + Date.now();
     const TRIP_ACCENTS = {
     ochre: { accent: '#9d680c', soft: '#f4ead7', ink: '#fffaf1', shadow: 'rgba(157,104,12,.26)' },
     forest: { accent: '#2f6a55', soft: '#e2f0e8', ink: '#f7fffb', shadow: 'rgba(47,106,85,.25)' },

@@ -10544,8 +10544,17 @@ function changeJourneyDay(index, focus = false) {
   const fields = app.querySelectorAll('.journey-inline-form input, .journey-inline-form textarea');
   const dirty = [...fields].some(field => field.value !== field.defaultValue);
   if (dirty && !window.confirm('Quitter cette journée et abandonner les modifications non enregistrées ?')) return false;
+  const direction = index > mobileItineraryDayIndex ? 1 : -1;
   mobileItineraryDayIndex = index;
   renderTravelMode();
+  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    app.querySelectorAll('[data-journey-day], .journey-activities, .journey-stays-meals').forEach(panel => {
+      panel.animate?.([
+        { transform: 'translateX(' + (direction * 48) + 'px)', opacity: 0 },
+        { transform: 'translateX(0)', opacity: 1 }
+      ], { duration: 260, easing: 'cubic-bezier(.22,.61,.36,1)' });
+    });
+  }
   const notice = app.querySelector('[data-journey-notice]');
   if (notice) notice.textContent = 'Jour ' + (index + 1) + ' sur ' + days.length + ' : ' + (days[index].title || days[index].dateISO || 'Journée');
   if (focus) app.querySelector('[data-journey-day]')?.focus({ preventScroll: true });
@@ -10637,6 +10646,10 @@ function renderMobileJourney() {
           </nav>
           ${todayIndex >= 0 && todayIndex !== index ? `<button class="journey-today" type="button" data-action="itinerary-day" data-day-index="${todayIndex}">Revenir à aujourd’hui</button>` : ''}
           <section class="journey-hero ${cover ? 'has-cover' : ''}" data-journey-day tabindex="0" aria-label="Journée sélectionnée">
+            <div class="journey-day-chevrons">
+              <button type="button" data-action="travel-previous-day" aria-label="Journée précédente" ${index === 0 ? 'disabled' : ''}>${icon('chevron_left')}</button>
+              <button type="button" data-action="travel-next-day" aria-label="Journée suivante" ${index >= days.length - 1 ? 'disabled' : ''}>${icon('chevron_right')}</button>
+            </div>
             ${cover ? `<img src="${escapeHtml(cover)}" alt="" decoding="async">` : ''}
             <div><span>${data.isToday ? 'Aujourd’hui · ' : ''}${escapeHtml(day?.dateISO ? formatDateLabel(day.dateISO, '') : 'Date à préciser')}</span>
               <h2>${escapeHtml(day?.title || 'Ma journée')}</h2><p>${entries.length} activité${entries.length > 1 ? 's' : ''} · ${meals.length} repas</p></div>

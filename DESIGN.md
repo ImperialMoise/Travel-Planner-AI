@@ -132,9 +132,12 @@ Ne pas annoncer toutes les pages refaites après le seul cadre connecté.
 ## Roadmap consolidée — décisions du 29 septembre 2026
 Les nouveautés ci-dessous ne sont pas toutes implémentées. Le PC reste le planificateur ; l’APK devient un compagnon de voyage, pas un éditeur PC miniaturisé.
 
-### 1. Gestes et carrousels — lot préparé, à installer et valider
+### 1. Gestes et carrousels — livré, validation APK en cours
 - Swipe sur le bandeau de journée : vers la gauche = jour suivant, vers la droite = précédent ; pas de boucle entre premier et dernier jour.
 - Sélecteur de journée et chevrons cliquables conservés comme alternatives accessibles.
+- Complément à valider : compteur au-dessus du sélecteur, champ et flèches alignés ; chevrons intégrés au bandeau du jour.
+- Changement de journée animé dans le sens de navigation, sans animation si réduction des mouvements activée.
+- Distribution APK : lien anti-cache commun au bandeau mobile, à l’accueil et au QR code ; vérifier la version installée après téléchargement. Ne pas confondre téléchargement, installation et mise à jour du site.
 - Swipe dans le carrousel d’activités indépendant : il ne change jamais le jour et ne bloque pas le défilement vertical.
 - Retirer la rangée de flèches au-dessus des activités et les phrases « Glisse pour voir la suite » / « Touche un texte pour le modifier ».
 - Chevrons cliquables superposés aux cartes, aperçu de la suivante et compteur discret ; aucun défilement automatique.

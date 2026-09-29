@@ -144,7 +144,10 @@ Les nouveautés ci-dessous ne sont pas toutes implémentées. Le PC reste le pla
 - Ne pas capter les gestes Android de bord d’écran ; privilégier le défilement vertical lorsqu’un geste est vertical.
 - Protéger les saisies en cours avant de changer de jour. Tester tactile réel, clavier, lecteur d’écran, paysage et réduction des animations.
 
-### 2. Édition verrouillable et adresses — prochain lot
+### 2. Édition verrouillable et adresses — en cours
+- Lot édition proposé : crayon, brouillon de carte, ✓/× ; sauvegarde unique et protection de navigation. À installer et valider sur APK.
+- Autocomplétion : reste à intégrer à l’ajout et à l’édition, avec suggestions tactiles/clavier, réponses réseau obsolètes ignorées et coordonnées cohérentes.
+- Audit du lot précédent : transition actuelle = glissement d’entrée, pas suivi du doigt ; anti-cache = précaution, pas preuve de la cause d’une ancienne APK.
 Cette décision remplace l’édition champ par champ décrite dans le lot précédent.
 - Une carte est verrouillée par défaut. Un crayon active le mode édition.
 - Toucher nom, heure, durée, lieu ou note permet l’édition au même endroit ; toucher ailleurs ferme le champ sans enregistrer le brouillon sur le serveur.

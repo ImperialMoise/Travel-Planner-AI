@@ -85,6 +85,14 @@
 .journey-field[data-journey-field="note"] strong { font-weight:400; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
 .journey-field-pair { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
 .journey-field-button:hover { background:var(--j-soft); }
+.journey-main .journey-field-button:disabled { opacity:1; cursor:default; background:transparent; }
+.journey-edit-toolbar { display:flex; align-items:center; gap:8px; margin:10px 0; }
+.journey-edit-toolbar > span { flex:1; color:var(--j-muted); font-size:12px; }
+.journey-main .journey-edit-toolbar button { width:44px; min-height:44px; padding:0; }
+.journey-main [data-journey-edit="save"] { background:var(--j-primary); color:var(--j-onprimary); }
+.journey-step-fields.is-editing { border-left:3px solid var(--j-primary); padding-left:10px; }
+.journey-step-fields:not(.is-editing) .journey-field { border-color:transparent; }
+.journey-step-fields [data-journey-edit-status]:empty { display:none; }
 .journey-more { margin:4px 0 12px; }
 .journey-more summary { cursor:pointer; min-height:44px; padding:12px 0; color:var(--j-muted); font-size:13px; }
 .journey-more p { color:var(--j-muted); font-size:14px; overflow-wrap:anywhere; }

@@ -10346,6 +10346,8 @@ function renderTripDayMode(editable = false) {
 
 const journeyPositions = new Map();
 let journeySaving = false;
+let journeyDraft = null;
+let journeyRouteHash = window.location.hash;
 const journeyFields = {
   label: ['Nom', 'text'], time: ['Heure', 'time'], timeEnd: ['Fin', 'time'],
   duree: ['Durée', 'text'], dureeEstimee: ['Durée', 'text'], lieu: ['Lieu', 'text'],
@@ -10356,16 +10358,24 @@ const journeyFields = {
 
 function journeyField(step, dayId, field) {
   const [label] = journeyFields[field];
-  const value = String(step[field] ?? '');
+  const editing = journeyDraft?.tripId === activeTrip?.id && journeyDraft?.stepId === String(step.id) && journeyDraft?.dayId === String(dayId);
+  const value = String(editing && Object.hasOwn(journeyDraft.values, field) ? journeyDraft.values[field] : step[field] ?? '');
   return `<div class="journey-field" data-journey-field="${field}" data-day-id="${escapeHtml(dayId || '')}" data-step-id="${escapeHtml(step.id || '')}">
-    <button type="button" class="journey-field-button" aria-label="Modifier ${label.toLowerCase()}" ${!step.id ? 'disabled' : ''}>
+    <button type="button" class="journey-field-button" aria-label="${editing ? 'Modifier ' : ''}${label.toLowerCase()}" ${!editing || journeySaving ? 'disabled' : ''}
+>
       <span>${label}</span><strong>${escapeHtml(value || 'À préciser')}</strong>
     </button></div>`;
 }
 
 function journeyStepContent(step, dayId, lodging = false) {
   const duration = step.dureeEstimee ? 'dureeEstimee' : 'duree';
-  return `<div class="journey-step-fields">
+  const editing = journeyDraft?.tripId === activeTrip?.id && journeyDraft?.stepId === String(step.id) && journeyDraft?.dayId === String(dayId);
+  return `<div class="journey-step-fields ${editing ? 'is-editing' : ''}" data-journey-card data-day-id="${escapeHtml(dayId || '')}" data-step-id="${escapeHtml(step.id || '')}" data-lodging="${lodging}">
+    <div class="journey-edit-toolbar">
+      <span>${editing ? 'Modifications non enregistrées' : 'Lecture'}</span>
+      ${editing ? '<button type="button" data-journey-edit="save" aria-label="Enregistrer la carte"><span class="material-symbols-outlined" aria-hidden="true">check</span></button><button type="button" data-journey-edit="cancel" aria-label="Annuler les modifications"><span class="material-symbols-outlined" aria-hidden="true">close</span></button>' : `<button type="button" data-journey-edit="start" aria-label="Modifier la carte" ${!step.id ? 'disabled' : ''}><span class="material-symbols-outlined" aria-hidden="true">edit</span></button>`}
+    </div>
+    <p class="journey-save-status" role="status" data-journey-edit-status></p>
     ${journeyField(step, dayId, 'label')}
     <div class="journey-field-pair">${journeyField(step, dayId, lodging ? 'timeCheckIn' : 'time')}${journeyField(step, dayId, lodging ? 'timeCheckOut' : duration)}</div>
     ${journeyField(step, dayId, 'lieu')}${journeyField(step, dayId, 'note')}
@@ -10405,57 +10415,152 @@ function journeyPatch(step, field, value) {
   return next;
 }
 
+function journeyDirty() {
+  return Boolean(journeyDraft && Object.entries(journeyDraft.values).some(([field, value]) =>
+    value !== String(journeyDraft.original[field] ?? '')));
+}
+
+function journeyRefreshCard(draft, message = '', focus = false) {
+  for (const card of app.querySelectorAll('[data-journey-card]')) {
+    if (card.dataset.dayId !== draft.dayId || card.dataset.stepId !== draft.stepId || activeTrip?.id !== draft.tripId) continue;
+    const { step } = journeyFindStep(draft.dayId, draft.stepId);
+    if (!step) continue;
+    const replacement = document.createElement('div');
+    replacement.innerHTML = journeyStepContent(step, draft.dayId, card.dataset.lodging === 'true');
+    const next = replacement.firstElementChild;
+    card.replaceWith(next);
+    next.querySelector('[data-journey-edit-status]').textContent = message;
+    if (focus) next.querySelector('[data-journey-edit]')?.focus({ preventScroll: true });
+  }
+}
+
+function journeyAllowLeave() {
+  if (journeySaving) return false;
+  const dirtyAdd = [...app.querySelectorAll('.journey-add-form input')].some(field => field.value !== field.defaultValue);
+  if ((journeyDirty() || dirtyAdd) && !window.confirm('Abandonner les modifications non enregistrées ?')) return false;
+  const previous = journeyDraft;
+  journeyDraft = null;
+  if (previous) journeyRefreshCard(previous);
+  app.querySelectorAll('.journey-add-form').forEach(form => {
+    const button = form.parentElement.querySelector('[data-journey-add]');
+    if (button) button.hidden = false;
+    form.remove();
+  });
+  return true;
+}
+
+function journeyCommitValues(step, draft) {
+  let next = { ...step };
+  const edits = Object.entries(draft.values).filter(([field, value]) => value !== String(draft.original[field] ?? ''));
+  const dates = new Set(['dateStart', 'dateEnd', 'nuits']);
+  for (const [field, value] of edits) {
+    if (dates.has(field)) next[field] = value;
+    else next = journeyPatch(next, field, value.trim());
+  }
+  const dateEdits = edits.filter(([field]) => dates.has(field));
+  if (dateEdits.some(([field]) => field === 'nuits')) {
+    const nights = Number(next.nuits);
+    if (!Number.isInteger(nights) || nights < 1 || nights > 365) throw new Error('Indique de 1 à 365 nuits.');
+    next.nuits = nights; next.nights = nights;
+  }
+  if (dateEdits.at(-1)?.[0] === 'nuits' && next.dateStart) {
+    const end = new Date(next.dateStart + 'T12:00:00Z');
+    if (!Number.isFinite(end.getTime())) throw new Error('Date d’arrivée invalide.');
+    end.setUTCDate(end.getUTCDate() + next.nuits);
+    next.dateEnd = end.toISOString().slice(0, 10);
+  }
+  if (dateEdits.length && next.dateStart && next.dateEnd) {
+    const nights = Math.round((Date.parse(next.dateEnd) - Date.parse(next.dateStart)) / 86400000);
+    if (!Number.isInteger(nights) || nights < 1 || nights > 365) throw new Error('Le séjour doit durer de 1 à 365 nuits, avec un départ après l’arrivée.');
+    next.nuits = nights; next.nights = nights;
+  }
+  return next;
+}
+
 function mountJourneyEditors(root) {
-  root.addEventListener('click', event => {
-    const button = event.target.closest('.journey-field-button');
-    if (!button || journeySaving) return;
-    const box = button.closest('[data-journey-field]');
-    const { day, step } = journeyFindStep(box.dataset.dayId, box.dataset.stepId);
-    if (!day || !step) return;
-    const field = box.dataset.journeyField, [label, type] = journeyFields[field];
-    const before = box.innerHTML, tripId = activeTrip.id;
-    const value = String(step[field] ?? '');
-    box.innerHTML = `<form class="journey-inline-form"><label>${label}
-      ${type === 'textarea' ? `<textarea name="value" rows="3" maxlength="6000">${escapeHtml(value)}</textarea>` : `<input name="value" type="${type}" value="${escapeHtml(value)}" ${field === 'label' ? 'required' : ''} ${type === 'number' ? 'min="1" max="365" step="1"' : 'maxlength="500"'}>`}
-      </label><div class="journey-form-actions"><button type="submit" class="journey-primary">Enregistrer</button><button type="button" data-journey-cancel>Annuler</button></div>
-      <p role="status" class="journey-save-status"></p></form>`;
-    const form = box.querySelector('form'), status = form.querySelector('[role="status"]');
-    const cancel = () => { if (journeySaving) return; box.innerHTML = before; box.querySelector('button')?.focus(); };
-    form.querySelector('[data-journey-cancel]').onclick = cancel;
-    form.onkeydown = e => { if (e.key === 'Escape') { e.stopPropagation(); cancel(); } };
-    form.elements.value.focus();
-    form.onsubmit = async e => {
-      e.preventDefault();
+  if (!root) return;
+  journeyRouteHash = window.location.hash;
+  root.addEventListener('click', async event => {
+    const command = event.target.closest('[data-journey-edit]');
+    if (command) {
       if (journeySaving) return;
-      if (activeTrip?.id !== tripId || !window.SB?.saveStep) { status.textContent = 'Sauvegarde indisponible. Réessaie après connexion.'; return; }
-      const current = journeyFindStep(box.dataset.dayId, box.dataset.stepId);
-      if (!current.step) { status.textContent = 'Cette étape n’est plus disponible.'; return; }
+      const card = command.closest('[data-journey-card]');
+      const { day, step } = journeyFindStep(card.dataset.dayId, card.dataset.stepId);
+      if (!day || !step) return;
+      const action = command.dataset.journeyEdit;
+      if (action === 'start') {
+        if (!journeyAllowLeave()) return;
+        journeyDraft = { tripId: activeTrip.id, dayId: String(day.id), stepId: String(step.id), original: { ...step }, values: {} };
+        journeyRefreshCard(journeyDraft, '', true);
+        return;
+      }
+      const draft = journeyDraft;
+      if (!draft || draft.tripId !== activeTrip?.id || draft.stepId !== String(step.id) || draft.dayId !== String(day.id)) return;
+      if (action === 'cancel') {
+        journeyDraft = null;
+        journeyRefreshCard(draft, 'Modifications annulées.', true);
+        return;
+      }
+      const status = card.querySelector('[data-journey-edit-status]');
+      if (!window.SB?.saveStep) { status.textContent = 'Sauvegarde indisponible. Réessaie après connexion.'; return; }
+      if (!journeyDirty()) {
+        journeyDraft = null;
+        journeyRefreshCard(draft, 'Aucune modification.', true);
+        return;
+      }
       let next;
-      try { next = journeyPatch(current.step, field, form.elements.value.value.trim()); }
+      try { next = journeyCommitValues(step, draft); }
       catch (error) { status.textContent = error.message; return; }
       journeySaving = true;
-      form.querySelectorAll('button,input,textarea').forEach(el => { el.disabled = true; });
+      card.querySelectorAll('button,input,textarea').forEach(el => { el.disabled = true; });
       status.textContent = 'Enregistrement…';
       try {
-        await window.SB.saveStep(tripId, current.day.id, next);
-        Object.assign(current.step, next);
-        if (activeActivityDetail?.id === next.id) activeActivityDetail.rawStep = current.step;
-        box.innerHTML = journeyField(next, current.day.id, field).replace(/^.*?<div[^>]*>/s, '').replace(/<\/div>$/, '');
-        box.insertAdjacentHTML('beforeend', `<p class="journey-save-status" role="status">${field === 'lieu' ? 'Enregistré. Le nouveau lieu devra être localisé sur la carte.' : 'Enregistré.'}</p>`);
-        box.querySelector('button')?.focus();
-        for (const related of root.querySelectorAll('[data-journey-field]')) {
-          if (related === box || related.querySelector('form') || related.dataset.stepId !== String(next.id)) continue;
-          const strong = related.querySelector('strong');
-          if (strong) strong.textContent = String(next[related.dataset.journeyField] || 'À préciser');
-        }
+        await window.SB.saveStep(draft.tripId, day.id, next);
+        Object.assign(step, next);
+        if (activeActivityDetail?.id === next.id) activeActivityDetail.rawStep = step;
+        if (journeyDraft === draft) journeyDraft = null;
+        journeySaving = false;
+        journeyRefreshCard(draft, 'Enregistré.', true);
       } catch (error) {
-        status.textContent = 'Non enregistré : ' + (error.message || 'vérifie la connexion et tes droits.');
-        form.querySelectorAll('button,input,textarea').forEach(el => { el.disabled = false; });
+        journeySaving = false;
+        journeyRefreshCard(draft, 'Non enregistré : ' + (error.message || 'vérifie la connexion et tes droits.'), true);
       } finally { journeySaving = false; }
+      return;
+    }
+    const button = event.target.closest('.journey-field-button');
+    if (!button || button.disabled || journeySaving || !journeyDraft) return;
+    const box = button.closest('[data-journey-field]'), draft = journeyDraft;
+    if (box.dataset.stepId !== draft.stepId || box.dataset.dayId !== draft.dayId || activeTrip?.id !== draft.tripId) return;
+    const field = box.dataset.journeyField, [label, type] = journeyFields[field];
+    const value = String(Object.hasOwn(draft.values, field) ? draft.values[field] : draft.original[field] ?? '');
+    box.innerHTML = `<div class="journey-inline-form"><label>${label}
+      ${type === 'textarea' ? `<textarea rows="3" maxlength="6000">${escapeHtml(value)}</textarea>` : `<input type="${type}" value="${escapeHtml(value)}" ${type === 'number' ? 'min="1" max="365" step="1"' : 'maxlength="500"'}>`}
+      </label></div>`;
+    const input = box.querySelector('input,textarea');
+    const remember = () => {
+      delete draft.values[field];
+      draft.values[field] = input.value;
     };
+    const finish = () => {
+      if (!box.isConnected || journeyDraft !== draft) return;
+      remember();
+      const { step } = journeyFindStep(draft.dayId, draft.stepId);
+      if (!step) return;
+      const replacement = document.createElement('div');
+      replacement.innerHTML = journeyField(step, draft.dayId, field);
+      box.replaceWith(replacement.firstElementChild);
+    };
+    input.addEventListener('input', remember);
+    input.addEventListener('blur', finish, { once: true });
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && type !== 'textarea') { e.preventDefault(); input.blur(); }
+      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); input.value = value; input.blur(); }
+    });
+    input.focus();
   });
   root.querySelectorAll('[data-journey-add]').forEach(button => {
     button.onclick = () => {
+      if (!journeyAllowLeave()) return;
       const type = button.dataset.journeyAdd, section = button.parentElement;
       if (section.querySelector('.journey-add-form')) return;
       const day = getActiveItineraryDay(), tripId = activeTrip?.id;
@@ -10540,10 +10645,8 @@ function mountJourneyCarousel(root, positionKey, initialIndex) {
 function changeJourneyDay(index, focus = false) {
   const days = activeTrip?.days || [];
   if (!Number.isInteger(index) || index < 0 || index >= days.length || index === mobileItineraryDayIndex) return false;
-  if (journeySaving) return false;
-  const fields = app.querySelectorAll('.journey-inline-form input, .journey-inline-form textarea');
-  const dirty = [...fields].some(field => field.value !== field.defaultValue);
-  if (dirty && !window.confirm('Quitter cette journée et abandonner les modifications non enregistrées ?')) return false;
+  if (!journeyAllowLeave()) return false;
+
   const direction = index > mobileItineraryDayIndex ? 1 : -1;
   mobileItineraryDayIndex = index;
   renderTravelMode();
@@ -10712,7 +10815,8 @@ function renderActivityDetail() {
   app.innerHTML = `<div class="mobile-shell journey-shell journey-detail-shell">
     <header class="journey-detail-topbar"><button type="button" data-action="${mobileWorkspaceMode === 'travel' ? 'travel' : 'itinerary'}" aria-label="Retour au programme"><span class="material-symbols-outlined" aria-hidden="true">arrow_back</span></button><span>Détails de l’étape</span></header>
     <main class="journey-main"><section class="journey-hero"><span>${escapeHtml(detail.type || 'Activité')}</span><h1>${escapeHtml(getStepDisplayTitle(step))}</h1></section>
-      <section class="journey-card"><p class="journey-description">Touche une information pour la modifier ici.</p>${journeyStepContent(step, dayId, lodging)}
+      <section class="journey-card"><p class="journey-description">Le crayon déverrouille la carte. Valide toutes tes modifications avec ✓.</p>
+${journeyStepContent(step, dayId, lodging)}
       <button class="journey-map-link" type="button" data-action="activity-show-on-map">Voir sur la carte</button></section>
     </main>${bottomNav('plan')}</div>`;
   mountJourneyEditors(app.querySelector('.journey-main'));
@@ -14634,6 +14738,7 @@ function focusMobileRoute(route) {
 }
 
 function navigate(route) {
+  if (!journeyAllowLeave()) return;
   announceMobileRoute(route);
     if (route === 'invite') {
     window.location.hash = 'invite';
@@ -14714,6 +14819,17 @@ function navigate(route) {
 
   focusMobileRoute(route);
 }
+
+window.addEventListener('beforeunload', event => {
+  const dirtyAdd = [...app.querySelectorAll('.journey-add-form input')].some(field => field.value !== field.defaultValue);
+  if (journeySaving || journeyDirty() || dirtyAdd) { event.preventDefault(); event.returnValue = ''; }
+});
+
+window.addEventListener('click', event => {
+  const control = event.target.closest('[data-action],a[href]');
+  if (!control || control.disabled || ['trip-menu', 'close-trip-menu', 'travel-previous-day', 'travel-next-day', 'itinerary-day'].includes(control.dataset.action)) return;
+  if (!journeyAllowLeave()) { event.preventDefault(); event.stopImmediatePropagation(); }
+}, true);
 
 window.addEventListener('click', async event => {
   const action = event.target.closest('[data-action]')?.dataset.action;
@@ -16589,6 +16705,10 @@ async function handleMobileNotificationAction(
 }
 
 function renderCurrentRoute() {
+  if (!journeyAllowLeave()) {
+    history.replaceState(history.state, '', window.location.pathname + window.location.search + journeyRouteHash);
+    return;
+  }
   const currentRoute =
     window.location.hash
       .replace(/^#/, '') ||

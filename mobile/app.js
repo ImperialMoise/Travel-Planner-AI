@@ -5400,7 +5400,7 @@ function applyMobileTripLibraryFilters() {
   }
 }
 
-aasync function renderTripLibrary({ reload = true } = {}) {
+async function renderTripLibrary({ reload = true } = {}) {
   if (!mobileUser) { navigate('auth'); return; }
   applyMobileTripAccent('forest');
   const request = ++mobileHubLibraryRequest, owner = mobileUser.id;

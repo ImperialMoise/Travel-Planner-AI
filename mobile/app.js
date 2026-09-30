@@ -916,7 +916,6 @@ function getTripDocuments() {
   return mobileDocumentsTripId === activeTrip?.id && mobileDocumentsOwner === mobileUser?.id
     ? mobileDocuments : [];
 }
-```
 
 async function refreshMobileDocuments({ force = false } = {}) {
   const request = ++mobileDocumentsRequest;
@@ -10485,11 +10484,10 @@ function journeyStepContent(step, dayId, lodging = false) {
     <p class="journey-save-status" role="status" data-journey-edit-status></p>
     ${journeyField(step, dayId, 'label')}
     ${step.type === 'transport' && (step.depart || step.arrivee) ? `<p class="journey-transport-route">${escapeHtml(step.depart || 'Départ à préciser')} → ${escapeHtml(step.arrivee || 'Arrivée à préciser')}${step.timeEnd ? '<br>Arrivée ' + escapeHtml(step.timeEnd) + (step.nextDay ? ' · lendemain' : '') : ''}</p>` : ''}
-    <div class="journey-field-pair">    ${journeyField(step, dayId, 'label')}
-    <div class="journey-field-pair">${journeyField(step, dayId, lodging ? 'timeCheckIn' : 'time')}${journeyField(step, dayId, lodging ? 'timeCheckOut' : duration)}</div>
+    <div class="journey-field-pair">
+    ${journeyField(step, dayId, lodging ? 'timeCheckIn' : 'time')}${journeyField(step, dayId, lodging ? 'timeCheckOut' : duration)}</div>
     ${journeyField(step, dayId, 'lieu')}${journeyField(step, dayId, 'note')}
     ${!editing ? journeyMapsLink(step) : ''}
-    <details class="journey-more">    ${journeyField(step, dayId, 'lieu')}${journeyField(step, dayId, 'note')}
     <details class="journey-more"><summary>Autres informations</summary>
       ${lodging ? `<div class="journey-field-pair">${journeyField(step, dayId, 'dateStart')}${journeyField(step, dayId, 'dateEnd')}</div>${journeyField(step, dayId, 'nuits')}` : journeyField(step, dayId, 'timeEnd')}
       ${journeyField(step, dayId, 'ref')}

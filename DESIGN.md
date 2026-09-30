@@ -176,11 +176,13 @@ Cette décision remplace l’édition champ par champ décrite dans le lot préc
 - Planification avancée privilégiée sur ordinateur, accès à la version PC conservé.
 - Ne pas supprimer les fonctions de préparation avant qu’un remplacement utilisable soit prêt ; conserver les préférences de mode existantes.
 
-### 4. Pages personnelles et DA verte — à réaliser
-- Refaire accueil, liste Mes voyages, gestion des voyages, partage, compte et paramètres.
-- Garder En cours / À venir / Dates à définir / Terminés / Archivés, recherche, couvertures, duplication et archivage.
-- Préserver invitations, rôles et gestion des membres ; conserver les paramètres, rappels et journaux.
-- Même DA forêt, clair/sombre, champs lisibles et commandes tactiles ; la correction du menu n’est pas une refonte de toutes ces pages.
+### 4. Pages personnelles et DA verte — accueil/bibliothèque, lot proposé
+- Accueil connecté et invité, Mes voyages : palette forêt claire/sombre, priorité au voyage en cours, bouton Voyager explicite, accès à la copie hors ligne.
+- Bibliothèque groupée En cours / À venir / Dates à définir / Terminés / Archivés ; recherche, réinitialisation, couvertures réelles et initiale de remplacement.
+- Gestion, duplication, partage, archivage/restauration et sauvegarde JSON réutilisent les actions existantes. Aucune modification des données, API ni droits.
+- Lot hors ligne poussé sur a84fab3 : build Android 99 réussi ; validation en mode avion sur APK réelle toujours nécessaire.
+- À poursuivre : refonte de la gestion des voyages, du partage, du compte et des paramètres. Préserver invitations, rôles, membres, rappels et journaux.
+- Cette étape ne constitue pas la refonte de toutes les pages personnelles.
 
 ### 5. Pages du voyage sur APK — à réaliser
 - Harmoniser carte, budget, documents et bilan avec cette DA et des compositions mobiles dédiées.

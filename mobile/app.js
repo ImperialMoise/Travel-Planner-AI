@@ -2360,338 +2360,18 @@ function mobileInspirationSection() {
 }
 
 function renderMobileWelcome() {
-  app.innerHTML = `
-    <div class="mobile-shell mobile-welcome-shell">
-      <header class="mobile-welcome-topbar">
-        <span class="mobile-welcome-brand">
-          La Fabrique à Voyages
-        </span>
-
-        <button
-          type="button"
-          class="mobile-welcome-login"
-          data-action="account"
-        >
-          Se connecter
-        </button>
-      </header>
-
-      <main class="mobile-welcome-main">
-        <section class="mobile-welcome-hero">
-          <div
-            class="mobile-welcome-image"
-            aria-hidden="true"
-          ></div>
-
-          <div
-            class="mobile-welcome-overlay"
-            aria-hidden="true"
-          ></div>
-
-          <div class="mobile-welcome-content">
-            <p class="mobile-welcome-kicker">
-              Un voyage · Deux temps
-            </p>
-
-            <h1>
-              La Fabrique<br />
-              à Voyages
-            </h1>
-
-            <p class="mobile-welcome-intro">
-              Prépare avec précision.
-              Voyage avec l’essentiel.
-            </p>
-
-            <div class="mobile-welcome-builder">
-              <label for="mobile-public-destination">
-                Ta prochaine destination
-              </label>
-
-              <div class="mobile-welcome-destination">
-                <span
-                  class="material-symbols-outlined"
-                  aria-hidden="true"
-                >
-                  location_on
-                </span>
-
-                <input
-                  id="mobile-public-destination"
-                  type="text"
-                  placeholder="Où veux-tu partir ?"
-                  autocomplete="off"
-                />
-              </div>
-
-              <button
-                type="button"
-                class="mobile-welcome-start"
-                data-action="public-create-trip"
-              >
-                <span>Créer mon voyage</span>
-
-                <span
-                  class="material-symbols-outlined"
-                  aria-hidden="true"
-                >
-                  arrow_forward
-                </span>
-              </button>
-
-              <p class="mobile-welcome-reassurance">
-                Commence librement, sans créer de compte.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        <section class="mobile-welcome-experience">
-          <header class="mobile-welcome-section-heading">
-            <p class="mobile-welcome-kicker">
-              La même aventure
-            </p>
-
-            <h2>
-              Le bon niveau de détail,
-              au bon moment.
-            </h2>
-
-            <p>
-              Ton voyage change de visage lorsque tu pars,
-              mais toutes tes informations restent à leur place.
-            </p>
-          </header>
-
-          <div class="mobile-welcome-modes">
-            <article class="mobile-welcome-mode prepare">
-              <header class="mobile-welcome-mode-header">
-                <div>
-                  <span class="mobile-welcome-mode-time">
-                    Avant le départ
-                  </span>
-
-                  <h3>Préparer</h3>
-                </div>
-
-                <span class="mobile-welcome-mode-icon">
-                  <span class="material-symbols-outlined">
-                    edit_calendar
-                  </span>
-                </span>
-              </header>
-
-              <div class="welcome-mini-days">
-                <span class="active">
-                  <small>J1</small>
-                  <strong>12 mai</strong>
-                </span>
-
-                <span>
-                  <small>J2</small>
-                  <strong>13 mai</strong>
-                </span>
-
-                <span>
-                  <small>J3</small>
-                  <strong>14 mai</strong>
-                </span>
-              </div>
-
-              <div class="welcome-mini-program">
-                <div class="welcome-mini-line">
-                  <time>09:30</time>
-
-                  <span class="welcome-mini-symbol">
-                    <span class="material-symbols-outlined">
-                      train
-                    </span>
-                  </span>
-
-                  <span>
-                    <strong>Arrivée à Kyoto</strong>
-                    <small>Gare centrale · Voie 8</small>
-                  </span>
-                </div>
-
-                <div class="welcome-mini-line">
-                  <time>11:00</time>
-
-                  <span class="welcome-mini-symbol">
-                    <span class="material-symbols-outlined">
-                      hotel
-                    </span>
-                  </span>
-
-                  <span>
-                    <strong>Déposer les bagages</strong>
-                    <small>Hôtel Gion · Réservation ajoutée</small>
-                  </span>
-                </div>
-
-                <div class="welcome-mini-line">
-                  <time>14:30</time>
-
-                  <span class="welcome-mini-symbol">
-                    <span class="material-symbols-outlined">
-                      temple_buddhist
-                    </span>
-                  </span>
-
-                  <span>
-                    <strong>Temple Kiyomizu-dera</strong>
-                    <small>Lieu enregistré sur la carte</small>
-                  </span>
-                </div>
-              </div>
-
-              <footer class="mobile-welcome-mode-footer">
-                <span>
-                  <span class="material-symbols-outlined">map</span>
-                  Carte
-                </span>
-
-                <span>
-                  <span class="material-symbols-outlined">payments</span>
-                  Budget
-                </span>
-
-                <span>
-                  <span class="material-symbols-outlined">folder</span>
-                  Documents
-                </span>
-              </footer>
-            </article>
-
-            <article class="mobile-welcome-mode travel">
-              <header class="mobile-welcome-mode-header">
-                <div>
-                  <span class="mobile-welcome-mode-time">
-                    Pendant le séjour
-                  </span>
-
-                  <h3>Voyager</h3>
-                </div>
-
-                <span class="mobile-welcome-mode-icon">
-                  <span class="material-symbols-outlined">
-                    near_me
-                  </span>
-                </span>
-              </header>
-
-              <div class="welcome-travel-day">
-                <span>Aujourd’hui</span>
-                <strong>Kyoto · Jour 3</strong>
-                <small>3 étapes au programme</small>
-              </div>
-
-              <div class="welcome-next-step">
-                <div class="welcome-next-step-top">
-                  <span>Prochaine étape</span>
-                  <time>14:30</time>
-                </div>
-
-                <span class="welcome-next-step-icon">
-                  <span class="material-symbols-outlined">
-                    temple_buddhist
-                  </span>
-                </span>
-
-                <h4>Temple Kiyomizu-dera</h4>
-
-                <p>
-                  1 Chome-294 Kiyomizu<br />
-                  Higashiyama, Kyoto
-                </p>
-
-                <button
-                  type="button"
-                  tabindex="-1"
-                >
-                  <span class="material-symbols-outlined">
-                    map
-                  </span>
-                  Voir sur la carte
-                </button>
-              </div>
-
-              <div class="welcome-after-step">
-                <time>18:30</time>
-
-                <span>
-                  <strong>Dîner à Gion</strong>
-                  <small>Restaurant enregistré</small>
-                </span>
-
-                <span class="material-symbols-outlined">
-                  chevron_right
-                </span>
-              </div>
-            </article>
-          </div>
-
-          <div class="mobile-welcome-mode-dots" aria-hidden="true">
-            <span class="active"></span>
-            <span></span>
-          </div>
-        </section>
-
-        ${mobileInspirationSection()}
-
-        <section class="mobile-welcome-continuity">
-          <div class="mobile-welcome-continuity-copy">
-            <p class="mobile-welcome-kicker">
-              Toujours avec toi
-            </p>
-
-            <h2>Un seul voyage, partout.</h2>
-
-            <p>
-              Commence sur ordinateur, continue sur téléphone,
-              puis ouvre le même programme pendant ton séjour.
-            </p>
-          </div>
-
-          <div class="mobile-welcome-devices">
-            <div>
-              <span class="material-symbols-outlined">
-                laptop_mac
-              </span>
-
-              <span>
-                <strong>Préparer confortablement</strong>
-                <small>Ordinateur ou téléphone</small>
-              </span>
-            </div>
-
-            <span
-              class="material-symbols-outlined"
-              aria-hidden="true"
-            >
-              sync_alt
-            </span>
-
-            <div>
-              <span class="material-symbols-outlined">
-                smartphone
-              </span>
-
-              <span>
-                <strong>Voyager simplement</strong>
-                <small>Téléphone ou ordinateur</small>
-              </span>
-            </div>
-          </div>
-        </section>
-
-        <footer class="mobile-welcome-footer">
-          <span>La Fabrique à Voyages</span>
-          <small>Préparer · Voyager</small>
-        </footer>
-      </main>
-    </div>
-  `;
+  applyMobileTripAccent('forest');
+  app.innerHTML = '<div class="mobile-shell journey-shell hub-shell">' + topbar() + '<main class="hub-main">' +
+    '<header class="hub-heading"><span class="journey-eyebrow">La Fabrique à Voyages</span><h1>Prépare ici.<br>Profite là-bas.</h1><p>Ton itinéraire, tes nuits et tes billets dans un carnet qui te suit.</p></header>' +
+    '<section class="hub-welcome-card"><h2>Où veux-tu partir ?</h2><label for="mobile-public-destination">Destination</label><input id="mobile-public-destination" type="text" placeholder="Ville, région ou pays" autocomplete="off">' +
+    '<button class="hub-primary" type="button" data-action="public-create-trip">Créer mon voyage →</button><p>Commence sans créer de compte.</p></section>' +
+    '<button class="hub-wide" type="button" data-action="account">J’ai déjà un compte · Me connecter</button>' +
+    mobileHubOffline() +
+    '<section class="hub-benefits"><article><span aria-hidden="true">01</span><h2>Avant de partir</h2><p>Organise tes journées et rassemble tes réservations.</p></article><article><span aria-hidden="true">02</span><h2>Sur place</h2><p>Suis ton programme. Télécharge ton voyage avant de perdre le réseau.</p></article></section>' +
+    '<details class="hub-discover"><summary>Explorer des idées de voyage</summary>' + mobileInspirationSection() + '</details>' +
+    '<aside class="hub-desktop"><h2>Aussi sur ordinateur</h2><p>Un écran plus grand pour préparer, la même aventure sur ton téléphone.</p><a href="https://travel-planner-ai-chi.vercel.app/" target="_blank" rel="noopener noreferrer">Découvrir la version web ↗</a></aside>' +
+    '</main></div>';
+  mountMobileHub();
 }
 
 function getMobileDashboardTripSummary(trip) {
@@ -2768,259 +2448,93 @@ function getMobileDashboardTripSummary(trip) {
   };
 }
 
-function renderHome() {
-  applyMobileTripAccent('ochre');
-
-  const realTrips = mobileTrips || [];
-  if (!mobileUser && realTrips.length === 0) {
-  renderMobileWelcome();
-  return;
+let mobileHubLibraryRequest = 0;
+function mobileHubTrips(items) {
+  const rank = {current:0,upcoming:1,undated:2,past:3,archived:4};
+  return [...items].sort((a,b) => {
+    const status = getMobileTripLibraryStatus(a), other = getMobileTripLibraryStatus(b);
+    const dateA = a.start_date || a.startDate || '', dateB = b.start_date || b.startDate || '';
+    return rank[status] - rank[other] || (status === 'past' ? dateB.localeCompare(dateA) : dateA.localeCompare(dateB));
+  });
 }
-  const visibleTrips = realTrips
-    .slice()
-    .sort((firstTrip, secondTrip) => {
-      const statusOrder = {
-        current: 0,
-        upcoming: 1,
-        undated: 2,
-        past: 3,
-        archived: 4
-      };
+function mobileHubDate(trip) {
+  const start = trip.start_date || trip.startDate, end = trip.end_date || trip.endDate;
+  return start ? formatDateLabel(start, '') + (end && end !== start ? ' — ' + formatDateLabel(end, '') : '') : 'Dates à définir';
+}
+function mobileHubPhoto(trip) {
+  const safeUrl = value => { try { const url = new URL(value); return url.protocol === 'https:' ? url.href : ''; } catch { return ''; } };
+  const cover = safeUrl(trip.cover_image_url || trip.coverImageUrl);
+  const credit = trip.cover_photographer_name || trip.coverPhotographerName;
+  const source = safeUrl(trip.cover_source_url || trip.coverSourceUrl);
+  const clickable = getMobileTripLibraryStatus(trip) !== 'archived';
+  return '<figure class="hub-cover' + (cover ? '' : ' hub-cover-empty') + '">' + (clickable ? '<button class="hub-cover-open" type="button" data-action="open-trip-travel" data-trip-id="' + escapeHtml(trip.id) + '" aria-label="Ouvrir ' + escapeHtml(trip.name || 'ce voyage') + '">' : '<div>') + '<span aria-hidden="true">' + escapeHtml((trip.name || 'V').slice(0,1).toLocaleUpperCase('fr-FR')) +
+    '</span>' + (cover ? '<img src="' + escapeHtml(cover) + '" alt="" loading="lazy" decoding="async">' : '') +
+    (clickable ? '</button>' : '</div>') + (cover && credit ? '<figcaption>' + (source ? '<a href="' + escapeHtml(source) + '" target="_blank" rel="noopener noreferrer">' : '') +
+    'Photo : ' + escapeHtml(credit) + (source ? '</a>' : '') + '</figcaption>' : '') + '</figure>';
+}
+function mobileHubTripCard(trip, featured = false, library = false) {
+  const status = getMobileTripLibraryStatus(trip), id = escapeHtml(trip.id);
+  const owner = !!mobileUser?.id && String(trip.owner_id || '') === String(mobileUser.id);
+  const name = escapeHtml(trip.name || 'Voyage sans titre');
+  const search = String(trip.name || '').toLocaleLowerCase('fr-FR').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  return '<article class="hub-trip ' + (featured ? 'hub-featured' : '') + '" data-mobile-library-trip data-search="' + escapeHtml(search) + '" data-status="' + status + '">' +
+    mobileHubPhoto(trip) + '<div class="hub-trip-copy"><span class="hub-status">' + getMobileTripLibraryStatusLabel(status) + '</span><h3>' + name + '</h3><p>' + escapeHtml(mobileHubDate(trip)) + '</p>' +
+    '<div class="hub-actions">' + (status !== 'archived' ? '<button class="hub-primary" type="button" data-action="open-trip-travel" data-trip-id="' + id + '">' +
+    (featured && status === 'current' ? 'Ouvrir mon programme' : 'Voyager') + ' <span aria-hidden="true">→</span></button><button type="button" data-action="open-trip" data-workspace-mode="prepare" data-trip-id="' + id + '">Organiser</button>' : '') +
+    (library ? '<details class="hub-manage"><summary aria-label="Actions pour ' + name + '">Gérer</summary><div class="hub-actions">' +
+    '<button type="button" data-action="trip-share" data-trip-id="' + id + '">Partager</button>' +
+    '<button type="button" data-action="trip-duplicate" data-trip-id="' + id + '">Dupliquer</button>' +
+    (owner ? '<button type="button" data-action="trip-archive" data-trip-id="' + id + '" data-archived="' + (status === 'archived' ? 'false' : 'true') + '">' + (status === 'archived' ? 'Restaurer' : 'Archiver') + '</button>' : '') +
+    '</div></details>' : '<button type="button" data-action="duplicate-trip" data-trip-id="' + id + '">Dupliquer</button>') + '</div></div></article>';
+}
+function mobileHubOffline() {
+  return '<section class="hub-offline" aria-label="Voyage hors ligne"><div><h2>Sans connexion</h2><p data-hub-offline-status>Retrouve la copie téléchargée sur ce téléphone.</p></div><a class="hub-button" href="./offline.html">Ouvrir ma copie →</a></section>';
+}
+function mountMobileHub() {
+  app.querySelectorAll('.hub-cover img').forEach(img => {
+    const hide = () => { img.hidden = true; img.closest('.hub-cover')?.classList.add('hub-cover-empty'); };
+    img.addEventListener('error', hide, { once:true });
+    if (img.complete && !img.naturalWidth) hide();
+  });
+  app.querySelectorAll('[data-hub-reset]').forEach(button => {
+    button.onclick = () => {
+      const input = app.querySelector('#mobile-trip-library-search'), select = app.querySelector('#mobile-trip-library-filter');
+      if (input) input.value = '';
+      if (select) select.value = 'all';
+      applyMobileTripLibraryFilters();
+      input?.focus();
+    };
+  });
+  const target = app.querySelector('[data-hub-offline-status]'), owner = mobileUser?.id;
+  if (!target || !owner) return;
+  OfflinePack.readPack().then(pack => {
+    if (!target.isConnected || mobileUser?.id !== owner) return;
+    target.textContent = pack?.owner === owner
+      ? pack.trip.name + ' · téléchargé le ' + new Date(pack.savedAt).toLocaleString('fr-FR') + '.'
+      : 'Aucune copie téléchargée. Ouvre ton voyage puis « Préparer hors ligne ».';
+  }).catch(() => { if (target.isConnected) target.textContent = 'Impossible de vérifier la copie locale sur cet appareil.'; });
+}
 
-      const firstStatus =
-        getMobileTripLibraryStatus(firstTrip);
-
-      const secondStatus =
-        getMobileTripLibraryStatus(secondTrip);
-
-      const statusDifference =
-        statusOrder[firstStatus] -
-        statusOrder[secondStatus];
-
-      if (statusDifference !== 0) {
-        return statusDifference;
-      }
-
-      const firstDate =
-        firstTrip.start_date ||
-        firstTrip.startDate ||
-        '';
-
-      const secondDate =
-        secondTrip.start_date ||
-        secondTrip.startDate ||
-        '';
-
-      if (firstStatus === 'past') {
-        return secondDate.localeCompare(firstDate);
-      }
-
-      return firstDate.localeCompare(secondDate);
-    });
-
-  const nextTrip =
-    visibleTrips.find(trip => {
-      const status =
-        getMobileTripLibraryStatus(trip);
-
-      return (
-        status === 'current' ||
-        status === 'upcoming'
-      );
-    }) ||
-    activeTrip ||
-    visibleTrips[0] ||
-    null;
-
-  const nextTripName = nextTrip?.name || 'Aucun voyage';
-  const nextTripDate = nextTrip?.startDate || nextTrip?.start_date || '';
-  const nextTripSummary =
-  getMobileDashboardTripSummary(nextTrip);
-
-const nextTripCover =
-  nextTrip
-    ? getMobileTripCoverUrl(nextTrip)
-    : '';
-
-  const syncStatus = mobileSupabaseError
-    ? 'Mode local · Supabase indisponible'
-    : !mobileReady
-      ? 'Chargement des données...'
-      : mobileUser
-        ? 'Connecté à vos voyages Supabase'
-        : 'Mode local · connectez-vous';
-
-  app.innerHTML = `
-    <div class="mobile-shell">
-      ${topbar()}
-
-      <main class="home-main">
-        <section class="home-hero">
-          <p class="kicker">Votre Carnet</p>
-          <h2 class="hero-title">Où commence votre prochaine escale ?</h2>
-          <p class="mobile-sync-status">${syncStatus}</p>
-                  <section class="mobile-desktop-cta" aria-label="Version ordinateur">
-          <div class="mobile-desktop-cta-icon" aria-hidden="true">
-            <span class="material-symbols-outlined">laptop_mac</span>
-          </div>
-
-          <div class="mobile-desktop-cta-copy">
-            <strong>Prépare aussi ton voyage sur ordinateur</strong>
-            <span>
-              La version web est plus confortable pour organiser un long itinéraire.
-              Tes voyages restent synchronisés.
-            </span>
-          </div>
-
-          <a
-            class="mobile-desktop-cta-link"
-            href="https://travel-planner-ai-chi.vercel.app/"
-            target="_blank"
-            rel="noopener"
-          >
-            Ouvrir
-          </a>
-        </section>
-        </section>
-
-${nextTrip ? `
-  <section
-    class="mobile-dashboard-trip"
-    aria-label="${escapeHtml(nextTripName)}"
-    style="background-image:url('${escapeHtml(nextTripCover)}')"
-  >
-    <div class="mobile-dashboard-trip-shade"></div>
-
-    <div class="mobile-dashboard-trip-content">
-      <div class="mobile-dashboard-trip-top">
-        <span>Prochain voyage</span>
-        <strong>${escapeHtml(nextTripSummary.countdown)}</strong>
-      </div>
-
-      <div class="mobile-dashboard-trip-title">
-        <h3>${escapeHtml(nextTripName)}</h3>
-
-        <p>
-          ${nextTripDate
-            ? escapeHtml(formatDateLabel(nextTripDate, ''))
-            : 'Dates à préciser'}
-        </p>
-      </div>
-
-      <div class="mobile-dashboard-progress">
-        <div>
-          <span>Préparation</span>
-          <strong>${nextTripSummary.progress}%</strong>
-        </div>
-
-        <span class="mobile-dashboard-progress-track">
-          <span
-            style="width:${nextTripSummary.progress}%"
-          ></span>
-        </span>
-      </div>
-
-      <div class="mobile-dashboard-trip-actions">
-        <button
-          type="button"
-          data-action="open-trip"
-          data-workspace-mode="prepare"
-          data-trip-id="${nextTrip.id}"
-        >
-          <span class="material-symbols-outlined">
-            edit_calendar
-          </span>
-          Préparer
-        </button>
-
-        <button
-          type="button"
-          class="travel"
-          data-action="open-trip-travel"
-          data-trip-id="${nextTrip.id}"
-        >
-          <span class="material-symbols-outlined">
-            near_me
-          </span>
-          Voyager
-        </button>
-      </div>
-    </div>
-  </section>
-` : ''}
-
-        <button class="create-adventure" type="button" data-action="create-trip">
-          <span class="plus">+</span>
-          <span>Créer une nouvelle aventure</span>
-        </button>
-
-        <section>
-          <div class="section-heading">
-            <h3>Mes voyages</h3>
-
-            <span class="trip-count">
-              ${realTrips.length}
-              ${realTrips.length > 1 ? 'voyages' : 'voyage'}
-            </span>
-          </div>
-
-          <div
-            class="trip-strip"
-            role="list"
-            aria-label="Tous mes voyages"
-          >
-            ${visibleTrips.length ? visibleTrips.map(trip => {
-              const tripStatus =
-                getMobileTripLibraryStatus(trip);
-
-              return `
-              <article
-                class="trip-card ${tripStatus}"
-                role="listitem"
-                data-action="open-trip"
-                data-trip-id="${trip.id}"
-                style="cursor:pointer"
-              >
-                <div  class="trip-image"  style="background-image: url('${escapeHtml(getMobileTripCoverUrl(trip))}')">
-                  <span class="trip-status">
-                    ${getMobileTripLibraryStatusLabel(tripStatus)}
-                  </span>
-                </div>
-
-                <div class="trip-body">
-                  <h4>${escapeHtml(trip.name || 'Voyage sans titre')}</h4>
-                  <div class="trip-date mono">
-                    ${trip.start_date ? formatDateLabel(trip.start_date, '') : 'Sans date'}
-                  </div>
-
-                  <button
-  type="button"
-  class="trip-duplicate"
-  data-action="duplicate-trip"
-  data-trip-id="${trip.id}"
->
-  <span class="material-symbols-outlined">content_copy</span>
-  Dupliquer
-</button>
-
-                  </div>
-              </article>
-              `;
-            }).join('') : `
-              <p class="companion-empty">
-                ${mobileReady ? 'Aucun voyage pour le moment.' : 'Chargement de vos voyages...'}
-              </p>
-            `}
-          </div>
-        </section>
-
-        ${mobileInspirationSection()}
-      </main>
-
-    </div>
-  `;
-
-  void ensureMobileHomeCovers(visibleTrips);
+function renderHome() {
+  applyMobileTripAccent('forest');
+  if (!mobileUser && !(mobileTrips || []).length) { renderMobileWelcome(); return; }
+  const visible = mobileHubTrips((mobileTrips || []).filter(trip => getMobileTripLibraryStatus(trip) !== 'archived'));
+  const featured = visible.find(trip => trip.id === activeTrip?.id && getMobileTripLibraryStatus(trip) === 'current') || visible[0];
+  const others = visible.filter(trip => trip.id !== featured?.id).slice(0,3);
+  app.innerHTML = '<div class="mobile-shell journey-shell hub-shell">' + topbar() + '<main class="hub-main">' +
+    '<header class="hub-heading"><span class="journey-eyebrow">La suite de ton voyage</span><h1>Ton carnet, à portée de main.</h1><p>Le programme et les informations utiles, au même endroit.</p></header>' +
+    (mobileSupabaseError ? '<section class="hub-notice" role="alert"><strong>Connexion aux voyages indisponible</strong><p>Tu peux ouvrir ta copie hors ligne ou réessayer dans Mes voyages.</p><button type="button" data-action="trip-library">Réessayer</button></section>' : '') +
+    (featured ? mobileHubTripCard(featured, true) : '<section class="hub-empty"><h2>' + (mobileReady ? 'Ton premier voyage commence ici.' : 'Chargement des voyages…') + '</h2><p>' +
+      (mobileReady ? 'Crée un itinéraire ou retrouve un voyage partagé depuis ton compte.' : 'La copie hors ligne reste accessible ci-dessous.') + '</p><button class="hub-primary" type="button" data-action="create-trip">+ Nouveau voyage</button></section>') +
+    mobileHubOffline() +
+    '<section class="hub-section"><header><h2>Mes voyages</h2><button type="button" data-action="trip-library">Tout voir (' + visible.length + ')</button></header>' +
+    (others.length ? '<div class="hub-trip-grid">' + others.map(trip => mobileHubTripCard(trip)).join('') + '</div>' : '<p>La bibliothèque regroupe aussi tes voyages terminés et archivés.</p>') +
+    '<button class="hub-new" type="button" data-action="create-trip">+ Nouveau voyage</button></section>' +
+    '<nav class="hub-shortcuts" aria-label="Espace personnel"><button type="button" data-action="account">Mon compte</button><button type="button" data-action="reminders">Rappels</button><button type="button" data-action="settings">Paramètres</button></nav>' +
+    '<details class="hub-discover"><summary>Idées pour un prochain voyage</summary>' + mobileInspirationSection() + '</details>' +
+    '<aside class="hub-desktop"><h2>Plus de place pour préparer</h2><p>Organise ton itinéraire sur ordinateur, puis retrouve-le dans l’app avec ton compte.</p><a href="https://travel-planner-ai-chi.vercel.app/" target="_blank" rel="noopener noreferrer">Ouvrir la version ordinateur ↗</a></aside>' +
+    '</main></div>';
+  mountMobileHub();
 }
 
 
@@ -5792,32 +5306,13 @@ function renderAccount() {
 }
 
 function getMobileTripLibraryStatus(trip) {
-  if (trip?.archived_at) {
-    return 'archived';
-  }
-
-  const today =
-    new Date().toISOString().slice(0, 10);
-
-  const start =
-    trip?.start_date || '';
-
-  const end =
-    trip?.end_date || start;
-
-  if (!start) {
-    return 'undated';
-  }
-
-  if (end && end < today) {
-    return 'past';
-  }
-
-  if (start > today) {
-    return 'upcoming';
-  }
-
-  return 'current';
+  if (trip?.archived_at) return 'archived';
+  const today = mobileJourneyToday();
+  const start = trip?.start_date || trip?.startDate || '';
+  const end = trip?.end_date || trip?.endDate || start;
+  if (!start) return 'undated';
+  if (end && end < today) return 'past';
+  return start > today ? 'upcoming' : 'current';
 }
 
 function getMobileTripLibraryStatusLabel(status) {
@@ -5876,6 +5371,14 @@ function applyMobileTripLibraryFilters() {
       }
     });
 
+
+  document.querySelectorAll('[data-hub-group]').forEach(group => {
+    const visible = [...group.querySelectorAll('[data-mobile-library-trip]')].filter(card => !card.hidden).length;
+    group.hidden = visible === 0;
+    const count = group.querySelector('[data-hub-group-count]');
+    if (count) count.textContent = visible;
+  });
+
   const count =
     document.querySelector(
       '#mobile-trip-library-count'
@@ -5897,351 +5400,48 @@ function applyMobileTripLibraryFilters() {
   }
 }
 
-async function renderTripLibrary({
-  reload = true
-} = {}) {
-  if (!mobileUser) {
-    navigate('auth');
-    return;
-  }
-
+aasync function renderTripLibrary({ reload = true } = {}) {
+  if (!mobileUser) { navigate('auth'); return; }
+  applyMobileTripAccent('forest');
+  const request = ++mobileHubLibraryRequest, owner = mobileUser.id;
+  const current = () => request === mobileHubLibraryRequest && mobileUser?.id === owner && location.hash === '#trip-library';
   if (reload) {
-    app.innerHTML = `
-      <div class="mobile-shell settings-shell">
-        ${topbar()}
-
-        <main class="mobile-personal-main">
-          <header class="mobile-personal-heading">
-            <span>Bibliothèque</span>
-            <h2>Mes voyages</h2>
-            <p>Chargement de vos voyages…</p>
-          </header>
-
-          <section class="mobile-personal-card">
-            <div
-              class="mobile-reminder-loading"
-              role="status"
-            >
-              <span class="material-symbols-outlined">
-                progress_activity
-              </span>
-              Chargement…
-            </div>
-          </section>
-        </main>
-      </div>
-    `;
-
+    app.innerHTML = '<div class="mobile-shell journey-shell hub-shell">' + topbar() + '<main class="hub-main"><header class="hub-heading"><h1>Mes voyages</h1><p role="status">Chargement de ta bibliothèque…</p></header>' + mobileHubOffline() + '</main></div>';
+    mountMobileHub();
     mobileTripLibraryError = '';
-
     try {
-      mobileTripLibrary =
-        await window.SB.listMyTrips({
-          includeArchived: true
-        });
+      const result = await window.SB.listMyTrips({ includeArchived: true });
+      if (!current()) return;
+      mobileTripLibrary = result;
     } catch (error) {
-      console.error(
-        'Mobile trip library error:',
-        error
-      );
-
+      if (!current()) return;
       mobileTripLibrary = [];
-
-      mobileTripLibraryError =
-        error.message ||
-        'Impossible de charger les voyages.';
+      mobileTripLibraryError = error.message || 'Impossible de charger les voyages.';
     }
   }
-
-  app.innerHTML = `
-    <div class="mobile-shell settings-shell">
-      ${topbar()}
-
-      <main class="mobile-personal-main">
-        <header class="mobile-personal-heading">
-          <button
-            class="mobile-reminder-back"
-            type="button"
-            data-action="home"
-          >
-            <span class="material-symbols-outlined">
-              arrow_back
-            </span>
-            Accueil
-          </button>
-
-          <span>Bibliothèque</span>
-          <h2>Mes voyages</h2>
-
-          <p>
-            Recherchez, dupliquez ou archivez vos voyages.
-          </p>
-        </header>
-
-        <section class="mobile-trip-library-tools">
-          <label>
-            <span class="material-symbols-outlined">
-              search
-            </span>
-
-            <input
-              id="mobile-trip-library-search"
-              type="search"
-              placeholder="Rechercher un voyage"
-              autocomplete="off"
-            >
-          </label>
-
-          <select
-            id="mobile-trip-library-filter"
-            aria-label="Filtrer les voyages"
-          >
-            <option value="all">Tous</option>
-            <option value="upcoming">À venir</option>
-            <option value="current">En cours</option>
-            <option value="past">Terminés</option>
-            <option value="archived">Archivés</option>
-            <option value="undated">Sans date</option>
-          </select>
-        </section>
-
-        <div class="mobile-trip-library-summary">
-          <strong id="mobile-trip-library-count">
-            ${mobileTripLibrary.length} voyage${mobileTripLibrary.length > 1 ? 's' : ''}
-          </strong>
-
-          <button
-            type="button"
-            data-action="create-trip"
-          >
-            <span class="material-symbols-outlined">
-              add
-            </span>
-            Nouveau
-          </button>
-        </div>
-
-        <section class="mobile-trip-backup-card">
-          <div>
-            <span class="material-symbols-outlined">
-              shield
-            </span>
-
-            <span>
-              <strong>Sauvegarde personnelle</strong>
-
-              <small>
-                Exportez tous vos voyages en JSON ou
-                restaurez une sauvegarde du site web.
-              </small>
-            </span>
-          </div>
-
-          <input
-            id="mobile-trip-backup-input"
-            type="file"
-            accept=".json,application/json"
-            hidden
-          >
-
-<div class="mobile-trip-backup-actions">
-  <button
-    type="button"
-    data-action="trip-backup-import"
-  >
-    <span class="material-symbols-outlined">
-      upload
-    </span>
-    Importer JSON
-  </button>
-
-  <button
-    type="button"
-    data-action="trip-backup-export"
-  >
-    <span class="material-symbols-outlined">
-      download
-    </span>
-    Exporter JSON
-  </button>
-</div>
-
-<p>
-  Les voyages existants ne seront jamais remplacés.
-  Les fichiers privés ne sont pas inclus.
-</p>
-        </section>
-
-        ${mobileTripLibraryError ? `
-          <section
-            class="mobile-personal-card mobile-reminder-empty danger"
-            role="alert"
-          >
-            <span class="material-symbols-outlined">
-              error
-            </span>
-
-            <strong>Chargement impossible</strong>
-
-            <p>
-              ${escapeHtml(mobileTripLibraryError)}
-            </p>
-
-            <button
-              class="mobile-personal-primary"
-              type="button"
-              data-action="trip-library"
-            >
-              Réessayer
-            </button>
-          </section>
-        ` : `
-          <section class="mobile-trip-library-list">
-            ${mobileTripLibrary.map(trip => {
-              const status =
-                getMobileTripLibraryStatus(trip);
-
-              const owner =
-                String(trip.owner_id || '') ===
-                String(mobileUser?.id || '');
-
-              const normalizedName =
-                String(trip.name || '')
-                  .toLocaleLowerCase('fr-FR')
-                  .normalize('NFD')
-                  .replace(/[\u0300-\u036f]/g, '');
-
-              return `
-                <article
-                  class="mobile-trip-library-card"
-                  data-mobile-library-trip
-                  data-search="${escapeHtml(normalizedName)}"
-                  data-status="${status}"
-                >
-                  <img
-                    src="${escapeHtml(
-                      getMobileTripCoverUrl(trip)
-                    )}"
-                    alt=""
-                    width="720"
-                    height="360"
-                    loading="lazy"
-                    decoding="async"
-                    fetchpriority="low"
-                  >
-
-                  <div class="mobile-trip-library-card-body">
-                    <div>
-                      <span class="mobile-trip-library-status ${status}">
-                        ${getMobileTripLibraryStatusLabel(status)}
-                      </span>
-
-                      <h3>
-                        ${escapeHtml(
-                          trip.name ||
-                          'Voyage sans titre'
-                        )}
-                      </h3>
-
-                      <p>
-                        ${trip.start_date
-                          ? escapeHtml(
-                              formatDateLabel(
-                                trip.start_date,
-                                ''
-                              )
-                            )
-                          : 'Dates à définir'}
-                      </p>
-                    </div>
-
-                    <div class="mobile-trip-library-actions">
-                      ${status !== 'archived' ? `
-                        <button
-                          type="button"
-                          data-action="open-trip"
-                          data-trip-id="${escapeHtml(trip.id)}"
-                        >
-                          <span class="material-symbols-outlined">
-                            edit_calendar
-                          </span>
-                          Ouvrir
-                        </button>
-                      ` : ''}
-
-                      <button
-                        type="button"
-                        data-action="trip-share"
-                        data-trip-id="${escapeHtml(trip.id)}"
-                      >
-                        <span class="material-symbols-outlined">
-                          ios_share
-                        </span>
-                        Partager
-                      </button>
-
-                      <button
-                        type="button"
-                        data-action="trip-duplicate"
-                        data-trip-id="${escapeHtml(trip.id)}"
-                      >
-                        <span class="material-symbols-outlined">
-                          content_copy
-                        </span>
-                        Dupliquer
-                      </button>
-
-                      ${owner ? `
-                        <button
-                          type="button"
-                          class="${status === 'archived'
-                            ? ''
-                            : 'danger'}"
-                          data-action="trip-archive"
-                          data-trip-id="${escapeHtml(trip.id)}"
-                          data-archived="${status === 'archived'
-                            ? 'false'
-                            : 'true'}"
-                        >
-                          <span class="material-symbols-outlined">
-                            ${status === 'archived'
-                              ? 'unarchive'
-                              : 'archive'}
-                          </span>
-
-                          ${status === 'archived'
-                            ? 'Restaurer'
-                            : 'Archiver'}
-                        </button>
-                      ` : ''}
-                    </div>
-                  </div>
-                </article>
-              `;
-            }).join('')}
-
-            <div
-              id="mobile-trip-library-empty"
-              class="mobile-reminder-empty"
-              ${mobileTripLibrary.length ? 'hidden' : ''}
-            >
-              <span class="material-symbols-outlined">
-                search_off
-              </span>
-
-              <strong>Aucun voyage trouvé</strong>
-
-              <p>
-                Modifiez la recherche ou le filtre sélectionné.
-              </p>
-            </div>
-          </section>
-        `}
-      </main>
-    </div>
-  `;
-
+  if (!current()) return;
+  const trips = mobileHubTrips(mobileTripLibrary || []);
+  const groups = [['current','En cours'],['upcoming','À venir'],['undated','Dates à définir'],['past','Terminés'],['archived','Archivés']];
+  app.innerHTML = '<div class="mobile-shell journey-shell hub-shell">' + topbar() + '<main class="hub-main">' +
+    '<header class="hub-heading"><button type="button" data-action="home">← Accueil</button><h1>Mes voyages</h1><p>Pars, prépare ou retrouve tes souvenirs.</p></header>' +
+    '<div class="hub-actions"><button class="hub-primary" type="button" data-action="create-trip">+ Nouveau voyage</button><a class="hub-button" href="./offline.html">Copie hors ligne</a></div>' +
+    '<section class="hub-search" aria-label="Recherche dans les voyages"><label for="mobile-trip-library-search">Rechercher<input id="mobile-trip-library-search" type="search" placeholder="Nom du voyage" autocomplete="off"></label>' +
+    '<label for="mobile-trip-library-filter">Afficher<select id="mobile-trip-library-filter"><option value="all">Tous</option>' +
+    groups.map(([value,name]) => '<option value="' + value + '">' + name + '</option>').join('') + '</select></label></section>' +
+    '<p id="mobile-trip-library-count" class="hub-count" role="status" aria-live="polite"></p>' +
+    (mobileTripLibraryError ? '<section class="hub-notice" role="alert"><h2>Chargement impossible</h2><p>' + escapeHtml(mobileTripLibraryError) + '</p><button type="button" data-action="trip-library">Réessayer</button></section>' :
+      groups.map(([status,name]) => {
+        const items = trips.filter(trip => getMobileTripLibraryStatus(trip) === status);
+        return items.length ? '<section class="hub-section" data-hub-group><header><h2>' + name + '</h2><span data-hub-group-count>' + items.length + '</span></header><div class="hub-trip-grid">' + items.map(trip => mobileHubTripCard(trip, false, true)).join('') + '</div></section>' : '';
+      }).join('') +
+      '<section id="mobile-trip-library-empty" class="hub-empty" hidden><h2>' + (trips.length ? 'Aucun voyage ne correspond.' : 'Ta bibliothèque est encore vide.') +
+      '</h2><p>' + (trips.length ? 'Essaie un autre nom ou affiche tous les voyages.' : 'Crée ton premier voyage ou importe une sauvegarde ci-dessous.') + '</p>' +
+      (trips.length ? '<button type="button" data-hub-reset>Effacer les filtres</button>' : '<button type="button" data-action="create-trip">Créer un voyage</button>') + '</section>') +
+    '<details class="hub-backup"><summary>Sauvegarder ou importer mes voyages</summary><p>La sauvegarde JSON contient les données, pas les fichiers privés. Elle est distincte du pack hors ligne.</p>' +
+    '<input id="mobile-trip-backup-input" type="file" accept=".json,application/json" hidden><div class="hub-actions"><button type="button" data-action="trip-backup-import">Importer JSON</button><button type="button" data-action="trip-backup-export">Exporter JSON</button></div><p>Les voyages existants ne sont pas remplacés.</p></details>' +
+    '</main></div>';
   applyMobileTripLibraryFilters();
+  mountMobileHub();
 }
 
 async function handleMobileBackupDownload() {

@@ -2063,7 +2063,7 @@ function bottomNav(active = 'plan') {
   const planLabel =
     mobileWorkspaceMode === 'travel'
       ? 'Voyager'
-      : 'Préparer';
+      : 'Organiser';
 
   const planIcon =
     mobileWorkspaceMode === 'travel'
@@ -9724,9 +9724,91 @@ function openMobileQuickStepDetails() {
   navigate('new-step');
 }
 
+let mobileOrganizerAdvanced = false;
+
 function renderItinerary() {
   setMobileWorkspaceMode('prepare');
-  renderTripDayMode(true);
+  if (mobileOrganizerAdvanced) { renderTripDayMode(true); return; }
+  applyMobileTripAccent('forest');
+  const day = getActiveItineraryDay(), days = activeTrip?.days || [], index = mobileItineraryDayIndex;
+  const steps = getCurrentTimelineSteps();
+  const data = mobileJourneySnapshot(days, index, steps);
+  const icon = name => '<span class="material-symbols-outlined" aria-hidden="true">' + name + '</span>';
+  const action = (name, label, symbol, extra = '') => '<button type="button" data-action="' + name + '" ' + extra + '>' + icon(symbol) + label + '</button>';
+  app.innerHTML = `
+    <div class="mobile-shell journey-shell organizer-shell">${topbar()}
+      <main class="journey-main">
+        <header class="journey-heading"><div><span class="journey-eyebrow">Organiser</span><h1>${escapeHtml(activeTrip?.name || 'Mon voyage')}</h1></div>
+          ${action('travel', 'Voyager', 'near_me')}</header>
+        ${days.length ? `
+          <nav class="journey-days" aria-label="Journées du voyage">
+            ${action('travel-previous-day', '', 'chevron_left', 'aria-label="Journée précédente" ' + (index === 0 ? 'disabled' : ''))}
+            <label><span>Jour ${index + 1} sur ${days.length}</span><select id="organizer-day-select" aria-label="Choisir une journée">
+              ${days.map((item, i) => `<option value="${i}" ${i === index ? 'selected' : ''}>J${i + 1} · ${escapeHtml(item.title || item.dateISO || 'Journée')}</option>`).join('')}</select></label>
+            ${action('travel-next-day', '', 'chevron_right', 'aria-label="Journée suivante" ' + (index >= days.length - 1 ? 'disabled' : ''))}
+          </nav>
+          <section class="organizer-day" data-journey-day tabindex="0" aria-label="Journée sélectionnée">
+            <span class="journey-eyebrow">${escapeHtml(day?.dateISO ? formatDateLabel(day.dateISO, '') : 'Date à préciser')}</span>
+            <h2>${escapeHtml(day?.title || 'Ma journée')}</h2>
+            <details class="organizer-options"><summary>Options de la journée</summary><div class="organizer-actions">
+              ${action('day-cover-open', 'Photo', 'image')}
+              ${action('mobile-sort-day-by-time', 'Trier par heure', 'schedule', steps.filter(step => mobileTimeToMinutes(step.time) !== null).length < 2 ? 'disabled' : '')}
+              ${action('move-day-up', 'Déplacer avant', 'arrow_back', index === 0 ? 'disabled' : '')}
+              ${action('move-day-down', 'Déplacer après', 'arrow_forward', index >= days.length - 1 ? 'disabled' : '')}
+            </div></details>
+          </section>
+          <section class="organizer-program" aria-label="Programme à organiser">
+            <header><h2>Programme</h2><span>${steps.length} étape${steps.length > 1 ? 's' : ''}</span></header>
+            ${steps.length ? steps.map((entry, i) => `<details class="organizer-step" data-organizer-step="${i}">
+              <summary><span class="organizer-time">${escapeHtml(entry.time || 'Libre')}</span>
+                <span><small>${escapeHtml(entry.type)}</small><strong data-organizer-title>${escapeHtml(entry.title)}</strong></span>${icon('expand_more')}</summary>
+              <div class="organizer-step-body">
+                ${journeyStepContent(entry.rawStep, day.id, ['lodging','logement'].includes(String(entry.rawStep.type).toLowerCase()))}
+                <div class="organizer-actions">
+                  ${action('move-step-up', '', 'arrow_upward', 'data-step-index="' + i + '" aria-label="Monter cette étape" ' + (i === 0 ? 'disabled' : ''))}
+                  ${action('move-step-down', '', 'arrow_downward', 'data-step-index="' + i + '" aria-label="Descendre cette étape" ' + (i === steps.length - 1 ? 'disabled' : ''))}
+                  ${action('show-step-on-map', 'Carte', 'map', 'data-step-index="' + i + '"')}
+                  ${action('edit-step', 'Tous les champs', 'tune', 'data-step-index="' + i + '"')}
+                  ${action('delete-step', 'Supprimer', 'delete', 'data-step-index="' + i + '"')}
+                </div>
+              </div></details>`).join('') : '<p class="organizer-empty">Cette journée est libre. Ajoute une première étape.</p>'}
+            <div class="organizer-actions organizer-add">
+              <button type="button" class="journey-primary" data-organizer-add="activity">${icon('add')}Activité</button>
+              <button type="button" data-organizer-add="transport">${icon('directions_transit')}Transport</button>
+            </div>
+          </section>
+          <section class="journey-card organizer-extras"><h2>${icon('bed')}Hébergements</h2>
+            ${data.stays.filter(stay => stay.sourceDayIndex !== index).map(stay => {
+              const original = days[stay.sourceDayIndex]?.steps?.find(item => item.id === stay.step.id) || stay.step;
+              return `<details><summary>${escapeHtml(getStepDisplayTitle(original))} · nuit ${stay.nightNumber}/${stay.nights}</summary>${journeyStepContent(original, stay.sourceDay.id, true)}</details>`;
+            }).join('')}
+            <button type="button" data-journey-add="lodging">${icon('add')}Ajouter un hébergement</button>
+          </section>
+          <section class="journey-card organizer-extras"><h2>${icon('restaurant')}Repas</h2>
+            <button type="button" data-journey-add="restaurant">${icon('add')}Ajouter un repas</button>
+          </section>
+        ` : '<section class="journey-card"><h2>Aucune journée</h2><p>La préparation avancée reste disponible ci-dessous.</p></section>'}
+        <button type="button" class="organizer-advanced" data-organizer-advanced>Préparation avancée ${icon('arrow_forward')}</button>
+        <p class="journey-visually-hidden" role="status" data-journey-notice></p>
+      </main>${bottomNav('plan')}
+    </div>`;
+  const root = app.querySelector('.journey-main');
+  mountJourneyEditors(root);
+  mountJourneyDaySwipe(root);
+  root.querySelector('#organizer-day-select')?.addEventListener('change', event => {
+    if (!changeJourneyDay(Number(event.target.value))) event.target.value = String(mobileItineraryDayIndex);
+  });
+  root.addEventListener('click', event => {
+    const add = event.target.closest('[data-organizer-add]');
+    const advanced = event.target.closest('[data-organizer-advanced]');
+    if (!add && !advanced) return;
+    if (!journeyAllowLeave()) return;
+    if (advanced) { mobileOrganizerAdvanced = true; renderItinerary(); return; }
+    editingStepDraft = null;
+    mapStepDraft = null;
+    selectedStepCategory = add.dataset.organizerAdd;
+    navigate('new-step');
+  });
 }
 
 function renderTripDayMode(editable = false) {
@@ -10516,6 +10598,11 @@ function journeyRefreshCard(draft, message = '', focus = false) {
     replacement.innerHTML = journeyStepContent(step, draft.dayId, card.dataset.lodging === 'true');
     const next = replacement.firstElementChild;
     card.replaceWith(next);
+    const row = next.closest('[data-organizer-step]');
+    if (row && !journeyDraft) {
+      row.querySelector('[data-organizer-title]').textContent = getStepDisplayTitle(step);
+      row.querySelector('.organizer-time').textContent = step.time || 'Libre';
+    }
     next.querySelector('[data-journey-edit-status]').textContent = message;
     if (focus) next.querySelector('[data-journey-edit]')?.focus({ preventScroll: true });
   }
@@ -10692,7 +10779,10 @@ function mountJourneyEditors(root) {
           const saved = await window.SB.saveStep(tripId, day.id, step);
           if (!saved?.id) throw new Error('Confirmation de sauvegarde manquante.');
           (day.steps ||= []).push({ ...step, id: saved.id });
-          if (activeTrip?.id === tripId && form.isConnected) renderMobileJourney();
+          if (activeTrip?.id === tripId && form.isConnected) {
+            if (mobileWorkspaceMode === 'prepare') renderItinerary();
+            else renderMobileJourney();
+          }
         } catch (error) {
           status.textContent = 'Non enregistré : ' + (error.message || 'réessaie.');
           form.querySelectorAll('input,button').forEach(el => { el.disabled = false; });
@@ -10751,7 +10841,8 @@ function changeJourneyDay(index, focus = false) {
 
   const direction = index > mobileItineraryDayIndex ? 1 : -1;
   mobileItineraryDayIndex = index;
-  renderTravelMode();
+  if (mobileWorkspaceMode === 'prepare') renderItinerary();
+  else renderTravelMode();
   if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
     app.querySelectorAll('[data-journey-day], .journey-activities, .journey-stays-meals').forEach(panel => {
       panel.animate?.([
@@ -10841,7 +10932,7 @@ function renderMobileJourney() {
     <div class="mobile-shell journey-shell">${topbar()}
       <main class="journey-main">
         <header class="journey-heading"><div><span class="journey-eyebrow">Carnet de voyage</span><h1>${escapeHtml(activeTrip?.name || 'Mon voyage')}</h1></div>
-          <button class="journey-prepare" type="button" data-action="itinerary">Préparer</button></header>
+          <button class="journey-prepare" type="button" data-action="itinerary">Organiser</button></header>
         ${days.length ? `
           <nav class="journey-days" aria-label="Journées du voyage">
             <button type="button" data-action="travel-previous-day" aria-label="Journée précédente" ${index === 0 ? 'disabled' : ''}>${icon('chevron_left')}</button>
@@ -14532,7 +14623,7 @@ function handleEditStep(stepIndex) {
     dayIndex: step.dayIndex ?? 0
   };
 
-  selectedStepCategory = step.type || step.typeKey || 'transport';
+  selectedStepCategory = step.rawStep?.type || step.typeKey || 'transport';
   navigate('new-step');
 }
 
@@ -14890,6 +14981,7 @@ function navigate(route) {
   window.location.hash = 'travel';
   renderTravelMode();
   } else if (route === 'itinerary') {
+    mobileOrganizerAdvanced = false;
     window.location.hash = 'itinerary';
     renderItinerary();
   } else if (route === 'new-step') {

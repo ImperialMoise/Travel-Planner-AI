@@ -159,7 +159,9 @@ Cette décision remplace l’édition champ par champ décrite dans le lot préc
 - Autocomplétion à l’ajout et à l’édition des adresses d’hébergement, restaurant et activité. Suggestions ville/pays ; sélection = adresse + coordonnées.
 - Saisie manuelle toujours possible ; pas d’anciennes coordonnées après changement d’adresse non géocodé.
 
-### 3. Préparation Android simplifiée — à réaliser
+### 3. Préparation Android simplifiée — premier lot proposé
+- Organiser : programme compact dépliable, édition crayon/✓/×, ajout activité/transport et ajout direct repas/hébergement ; réordonnancement réutilisé, séjours intermédiaires rattachés au jour source.
+- L’ancienne préparation reste accessible via Préparation avancée. Les formulaires complets et les pages personnelles restent à harmoniser ; recette APK réelle requise.
 - Remplacer l’accès à la préparation complexe par un espace « Organiser » propre au mobile.
 - Ajouter et modifier les étapes, réordonner le programme, gérer journées, nuits et repas dans des parcours courts.
 - Planification avancée privilégiée sur ordinateur, accès à la version PC conservé.

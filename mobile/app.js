@@ -2,6 +2,7 @@ import { Capacitor } from '@capacitor/core';
 import { Geolocation } from '@capacitor/geolocation';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { Share } from '@capacitor/share';
+import * as OfflinePack from './offline-pack.js';
 import '../web/ui/TripBackup.js';
 import '../web/ui/itinerary-utils.js';
 
@@ -754,6 +755,13 @@ async function initMobileData() {
       );
 
     if (SB) {
+      SB.onAuthChange((user, event) => {
+        if (event === 'SIGNED_OUT') {
+          OfflinePack.forgetPack().catch(console.warn);
+        } else if (user?.id) {
+          OfflinePack.setOwner(user.id).catch(console.warn);
+        }
+      });
       await withMobileTimeout(
         loadPendingMobileInvite()
       );
@@ -808,6 +816,9 @@ async function initMobileData() {
 
 async function refreshMobileTrips(activeTripId = null) {
   if (!window.SB || !mobileUser) return;
+  await OfflinePack.setOwner(mobileUser.id);
+  const offlineAccess = document.getElementById('offline-access');
+  if (offlineAccess) offlineAccess.hidden = true;
 
   mobileTrips = await window.SB.listMyTrips();
 
@@ -10961,6 +10972,10 @@ function renderMobileJourney() {
       <main class="journey-main">
         <header class="journey-heading"><div><span class="journey-eyebrow">Carnet de voyage</span><h1>${escapeHtml(activeTrip?.name || 'Mon voyage')}</h1></div>
           <button class="journey-prepare" type="button" data-action="itinerary">Organiser</button></header>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+          <button class="journey-prepare" type="button" data-offline-prepare>Préparer hors ligne</button>
+          <a class="journey-prepare" href="./offline.html" style="display:inline-flex;align-items:center;min-height:44px">Ouvrir la copie</a>
+        </div>
         ${days.length ? `
           <nav class="journey-days" aria-label="Journées du voyage">
             <button type="button" data-action="travel-previous-day" aria-label="Journée précédente" ${index === 0 ? 'disabled' : ''}>${icon('chevron_left')}</button>
@@ -14166,6 +14181,7 @@ async function handleMobileDeleteAccount() {
       );
     }
 
+    await OfflinePack.forgetPack();
     try {
       await window.SB.signOut();
     } catch (_) {
@@ -14205,6 +14221,7 @@ async function handleLogout() {
     disable: true
   });
 
+  await OfflinePack.forgetPack();
   await window.SB.signOut();
   mobileUser = null;
   mobileTrips = [];
@@ -17162,6 +17179,16 @@ document.addEventListener(
     }
   }
 );
+
+document.addEventListener('click', async event => {
+  if (!event.target.closest('[data-offline-prepare]')) return;
+  if (!journeyAllowLeave() || !activeTrip?.id || !mobileUser?.id) return;
+  try {
+    await OfflinePack.showPreparation(window.SB, activeTrip.id, mobileUser.id);
+  } catch (error) {
+    alert('Stockage hors ligne indisponible : ' + error.message);
+  }
+});
 
 initMobileData().then(async () => {
   if (pendingMobileInvite) {

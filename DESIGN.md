@@ -132,7 +132,9 @@ Ne pas annoncer toutes les pages refaites après le seul cadre connecté.
 ## Priorité départ — 30 septembre 2026
 - Geler la structure générale. Priorité au suivi mobile : carnet, journées/étapes, trajets, hôtels/repas, billets, sauvegardes et erreurs réseau.
 - Organiser est poussé ; le lot départ proposé ajoute Maps sur les cartes, rend les informations transport visibles et sécurise les chargements de documents avec recherche et palette verte.
-- Aucun mode hors ligne complet promis : la liste de documents en mémoire n’est pas le fichier. Télécharger les billets dans le téléphone et les ouvrir en mode avion avant de partir ; garder un export du programme.
+- Lot hors ligne proposé : un pack local pour un voyage, programme/notes/checklists/hébergements/repas/dépenses et documents PDF/images/texte réellement téléchargés. Lecteur autonome, lecture seule, démarrage en mode avion et PDF.js embarqué. Copie atomique : un échec conserve le pack précédent. Déconnexion/changement de compte retirent la copie locale ; accessible sur l’appareil déverrouillé.
+- Limites explicites : un voyage, 30 Mo par document, 150 Mo de documents au total ; autres formats refusés, pas de cartes, météo, couvertures ni outils collaboratifs hors ligne. Stockage IndexedDB privé à l’origine de l’app, persistance demandée mais non garantie par le navigateur. Ne pas désinstaller ni effacer les données ; garder les billets essentiels en sauvegarde indépendante.
+- Validation réelle en attente : installer l’APK, préparer avec Internet, passer en mode avion, fermer/réouvrir, consulter chaque billet et une nuit intermédiaire. Tests simulés seuls insuffisants.
 - Recette réelle obligatoire avant départ : installer l’APK signée sans désinstaller, ouvrir le bon voyage, tester journées et cartes, nuit intermédiaire, adresse, PDF et une modification sur un voyage de test.
 - Après départ : poursuivre formulaires Organiser, pages personnelles, budget/carte/bilan, logo, vitrine et Play Store. Les exigences ci-dessous restent conservées, seulement repriorisées.
 

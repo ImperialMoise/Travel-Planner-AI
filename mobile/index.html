@@ -4,16 +4,24 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>La Fabrique à Voyages</title>
+  <script>
+    if (!navigator.onLine && !new URLSearchParams(location.search).has('online')) {
+      location.replace('./offline.html');
+    }
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,600;9..40,700;9..40,800&family=DM+Serif+Display&family=JetBrains+Mono&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.css">
-  <script src="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.js"></script>
+  <script defer src="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.js"></script>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="journey.css">
 </head>
 <body>
+  <aside id="offline-access" style="padding:12px 16px;background:#e8efe9;color:#173b2b;font:16px system-ui">
+    <a href="./offline.html" style="display:inline-flex;align-items:center;min-height:44px;color:inherit">Ouvrir mon voyage hors ligne →</a>
+  </aside>
   <div id="app"></div>
 
 <script type="module">

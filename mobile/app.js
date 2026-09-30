@@ -339,7 +339,11 @@ function installMobileNetworkStatus() {
       ?.addEventListener(
         'click',
         function retryMobileConnection() {
-          window.location.reload();
+          if (!navigator.onLine) {
+            banner.querySelector('small').textContent = 'Toujours hors ligne. Conserve cette page ouverte pour consulter les informations déjà chargées.';
+            return;
+          }
+          if (journeyAllowLeave()) window.location.reload();
         }
       );
 
@@ -903,32 +907,44 @@ let mobileDocuments = [];
 let mobileDocumentsTripId = null;
 let mobileDocumentsLoadedAt = 0;
 const MOBILE_DOCUMENTS_CACHE_MS = 60_000;
+let mobileDocumentsOwner = null;
+let mobileDocumentsRequest = 0;
+let mobileDocumentsError = '';
+let mobileDocumentsView = 0;
 
 function getTripDocuments() {
-  return mobileDocuments;
+  return mobileDocumentsTripId === activeTrip?.id && mobileDocumentsOwner === mobileUser?.id
+    ? mobileDocuments : [];
 }
+```
 
 async function refreshMobileDocuments({ force = false } = {}) {
-  if (!activeTrip?.id || !window.SB?.listDocuments) {
+  const request = ++mobileDocumentsRequest;
+  const tripId = activeTrip?.id, owner = mobileUser?.id;
+  const same = mobileDocumentsTripId === tripId && mobileDocumentsOwner === owner;
+  if (!same || !tripId || !owner) {
     mobileDocuments = [];
-    mobileDocumentsTripId = null;
     mobileDocumentsLoadedAt = 0;
-    return;
+    mobileDocumentsTripId = tripId || null;
+    mobileDocumentsOwner = owner || null;
+    mobileDocumentsError = '';
   }
-
-  const isCurrentTripCached =
-    mobileDocumentsTripId === activeTrip.id &&
-    Date.now() - mobileDocumentsLoadedAt < MOBILE_DOCUMENTS_CACHE_MS;
-
-  if (!force && isCurrentTripCached) return;
-
+  if (!tripId || !owner || !window.SB?.listDocuments) return;
+  if (!force && same && Date.now() - mobileDocumentsLoadedAt < MOBILE_DOCUMENTS_CACHE_MS) return;
   try {
-    mobileDocuments = await window.SB.listDocuments(activeTrip.id);
-    mobileDocumentsTripId = activeTrip.id;
+    const documents = await window.SB.listDocuments(tripId);
+    if (request !== mobileDocumentsRequest || activeTrip?.id !== tripId || mobileUser?.id !== owner) return;
+    mobileDocuments = documents;
     mobileDocumentsLoadedAt = Date.now();
+    mobileDocumentsError = '';
   } catch (error) {
-    console.error('Mobile documents refresh error:', error);
-    mobileDocuments = [];
+    if (request !== mobileDocumentsRequest || activeTrip?.id !== tripId || mobileUser?.id !== owner) return;
+    const denied = ['401','403','42501'].includes(String(error.status || error.code || ''));
+    const network = !denied && (navigator.onLine === false || /failed to fetch|network|fetch failed/i.test(error.message || ''));
+    if (!network) mobileDocuments = [];
+    mobileDocumentsError = network
+      ? 'Connexion indisponible. La liste déjà chargée reste visible ; ouvrir un fichier peut nécessiter Internet.'
+      : 'Impossible de charger les documents. Vérifie la connexion et ton accès au voyage.';
   }
 }
 
@@ -10449,6 +10465,16 @@ function journeyField(step, dayId, field) {
     </button></div>`;
 }
 
+function journeyMapsLink(step) {
+  const present = value => value !== null && value !== undefined && String(value).trim() !== '';
+  const lat = Number(step.lat), lng = Number(step.lng);
+  const valid = present(step.lat) && present(step.lng) && Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
+  const query = valid ? lat + ',' + lng : String(step.lieu || step.arrivee || '').trim();
+  if (!query) return '';
+  const url = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(query);
+  return '<a class="journey-external-map" href="' + escapeHtml(url) + '" target="_blank" rel="noopener noreferrer"><span class="material-symbols-outlined" aria-hidden="true">open_in_new</span>Ouvrir dans Maps</a>';
+}
+
 function journeyStepContent(step, dayId, lodging = false) {
   const duration = step.dureeEstimee ? 'dureeEstimee' : 'duree';
   const editing = journeyDraft?.tripId === activeTrip?.id && journeyDraft?.stepId === String(step.id) && journeyDraft?.dayId === String(dayId);
@@ -10458,8 +10484,12 @@ function journeyStepContent(step, dayId, lodging = false) {
     </div>
     <p class="journey-save-status" role="status" data-journey-edit-status></p>
     ${journeyField(step, dayId, 'label')}
+    ${step.type === 'transport' && (step.depart || step.arrivee) ? `<p class="journey-transport-route">${escapeHtml(step.depart || 'Départ à préciser')} → ${escapeHtml(step.arrivee || 'Arrivée à préciser')}${step.timeEnd ? '<br>Arrivée ' + escapeHtml(step.timeEnd) + (step.nextDay ? ' · lendemain' : '') : ''}</p>` : ''}
+    <div class="journey-field-pair">    ${journeyField(step, dayId, 'label')}
     <div class="journey-field-pair">${journeyField(step, dayId, lodging ? 'timeCheckIn' : 'time')}${journeyField(step, dayId, lodging ? 'timeCheckOut' : duration)}</div>
     ${journeyField(step, dayId, 'lieu')}${journeyField(step, dayId, 'note')}
+    ${!editing ? journeyMapsLink(step) : ''}
+    <details class="journey-more">    ${journeyField(step, dayId, 'lieu')}${journeyField(step, dayId, 'note')}
     <details class="journey-more"><summary>Autres informations</summary>
       ${lodging ? `<div class="journey-field-pair">${journeyField(step, dayId, 'dateStart')}${journeyField(step, dayId, 'dateEnd')}</div>${journeyField(step, dayId, 'nuits')}` : journeyField(step, dayId, 'timeEnd')}
       ${journeyField(step, dayId, 'ref')}
@@ -13416,94 +13446,61 @@ function renderMobileSummary() {
 }
 
 async function renderDocs() {
+  const view = ++mobileDocumentsView, tripId = activeTrip?.id, owner = mobileUser?.id;
+  const current = () => view === mobileDocumentsView && window.location.hash === '#docs' && activeTrip?.id === tripId && mobileUser?.id === owner;
+  app.innerHTML = `<div class="mobile-shell journey-shell departure-docs">${topbar()}<main class="journey-main"><h1>Documents</h1><p role="status">Chargement…</p></main>${bottomNav('docs')}</div>`;
   await refreshMobileDocuments();
-
-  const categories = getDocCategories();
-  const totalFiles = categories.reduce((sum, category) => sum + category.files.length, 0);
-
+  if (!current()) return;
+  const categories = getDocCategories().filter(category => category.files.length);
+  const total = categories.reduce((count, category) => count + category.files.length, 0);
   app.innerHTML = `
-    <div class="mobile-shell">
-      ${topbar()}
-
-      <main class="docs-main-v2">
-        <div class="docs-header">
-<span class="kicker">Documents de voyage</span>
-<h2 class="docs-title">Billets et fichiers</h2>
-          <p class="docs-subtitle">${escapeHtml(activeTrip?.name || 'Aucun voyage sélectionné')} · ${totalFiles} document${totalFiles > 1 ? 's' : ''}</p>
-        </div>
-
-        <div class="docs-security-banner">
-          <span class="material-symbols-outlined filled">verified_user</span>
-          <div>
-            <strong>Stockage synchronisé</strong>
-            <p>Documents stockés dans Supabase et accessibles avec votre compte.</p>
-          </div>
-        </div>
-
-        <div class="docs-actions">
-  <select id="doc-category-select" class="docs-category-select" aria-label="Catégorie du document">
-    ${docCategoryMeta.map(category => `
-      <option value="${category.id}">${escapeHtml(category.label)}</option>
-    `).join('')}
-  </select>
-
-  <button class="docs-action-primary" type="button" data-action="doc-upload">
-    <span class="material-symbols-outlined">upload_file</span>
-    <span>Ajouter</span>
-  </button>
-
-  <button class="docs-action-secondary" type="button" data-action="doc-scanner">
-    <span class="material-symbols-outlined">photo_camera</span>
-    <span>Scanner</span>
-  </button>
-
-  <input id="doc-file-input" type="file" multiple accept="image/*,application/pdf" hidden>
-</div>
-
-        <div class="docs-grid">
-          ${categories.map(cat => `
-            <div class="docs-category-card">
-              <div class="docs-category-header">
-                <div class="docs-category-icon ${cat.tone}">
-                  <span class="material-symbols-outlined">${cat.icon}</span>
-                </div>
-                <h3>${escapeHtml(cat.label)}</h3>
-                <span class="docs-file-count">${cat.files.length} fichier${cat.files.length > 1 ? 's' : ''}</span>
-              </div>
-
-              <div class="docs-file-list">
-                ${cat.files.length ? cat.files.map(file => {
-  const fileType = getDocFileType(file);
-  const fileIcon = fileType === 'pdf'
-    ? 'picture_as_pdf'
-    : fileType === 'image'
-      ? 'image'
-      : 'description';
-
-  return `
-    <button class="docs-file-row ${cat.tone}" type="button" data-action="doc-detail" data-doc-id="${file.id}">
-      <span class="material-symbols-outlined docs-file-type-icon ${fileType}">${fileIcon}</span>
-      <div class="docs-file-info">
-        <span class="docs-file-name">${escapeHtml(file.name)}</span>
-        <span class="docs-file-meta">Ajouté le ${formatDocumentDate(file.createdAt)} · ${formatDocSize(file.size)}</span>
-      </div>
-      <span class="material-symbols-outlined docs-file-more">chevron_right</span>
-    </button>
-  `;
-}).join('') : `
-                  <div class="docs-empty">
-                    <p>Aucun document dans cette catégorie.</p>
-                  </div>
-                `}
-              </div>
+    <div class="mobile-shell journey-shell departure-docs">${topbar()}
+      <main class="journey-main">
+        <header class="journey-heading"><div><span class="journey-eyebrow">${escapeHtml(activeTrip?.name || 'Mon voyage')}</span><h1>Billets et documents</h1></div></header>
+        <p class="departure-docs-count">${total} fichier${total > 1 ? 's' : ''}</p>
+        ${mobileDocumentsError ? `<div class="departure-warning" role="status">${escapeHtml(mobileDocumentsError)}</div>` : ''}
+        <label class="departure-search">Rechercher<input type="search" id="departure-doc-search" placeholder="Nom du billet, hôtel…" autocomplete="off"></label>
+        <div class="departure-doc-controls">
+          <button type="button" data-docs-refresh>Actualiser</button>
+          <details><summary>Ajouter un document</summary>
+            <label>Classer dans<select id="doc-category-select">${docCategoryMeta.map(category => `<option value="${escapeHtml(category.id)}">${escapeHtml(category.label)}</option>`).join('')}</select></label>
+            <div class="journey-form-actions">
+              <button type="button" class="journey-primary" data-action="doc-upload">Ajouter</button>
+              <button type="button" data-action="doc-scanner">Scanner</button>
             </div>
-          `).join('')}
+            <input id="doc-file-input" type="file" multiple accept="image/*,application/pdf" hidden>
+          </details>
         </div>
-      </main>
-
-      ${bottomNav('docs')}
-    </div>
-  `;
+        <div class="departure-doc-list">
+          ${categories.map(category => `<section data-doc-group><h2>${escapeHtml(category.label)}</h2>
+            ${category.files.map(file => `<button type="button" class="departure-doc-row" data-action="doc-detail" data-doc-id="${escapeHtml(file.id)}" data-doc-search="${escapeHtml(file.name + ' ' + category.label)}">
+              <span class="material-symbols-outlined" aria-hidden="true">${getDocFileType(file) === 'pdf' ? 'picture_as_pdf' : 'description'}</span>
+              <span><strong>${escapeHtml(file.name)}</strong><small>${escapeHtml(formatDocSize(file.size))}</small></span>
+              <span class="material-symbols-outlined" aria-hidden="true">chevron_right</span>
+            </button>`).join('')}</section>`).join('')}
+        </div>
+        <p data-doc-no-results role="status" ${total ? 'hidden' : ''}>${mobileDocumentsError ? 'Aucun fichier disponible dans cette vue.' : 'Aucun document ajouté à ce voyage.'}</p>
+        <aside class="departure-download-note"><strong>Avant de partir</strong><p>Enregistre tes billets dans les fichiers du téléphone et vérifie leur ouverture en mode avion. La présence d’un document dans cette liste ne garantit pas son accès hors ligne.</p></aside>
+      </main>${bottomNav('docs')}
+    </div>`;
+  const root = app.querySelector('.departure-docs');
+  const normalize = value => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('fr');
+  root.querySelector('#departure-doc-search').addEventListener('input', event => {
+    const query = normalize(event.target.value.trim());
+    let visible = 0;
+    root.querySelectorAll('[data-doc-search]').forEach(row => {
+      row.hidden = !normalize(row.dataset.docSearch).includes(query);
+      if (!row.hidden) visible++;
+    });
+    root.querySelectorAll('[data-doc-group]').forEach(group => { group.hidden = !group.querySelector('[data-doc-search]:not([hidden])'); });
+    const empty = root.querySelector('[data-doc-no-results]');
+    empty.hidden = visible > 0;
+    empty.textContent = query ? 'Aucun document correspondant.' : (mobileDocumentsError ? 'Aucun fichier disponible dans cette vue.' : 'Aucun document ajouté à ce voyage.');
+  });
+  root.querySelector('[data-docs-refresh]').onclick = () => {
+    mobileDocumentsLoadedAt = 0;
+    renderDocs();
+  };
 }
 
 function renderDocScanner() {
@@ -13550,26 +13547,27 @@ function renderDocScanner() {
 
 async function renderDocDetail() {
   const documentItem = getDocumentById(activeDocId);
-
-  if (!documentItem) {
-    navigate('docs');
-    return;
-  }
-
+  if (!documentItem) { navigate('docs'); return; }
+  const view = ++mobileDocumentsView, tripId = activeTrip?.id, owner = mobileUser?.id, docId = activeDocId;
+  const current = () => view === mobileDocumentsView && window.location.hash === '#doc-detail' && activeTrip?.id === tripId && mobileUser?.id === owner && activeDocId === docId;
   const isImage = documentItem.mime?.includes('image') || documentItem.type === 'image';
   const isPdf = documentItem.mime?.includes('pdf') || documentItem.type === 'pdf';
-
+  app.innerHTML = `<div class="mobile-shell journey-shell departure-docs">${topbar()}<main class="journey-main"><button type="button" data-action="docs">Retour aux documents</button><h1>${escapeHtml(documentItem.name)}</h1><p role="status">Ouverture…</p></main>${bottomNav('docs')}</div>`;
   let documentUrl = '';
   try {
     documentUrl = await window.SB.getDocumentUrl(documentItem.filePath);
+    if (!current()) return;
+    const parsed = new URL(documentUrl);
+    if (parsed.protocol !== 'https:') throw new Error('Adresse de document invalide.');
+    documentUrl = escapeHtml(parsed.href);
   } catch (error) {
-    alert('Impossible d’ouvrir le document : ' + (error.message || error));
-    navigate('docs');
+    if (!current()) return;
+    app.innerHTML = `<div class="mobile-shell journey-shell departure-docs">${topbar()}<main class="journey-main"><h1>${escapeHtml(documentItem.name)}</h1><p role="alert">Document indisponible. Vérifie la connexion ; si tu l’as téléchargé, ouvre-le depuis les fichiers du téléphone.</p><div class="journey-form-actions"><button type="button" data-action="doc-detail" data-doc-id="${escapeHtml(docId)}">Réessayer</button><button type="button" data-action="docs">Retour</button></div></main>${bottomNav('docs')}</div>`;
     return;
   }
 
   app.innerHTML = `
-    <div class="mobile-shell doc-detail-shell">
+    <div class="mobile-shell journey-shell doc-detail-shell departure-doc-detail">
       <header class="doc-detail-topbar">
         <button type="button" data-action="docs" aria-label="Retour">
           <span class="material-symbols-outlined">arrow_back</span>

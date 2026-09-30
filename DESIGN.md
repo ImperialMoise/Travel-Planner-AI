@@ -129,6 +129,13 @@ Ne pas annoncer toutes les pages refaites après le seul cadre connecté.
 - Menu de voyages défilable, en-tête accessible, palette verte ; ne pas présenter cette correction comme une refonte de toutes les pages personnelles.
 - Météo PC : villes communes au voyage, ajout/retrait et flèches ; date liée au jour sélectionné. Préférences limitées à l’onglet, pas de synchronisation entre appareils.
 
+## Priorité départ — 30 septembre 2026
+- Geler la structure générale. Priorité au suivi mobile : carnet, journées/étapes, trajets, hôtels/repas, billets, sauvegardes et erreurs réseau.
+- Organiser est poussé ; le lot départ proposé ajoute Maps sur les cartes, rend les informations transport visibles et sécurise les chargements de documents avec recherche et palette verte.
+- Aucun mode hors ligne complet promis : la liste de documents en mémoire n’est pas le fichier. Télécharger les billets dans le téléphone et les ouvrir en mode avion avant de partir ; garder un export du programme.
+- Recette réelle obligatoire avant départ : installer l’APK signée sans désinstaller, ouvrir le bon voyage, tester journées et cartes, nuit intermédiaire, adresse, PDF et une modification sur un voyage de test.
+- Après départ : poursuivre formulaires Organiser, pages personnelles, budget/carte/bilan, logo, vitrine et Play Store. Les exigences ci-dessous restent conservées, seulement repriorisées.
+
 ## Roadmap consolidée — décisions du 29 septembre 2026
 Les nouveautés ci-dessous ne sont pas toutes implémentées. Le PC reste le planificateur ; l’APK devient un compagnon de voyage, pas un éditeur PC miniaturisé.
 

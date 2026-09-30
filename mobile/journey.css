@@ -169,6 +169,40 @@
 .organizer-extras h2 { display:flex; align-items:center; gap:8px; margin-bottom:12px; }
 .organizer-extras > details { margin-bottom:12px; border-bottom:1px solid var(--j-line); }
 .organizer-shell .organizer-advanced { display:flex; width:100%; justify-content:space-between; background:transparent; margin-top:20px; }
+.journey-external-map { display:inline-flex; align-items:center; gap:8px; min-height:46px; padding:10px 0; color:var(--j-primary); font-size:14px; font-weight:700; text-decoration:underline; text-underline-offset:3px; }
+.journey-external-map:focus-visible { outline:3px solid var(--j-primary); outline-offset:3px; }
+.journey-shell .journey-transport-route { margin:8px 0 12px; padding:12px; background:var(--j-soft); border-radius:10px; font-size:14px; overflow-wrap:anywhere; }
+.departure-docs { max-width:760px; }
+.departure-docs .journey-main > h1 { margin:20px 0; font-size:24px; overflow-wrap:anywhere; }
+.departure-docs-count { color:var(--j-muted); margin-bottom:16px!important; }
+.departure-warning { padding:14px; margin-bottom:16px; border:1px solid var(--j-line); border-radius:12px; background:var(--j-soft); font-size:14px; }
+.departure-search,.departure-doc-controls label { display:block; font-size:14px; font-weight:600; }
+.departure-search input,.departure-doc-controls select { display:block; width:100%; min-width:0; margin:6px 0 16px; padding:12px; min-height:48px; font-size:16px; color:var(--j-ink); background:var(--j-card); border:1px solid var(--j-line); border-radius:12px; }
+.departure-doc-controls { display:flex; flex-wrap:wrap; align-items:flex-start; gap:10px; margin-bottom:20px; }
+.departure-doc-controls > details { flex:1; min-width:180px; background:var(--j-card); padding:0 12px 12px; border:1px solid var(--j-line); border-radius:12px; }
+.departure-doc-controls summary { min-height:46px; display:list-item; padding:12px 0; cursor:pointer; font-size:14px; }
+.departure-docs summary:focus-visible { outline:3px solid var(--j-primary); outline-offset:3px; }
+.departure-doc-list section { margin-bottom:20px; background:var(--j-card); border:1px solid var(--j-line); border-radius:16px; overflow:hidden; }
+.departure-doc-list h2 { font-size:16px; padding:16px; }
+.departure-docs .departure-doc-row { width:100%; display:grid; grid-template-columns:24px minmax(0,1fr) 24px; justify-content:normal; gap:12px; text-align:left; padding:16px; border:0; border-top:1px solid var(--j-line); border-radius:0; }
+.departure-doc-row strong { display:block; font-size:15px; overflow-wrap:anywhere; }
+.departure-doc-row small { display:block; color:var(--j-muted); font-size:12px; margin-top:4px; }
+.departure-docs [hidden] { display:none!important; }
+.departure-download-note { margin-top:24px; padding:16px; border-radius:12px; background:var(--j-soft); font-size:14px; }
+.departure-download-note p { margin-top:6px!important; color:var(--j-muted); }
+.departure-doc-detail .doc-detail-topbar { padding-top:max(12px,env(safe-area-inset-top,0px)); background:var(--j-card); color:var(--j-ink); }
+.departure-doc-detail .doc-detail-title { min-width:0; }
+.departure-doc-detail .doc-detail-title strong { white-space:normal; overflow-wrap:anywhere; color:var(--j-ink); }
+.departure-doc-detail .doc-detail-title span { color:var(--j-muted); }
+.departure-doc-detail .doc-detail-viewer { background:var(--j-bg); color:var(--j-ink); }
+.departure-doc-detail .doc-detail-actions { background:var(--j-card); padding-bottom:max(16px,env(safe-area-inset-bottom,0px)); }
+.departure-doc-detail :is(button,a) { min-height:46px; }
+.departure-doc-detail .primary-doc-action { display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:12px 16px; min-height:48px; border-radius:12px; background:var(--j-primary); color:var(--j-onprimary); font:600 15px/1.4 var(--font-sans); text-decoration:none; }
+.departure-doc-detail .doc-pdf-preview { background:var(--j-card); border:1px solid var(--j-line); box-shadow:none; color:var(--j-ink); }
+.departure-doc-detail .doc-pdf-preview p { color:var(--j-muted); margin:12px 0 20px; }
+.departure-doc-detail .doc-detail-topbar button { background:var(--j-card); color:var(--j-ink); border:1px solid var(--j-line); border-radius:12px; }
+.departure-doc-detail .doc-detail-actions button { background:var(--j-card); color:var(--j-ink); border:1px solid var(--j-line); border-radius:12px; padding:10px 14px; }
+.departure-doc-detail .doc-page-indicator { background:var(--j-soft); color:var(--j-ink); }
 @media (prefers-reduced-motion:reduce) {
   .journey-shell *, .mobile-trip-menu { animation:none!important; transition:none!important; scroll-behavior:auto!important; }
 }
